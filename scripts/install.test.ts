@@ -130,6 +130,15 @@ describe('install.ps1', { skip: PWSH ? false : 'no PowerShell (pwsh/powershell) 
     rmSync(home, { recursive: true })
   })
 
+  test('aborts without copying anything when confirmation is declined', () => {
+    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const result = runInstallPs1([], home, 'n\n')
+    assert.strictEqual(result.status, 0)
+    assert.ok(result.stdout.includes('Aborted'), `expected "Aborted" in output, got: ${result.stdout}`)
+    assert.ok(!existsSync(join(home, '.claude', 'rules')), 'nothing should be copied when the user declines')
+    rmSync(home, { recursive: true })
+  })
+
   test('-Preset installs the matching preset CLAUDE.md byte-for-byte instead of global-CLAUDE.md', () => {
     const home = mkdtempSync(join(tmpdir(), 'install-home-'))
     const result = runInstallPs1(['-Preset', 'react-vite'], home, 'y\n')
@@ -153,6 +162,26 @@ describe('install.ps1', { skip: PWSH ? false : 'no PowerShell (pwsh/powershell) 
     assert.strictEqual(backedUpContent, 'user customization', 'backup should preserve the pre-overwrite content')
     const liveContent = readFileSync(editedFile, 'utf8')
     assert.notStrictEqual(liveContent, 'user customization', 'live file should be overwritten by the reinstall')
+    rmSync(home, { recursive: true })
+  })
+
+  test('backs up an existing CLAUDE.md exactly once before a second install overwrites it', () => {
+    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    runInstallPs1([], home, 'y\n')
+    const second = runInstallPs1(['-Preset', 'react-vite'], home, 'y\n')
+    assert.strictEqual(second.status, 0, `install.ps1 failed: ${second.stderr}`)
+    const backups = readdirSync(join(home, '.claude')).filter(f => f.startsWith('CLAUDE.md.bak.'))
+    assert.strictEqual(backups.length, 1, `expected exactly one backup file, found: ${backups.join(', ')}`)
+    rmSync(home, { recursive: true })
+  })
+
+  test('warns and lists available presets when -Preset matches nothing, without writing CLAUDE.md', () => {
+    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const result = runInstallPs1(['-Preset', 'nonexistent-stack'], home, 'y\n')
+    assert.strictEqual(result.status, 0, `install.ps1 failed: ${result.stderr}`)
+    assert.ok(result.stdout.includes('not found'), `expected "not found" in output, got: ${result.stdout}`)
+    assert.ok(existsSync(join(home, '.claude', 'rules')), 'rules/ etc. should still be copied')
+    assert.ok(!existsSync(join(home, '.claude', 'CLAUDE.md')), 'no CLAUDE.md should be written for an unmatched preset')
     rmSync(home, { recursive: true })
   })
 

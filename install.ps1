@@ -6,6 +6,10 @@ param(
     [switch]$Detect
 )
 
+# Mirror install.sh's `set -euo pipefail`: stop on the first failed copy or
+# backup instead of printing errors and finishing with a misleading "Done".
+$ErrorActionPreference = 'Stop'
+
 $ScriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ClaudeDir  = Join-Path $env:USERPROFILE ".claude"
 
@@ -45,7 +49,9 @@ function Backup-DirIfExists($dest) {
 }
 
 if ($Preset -ne "" -and $Preset -notmatch '^[a-z0-9-]+$') {
-    Write-Error "Invalid -Preset value '$Preset' (use lowercase letters, digits, hyphens only)"
+    # -ErrorAction Continue keeps this a clean one-line message under the
+    # script-wide $ErrorActionPreference = 'Stop' so `exit 1` is reached.
+    Write-Error "Invalid -Preset value '$Preset' (use lowercase letters, digits, hyphens only)" -ErrorAction Continue
     exit 1
 }
 
@@ -77,7 +83,9 @@ if ($Detect -and $Preset -eq "") {
     if ($Preset -eq "") {
         $pyFiles = @("requirements.txt", "pyproject.toml") | Where-Object { Test-Path $_ }
         if ($pyFiles) {
-            $pyContent = $pyFiles | ForEach-Object { Get-Content $_ -Raw } | Join-String " "
+            # -join instead of Join-String: the latter needs PowerShell 6.2+,
+            # and this script must also run on stock Windows PowerShell 5.1.
+            $pyContent = ($pyFiles | ForEach-Object { Get-Content $_ -Raw }) -join " "
             if     ($pyContent -match "fastapi") { $Preset = "fastapi" }
             elseif ($pyContent -match "django")  { $Preset = "django" }
             elseif ($pyContent -match "flask")   { $Preset = "flask" }

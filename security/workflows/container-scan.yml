@@ -11,10 +11,6 @@ on:
     paths:
       - 'Dockerfile*'
   workflow_dispatch:
-    inputs:
-      image:
-        description: 'Image to scan (e.g. myapp:latest)'
-        required: false
 
 permissions:
   contents: read
@@ -26,23 +22,64 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # hashFiles() cannot gate a job-level `if:` — it is evaluated against the
+  # runner's workspace before checkout, so it always returns '' and every
+  # gated job would be silently skipped. This job does a real checkout,
+  # detects which Docker files exist, and the scan jobs gate on its outputs.
+  detect:
+    name: Detect Docker Files
+    runs-on: ubuntu-latest
+    outputs:
+      any-dockerfile: ${{ steps.files.outputs.any-dockerfile }}
+      root-dockerfile: ${{ steps.files.outputs.root-dockerfile }}
+      compose: ${{ steps.files.outputs.compose }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Detect Docker files
+        id: files
+        run: |
+          any=false
+          root=false
+          compose=false
+          if find . -name 'Dockerfile*' -not -path '*/node_modules/*' -not -path '*/.git/*' -print -quit | grep -q .; then
+            any=true
+          fi
+          if [ -f Dockerfile ]; then
+            root=true
+          fi
+          if compgen -G 'docker-compose*.yml' > /dev/null; then
+            compose=true
+          fi
+          {
+            echo "any-dockerfile=${any}"
+            echo "root-dockerfile=${root}"
+            echo "compose=${compose}"
+          } >> "$GITHUB_OUTPUT"
+
   hadolint:
     name: Dockerfile Lint
     runs-on: ubuntu-latest
-    if: hashFiles('**/Dockerfile*') != ''
+    needs: detect
+    if: needs.detect.outputs.any-dockerfile == 'true'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       - name: Run Hadolint
         uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf  # v3.1.0
         with:
-          dockerfile: Dockerfile
+          # recursive + a name pattern lints every Dockerfile variant
+          # (Dockerfile, Dockerfile.prod, ...) anywhere in the repo, matching
+          # the any-dockerfile gate above.
+          dockerfile: Dockerfile*
+          recursive: true
           failure-threshold: warning
 
   build-and-scan:
     name: Build and Scan Image
     runs-on: ubuntu-latest
-    if: hashFiles('Dockerfile') != ''
+    needs: detect
+    if: needs.detect.outputs.root-dockerfile == 'true'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
@@ -95,7 +132,8 @@ jobs:
   docker-compose-check:
     name: Docker Compose Security Check
     runs-on: ubuntu-latest
-    if: hashFiles('docker-compose*.yml') != ''
+    needs: detect
+    if: needs.detect.outputs.compose == 'true'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 

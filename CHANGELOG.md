@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.1] — 2026-07-01
+
+### Fixed
+
+- `security/workflows/dependency-audit.yml` · `security/workflows/container-scan.yml` — job-level `if: hashFiles(...)` gates always evaluated to `''` (hashFiles runs against the empty pre-checkout workspace), silently skipping every audit/scan job. Replaced with a `detect` job that checks files after a real checkout; downstream jobs now gate on its outputs
+- `security/workflows/container-scan.yml` — hadolint job triggered on `**/Dockerfile*` but only linted the root `Dockerfile`; it now lints all `Dockerfile*` variants recursively. Removed the unused `workflow_dispatch` `image` input
+- `install.ps1` — set `$ErrorActionPreference = 'Stop'` so a failed copy/backup aborts the install (parity with install.sh's `set -euo pipefail`) instead of continuing to a misleading "Done"; replaced `Join-String` (PowerShell 6.2+) with `-join` so `-Detect` works on stock Windows PowerShell 5.1
+- `install.sh` — backup failures now abort with a clear message instead of a raw `cp` error; the preset-category glob and the not-found preset listing no longer break on a missing/empty `presets/` directory
+
+### Added
+
+- `scripts/install.test.ts` — 3 install.ps1 scenarios that previously only covered install.sh: decline-confirmation abort, single CLAUDE.md backup on reinstall, unknown `-Preset` warning without writing CLAUDE.md (61 → 64 tests)
+
+---
+
 ## [1.0.0] — 2026-07-01
 
 Initial release.

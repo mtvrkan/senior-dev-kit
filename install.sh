@@ -19,7 +19,10 @@ backup_claude_md() {
     local backup
     backup="${CLAUDE_DIR}/CLAUDE.md.bak.$(date +%Y%m%d%H%M%S)"
     print_warn "CLAUDE.md already exists — backing up to $(basename "${backup}")"
-    cp "${CLAUDE_DIR}/CLAUDE.md" "${backup}"
+    if ! cp "${CLAUDE_DIR}/CLAUDE.md" "${backup}"; then
+      echo "Error: failed to back up CLAUDE.md — aborting so the existing file is not overwritten" >&2
+      exit 1
+    fi
   fi
 }
 
@@ -33,9 +36,13 @@ count_files() { find "$1" -type f | wc -l | tr -d ' '; }
 backup_dir_if_exists() {
   local dest="$1"
   if [[ -d "${dest}" ]] && [[ -n "$(find "${dest}" -mindepth 1 -print -quit 2>/dev/null)" ]]; then
-    local backup="${dest}.bak.$(date +%Y%m%d%H%M%S)"
+    local backup
+    backup="${dest}.bak.$(date +%Y%m%d%H%M%S)"
     print_warn "$(basename "${dest}")/ already has content — backing up to $(basename "${backup}")/"
-    cp -r "${dest}" "${backup}"
+    if ! cp -r "${dest}" "${backup}"; then
+      echo "Error: failed to back up $(basename "${dest}")/ — aborting so existing content is not overwritten" >&2
+      exit 1
+    fi
   fi
 }
 
@@ -174,6 +181,9 @@ if [[ -n "${PRESET}" ]]; then
   PRESET_PATH=""
   # Search across all preset categories
   for dir in "${SCRIPT_DIR}/presets"/*/; do
+    # With no category dirs the glob stays literal — skip it instead of
+    # probing a path containing a literal '*'.
+    [[ -d "${dir}" ]] || continue
     if [[ -d "${dir}${PRESET}" ]]; then
       PRESET_PATH="${dir}${PRESET}/CLAUDE.md"
       break
@@ -187,7 +197,11 @@ if [[ -n "${PRESET}" ]]; then
     print_ok "Preset '${PRESET}' installed as CLAUDE.md"
   else
     print_warn "Preset '${PRESET}' not found. Available presets:"
-    find "${SCRIPT_DIR}/presets" -name "CLAUDE.md" | sed "s|${SCRIPT_DIR}/presets/||;s|/CLAUDE.md||" | sort
+    if [[ -d "${SCRIPT_DIR}/presets" ]]; then
+      find "${SCRIPT_DIR}/presets" -name "CLAUDE.md" | sed "s|${SCRIPT_DIR}/presets/||;s|/CLAUDE.md||" | sort
+    else
+      print_warn "(presets/ directory is missing from this kit copy)"
+    fi
   fi
 fi
 
