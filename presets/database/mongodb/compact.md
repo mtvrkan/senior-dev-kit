@@ -1,0 +1,8 @@
+- Never accept raw user `$where`, `$regex`, or filter/update objects without sanitization — NoSQL injection risk
+- Validation: enforce document shape via Mongoose schema / Zod at service boundary — never pass `req.body` directly to query/update
+- Document design: embed for has-one/few relations read together; reference for many-to-many or unbounded/growing arrays
+- Indexes: add for frequent filters, sorts, lookups, uniqueness; compound index field order matters; use `explain()` to verify usage
+- Atomic updates: `$inc`, `$set`, `$push` with `$each` for counters/quotas — never read-modify-write without atomicity
+- ObjectId: use consistently; never mix string IDs and ObjectId without explicit conversion (silent query misses)
+- Aggregation: `$match` as first stage; `$lookup` on indexed fields only; limit pipeline depth for expensive operations
+- Anti: unbounded arrays growing forever; `req.body` in update/query; `$where` with user input; missing index on frequent filter field

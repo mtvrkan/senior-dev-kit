@@ -1,0 +1,9 @@
+- Respect lifecycle and coroutine scopes; use structured concurrency; keep ViewModel/UseCase/Repository clear — no business logic in Composables
+- Do not modify manifest, permissions, billing, auth, or signing config unless requested
+- Anti: GlobalScope, blocking main thread, manifest changes for local UI tasks
+- NEW SCREEN: find similar screen first → use Scaffold + existing nav pattern → UiState sealed class (Loading/Success/Empty/Error) in ViewModel → collectAsStateWithLifecycle()
+- Required states: Loading (CircularProgressIndicator centered), Empty (icon+message+optional CTA), Error (message+retry OutlinedButton), Populated
+- Components: Scaffold, TopAppBar, LazyColumn, Card/ElevatedCard, Button/OutlinedButton/TextButton, OutlinedTextField, FilterChip, AlertDialog, ModalBottomSheet, CircularProgressIndicator, SnackbarHostState (never Toast in Compose)
+- Spacing: 4dp multiples only — 4,8,12,16,20,24,32dp. Never arbitrary values
+- Colors: MaterialTheme.colorScheme.X only — never Color(0xFF...) for semantic UI
+- Typography: MaterialTheme.typography.X only — never raw fontSize = N.sp for semantic text

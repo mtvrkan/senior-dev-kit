@@ -1,0 +1,12 @@
+- Architecture: Expo SDK 51+ with Expo Router v3 preferred; keep business logic in hooks/Zustand stores — never in screen components
+- State: Zustand for global UI state; TanStack Query v5 for server state; `expo-secure-store` for sensitive data; MMKV for fast local storage
+- Navigation: Expo Router file-based routes; never mix with manual `NavigationContainer` if Expo Router is configured
+- Protected: `app.json`, `eas.json`, signing config, `android/`, `ios/` directories — do not modify unless explicitly requested
+- All 4 states required: Loading (`<ActivityIndicator>` centered), Empty (icon+message+CTA), Error (message+retry), Populated
+- Colors: reference from project's `colors.ts` / theme context — never hardcode hex values inline
+- Typography: reference from project's `typography.ts` scale — never `fontSize: 17` inline
+- Spacing: 4pt grid only — `spacing.sm(8)`, `spacing.base(16)`, `spacing.lg(24)` — never `padding: 7`
+- Lists: `<FlashList>` for >20 items (never `FlatList` for long lists); `estimatedItemSize` required
+- Forms: react-hook-form + Zod; submit button shows `<ActivityIndicator>` while `isSubmitting`; success → toast, not `Alert.alert`
+- Verification: `npx expo export` → `eslint` → `jest` targeted tests
+- Anti: business logic in screens; `AsyncStorage` for new code; `FlatList` for long lists; hardcoded colors/spacing; missing 4 states

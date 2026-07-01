@@ -1,0 +1,9 @@
+- Never change model definitions or migrations unless DB change is explicitly routed through db-guard skill
+- Migrations: keep model and migration files in sync; prefer additive; never alter DB schema as side effect of unrelated work
+- Queries: use `Model.findAll({ where: { column: value } })` — never string interpolation; use `sequelize.literal()` only with parameterized replacement
+- Associations: define `belongsTo`, `hasMany` etc. explicitly; use `include: [{ model: X }]` for eager loading — never lazy in loops
+- Transactions: `sequelize.transaction(async (t) => { ... })` — pass `{ transaction: t }` to every query in the block
+- Unique/validation errors: catch `SequelizeUniqueConstraintError` and `SequelizeValidationError` explicitly — never swallow
+- Indexes: define in migration files; add based on real query patterns; FK columns need indexes
+- Additive changes: new nullable column is safe; NOT NULL requires default value or multi-step migration with backfill
+- Anti: raw SQL string interpolation; missing `{ transaction: t }` in multi-step transaction; N+1 lazy loading in loops

@@ -1,0 +1,70 @@
+# Dockerfile best-practice template — Senior Dev Kit security baseline
+# Usage: copy as your project's Dockerfile, replace placeholders
+
+# ---- Stage 1: Build ----
+# Checklist: specific tag (not :latest), official image, multi-stage
+FROM node:22-alpine AS builder
+# [Python alternative] FROM python:3.12-slim AS builder
+# [Go alternative]     FROM golang:1.23-alpine AS builder
+
+WORKDIR /app
+
+# Copy manifests first for layer caching
+COPY package*.json ./
+# [Python] COPY requirements.txt ./
+# [Go]     COPY go.mod go.sum ./
+
+# Install only production deps — never dev deps in final image
+RUN npm ci --only=production
+# [Python] RUN pip install --no-cache-dir -r requirements.txt
+# [Go]     RUN go mod download
+
+COPY . .
+RUN npm run build
+# [Go]     RUN CGO_ENABLED=0 go build -o /app/server ./cmd/server
+
+# ---- Stage 2: Runtime ----
+# Checklist: minimal base, non-root user, health check, no secrets baked in
+FROM node:22-alpine AS runner
+# [Python]       FROM python:3.12-slim
+# [Go distroless] FROM gcr.io/distroless/static-debian12
+
+WORKDIR /app
+
+# Non-root user — REQUIRED
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# [Python/Debian] RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+
+# Copy only built artifacts from builder stage
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+# [Go distroless] COPY --from=builder /app/server /server
+
+# Drop to non-root before CMD
+USER appuser
+
+# Health check — REQUIRED
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+# [Python] CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+# [Go]     CMD ["/server", "-healthcheck"]
+
+EXPOSE 3000
+
+CMD ["node", "dist/server.js"]
+# [Python] CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# [Go distroless] CMD ["/server"]
+
+# ---- .dockerignore (required alongside this Dockerfile) ----
+# node_modules
+# .next
+# dist
+# build
+# coverage
+# .git
+# .env
+# .env.*
+# *.log
+# Dockerfile
+# docker-compose*.yml
+# README.md

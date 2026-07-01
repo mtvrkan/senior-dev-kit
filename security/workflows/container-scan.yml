@@ -1,0 +1,109 @@
+name: Container Security Scan
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'Dockerfile*'
+      - 'docker-compose*.yml'
+      - '.dockerignore'
+  pull_request:
+    paths:
+      - 'Dockerfile*'
+  workflow_dispatch:
+    inputs:
+      image:
+        description: 'Image to scan (e.g. myapp:latest)'
+        required: false
+
+permissions:
+  contents: read
+  security-events: write
+  packages: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  hadolint:
+    name: Dockerfile Lint
+    runs-on: ubuntu-latest
+    if: hashFiles('**/Dockerfile*') != ''
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Run Hadolint
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf  # v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning
+
+  build-and-scan:
+    name: Build and Scan Image
+    runs-on: ubuntu-latest
+    if: hashFiles('Dockerfile') != ''
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5730b8fd6c7a23571ce51c85b703a7af12e9847  # v3.10.0
+
+      - name: Build image (without pushing)
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f6b8c1  # v6.15.0
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/image.tar
+
+      - name: Load image
+        run: docker load --input /tmp/image.tar
+
+      - name: Scan with Trivy (CRITICAL + HIGH)
+        uses: aquasecurity/trivy-action@6e7b7d1fd3e4fef0c5fa8cce1229c54b2c9bd0d8  # v0.30.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:scan
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@4dd16135b69a43b6c8efb853346f8437d92d3c93  # v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
+
+      - name: Generate container SBOM
+        uses: anchore/sbom-action@e85651e4a9d9e72c05db7dd3f29ee4c72def2af2  # v0.15.11
+        with:
+          image: ${{ env.IMAGE_NAME }}:scan
+          format: cyclonedx-json
+          output-file: container-sbom.cdx.json
+
+      - name: Upload container SBOM
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549a0d0dc4a34b2  # v4
+        with:
+          name: container-sbom-${{ github.sha }}
+          path: container-sbom.cdx.json
+
+  docker-compose-check:
+    name: Docker Compose Security Check
+    runs-on: ubuntu-latest
+    if: hashFiles('docker-compose*.yml') != ''
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Scan docker-compose with Trivy
+        uses: aquasecurity/trivy-action@6e7b7d1fd3e4fef0c5fa8cce1229c54b2c9bd0d8  # v0.30.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: '0'  # informational only for compose files

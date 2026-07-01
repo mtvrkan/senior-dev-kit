@@ -1,0 +1,10 @@
+- All data in `loader` functions, all mutations in `action` functions — never `useEffect` for data fetching
+- Action inputs: validate every field server-side with Zod before processing — never trust raw `formData`
+- Mutations: `<Form>` component for navigating mutations; `useFetcher` for inline/optimistic mutations
+- Pending states: always handle `useNavigation().state` / `fetcher.state` — never leave UI frozen
+- Progressive enhancement: forms must work without JS via Remix native Form/action
+- Never leak stack traces, DB errors, or secrets via `json()` response to client
+- `root.tsx` and error boundaries are protected — do not modify unless explicitly requested
+- Nested routes: respect outlet structure; `shouldRevalidate` to prevent unnecessary reloads
+- Verification: `remix typecheck` → `eslint` → `remix build`
+- Anti: `useEffect` for data fetching; unvalidated action inputs; flattening nested routes; error details in json response

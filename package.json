@@ -1,0 +1,22 @@
+{
+  "name": "senior-dev-kit",
+  "version": "1.0.0",
+  "description": "Agent, skill and rule kit that gives Claude Code senior engineering team behavior.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts",
+    "validate": "node --experimental-strip-types scripts/validate-skills.ts",
+    "stale-check": "node --experimental-strip-types scripts/check-stale.ts",
+    "link-check": "node --experimental-strip-types scripts/check-links.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "npm test && npm run validate && npm run stale-check && npm run link-check && npm run typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0"
+  }
+}

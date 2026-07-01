@@ -1,0 +1,9 @@
+- Handlers thin: `State<AppState>` injection · delegate to services · NEVER `unwrap()`/`expect()` in handlers — use `?` with AppError
+- Errors: `thiserror` AppError enum → `impl IntoResponse` · NotFound/Forbidden/Conflict/Validation/Database variants · Database errors → log + 500, never expose
+- Validation: `validator` crate — `#[derive(Validate)]` + `body.validate().map_err(|e| AppError::Validation(...))?`
+- SQL: `sqlx::query_as!()` macro always · NEVER `format!("... {}", input)` in queries · transactions: `pool.begin()` → `tx.commit()`
+- Ownership: `if post.user_id != current_user.id { return Err(AppError::Forbidden) }` — every resource handler
+- Logging: `tracing::{info, error, instrument}` · `#[instrument(skip(state))]` · NEVER `println!`/`eprintln!` · NEVER log passwords/tokens/PII
+- Unsafe: NEVER introduce for convenience · document invariant if existing unsafe modified
+- Verify: `cargo check` · `cargo test [name]` · `cargo clippy -- -D warnings` · `cargo fmt --check` · `cargo audit`
+- Anti: `unwrap()`/`expect()` in request path · format!() in SQL · unsafe without justification · large clones in hot path

@@ -1,0 +1,107 @@
+name: Security Gate
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+permissions:
+  contents: read
+  security-events: write  # for SARIF upload
+  pull-requests: read
+
+jobs:
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0  # full history for gitleaks
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@cb7149a9b57195b609c63e8518d2c6ef96efa342  # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}  # remove if OSS
+
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep@sha256:bacb1190716dab2b1708dc63c5bf11f6014c16511e5117f83592acbc5530087a  # 1.68.0 — pin: update via `docker pull semgrep/semgrep:latest && docker inspect --format='{{index .RepoDigests 0}}'`
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Run Semgrep (OWASP Top 10)
+        run: |
+          semgrep ci \
+            --config p/owasp-top-ten \
+            --config p/secrets \
+            --config .semgrep.yml \
+            --sarif --output semgrep-results.sarif
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}  # optional: for dashboard
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@4dd16135b69a43b6c8efb853346f8437d92d3c93  # v3
+        if: always()
+        with:
+          sarif_file: semgrep-results.sarif
+          category: semgrep
+
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript, python]  # adjust to your stack
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@4dd16135b69a43b6c8efb853346f8437d92d3c93  # v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@4dd16135b69a43b6c8efb853346f8437d92d3c93  # v3
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@4dd16135b69a43b6c8efb853346f8437d92d3c93  # v3
+        with:
+          category: codeql-${{ matrix.language }}
+
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@e85651e4a9d9e72c05db7dd3f29ee4c72def2af2  # v0.15.11
+
+      - name: Generate SBOM (CycloneDX)
+        run: syft dir:. -o cyclonedx-json > sbom.cdx.json
+
+      - name: Generate SBOM (SPDX)
+        run: syft dir:. -o spdx-json > sbom.spdx.json
+
+      - name: Scan SBOM for vulnerabilities
+        uses: anchore/scan-action@3343887d815d7b07465f6fdcd395bd66508d486a  # v4
+        with:
+          sbom: sbom.cdx.json
+          fail-build: false  # informational on PRs, blocking on release (see release-gate)
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549a0d0dc4a34b2  # v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: |
+            sbom.cdx.json
+            sbom.spdx.json

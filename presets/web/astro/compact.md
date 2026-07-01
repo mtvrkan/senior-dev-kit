@@ -1,0 +1,8 @@
+- Server-rendered by default — add `client:*` directives only when browser interactivity is required
+- Island directive guide: `client:load` (above-fold critical), `client:idle` (below-fold), `client:visible` (lazy on scroll)
+- Images: always use `<Image />` from `astro:assets` — never raw `<img>` (loses optimization and CLS)
+- Content collections: validate frontmatter against schema; use `getStaticPaths` for dynamic routes in static builds
+- Performance: prefer static generation; SSR only when dynamic data requires it; watch island JS bundle weight
+- Integrations: do not add new UI framework integrations without explicit justification — each adds runtime overhead
+- Verification: `astro check` → `astro build`
+- Anti: `client:load` on everything; raw `<img>` tags; fetching client-side what could be build-time static; unnecessary multi-framework integrations

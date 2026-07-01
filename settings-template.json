@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./.envrc)",
+      "Read(./secrets/**)",
+      "Read(./config/credentials.json)",
+      "Read(./config/secrets.json)",
+      "Read(./*.pem)",
+      "Read(./*.key)",
+      "Read(./*.p12)",
+      "Read(./id_rsa)",
+      "Read(./id_ed25519)",
+      "Read(./.ssh/**)",
+      "Read(./*firebase-adminsdk*.json)",
+      "Read(./*serviceaccount*.json)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf .)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git clean -fdx *)",
+      "Bash(git reset --hard *)",
+      "Bash(chmod 777 *)",
+      "Bash(curl * | bash)",
+      "Bash(wget * -O- | bash)",
+      "Bash(npx --yes *)",
+      "Bash(pip install * --break-system-packages)"
+    ]
+  },
+  "skillOverrides": {
+    "smart-task": "user-invocable-only",
+    "plan-first": "user-invocable-only",
+    "safe-review": "user-invocable-only",
+    "release-gate": "user-invocable-only"
+  }
+}

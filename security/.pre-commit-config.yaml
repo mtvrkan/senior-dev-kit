@@ -1,0 +1,62 @@
+# Pre-commit hooks for security scanning
+# Total budget: <10 seconds — FAST hooks only.
+# Slow tools (Semgrep full ruleset ~30-60s, CodeQL) belong in CI (security-gate.yml), NOT here.
+#
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+# Initialize secrets baseline: detect-secrets scan > .secrets.baseline
+
+repos:
+  # Secret detection — runs first (fastest, highest value)
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.26.0
+    hooks:
+      - id: gitleaks
+        name: Detect secrets (gitleaks)
+
+  # Detect secrets (complementary to gitleaks — different patterns)
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: Detect hardcoded secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package-lock\.json
+
+  # General file hygiene (fast, built-in)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key
+        name: Detect private keys
+      - id: no-commit-to-branch
+        name: Block commits to main/master
+        args: ['--branch', 'main', '--branch', 'master', '--branch', 'production']
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+
+  # Dockerfile linting (~0.2s)
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        name: Lint Dockerfiles
+        args: ['--ignore', 'DL3008', '--ignore', 'DL3009']
+
+  # Python security (~1-3s, only if Python files present)
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.3
+    hooks:
+      - id: bandit
+        name: Security scan (bandit)
+        args: ['-c', 'pyproject.toml']
+        additional_dependencies: ['bandit[toml]']
+        types: [python]
+
+# NOTE: Semgrep full ruleset (~30-60s) is intentionally excluded — runs in CI only.
+# See: security/workflows/security-gate.yml

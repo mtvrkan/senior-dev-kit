@@ -1,0 +1,9 @@
+- Never change schema definitions or migration files unless DB change is explicitly routed through db-guard skill
+- Schema: keep type definitions explicit; `drizzle-kit push` for dev, migration files for prod — never push to prod directly
+- Queries: use typed `.select().from().where()` builder — never raw string SQL for typed queries
+- Parameterization: all `.where()` values are automatically parameterized in Drizzle — never string interpolate
+- Indexes: define in schema (`index('idx_name').on(table.column)`); add based on real query patterns
+- Transactions: `db.transaction(async (tx) => { ... })` for multi-step atomic writes
+- Conflict handling: `.onConflictDoNothing()` or `.onConflictDoUpdate()` — never silently swallow unique errors
+- Additive changes: new nullable column is safe; NOT NULL on existing rows requires migration step with backfill
+- Anti: raw SQL for simple typed queries; schema changes during UI tasks; missing conflict handling; `drizzle-kit push` in production

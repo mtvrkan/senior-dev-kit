@@ -1,0 +1,9 @@
+- Never edit entities/migrations unless DB change is explicitly routed through db-guard skill
+- Migrations: always use explicit migration files; `synchronize: true` is development-only — never enable in production
+- Queries: use `Repository` methods or `QueryBuilder` — always parameterized (`WHERE column = :value`, not string concat)
+- N+1: use `leftJoinAndSelect` or `relations` option in `find()` — never access `.relation` property inside a loop without eager load
+- Transactions: `dataSource.transaction(async (manager) => { ... })` for multi-step atomic writes
+- Decorators: `@Column`, `@OneToMany`, `@ManyToOne` must match DB schema exactly — drift causes runtime errors
+- Validation: validate DTOs (class-validator) before passing to repository; TypeORM does not validate by default
+- Indexes: define via `@Index()` decorator on entity columns that match query patterns
+- Anti: `synchronize: true` in prod; raw SQL string concatenation; N+1 relation access; missing transaction on multi-table writes

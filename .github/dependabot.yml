@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Auto-update GitHub Actions SHA pins in this kit's own CI
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "ci"

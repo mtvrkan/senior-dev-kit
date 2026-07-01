@@ -1,0 +1,10 @@
+- Handlers thin: parse → validate → call service → respond · business logic only in services
+- Errors: explicit at every call site · sentinel errors (`var ErrNotFound = errors.New(...)`) · wrap with `%w` · never raw DB errors to HTTP layer
+- SQL: parameterized always — `db.QueryRow(ctx, "... WHERE id = $1", id)` · NEVER `fmt.Sprintf` in queries
+- Context: every I/O function accepts `ctx context.Context` as first arg · use `r.Context()` in handlers, never `context.Background()`
+- Goroutines: always tied to context or WaitGroup — `select { case <-ctx.Done(): return }` · NEVER fire-and-forget loops
+- Logging: `slog.Info("event", "key", val)` · never `log.Printf` · never log passwords/tokens/PII
+- Testing: table-driven `tests := []struct{name, input, want, wantErr}{}` — standard Go pattern
+- Transactions: `db.Begin(ctx)` for multi-step writes · defer rollback on error
+- Verify: `go test ./...` · `go vet ./...` · `golangci-lint run` if configured
+- Anti: ignoring `_` errors · fmt.Sprintf in SQL · goroutines without lifecycle · context.Background() in request path

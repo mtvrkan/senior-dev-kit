@@ -1,0 +1,9 @@
+- Permissions: explicit, least privilege — `--allow-net=host --allow-env=KEY` · NEVER `--allow-all` in prod
+- Imports: `jsr:@std/...` for stdlib · `npm:package` for npm · define in `deno.json` imports map
+- Test: `deno test [file]` · naming: `*_test.ts` · stdlib: `jsr:@std/testing/bdd` + `jsr:@std/assert`
+- Tooling: `deno lint` · `deno fmt` · `deno check src/main.ts` (no tsc, no eslint, no prettier needed)
+- HTTP: `Deno.serve(handler)` built-in · Hono (`npm:hono`) for REST APIs with `zValidator`
+- KV: `await Deno.openKv()` — built-in key-value, no Redis dep for simple caching/rate-limiting
+- Crypto: `crypto.subtle` (built-in Web Crypto) · SQL: parameterized only — never string interpolation
+- Config: `deno.json` tasks (start/dev/test/lint/fmt/check) + imports map — no package.json
+- Anti: `--allow-all` · esm.sh URL imports · `tsconfig.json` · bare specifiers without import map

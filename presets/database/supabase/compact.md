@@ -1,0 +1,9 @@
+- RLS (Row Level Security): every table must have RLS enabled + policies — never disable to "fix a bug"; no exceptions
+- Auth: `auth.uid()` in policies is authoritative; service-role key is server-side only — never in client or committed .env
+- Policies: test SELECT, INSERT, UPDATE, DELETE separately; use `SET LOCAL ROLE authenticated` to impersonate user in psql
+- Schema changes: `supabase migration new` or `supabase db push` — go through db-guard; prefer additive migrations
+- Queries: use Supabase JS `.from().select().eq()` API — never string-interpolated SQL in RPC; parameterized always
+- Indexes: Supabase wraps Postgres — add on frequent filter columns; every FK column needs an index
+- Edge Functions: verify `Authorization` header on every function — never trust client-sent user identity
+- Storage: set bucket policies; validate file type + size server-side; never trust client upload metadata
+- Anti: RLS disabled on any table; service-role key in client; missing INSERT policy (blocks writes silently); unvalidated file uploads

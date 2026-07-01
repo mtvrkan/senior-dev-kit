@@ -1,0 +1,9 @@
+- Respect sync vs async SQLAlchemy pattern (sync: `Session`, async: `AsyncSession`) — never mix in same codebase
+- Session boundaries: use one `Session` per request (FastAPI `Depends(get_db)`); never reuse sessions across requests
+- Queries: `session.execute(select(Model).where(Model.column == value))` — parameterized automatically; never `text()` with f-string
+- N+1: use `selectinload(Model.relation)` or `joinedload` in query — never access `.relation` on model after session close (lazy load)
+- Transactions: `async with session.begin()` for atomic multi-step writes; explicit rollback in exception handlers
+- Migrations (Alembic): `alembic revision --autogenerate -m "name"` then review; prefer additive; `alembic upgrade head`
+- Long-lived sessions: never use a single global `Session` in request handler — always context-managed per request
+- Validation: validate input (Pydantic v2) before passing to SQLAlchemy; ORM does not validate by default
+- Anti: `text(f"WHERE id = {id}")` string interpolation; long-lived sessions; accidental lazy-load after session close; session reuse across requests

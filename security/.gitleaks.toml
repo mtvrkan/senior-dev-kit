@@ -1,0 +1,62 @@
+# Gitleaks configuration
+# Docs: https://github.com/gitleaks/gitleaks
+# Version: 8.x
+
+title = "Gitleaks Configuration"
+
+[extend]
+# Use official default rules as base (includes AWS, GCP, Azure, GitHub tokens, etc.)
+useDefault = true
+
+# Additional custom rules for common patterns
+[[rules]]
+id = "generic-api-key"
+description = "Generic API key pattern"
+regex = '''(?i)(api[_-]?key|apikey|api[_-]?secret)\s*[=:]\s*['"]?[a-z0-9/+=]{20,}['"]?'''
+tags = ["key", "api"]
+
+[[rules]]
+id = "generic-secret"
+description = "Generic secret/password pattern"
+regex = '''(?i)(secret|password|passwd|pwd)\s*[=:]\s*['"]?[^\s'"]{8,}['"]?'''
+tags = ["secret", "password"]
+[rules.allowlist]
+  regexes = [
+    '''(?i)(secret|password)\s*[=:]\s*['"](env|process|os\.environ|config|placeholder|your[-_]|xxx|abc|test|example|change[-_]me|replace[-_]me)''',
+    '''(?i)password\s*[:=]\s*['"]?\$\{''',   # template variables
+  ]
+
+[[rules]]
+id = "database-url"
+description = "Database connection string with credentials"
+regex = '''(?i)(postgres|postgresql|mysql|mongodb)://[^:]+:[^@]+@'''
+tags = ["database", "credentials"]
+
+[[rules]]
+id = "private-key-header"
+description = "Private key file content"
+regex = '''-----BEGIN (RSA|EC|DSA|OPENSSH|PRIVATE) PRIVATE KEY-----'''
+tags = ["key", "private"]
+
+# Global allowlist — skip these files/paths
+[allowlist]
+description = "Global allowlist"
+paths = [
+  '''.gitleaks.toml''',
+  '''CHANGELOG.md''',
+  '''\.git/''',
+  '''node_modules/''',
+  '''vendor/''',
+  '''\.secrets\.baseline''',
+]
+regexes = [
+  # Test files with fake credentials
+  '''(test|spec|mock|fixture|fake).*password''',
+  # Common placeholder values
+  '''(?i)(example|sample|dummy|placeholder|your[-_]key[-_]here)''',
+]
+
+# Scan configuration
+[detect]
+# Scan git history by default
+gitLogLimit = 20000
