@@ -1,4 +1,4 @@
-# Install Senior Dev Kit to $env:USERPROFILE\.claude\
+﻿# Install Senior Dev Kit to $env:USERPROFILE\.claude\
 # Usage: .\install.ps1 [-Preset react-vite]
 [CmdletBinding()]
 param(
@@ -27,14 +27,34 @@ function Backup-ClaudeMd {
 
 # Counts files actually present in a destination dir so the install summary
 # reflects what was copied, not a hardcoded number.
-function Count-Files($path) { (Get-ChildItem -Path $path -File -Recurse).Count }
+function Count-Files($path) { @(Get-ChildItem -Path $path -File -Recurse).Count }
+
+# Backs up an existing destination directory (if it already has files) to a
+# timestamped sibling before it gets overwritten, so a repeated install never
+# silently destroys customizations the user placed directly under ~/.claude/.
+function Backup-DirIfExists($dest) {
+    if (Test-Path $dest) {
+        $hasContent = Get-ChildItem -Path $dest -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($hasContent) {
+            $timestamp = Get-Date -Format "yyyyMMddHHmmss"
+            $backup = "$dest.bak.$timestamp"
+            Warn "$(Split-Path -Leaf $dest)/ already has content — backing up to $(Split-Path -Leaf $backup)/"
+            Copy-Item $dest $backup -Recurse -Force
+        }
+    }
+}
 
 if ($Preset -ne "" -and $Preset -notmatch '^[a-z0-9-]+$') {
     Write-Error "Invalid -Preset value '$Preset' (use lowercase letters, digits, hyphens only)"
     exit 1
 }
 
-# Auto-detect stack from project files in current directory
+# Auto-detect stack from project files in current directory.
+# Order below is priority-ranked, not alphabetical — first match wins, so more
+# specific/framework-level dependencies (next, @nestjs/core, @remix-run, ...)
+# are checked before generic ones (react, express) that they're commonly built
+# on top of. Do not reorder without preserving that specific-before-generic rule.
+# Keep in sync with the equivalent chain in install.sh.
 if ($Detect -and $Preset -eq "") {
     Step "Auto-detecting stack..."
     if (Test-Path "package.json") {
@@ -50,6 +70,8 @@ if ($Detect -and $Preset -eq "") {
         elseif ($pkg -match '"wrangler"')       { $Preset = "cloudflare-workers" }
         elseif ($pkg -match '"react"')          { $Preset = "react-vite" }
         elseif ($pkg -match '"express"')        { $Preset = "node-express" }
+        # No dedicated Hono preset exists yet; node-express is the closest match
+        # (minimal Node HTTP routing conventions) among the 49 shipped presets.
         elseif ($pkg -match '"hono"')           { $Preset = "node-express" }
     }
     if ($Preset -eq "") {
@@ -94,6 +116,7 @@ New-Item -ItemType Directory -Force -Path $ClaudeDir | Out-Null
 # --- rules ---
 Step "Copying rules..."
 $dest = Join-Path $ClaudeDir "rules"
+Backup-DirIfExists $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "rules\*") -Destination $dest -Recurse -Force
 Ok "rules/ ($(Count-Files $dest) files)"
@@ -101,6 +124,7 @@ Ok "rules/ ($(Count-Files $dest) files)"
 # --- skills ---
 Step "Copying skills..."
 $dest = Join-Path $ClaudeDir "skills"
+Backup-DirIfExists $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "skills\*") -Destination $dest -Recurse -Force
 Ok "skills/ ($(Count-Files $dest) files)"
@@ -108,6 +132,7 @@ Ok "skills/ ($(Count-Files $dest) files)"
 # --- commands ---
 Step "Copying commands..."
 $dest = Join-Path $ClaudeDir "commands"
+Backup-DirIfExists $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "commands\*") -Destination $dest -Recurse -Force
 Ok "commands/ ($(Count-Files $dest) files)"
@@ -115,6 +140,7 @@ Ok "commands/ ($(Count-Files $dest) files)"
 # --- agents ---
 Step "Copying agents..."
 $dest = Join-Path $ClaudeDir "agents"
+Backup-DirIfExists $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "agents\*") -Destination $dest -Recurse -Force
 Ok "agents/ ($(Count-Files $dest) files)"
@@ -122,6 +148,7 @@ Ok "agents/ ($(Count-Files $dest) files)"
 # --- agent_docs ---
 Step "Copying agent_docs (lazy-load reference)..."
 $dest = Join-Path $ClaudeDir "agent_docs"
+Backup-DirIfExists $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "agent_docs\*") -Destination $dest -Recurse -Force
 Ok "agent_docs/ ($(Count-Files $dest) files)"
@@ -139,7 +166,7 @@ if ($Preset -ne "") {
     $presetPath = $null
     Get-ChildItem -Path (Join-Path $ScriptDir "presets") -Directory | ForEach-Object {
         $candidate = Join-Path $_.FullName "$Preset\CLAUDE.md"
-        if (Test-Path $candidate) { $presetPath = $candidate }
+        if (-not $presetPath -and (Test-Path $candidate)) { $presetPath = $candidate }
     }
 
     if ($presetPath) {

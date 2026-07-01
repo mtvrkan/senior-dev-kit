@@ -8,7 +8,7 @@
     "node": ">=22.6.0"
   },
   "scripts": {
-    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts",
+    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/install.test.ts",
     "validate": "node --experimental-strip-types scripts/validate-skills.ts",
     "stale-check": "node --experimental-strip-types scripts/check-stale.ts",
     "link-check": "node --experimental-strip-types scripts/check-links.ts",

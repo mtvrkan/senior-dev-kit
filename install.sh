@@ -27,6 +27,18 @@ backup_claude_md() {
 # reflects what was copied, not a hardcoded number.
 count_files() { find "$1" -type f | wc -l | tr -d ' '; }
 
+# Backs up an existing destination directory (if it already has files) to a
+# timestamped sibling before it gets overwritten, so a repeated install never
+# silently destroys customizations the user placed directly under ~/.claude/.
+backup_dir_if_exists() {
+  local dest="$1"
+  if [[ -d "${dest}" ]] && [[ -n "$(find "${dest}" -mindepth 1 -print -quit 2>/dev/null)" ]]; then
+    local backup="${dest}.bak.$(date +%Y%m%d%H%M%S)"
+    print_warn "$(basename "${dest}")/ already has content — backing up to $(basename "${backup}")/"
+    cp -r "${dest}" "${backup}"
+  fi
+}
+
 for arg in "$@"; do
   case $arg in
     --preset=*) PRESET="${arg#*=}" ;;
@@ -39,7 +51,11 @@ if [[ -n "${PRESET}" && ! "${PRESET}" =~ ^[a-z0-9-]+$ ]]; then
   exit 1
 fi
 
-# Auto-detect stack from project files in current directory
+# Auto-detect stack from project files in current directory.
+# Order below is priority-ranked, not alphabetical — first match wins, so more
+# specific/framework-level dependencies (next, @nestjs/core, @remix-run, ...)
+# are checked before generic ones (react, express) that they're commonly built
+# on top of. Do not reorder without preserving that specific-before-generic rule.
 if [[ "${DETECT}" == "true" && -z "${PRESET}" ]]; then
   print_step "Auto-detecting stack..."
   if [[ -f "package.json" ]]; then
@@ -55,6 +71,8 @@ if [[ "${DETECT}" == "true" && -z "${PRESET}" ]]; then
     elif echo "$PKG" | grep -q '"wrangler"';       then PRESET="cloudflare-workers"
     elif echo "$PKG" | grep -q '"react"';          then PRESET="react-vite"
     elif echo "$PKG" | grep -q '"express"';        then PRESET="node-express"
+    # No dedicated Hono preset exists yet; node-express is the closest match
+    # (minimal Node HTTP routing conventions) among the 49 shipped presets.
     elif echo "$PKG" | grep -q '"hono"';           then PRESET="node-express"
     fi
   fi
@@ -71,9 +89,9 @@ if [[ "${DETECT}" == "true" && -z "${PRESET}" ]]; then
     elif [[ -f "Cargo.toml" ]]; then PRESET="rust-api"
     elif [[ -f "pubspec.yaml" ]]; then PRESET="flutter"
     elif [[ -f "Package.swift" ]]; then PRESET="swift-ios"
-    elif ls *.xcodeproj 2>/dev/null | head -1 | grep -q "."; then PRESET="swift-ios"
+    elif compgen -G "*.xcodeproj" > /dev/null 2>&1; then PRESET="swift-ios"
     elif [[ -f "app/build.gradle" || -f "app/build.gradle.kts" ]]; then PRESET="kotlin-android"
-    elif ls *.csproj 2>/dev/null | head -1 | grep -q "."; then PRESET="dotnet-api"
+    elif compgen -G "*.csproj" > /dev/null 2>&1; then PRESET="dotnet-api"
     elif [[ -f "pom.xml" ]]; then PRESET="java-spring"
     elif [[ -f "Gemfile" ]]; then  PRESET="rails"
     elif [[ -f "composer.json" ]]; then PRESET="laravel"
@@ -110,30 +128,35 @@ mkdir -p "${CLAUDE_DIR}"
 
 # --- rules ---
 print_step "Copying rules..."
+backup_dir_if_exists "${CLAUDE_DIR}/rules"
 mkdir -p "${CLAUDE_DIR}/rules"
 cp -r "${SCRIPT_DIR}/rules/." "${CLAUDE_DIR}/rules/"
 print_ok "rules/ ($(count_files "${CLAUDE_DIR}/rules") files)"
 
 # --- skills ---
 print_step "Copying skills..."
+backup_dir_if_exists "${CLAUDE_DIR}/skills"
 mkdir -p "${CLAUDE_DIR}/skills"
 cp -r "${SCRIPT_DIR}/skills/." "${CLAUDE_DIR}/skills/"
 print_ok "skills/ ($(count_files "${CLAUDE_DIR}/skills") files)"
 
 # --- commands ---
 print_step "Copying commands..."
+backup_dir_if_exists "${CLAUDE_DIR}/commands"
 mkdir -p "${CLAUDE_DIR}/commands"
 cp -r "${SCRIPT_DIR}/commands/." "${CLAUDE_DIR}/commands/"
 print_ok "commands/ ($(count_files "${CLAUDE_DIR}/commands") files)"
 
 # --- agents ---
 print_step "Copying agents..."
+backup_dir_if_exists "${CLAUDE_DIR}/agents"
 mkdir -p "${CLAUDE_DIR}/agents"
 cp -r "${SCRIPT_DIR}/agents/." "${CLAUDE_DIR}/agents/"
 print_ok "agents/ ($(count_files "${CLAUDE_DIR}/agents") files)"
 
 # --- agent_docs ---
 print_step "Copying agent_docs (lazy-load reference)..."
+backup_dir_if_exists "${CLAUDE_DIR}/agent_docs"
 mkdir -p "${CLAUDE_DIR}/agent_docs"
 cp -r "${SCRIPT_DIR}/agent_docs/." "${CLAUDE_DIR}/agent_docs/"
 print_ok "agent_docs/ ($(count_files "${CLAUDE_DIR}/agent_docs") files)"
