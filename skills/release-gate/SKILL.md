@@ -11,7 +11,7 @@ argument-hint: "[task or target]"
 
 # release-gate
 
-Prepare a release safety check for: $ARGUMENTS
+Prepare a release safety check for: $ARGUMENTS. Manual override to force an opus-level gate right before deploy — for the auto-firing pre-release check, see `release-check`.
 
 Checklist — output GO / NO-GO per item:
 

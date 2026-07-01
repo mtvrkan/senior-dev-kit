@@ -8,7 +8,7 @@ argument-hint: "[endpoint or resource being versioned] [breaking change descript
 
 # api-versioning
 
-Manage API version transitions. Clients must never break on deploy. See `agent_docs/api-versioning-guide.md` for parallel routing code, deprecation headers, migration guide template, and OpenAPI dual-version strategy.
+Manage API version transitions. Clients must never break on deploy. See `agent_docs/api-versioning-guide.md` for parallel routing code, deprecation headers, migration guide template, and OpenAPI dual-version strategy. For designing a brand-new endpoint's shape, use `api-design` first.
 
 Non-breaking (no versioning): new optional field/param, new endpoint. Breaking (new version required): removed/renamed field, required field added, type changed, status code changed, error format changed, auth changed, endpoint removed.
 

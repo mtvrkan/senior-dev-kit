@@ -1,8 +1,9 @@
 ---
 name: deep-research
-description: Deep research harness — fan-out searches across multiple sources, fetch primary content, cross-verify claims, synthesize a cited report.
+description: Use for deep, multi-source research — fan-out searches across multiple sources, fetch primary content, cross-verify claims, synthesize a cited report.
 allowed-tools: WebSearch, WebFetch, Read, Grep, Glob
 when_to_use: Use when the task requires multi-source factual research, competitive analysis, technology comparison, or market research.
+argument-hint: "[research question or topic]"
 ---
 
 # deep-research

@@ -10,7 +10,7 @@ when_to_use: Use automatically before implementing any new API endpoint or when 
 Design the API contract. No implementation — wait for confirmation before coding.
 
 1. Read 1-2 existing endpoints. Extract URL pattern, response envelope, error shape, auth mechanism, status codes — match ALL in the new design.
-2. Changing an EXISTING endpoint → grep for callers first. Breaking change → propose versioned endpoint or backwards-compatible alternative.
+2. Changing an EXISTING endpoint → grep for callers first. Breaking change → hand off to `api-versioning`; non-breaking → propose a backwards-compatible alternative.
 
 ## Output
 

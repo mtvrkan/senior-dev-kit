@@ -7,7 +7,7 @@ when_to_use: Use automatically for pre-release safety review, but do not deploy.
 
 # release-check
 
-Output GO / NO-GO for each item:
+Auto-fires for pre-release safety review — for a manual, opus-level gate you invoke yourself right before deploy, use `release-gate` instead. Output GO / NO-GO for each item:
 
 1. BUILD: clean build with no errors?
 2. TESTS: all tests passing? Any skipped/flaky tests that matter?

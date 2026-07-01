@@ -1,8 +1,8 @@
 ---
 name: test-writer
-description: Use to add or update tests using the existing test framework for changed behavior, edge cases, and regressions.
+description: Use to add or update tests using the existing test framework for changed behavior, edge cases, regressions, or existing untested code the user wants covered.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
-when_to_use: Use automatically when behavior changes or the user asks for tests.
+when_to_use: Use automatically when behavior changes, or manually when the user asks for tests — including adding coverage to existing untested/legacy code with no behavior change.
 ---
 
 # test-writer

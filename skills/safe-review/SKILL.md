@@ -11,7 +11,7 @@ argument-hint: "[task or target]"
 
 # safe-review
 
-Review: $ARGUMENTS
+Review: $ARGUMENTS. Manual override for a deeper, sonnet-level pass before merge/deploy — for the auto-firing review that runs after every meaningful change, see `code-review`.
 
 Focus (in order):
 

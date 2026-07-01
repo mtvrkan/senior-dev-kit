@@ -17,3 +17,5 @@ CONSTRAINTS: [unique, not-null, foreign key, check]
 SQL vs NoSQL: rationale if a choice is needed
 MIGRATION IMPACT: what changes if evolving an existing model
 ANTI-PATTERNS AVOIDED: [list what was explicitly rejected and why]
+
+Use for new/greenfield model design; once a concrete schema change is ready to apply, hand off to `db-change`.

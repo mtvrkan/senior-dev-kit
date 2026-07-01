@@ -3,6 +3,7 @@ name: strategy-plan
 description: Use for product strategy, feature roadmaps, build-vs-buy decisions, OKRs, competitive positioning, and prioritization frameworks.
 allowed-tools: WebSearch, WebFetch, Read, Grep, Glob
 when_to_use: Use for high-level strategic and product decisions that are not directly about code implementation.
+argument-hint: "[decision or problem]"
 ---
 
 # strategy-plan

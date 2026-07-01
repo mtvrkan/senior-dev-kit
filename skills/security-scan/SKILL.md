@@ -20,3 +20,4 @@ Trigger: auth/payment/DB/API/secrets/CI/release changes, or explicit user reques
 
 Group findings CRITICAL → HIGH → MEDIUM → LOW. Redact all secrets, tokens, connection strings — never print raw keys, passwords, or connection strings.
 End with: tools run | tools missing | overall risk assessment
+Complements `security-review` (manual auth/payment/injection logic review) — this skill runs automated tooling only.

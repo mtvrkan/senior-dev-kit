@@ -18,5 +18,6 @@ Check in this order:
 7. Rate limiting: are sensitive endpoints (login, password reset, payment) rate-limited?
 8. File operations: upload type/size validation, path traversal prevention?
 
-Output: SEVERITY | FILE:LINE | vulnerability description | recommended fix
-Never print actual secret values.
+Output: SEVERITY (critical/high/medium/low) | FILE:LINE | vulnerability description | recommended fix
+ESCALATE: security-guard if the fix requires an auth/payment architecture change, otherwise none.
+Never print actual secret values. Complements `security-scan` (automated dep/secret/SAST/container tooling) — this is the manual logic review; both may fire on the same change.

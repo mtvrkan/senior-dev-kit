@@ -3,6 +3,7 @@ name: article-write
 description: Use for writing articles, blog posts, technical content, reports, and structured long-form content.
 allowed-tools: Read, Write, Edit, Grep, Glob, WebFetch, WebSearch
 when_to_use: Use when the task is to produce a written article, blog post, report, newsletter, or long-form document.
+argument-hint: "[topic or content brief]"
 ---
 
 # article-write

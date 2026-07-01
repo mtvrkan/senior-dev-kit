@@ -8,7 +8,7 @@ when_to_use: Use automatically for scoped feature implementation after risk is l
 # feature-build
 
 1. >2 files → 3-line inline plan (goal / files / approach) first. New file → read 1 similar file, match patterns exactly. Check it doesn't already exist.
-2. UI work: read `DESIGN-SPEC.md` + `PROJECT-CONTRACTS.md` if present. Independent file edits → single parallel message.
+2. UI work: read `DESIGN-SPEC.md` + `PROJECT-CONTRACTS.md` if present (project root — written by the `from-scratch` skill; absent on projects not bootstrapped with it, skip). Independent file edits → single parallel message.
 3. Auto-test: backend (service/controller/handler/repo) → `jest [file].spec.ts --no-coverage`, no spec → add 3 tests (happy+edge+error). Mobile/API route → targeted test. Pure UI → TEST: skipped.
 4. Hard stop: auth/payment/DB schema/migrations/secrets/CI → escalate, don't implement. No new deps without justification.
 

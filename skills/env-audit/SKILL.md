@@ -1,6 +1,6 @@
 ---
 name: env-audit
-description: Audit environment variables across the codebase. Finds missing declarations, leaked defaults, unused vars, and inconsistencies between .env.example and actual usage.
+description: Use to audit environment variables across the codebase. Finds missing declarations, leaked defaults, unused vars, and inconsistencies between .env.example and actual usage.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use when: setting up a new environment, debugging "undefined env var" errors, onboarding new developers, or before a production deployment.
 argument-hint: "[scope: all | frontend | backend | missing-only]"

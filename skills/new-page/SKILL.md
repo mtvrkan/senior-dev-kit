@@ -9,7 +9,7 @@ when_to_use: Use automatically when the task is to create a new page, route, or 
 
 New admin page from scratch. Follow this protocol — do not skip steps. See `agent_docs/new-page-guide.md` for framework detection table, convention discovery globs, form/table patterns, and the quality gate checklist.
 
-1. Read `PROJECT-CONTRACTS.md` + `DESIGN-SPEC.md` if present — they override everything below.
+1. Read `PROJECT-CONTRACTS.md` + `DESIGN-SPEC.md` if present (project root — written by the `from-scratch` skill; absent on projects not bootstrapped with it, skip) — they override everything below.
 2. Detect framework (next.config.*→Next.js | vite.config.*→React+Vite | nuxt.config.*→Nuxt | angular.json→Angular | svelte.config.*→SvelteKit | artisan→Laravel | manage.py→Django | Gemfile+routes.rb→Rails).
 3. Find 1-2 similar pages, read one fully — extract shell/layout, data fetching, UI library, state/loading, token/spacing usage.
 4. Output plan (FRAMEWORK / SIMILAR PAGE / SHELL / DATA SOURCE / STATES / FORMS). Wait for "go" if 3+ component types.

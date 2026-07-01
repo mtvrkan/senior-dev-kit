@@ -1,6 +1,6 @@
 ---
 name: smart-task
-description: Classify the task, choose tier/risk/agent/skill, produce a minimal plan. No code edits.
+description: Manually invoke to classify the task, choose tier/risk/agent/skill, and produce a minimal plan. No code edits.
 disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Manually invoke when task scope or risk is unclear — classifies by tier and routes to the correct skill.

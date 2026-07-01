@@ -17,4 +17,5 @@ Investigate in this order:
 6. LATENCY: blocking I/O in async paths, serial awaits that could be parallel, expensive middleware
 
 Output per finding: FILE:LINE | estimated impact (high/medium/low) | minimal fix
+ESCALATE: [db-guard — if the fix requires a schema/index change | none]
 Do not edit files by default — produce a prioritized fix list.
