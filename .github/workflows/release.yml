@@ -19,8 +19,15 @@ jobs:
         id: changelog
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md \
-            > release-notes.txt
+          awk -v heading="## [${VERSION}]" '
+            index($0, heading) == 1 { found=1; next }
+            found && index($0, "## [") == 1 { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.txt
+          if [ ! -s release-notes.txt ]; then
+            echo "No CHANGELOG.md entry found for [${VERSION}] — add one before tagging a release." >&2
+            exit 1
+          fi
           echo "Done — $(wc -l < release-notes.txt) lines extracted."
 
       - name: Publish GitHub Release
