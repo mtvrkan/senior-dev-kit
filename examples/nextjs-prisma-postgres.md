@@ -33,7 +33,7 @@ Detected: Next.js SaaS + Prisma + PostgreSQL
 │   ├── new-page/SKILL.md
 │   ├── db-change/SKILL.md
 │   ├── security-review/SKILL.md
-│   └── ... (all 32 skills)
+│   └── ... (all 33 skills)
 ├── agents/
 │   ├── senior-engineer.md
 │   ├── bug-hunter.md
@@ -44,7 +44,7 @@ Detected: Next.js SaaS + Prisma + PostgreSQL
 └── agent_docs/
     ├── architecture.md
     ├── testing-strategy.md
-    └── ... (all 14 docs)
+    └── ... (all 15 docs)
 ```
 
 **settings.json:**

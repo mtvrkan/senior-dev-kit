@@ -20,6 +20,11 @@ Claude detects your stack, picks the right presets, and generates `.claude/` aut
 
 **Auto-detect stack (recommended):**
 
+`--detect` reads stack files (`package.json`, `requirements.txt`, `go.mod`, ...) from
+your **current directory** to pick a preset, but always writes the kit to the
+**global** `~/.claude/` — not the current project. `cd` into a representative
+project first so detection picks the right preset for how you work day to day.
+
 ```bash
 # Mac / Linux — detects stack from package.json / requirements.txt / go.mod
 cd /path/to/your-project && bash /path/to/senior-dev-kit/install.sh --detect
@@ -96,7 +101,7 @@ User: add SBOM to Docker CI pipeline
 | `/agents-guide` | List all agents and routing rules |
 
 **Skill shortcuts** (invoke by name — always available):
-`/security-review` · `/api-design` · `/api-versioning` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · and all 32 skills
+`/security-review` · `/api-design` · `/api-versioning` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · and all 33 skills
 
 > **Commands vs Skills:** Command files (`commands/*.md`) use the older Claude Code slash-command format — plain markdown with a `$ARGUMENTS` placeholder, read into context on invocation. Skill files (`skills/*/SKILL.md`) use the newer SKILL.md system with rich frontmatter (`model`, `effort`, `allowed-tools`, `when_to_use`) that Claude Code resolves before the skill runs. Skills can also fire automatically when Claude Code detects a matching context; commands only fire when explicitly invoked.
 
@@ -172,7 +177,7 @@ Put the most specific preset's content into `.claude/stack-rules.md` and inline 
 
 ## What's included
 
-### Skills (32)
+### Skills (33)
 
 **Application:**
 `feature-build`, `feature-plan`, `bug-fix`, `refactor-safe`, `ui-change`, `new-page`, `new-screen`, `from-scratch`
@@ -181,7 +186,7 @@ Put the most specific preset's content into `.claude/stack-rules.md` and inline 
 `data-modeling`, `db-change`, `api-design`, `api-versioning`, `migration-review`
 
 **Quality and Security:**
-`code-review`, `safe-review`, `security-review`, `security-scan`, `test-writer`, `performance-check`
+`code-review`, `safe-review`, `security-review`, `security-scan`, `test-writer`, `performance-check`, `code-audit`
 
 **DevOps and Environment:**
 `release-check`, `release-gate`, `env-audit`, `dep-check`, `monorepo-task`
@@ -340,7 +345,7 @@ senior-dev-kit/
 │   ├── messaging/
 │   ├── ai/
 │   └── generic/
-├── skills/                  ← 32 skill definitions (SKILL.md each)
+├── skills/                  ← 33 skill definitions (SKILL.md each)
 ├── commands/                ← 12 slash command definitions
 ├── rules/                   ← 11 path-scoped rule files
 ├── agent_docs/              ← 15 lazy-load deep reference docs

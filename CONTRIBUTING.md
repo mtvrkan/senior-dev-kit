@@ -14,7 +14,7 @@ Presets live in `presets/<category>/<name>/`. Each must contain exactly two file
 
 | File | Purpose |
 | --- | --- |
-| `CLAUDE.md` | Full preset — installed to `.claude/CLAUDE.md` in the user's project |
+| `CLAUDE.md` | Full preset — combined with any other selected presets and written to `.claude/stack-rules.md` in the user's project |
 | `compact.md` | Token-optimized summary (8-15 lines) — appended into `stack-rules.md` when composing multiple presets |
 
 ### Steps
@@ -44,7 +44,14 @@ name: my-agent
 description: One sentence — when to use this agent.
 tools: Read, Grep, Glob, Edit, Write, Bash
 model: claude-sonnet-5
-permissionMode: default        # use "plan" for guard agents
+---
+```
+
+### Optional frontmatter fields
+
+```yaml
+---
+permissionMode: default        # "plan" is required (not optional) for guard agents — see below
 effort: medium
 color: blue
 ---
@@ -73,7 +80,6 @@ Skills live in `skills/<name>/SKILL.md` with YAML frontmatter.
 ---
 description: One sentence — when Claude invokes this skill.
 allowed-tools: Read, Grep, Glob, Edit, Write, Bash
-when_to_use: Condition that triggers automatic invocation.
 ---
 ```
 
@@ -82,6 +88,7 @@ when_to_use: Condition that triggers automatic invocation.
 ```yaml
 ---
 name: my-skill                    # defaults to the folder name if omitted
+when_to_use: Condition that triggers automatic invocation.  # recommended — validator warns (doesn't fail) if omitted
 model: claude-sonnet-5            # overrides the default model for this skill's run
 effort: medium                    # low | medium | high | xhigh | max
 argument-hint: "[task or target]" # shown in autocomplete for manual invocation, e.g. /my-skill [task]

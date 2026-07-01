@@ -167,10 +167,10 @@ your-project/
     ├── skills/
     │   ├── bug-fix/SKILL.md
     │   ├── feature-build/SKILL.md
-    │   └── ... (32 skills)
+    │   └── ... (33 skills)
     └── agent_docs/
         ├── architecture.md
-        └── ... (14 docs, lazy-loaded)
+        └── ... (15 docs, lazy-loaded)
 ```
 
 Claude Code loads `.claude/CLAUDE.md` automatically on every session.

@@ -29,9 +29,9 @@ Presets selected: `backend/laravel` · `database/mysql`
 │   ├── 300-testing.md           ← **/tests/**
 │   ├── 500-database.md          ← **/migrations/**
 │   └── 700-observability.md     ← **/*.php
-├── skills/                      ← all 32 skills
+├── skills/                      ← all 33 skills
 ├── agents/                      ← all 17 agents
-└── agent_docs/                  ← all 14 reference docs
+└── agent_docs/                  ← all 15 reference docs
 ```
 
 ---

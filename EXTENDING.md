@@ -28,7 +28,7 @@ Copy `skills/bug-fix/SKILL.md` and modify:
 ---
 description: One-sentence summary shown in /agents-guide
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
-when_to_use: When the user asks to [do X] or says [Y / Z]
+when_to_use: When the user asks to [do X] or says [Y / Z]  # recommended, not required — validator only warns if omitted
 model: claude-sonnet-5            # optional — overrides default model for this skill's run
 effort: medium                    # optional — low | medium | high | xhigh | max
 argument-hint: "[task or target]" # optional — shown in autocomplete, e.g. /my-skill [task]
@@ -106,7 +106,11 @@ skills:
   - feature-build
   - bug-fix
 ---
+```
 
+`skills:` is a hint, not a hard allowlist — it's the primary set surfaced to the router and to `/agents-guide`. The agent isn't blocked from invoking any other skill in `skills/` when the task calls for it.
+
+```markdown
 ## Role
 
 [What this agent's focus is]

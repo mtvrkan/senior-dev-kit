@@ -171,7 +171,7 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
 
 ```text
 .claude/
-  agents/                      (17 agents)
+  agents/                      (18 files: 17 agents + ROUTING.md)
     academic-writer.md
     architect.md
     bug-hunter.md
@@ -182,6 +182,7 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
     performance-guard.md
     researcher.md
     reviewer.md
+    ROUTING.md
     security-guard.md
     security-scanner.md
     senior-engineer.md
@@ -189,7 +190,7 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
     test-engineer.md
     ui-fixer.md
     writer.md
-  skills/                      (32 skills)
+  skills/                      (33 skills)
     academic-write/SKILL.md
     api-design/SKILL.md
     api-versioning/SKILL.md

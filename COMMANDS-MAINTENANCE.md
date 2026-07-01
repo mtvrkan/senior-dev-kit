@@ -28,6 +28,20 @@ Commands are manually invoked prompt files (`/name`); they must be reviewed when
 
 ---
 
+## Naming and skill counterparts
+
+Most commands are the manual-invocation surface of a same-purpose skill; two have a different name than their skill:
+
+- `perf-check` → `skills/performance-check/`
+- `write-article` → `skills/article-write/`
+
+Two commands are standalone with no skill counterpart, by design — they're one-off audits/lookups, not auto-fireable playbooks:
+
+- `seo-check` — no `seo` skill exists; SEO guidance lives in `rules/100-web.md` and `agent_docs/seo-patterns.md`
+- `agents-guide` — a static lookup table over `agents/`, not a task
+
+---
+
 ## Review Cadence
 
 | Trigger | Action |

@@ -35,7 +35,7 @@ The version window is listed here so users can judge whether a preset is still a
 | **ORM** | `sequelize` | Sequelize 6.x | 2026-06-30 |
 | **ORM** | `mongoose` | Mongoose 8.x | 2026-06-30 |
 | **ORM** | `sqlalchemy` | SQLAlchemy 2.x | 2026-06-30 |
-| **Database** | `postgres` | PostgreSQL 15–17 | 2026-06-30 |
+| **Database** | `postgres` | PostgreSQL 15–17 | 2026-07-01 |
 | **Database** | `mysql` | MySQL 8.x | 2026-06-30 |
 | **Database** | `sqlite` | SQLite 3.x | 2026-06-30 |
 | **Database** | `mongodb` | MongoDB 7.x | 2026-06-30 |
@@ -60,6 +60,8 @@ The version window is listed here so users can judge whether a preset is still a
 | **AI** | `llm-integration` | Anthropic SDK 0.24+ | 2026-06-30 |
 | **Generic** | `fallback` | Stack-agnostic fallback | 2026-06-30 |
 | **Generic** | `monorepo` | Turborepo 2.x / Nx 18+ | 2026-06-30 |
+
+All 49 presets share the same "Last Reviewed" date because they were reviewed together for the v1.0.0 launch — this is expected and not a sign of neglect. Going forward, update only the row(s) for the preset(s) you actually touch; do not bulk-refresh the whole table on unrelated changes, or the cohort will keep re-forming and every preset will flag `stale-check` on the same day each cycle.
 
 ---
 

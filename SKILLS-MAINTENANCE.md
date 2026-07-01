@@ -1,6 +1,6 @@
 # Skills Maintenance Policy
 
-This document tracks review dates for the 32 skills in `skills/`.
+This document tracks review dates for the 33 skills in `skills/`.
 Skills are slash-command-style, auto-invocable playbooks; they must be reviewed when:
 
 - The skill's `allowed-tools` no longer matches what its steps actually need
@@ -19,6 +19,7 @@ Skills are slash-command-style, auto-invocable playbooks; they must be reviewed 
 | `api-versioning` | Breaking API changes, new API versions, deprecation paths | 2026-07-01 |
 | `article-write` | Articles, blog posts, technical content | 2026-07-01 |
 | `bug-fix` | Localized bugs, runtime errors, failing tests | 2026-07-01 |
+| `code-audit` | Codebase-wide tech debt/quality scan — god files, dead code, duplication | 2026-07-01 |
 | `code-review` | Diff review for bugs, regressions, security, missing tests | 2026-07-01 |
 | `data-modeling` | Entity/relation/document design before implementation | 2026-07-01 |
 | `db-change` | Schema/model/query design phase (hands off to `migration-review`) | 2026-07-01 |

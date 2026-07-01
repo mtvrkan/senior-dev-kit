@@ -67,7 +67,7 @@ Or run `SETUP.md` in Claude Code which auto-generates it.
 
 ---
 
-### FAIL — agent count is 16, expected 17
+### FAIL — agent count is not 18 (17 agents + `ROUTING.md`)
 
 One agent file was not copied. Re-copy the agents folder:
 
@@ -83,7 +83,7 @@ Then re-run VERIFY.md.
 
 ---
 
-### FAIL — skill count is less than 32
+### FAIL — skill count is less than 33
 
 You may have an older installation. Re-copy the skills folder:
 

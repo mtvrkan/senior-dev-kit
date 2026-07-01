@@ -15,8 +15,8 @@ KIT ≠ PROJECT. KIT is this folder, PROJECT is a separate project.
 
 Sets up in PROJECT:
 
-- 17 subagent files → `PROJECT/.claude/agents/`
-- 32 skill directories → `PROJECT/.claude/skills/`
+- 17 subagent files + `ROUTING.md` (18 files total) → `PROJECT/.claude/agents/`
+- 33 skill directories → `PROJECT/.claude/skills/`
 - 12 slash command files → `PROJECT/.claude/commands/`
 - Security rules → `PROJECT/.claude/settings.json`
 - Full stack rules → `PROJECT/.claude/stack-rules.md`
@@ -136,7 +136,7 @@ Use this list in Step 4b. Now proceed to Step 2.
 
 ### 2a — Copy agent files
 
-Create `PROJECT/.claude/agents/` directory. Read the following 17 files from `KIT/agents/` and write to `PROJECT/.claude/agents/`:
+Create `PROJECT/.claude/agents/` directory. Read the following 17 agent files from `KIT/agents/` and write to `PROJECT/.claude/agents/`:
 
 ```text
 academic-writer.md, architect.md, bug-hunter.md, db-guard.md,
@@ -146,13 +146,15 @@ security-guard.md, security-scanner.md, senior-engineer.md,
 strategist.md, test-engineer.md, ui-fixer.md, writer.md
 ```
 
+Also copy `KIT/agents/ROUTING.md` to `PROJECT/.claude/agents/ROUTING.md` — it is a routing reference, not an agent, so `PROJECT/.claude/agents/` ends up with 18 files total (17 agents + ROUTING.md).
+
 ### 2b — Copy skill directories
 
-Create `PROJECT/.claude/skills/` directory. Read the following 32 subdirectories from `KIT/skills/` and write to `PROJECT/.claude/skills/` (each subdirectory contains `SKILL.md`):
+Create `PROJECT/.claude/skills/` directory. Read the following 33 subdirectories from `KIT/skills/` and write to `PROJECT/.claude/skills/` (each subdirectory contains `SKILL.md`):
 
 ```text
 academic-write, api-design, api-versioning, article-write, bug-fix,
-code-review, data-modeling, db-change, deep-research, dep-check,
+code-audit, code-review, data-modeling, db-change, deep-research, dep-check,
 docs-update, env-audit, feature-build, feature-plan, from-scratch,
 llm-integration, migration-review, monorepo-task, new-page, new-screen,
 performance-check, plan-first, refactor-safe, release-check, release-gate,
@@ -383,7 +385,7 @@ export CLAUDE_CODE_SUBAGENT_MODEL=claude-haiku-4-5-20251001  # default for anony
 Provide a brief summary containing:
 
 - Detected stack and selected presets
-- Installed file counts: `[17 agents, 32 skills, 12 commands, 11 rules, 15 agent_docs]`
+- Installed file counts: `[17 agents, 33 skills, 12 commands, 11 rules, 15 agent_docs]`
 - If monorepo: how many subproject CLAUDE.md created
 - If security templates installed: pre-commit enable command
 - First use: open project in Claude Code, converse normally — routing is automatic

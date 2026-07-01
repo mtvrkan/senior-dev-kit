@@ -25,23 +25,25 @@ PROJECT/.claude/stack-rules.md
 ## 2 — Agent Count
 
 Count the `.md` files in `PROJECT/.claude/agents/`.
-Expected: **17**
+Expected: **18** (17 agents + `ROUTING.md`, which is a routing reference, not an agent)
 
-Expected names:
+Expected agent names (17):
 academic-writer.md, architect.md, bug-hunter.md, db-guard.md, devops-guard.md,
 docs-writer.md, migration-guard.md, performance-guard.md, researcher.md,
 reviewer.md, security-guard.md, security-scanner.md, senior-engineer.md,
 strategist.md, test-engineer.md, ui-fixer.md, writer.md
+
+Plus `ROUTING.md` (decision tree reference, not counted as an agent).
 
 ---
 
 ## 3 — Skill Count
 
 Count the `SKILL.md` files in `PROJECT/.claude/skills/`.
-Expected: **32**
+Expected: **33**
 
 Expected subdirectories:
-academic-write, api-design, api-versioning, article-write, bug-fix, code-review,
+academic-write, api-design, api-versioning, article-write, bug-fix, code-audit, code-review,
 data-modeling, db-change, deep-research, dep-check, docs-update, env-audit,
 feature-build, feature-plan, from-scratch, llm-integration, migration-review,
 monorepo-task, new-page, new-screen, performance-check, plan-first, refactor-safe,
