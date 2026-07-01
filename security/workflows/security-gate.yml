@@ -30,7 +30,8 @@ jobs:
     name: Semgrep SAST
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep@sha256:bacb1190716dab2b1708dc63c5bf11f6014c16511e5117f83592acbc5530087a  # 1.68.0 — pin: update via `docker pull semgrep/semgrep:latest && docker inspect --format='{{index .RepoDigests 0}}'`
+      # pin: update via `docker pull semgrep/semgrep:latest && docker inspect --format='{{index .RepoDigests 0}}'`
+      image: semgrep/semgrep@sha256:bacb1190716dab2b1708dc63c5bf11f6014c16511e5117f83592acbc5530087a  # 1.68.0
     if: github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -58,7 +59,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [javascript, python]  # adjust to your stack
+        # CodeQL-supported languages used by this kit's presets: javascript (incl. TS),
+        # python, go, java (incl. kotlin), ruby, csharp, swift. Add/remove to match your stack.
+        # Rust has no CodeQL extractor — use `cargo audit` + `cargo clippy` instead (see rust-api preset).
+        language: [javascript, python]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 

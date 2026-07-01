@@ -13,3 +13,16 @@ updates:
     labels:
       - "dependencies"
       - "ci"
+
+  # This kit's own devDependencies (typescript, @types/node — see package.json)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"

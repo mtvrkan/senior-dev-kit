@@ -50,10 +50,12 @@ paths = [
   '''\.secrets\.baseline''',
 ]
 regexes = [
-  # Test files with fake credentials
-  '''(test|spec|mock|fixture|fake).*password''',
-  # Common placeholder values
-  '''(?i)(example|sample|dummy|placeholder|your[-_]key[-_]here)''',
+  # Common placeholder values only — anchored so the placeholder word must BE the
+  # assigned value (immediately after = or :, with nothing else trailing but a
+  # comment/comma), never merely "appears somewhere on the line". A wrapper like
+  # `^.*(word).*$` is equivalent to bare `(word)` and would still allowlist a real
+  # secret sitting on the same line as an unrelated "test"/"example" comment.
+  '''(?i)^\s*[\w.-]*\s*[=:]\s*['"]?(example|sample|dummy|placeholder|your[-_]key[-_]here)[\w.-]*['"]?\s*,?\s*(#.*)?$''',
 ]
 
 # Scan configuration
