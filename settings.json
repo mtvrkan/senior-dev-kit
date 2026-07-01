@@ -27,7 +27,8 @@
       "Bash(curl * | bash)",
       "Bash(wget * -O- | bash)",
       "Bash(npx --yes *)",
-      "Bash(pip install * --break-system-packages)"
+      "Bash(pip install * --break-system-packages)",
+      "Bash(pip install --break-system-packages *)"
     ]
   },
   "env": {
