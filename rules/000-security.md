@@ -54,7 +54,7 @@ Run silently. If any check fires: STOP → flag → propose fix → continue.
 - Pin ALL GitHub Actions to full commit SHA — never mutable tags (enforcement active Aug 2025)
   `uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2`
 - Use OIDC for cloud auth (AWS/GCP/Azure) — never long-lived secrets in Actions secrets
-- `npm ci --frozen-lockfile` in CI (never `npm install`)
+- `npm ci` in CI (never `npm install`) — `ci` already fails on a lockfile/manifest mismatch, no flag needed; `--frozen-lockfile` is a Yarn/pnpm flag, not npm's (npm warns "Unknown cli config" today and will hard-error in a future major version)
 - Review lockfile `resolved` / `integrity` field changes in PRs (lockfile injection vector)
 - New packages published <7 days ago: verify before adding
 - Socket.dev: use for npm supply chain malware detection when available
@@ -96,7 +96,7 @@ Recommended stack for .pre-commit-config.yaml:
 
 ## PROTECTED FILES — never read, modify, or reference in output
 
-.env · .env.* · *.pem · *.key · *.p12 · id_rsa · id_ed25519 · .ssh/
-serviceAccountKey.json · *firebase-adminsdk*.json · *serviceaccount*.json
-secrets/ · config/credentials.json · config/secrets.json · .secrets.baseline*
-*.lock · node_modules/ · dist/ · .next/
+`.env` · `.env.*` · `*.pem` · `*.key` · `*.p12` · `id_rsa` · `id_ed25519` · `.ssh/`
+`serviceAccountKey.json` · `*firebase-adminsdk*.json` · `*serviceaccount*.json`
+`secrets/` · `config/credentials.json` · `config/secrets.json` · `.secrets.baseline*`
+`*.lock` · `node_modules/` · `dist/` · `.next/`

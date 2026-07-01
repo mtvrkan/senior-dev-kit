@@ -17,7 +17,7 @@ Go errors are values — handle them explicitly at every call site.
 result, _ := db.Query(ctx, query, args...)
 
 // RIGHT: explicit handling
-result, err := db.QueryRow(ctx, query, userID).Scan(&user.ID, &user.Email)
+err := db.QueryRow(ctx, query, userID).Scan(&user.ID, &user.Email)
 if err != nil {
     if errors.Is(err, pgx.ErrNoRows) {
         return nil, ErrUserNotFound

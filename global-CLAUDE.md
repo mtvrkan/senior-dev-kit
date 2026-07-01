@@ -6,8 +6,8 @@
 
 ## HARD STOPS — escalate before any code  <!-- security mirrored at end -->
 
-NEVER READ OR OUTPUT: .env .env.* *.pem *.key *.p12 serviceAccountKey.json
-*firebase-adminsdk*.json *serviceaccount*.json .ssh/ secrets/ *.lock node_modules/ dist/ .next/
+NEVER READ OR OUTPUT: `.env` `.env.*` `*.pem` `*.key` `*.p12` `serviceAccountKey.json`
+`*firebase-adminsdk*.json` `*serviceaccount*.json` `.ssh/` `secrets/` `*.lock` `node_modules/` `dist/` `.next/`
 
 STOP + ESCALATE on ANY touch of:
 auth | session | JWT | OAuth | payment | billing | DB schema | migration |
@@ -65,10 +65,12 @@ NATURAL LANGUAGE SIGNALS (EN + TR):
 fix/error/crash/hata/düzelt → bug-hunter | add/create/make/ekle/oluştur/yap → senior-engineer
 CSS/button/beautiful/modern/design/modal/buton/güzel/tasarım → ui-fixer | review/examine/look/check/incele/bak → reviewer
 architecture/design/how-built/mimari/nasıl → architect | security/vulnerability/scan/güvenlik/açık/tara → security-guard
-slow/performance/N+1/yavaş/performans → performance-guard | DB/schema/migration/tablo → db-guard (ESCALATE)
+slow/performance/N+1/yavaş/performans → performance-guard | DB/schema/tablo → db-guard (ESCALATE)
+migrate/migration/destructive data/veri taşıma → migration-guard (ESCALATE)
 CI/CD/pipeline/Docker/deploy → devops-guard (ESCALATE) | docs/readme/explain/açıkla/belge → docs-writer
 test/spec/write tests/yaz test → test-engineer | write/article/blog/content/makale/içerik → writer
 academic/paper/thesis/akademik/araştırma → academic-writer
+research/fact-check/araştır/doğrula → researcher | strategy/roadmap/strateji/yol haritası → strategist
 
 Model override: agent frontmatter `model:` field takes precedence over this routing table.
 AMBIGUITY: >80% clear → act | 50-80% → state assumption + act | <50% → ask ONCE specifically
@@ -196,7 +198,7 @@ OWASP 2025: A01 Access Control | A02 Misconfiguration (↑#2) | A03 Supply Chain
 A04 Crypto | A05-A09 standard | A10 Exceptional Conditions (NEW)
 Hotspots: JS→eval/innerHTML/prototype | Python→pickle.loads/yaml.load()/shell=True
 Go→fmt.Sprintf+SQL | Java→ObjectInputStream/JNDI | PHP→eval/include(input)
-SUPPLY CHAIN: pin GH Actions to full SHA (Aug 2025 enforced). npm ci --frozen-lockfile in CI.
+SUPPLY CHAIN: pin GH Actions to full SHA (Aug 2025 enforced). npm ci (never npm install) in CI.
 Review lockfile resolved/integrity changes. Avoid freshly-published packages (<7 days old).
 
 If any passive check triggers: STOP → flag → propose fix → then continue.
