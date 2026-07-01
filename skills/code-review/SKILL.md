@@ -3,6 +3,7 @@ name: code-review
 description: Use to review diffs without editing code. Focus on bugs, regressions, security risks, data loss, missing validation, missing tests, and performance risks.
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically after meaningful changes or when the user asks for review.
+argument-hint: "[files or diff scope (optional — defaults to recent changes)]"
 ---
 
 # code-review

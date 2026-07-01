@@ -3,6 +3,7 @@ name: feature-build
 description: Use for scoped medium feature implementation after task is clear. Prefer one small diff and existing project patterns.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use automatically for scoped feature implementation after risk is low/medium and scope is clear.
+argument-hint: "[feature description]"
 ---
 
 # feature-build

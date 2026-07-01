@@ -3,6 +3,7 @@ name: docs-update
 description: Use for README, setup instructions, changelog, API docs, and short documentation updates.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use automatically for documentation-only changes.
+argument-hint: "[doc file or change to document]"
 ---
 
 # docs-update

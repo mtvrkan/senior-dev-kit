@@ -3,6 +3,7 @@ name: dep-check
 description: Use to audit dependencies for security vulnerabilities, outdated versions, paid-vs-free alternatives, and unnecessary bloat. Produces a prioritized action list.
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use before adding a new dependency, before a release, or when asked to audit packages.
+argument-hint: "[package name (optional — defaults to full audit)]"
 ---
 
 # dep-check

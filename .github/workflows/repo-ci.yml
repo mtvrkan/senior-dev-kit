@@ -109,6 +109,31 @@ jobs:
           }
           Write-Host "PSScriptAnalyzer: no issues found in install.ps1."
 
+  # ShellCheck/PSScriptAnalyzer only lint the installers; this matrix actually
+  # executes them end-to-end on both OSes. The windows leg pins the tests to
+  # Windows PowerShell 5.1 — the oldest shell install.ps1 must support.
+  install-e2e:
+    name: Install Script E2E (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: windows-latest
+            install-test-shell: powershell
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '22'
+
+      - name: Run installer end-to-end tests
+        env:
+          INSTALL_TEST_SHELL: ${{ matrix.install-test-shell }}
+        run: node --experimental-strip-types --test scripts/install.test.ts
+
   check-stale-presets:
     name: Check Stale Presets and Rules
     runs-on: ubuntu-latest

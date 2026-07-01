@@ -3,6 +3,7 @@ name: data-modeling
 description: Use for designing entities, relations, documents, indexes, SQL/NoSQL trade-offs, and ORM models before implementation.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use automatically for entity, relation, document, index, SQL/NoSQL, and ORM modeling decisions.
+argument-hint: "[entity or domain to model]"
 ---
 
 # data-modeling

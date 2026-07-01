@@ -3,6 +3,7 @@ name: new-page
 description: Use when building a brand-new admin panel page or screen from scratch in ANY web framework. Enforces design quality gates. Do NOT use for modifying existing pages — use ui-change instead.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use automatically when the task is to create a new page, route, or screen in the admin panel from scratch.
+argument-hint: "[page name or route]"
 ---
 
 # new-page

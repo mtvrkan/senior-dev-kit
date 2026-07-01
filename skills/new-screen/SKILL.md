@@ -3,6 +3,7 @@ name: new-screen
 description: Use when building a brand-new mobile screen, bottom sheet, or major UI section from scratch in Kotlin/Compose, Flutter, or Swift/SwiftUI. Enforces design quality gates. Do NOT use for modifying existing screens — use ui-change instead.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use automatically when the task is to create a new screen or major UI section in a mobile app from scratch.
+argument-hint: "[screen name]"
 ---
 
 # new-screen

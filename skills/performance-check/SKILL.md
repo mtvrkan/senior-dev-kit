@@ -3,6 +3,7 @@ name: performance-check
 description: Use for slow code, slow queries, bundle size, caching, N+1, render loops, memory, and latency issues.
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically for slow queries, bundle size, caching, render loops, memory, and latency issues.
+argument-hint: "[file, endpoint, or area to profile]"
 ---
 
 # performance-check

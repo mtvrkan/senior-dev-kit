@@ -3,6 +3,7 @@ name: bug-fix
 description: Use for localized bugs, runtime errors, white screens, failing tests, console errors, and regressions. Make the smallest safe fix.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use automatically for localized breakages, failing tests, regressions, runtime errors, and console errors.
+argument-hint: "[error message, stack trace, or failing test]"
 ---
 
 # bug-fix

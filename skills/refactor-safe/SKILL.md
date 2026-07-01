@@ -3,6 +3,7 @@ name: refactor-safe
 description: Use for safe refactors that preserve behavior. Keep diffs small and verification strong.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use automatically only for refactors that must preserve behavior.
+argument-hint: "[file or module to refactor]"
 ---
 
 # refactor-safe

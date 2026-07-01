@@ -3,6 +3,7 @@ name: release-check
 description: Use before release/deploy to check build, tests, migrations, env vars, changelog, and rollback notes.
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically for pre-release safety review, but do not deploy.
+argument-hint: "[version or release scope (optional)]"
 ---
 
 # release-check

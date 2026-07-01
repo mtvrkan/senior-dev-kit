@@ -179,6 +179,13 @@ Put the most specific preset's content into `.claude/stack-rules.md` and inline 
 
 ### Skills (33)
 
+Skills fire two ways: most are **auto-invoked** when their `description`
+matches the task (many are also wired into agents via the agent's `skills:`
+field), while some are **manual-only** — invoked as `/skill-name` and marked
+`disable-model-invocation: true` (e.g. `smart-task`, `plan-first`,
+`safe-review`, `release-gate`). A skill not referenced by any agent is
+intentional, not orphaned: it is invoked directly.
+
 **Application:**
 `feature-build`, `feature-plan`, `bug-fix`, `refactor-safe`, `ui-change`, `new-page`, `new-screen`, `from-scratch`
 

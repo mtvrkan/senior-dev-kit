@@ -3,6 +3,7 @@ name: ui-change
 description: Use for small UI changes: modal, button, responsive layout, component styling, Tailwind/CSS. Do not use for backend, auth, database, or payment.
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use automatically only for small frontend UI edits. Avoid backend, auth, DB, payment, migrations, secrets, and CI.
+argument-hint: "[component and change description]"
 ---
 
 # ui-change

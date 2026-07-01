@@ -3,6 +3,7 @@ name: security-review
 description: Use for auth, permissions, payment, secrets, input validation, session/token handling, SQL/NoSQL injection, and sensitive user data.
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically for auth, authorization, payment, validation, injection, secrets, sessions, tokens, and sensitive data.
+argument-hint: "[files or area to review (optional — defaults to pending changes)]"
 ---
 
 # security-review

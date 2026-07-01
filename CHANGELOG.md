@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- `.github/workflows/repo-ci.yml` — `install-e2e` matrix job that executes the installer test suite on ubuntu-latest and windows-latest; the windows leg pins tests to Windows PowerShell 5.1 via the new `INSTALL_TEST_SHELL` env override in `scripts/install.test.ts`
+- `presets/README.md` — documents how presets activate (installer `--preset` / `--detect`, manual copy, SETUP.md), the `CLAUDE.md` + `compact.md` structure, and the purpose of `generic/fallback` and `generic/monorepo`
+- 18 skills gained `argument-hint` frontmatter so direct `/skill-name` invocation shows what `$ARGUMENTS` expects (api-design, bug-fix, code-review, data-modeling, db-change, dep-check, docs-update, feature-build, feature-plan, migration-review, new-page, new-screen, performance-check, refactor-safe, release-check, security-review, test-writer, ui-change)
+
+### Fixed
+
+- `agents/ROUTING.md` — the db-guard → migration-guard hand-off read as both mandatory and optional; now explicit: mandatory forward (schema-design requests always reach migration-guard), optional reverse (a pure migration review runs migration-guard standalone)
+- `scripts/check-stale.ts` — a review-table row that fails the expected `| \`name\` | ... | YYYY-MM-DD |` format is now reported as malformed instead of being silently skipped and misreported as an untracked item
+- `README.md` — Skills section now explains auto-invoked vs manual-only (`disable-model-invocation`) skills, so skills not referenced by any agent aren't mistaken for orphans
+
+---
+
 ## [1.0.1] — 2026-07-01
 
 ### Fixed

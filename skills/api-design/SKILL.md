@@ -3,6 +3,7 @@ name: api-design
 description: Use for designing REST/GraphQL API contracts before implementing. Produces endpoint spec, DTO shapes, error codes, auth requirements. No code edits.
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically before implementing any new API endpoint or when API shape is unclear.
+argument-hint: "[endpoint or resource to design]"
 ---
 
 # api-design

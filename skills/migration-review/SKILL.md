@@ -3,6 +3,7 @@ name: migration-review
 description: Use for migration files, destructive changes, production data risk, rollback strategy, and backward compatibility. Deployment-safety phase that follows db-change once a migration file exists.
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically for migrations, destructive DB changes, backfills, rollback, and production data risk.
+argument-hint: "[migration file or change]"
 ---
 
 # migration-review

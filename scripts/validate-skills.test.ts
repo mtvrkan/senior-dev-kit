@@ -470,6 +470,39 @@ describe('check-stale integration', () => {
     assert.ok(threw, 'expected non-zero exit when skills are not in maintenance table')
   })
 
+  test('check-stale.ts flags a review-table row that no longer matches the expected format', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'stale-'))
+    const badFile = join(tmp, 'PRESET-MAINTENANCE.md')
+    writeFileSync(badFile, [
+      '## Version Support Matrix',
+      '',
+      '| Category | Preset | Supported | Last Reviewed |',
+      '|----------|--------|-----------|---------------|',
+      '| **Web** | `nextjs-saas` | Next.js 15 | 2026-06-30 |',
+      // date and stack columns swapped — must be reported as malformed, not silently skipped
+      '| **Web** | `react-vite` | 2026-06-30 | Vite 6 |',
+    ].join('\n'))
+    let threw = false
+    try {
+      execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/check-stale.ts'], {
+        cwd: new URL('..', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'),
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, STALE_AFTER_DAYS: '365', MAINTENANCE_FILE: badFile },
+      })
+    } catch (err) {
+      threw = true
+      const e = err as { stderr?: string; stdout?: string }
+      const out = (e.stderr ?? '') + (e.stdout ?? '')
+      assert.ok(
+        out.includes('react-vite') && out.includes('does not match'),
+        `expected react-vite flagged as a malformed row, got: ${out}`
+      )
+    }
+    rmSync(tmp, { recursive: true })
+    assert.ok(threw, 'expected non-zero exit for a review-table row that fails to parse')
+  })
+
   test('check-stale.ts detects an orphaned maintenance table row (tracked but not on disk)', () => {
     const tmp = mkdtempSync(join(tmpdir(), 'stale-'))
     const rulesFile = join(tmp, 'RULES-MAINTENANCE.md')

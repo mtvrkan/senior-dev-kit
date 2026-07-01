@@ -59,16 +59,20 @@ Each guard's plan is shown before the next guard starts — never skip straight 
 
 ### Guard sequencing — DB schema changes always pass through both guards
 
-A "DB schema" request never stops at db-guard. db-guard always hands its approved plan to migration-guard for deployment/rollback safety review before senior-engineer implements — even for additive-only changes (new nullable column, new table). This is db-guard's own hard constraint, not optional:
+The db-guard → migration-guard hand-off is **mandatory in the forward direction and optional in reverse**:
+
+- **Forward (mandatory):** any request that starts as a schema-design question never stops at db-guard. db-guard always hands its approved plan to migration-guard for deployment/rollback safety review before senior-engineer implements — even for additive-only changes (new nullable column, new table). This is db-guard's own hard constraint, not optional.
+- **Reverse (not required):** migration-guard never needs a prior db-guard pass. If the request enters the chain at migration-guard (e.g. "review this migration file" with no schema-design question), migration-guard runs standalone.
 
 ```text
 User: "add a column to users" / "add an index" / "drop the legacy_status column"
   → db-guard (schema design: additive-first, index analysis, risk classification)
         → migration-guard (deployment order, rollback procedure, zero-downtime staging)
               → senior-engineer (implements only after BOTH guards approve)
-```
 
-If the user enters mid-chain (e.g. explicitly asks for "migration-guard" on a migration file with no schema-design question), migration-guard runs standalone — it does not require a prior db-guard pass.
+User: "review this migration file" (migration exists, no schema-design question)
+  → migration-guard alone (standalone review — no db-guard pass required)
+```
 
 ---
 

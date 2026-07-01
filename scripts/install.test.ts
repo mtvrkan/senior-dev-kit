@@ -17,7 +17,10 @@ function hasCommand(cmd: string, args: string[]): boolean {
 }
 
 const HAS_BASH = hasCommand('bash', ['--version'])
-const PWSH = ['pwsh', 'powershell'].find(exe => hasCommand(exe, ['-NoProfile', '-Command', 'exit 0'])) ?? null
+// INSTALL_TEST_SHELL pins the PowerShell binary (e.g. 'powershell' to force
+// Windows PowerShell 5.1 in CI); default prefers pwsh, then powershell.
+const PWSH_CANDIDATES = process.env.INSTALL_TEST_SHELL ? [process.env.INSTALL_TEST_SHELL] : ['pwsh', 'powershell']
+const PWSH = PWSH_CANDIDATES.find(exe => hasCommand(exe, ['-NoProfile', '-Command', 'exit 0'])) ?? null
 
 function runInstallSh(args: string[], home: string, input: string) {
   return spawnSync('bash', [join(REPO_ROOT, 'install.sh'), ...args], {

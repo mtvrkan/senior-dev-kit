@@ -40,6 +40,35 @@ const MS_PER_DAY = 86_400_000
 // Example:  | **Web** | `nextjs-saas` | Next.js 14–15 | 2026-06-30 |
 const ROW_RE = /\|\s*`([a-zA-Z0-9-]+)`\s*\|[^|]+\|\s*(\d{4}-\d{2}-\d{2})\s*\|/g
 
+// A row inside a "Last Reviewed" table that fails ROW_RE (moved date column,
+// missing backticks, extra pipes) would otherwise be skipped silently and its
+// item misreported as merely untracked. Scan review tables line-by-line and
+// flag non-parsing rows as malformed. Other tables in the same files
+// (e.g. Trigger/Action) carry no review dates and are ignored.
+function flagMalformedReviewRows(fileContent: string, fileLabel: string): void {
+  const rowLineRe = new RegExp(ROW_RE.source)
+  let inReviewTable = false
+  for (const rawLine of fileContent.split('\n')) {
+    const line = rawLine.trim()
+    if (!line.startsWith('|')) {
+      inReviewTable = false
+      continue
+    }
+    if (/last reviewed/i.test(line)) {
+      inReviewTable = true
+      continue
+    }
+    if (!inReviewTable) continue
+    if (/^\|[\s|:-]*\|$/.test(line)) continue // separator row
+    if (!rowLineRe.test(line)) {
+      const name = line.match(/`([a-zA-Z0-9-]+)`/)
+      malformedDates.push(
+        `${name ? name[1] : `'${line.slice(0, 60)}'`} (${fileLabel}) — row does not match the expected table format (| \`name\` | ... | YYYY-MM-DD |)`
+      )
+    }
+  }
+}
+
 interface StaleEntry {
   name: string
   dateStr: string
@@ -60,6 +89,8 @@ const orphaned: string[] = []
 const malformedDates: string[] = []
 let presetsChecked = 0
 const trackedPresets = new Set<string>()
+
+flagMalformedReviewRows(content, basename(MAINTENANCE_FILE))
 
 for (const match of content.matchAll(ROW_RE)) {
   const [, preset, dateStr] = match
@@ -117,6 +148,7 @@ function checkFlatMaintenance(maintenanceFile: string, dirLabel: string, entries
   }
 
   const fileContent = readFileSync(maintenanceFile, 'utf8')
+  flagMalformedReviewRows(fileContent, fileLabel)
   const tracked = new Set<string>()
   let checked = 0
 
@@ -296,11 +328,11 @@ if (countMismatches.length > 0) {
 }
 
 if (malformedDates.length > 0) {
-  console.error(`\n✗ ${malformedDates.length} malformed "Last Reviewed" date(s) — staleness cannot be verified:\n`)
+  console.error(`\n✗ ${malformedDates.length} malformed maintenance table row(s)/date(s) — staleness cannot be verified:\n`)
   for (const m of malformedDates) {
     console.error(`  ✗ ${m}`)
   }
-  console.error(`\nFix the date format to YYYY-MM-DD.`)
+  console.error(`\nFix the row to match: | \`name\` | ... | YYYY-MM-DD |`)
   exitCode = 1
 }
 

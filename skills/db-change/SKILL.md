@@ -3,6 +3,7 @@ name: db-change
 description: Use for database schema/model/query changes involving SQL, NoSQL, ORM, relations, indexes, and data safety. Design/planning phase — once a migration file is produced, hand off to migration-review for deployment safety.
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically when schema, ORM models, queries, indexes, constraints, transactions, or data shape changes.
+argument-hint: "[schema change to plan]"
 ---
 
 # db-change

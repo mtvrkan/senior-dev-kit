@@ -3,6 +3,7 @@ name: feature-plan
 description: Use before implementing large, multi-file, architecture, DB, auth, payment, or unclear features. Produces a detailed plan; no code.
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically for large, unclear, risky, or multi-file features that need a plan before code.
+argument-hint: "[feature to plan]"
 ---
 
 # feature-plan
