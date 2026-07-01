@@ -26,6 +26,19 @@ const VALID_MODELS = new Set([
   'claude-fable-5',
 ])
 const SKILL_BODY_MAX_LINES = 20
+// Tool names as they appear in `allowed-tools:` (skills) / `tools:` (agents) — comma-separated,
+// not a YAML list. Catches copy/paste typos (e.g. "Wrte") that would otherwise silently
+// pass since these fields are free-text as far as the frontmatter parser is concerned.
+const VALID_TOOLS = new Set(['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash', 'Agent', 'WebFetch', 'WebSearch'])
+
+function validateToolList(rel: string, source: string, value: string): void {
+  for (const tool of value.split(',').map(t => t.trim()).filter(Boolean)) {
+    if (!VALID_TOOLS.has(tool)) {
+      console.error(`  ✗ ${rel} — unknown tool '${tool}' in ${source} (valid: ${[...VALID_TOOLS].join(', ')})`)
+      errors++
+    }
+  }
+}
 
 let errors = 0
 let warnings = 0
@@ -62,6 +75,12 @@ function validateSkill(filePath: string): void {
     console.error(`  ✗ ${rel} — invalid model id: '${fm.model}' (use full model id, e.g. claude-sonnet-5)`)
     errors++
     ok = false
+  }
+
+  if (fm['allowed-tools']) {
+    const before = errors
+    validateToolList(rel, 'allowed-tools', fm['allowed-tools'])
+    if (errors > before) ok = false
   }
 
   for (const dupeKey of findDuplicateFrontmatterKeys(content)) {
@@ -215,6 +234,11 @@ if (existsSync(AGENTS_DIR)) {
       agentFmErrors++
       errors++
       agentOk = false
+    }
+    if (fm.tools) {
+      const before = errors
+      validateToolList(`agents/${file}`, 'tools', fm.tools)
+      if (errors > before) { agentFmErrors += errors - before; agentOk = false }
     }
     for (const dupeKey of findDuplicateFrontmatterKeys(content)) {
       console.error(`  ✗ agents/${file} — duplicate frontmatter key: '${dupeKey}'`)

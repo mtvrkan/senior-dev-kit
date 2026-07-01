@@ -20,11 +20,22 @@ export interface BrokenLink extends LinkRef {
   file: string
 }
 
+const FENCE_RE = /^\s*(`{3,}|~{3,})/
+
 export function extractLinks(content: string): LinkRef[] {
   const links: LinkRef[] = []
   const lines = content.split(/\r?\n/)
+  let inFence = false
   lines.forEach((lineText, i) => {
-    for (const match of lineText.matchAll(LINK_RE)) {
+    if (FENCE_RE.test(lineText)) {
+      inFence = !inFence
+      return
+    }
+    if (inFence) return
+    // Strip inline code spans so a link shown as a literal example (e.g. docs
+    // illustrating markdown syntax) isn't treated as a real reference to check.
+    const withoutInlineCode = lineText.replace(/`[^`]*`/g, '')
+    for (const match of withoutInlineCode.matchAll(LINK_RE)) {
       links.push({ target: match[1].trim(), line: i + 1 })
     }
   })

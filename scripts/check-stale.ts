@@ -30,11 +30,15 @@ const AGENT_DOCS_DIR = join(__dirname, '..', 'agent_docs')
 const EXAMPLES_DIR = join(__dirname, '..', 'examples')
 const COMMANDS_DIR = join(__dirname, '..', 'commands')
 const STALE_DAYS = parseInt(process.env.STALE_AFTER_DAYS ?? '365', 10)
+if (Number.isNaN(STALE_DAYS) || STALE_DAYS <= 0) {
+  console.error(`✗ STALE_AFTER_DAYS must be a positive integer, got: '${process.env.STALE_AFTER_DAYS}'`)
+  process.exit(1)
+}
 const MS_PER_DAY = 86_400_000
 
 // Matches rows with a backtick-quoted name and a YYYY-MM-DD date.
 // Example:  | **Web** | `nextjs-saas` | Next.js 14–15 | 2026-06-30 |
-const ROW_RE = /\|\s*`([a-z0-9-]+)`\s*\|[^|]+\|\s*(\d{4}-\d{2}-\d{2})\s*\|/g
+const ROW_RE = /\|\s*`([a-zA-Z0-9-]+)`\s*\|[^|]+\|\s*(\d{4}-\d{2}-\d{2})\s*\|/g
 
 interface StaleEntry {
   name: string
@@ -129,6 +133,11 @@ function checkFlatMaintenance(maintenanceFile: string, dirLabel: string, entries
     if (daysSince > STALE_DAYS) {
       stale.push({ name, dateStr, daysSince })
     }
+  }
+
+  if (checked === 0 && entries.length > 0) {
+    console.error(`✗ ${fileLabel} — 0 rows matched the expected table format (| \`name\` | ... | YYYY-MM-DD |) despite ${entries.length} ${dirLabel} on disk. The table format likely changed — fix it rather than trusting the untracked list below.`)
+    malformedDates.push(`${fileLabel} — table format unrecognized, 0 rows parsed`)
   }
 
   const entrySet = new Set(entries)
