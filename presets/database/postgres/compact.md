@@ -1,5 +1,6 @@
 - Always parameterized queries — never string interpolation in SQL (`WHERE id = ${id}` → injection risk)
 - Migrations: prefer additive (nullable column, new table); destructive (DROP/RENAME) requires multi-step plan + backup
+- Live tables: `CREATE INDEX CONCURRENTLY` (never bare `CREATE INDEX`); new constraints via `ADD CONSTRAINT ... NOT VALID` + `VALIDATE CONSTRAINT` — avoids blocking writes
 - Indexes: add based on real query patterns (`WHERE`, `ORDER BY`, `JOIN`); every FK column needs an index
 - Concurrency: `SELECT ... FOR UPDATE` or advisory locks for counters/quotas/inventory; transactions for multi-step writes
 - Schema changes: go through db-guard skill — never create migrations as side effect of unrelated work

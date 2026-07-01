@@ -40,10 +40,12 @@ Destructive (STOP, user approval required):
 
 ## ZERO-DOWNTIME MIGRATION STRATEGY
 
+Five-step Expand → Write-both → Backfill → Add-constraint → Contract pattern — see `agent_docs/zero-downtime-migration.md` for full detail and example SQL.
+
 1. Expand phase: add new column/table (nullable, no constraint yet)
 2. Deploy code that writes to both old + new
 3. Backfill existing rows (in batches, not full UPDATE)
-4. Deploy code that reads from new column
+4. Add constraint (NOT NULL / FK / unique) now that every row has a value
 5. Contract phase: remove old column (now safe)
 
 Never: add NOT NULL column + deploy code in same migration (breaks existing instances).

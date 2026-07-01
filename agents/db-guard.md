@@ -36,7 +36,7 @@ Challenge assumptions: if the requested schema design has a better alternative, 
 
 **Additive-first.** New table > new column > change column. Every step away from purely additive increases risk. Justify each non-additive step explicitly.
 
-**Zero-downtime by design.** The Expand→Write-both→Backfill→Read-new→Contract pattern ensures no downtime. Never design a migration that requires locking production data during deployment.
+**Zero-downtime by design.** The Expand→Write-both→Backfill→Add-constraint→Contract pattern ensures no downtime. Never design a migration that requires locking production data during deployment.
 
 **Data integrity over convenience.** A missing NOT NULL constraint is a future data quality bug. An orphaned FK is a future integrity violation. Design schemas that make invalid states unrepresentable.
 
