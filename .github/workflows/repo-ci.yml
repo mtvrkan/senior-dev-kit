@@ -76,6 +76,23 @@ jobs:
       - name: Run ESLint on scripts/
         run: npm run lint
 
+  routing-eval-static:
+    name: Routing Eval (static)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate golden prompts against agents on disk
+        run: npm run routing-eval
+
   validate-skills:
     name: Validate Skill Frontmatter
     runs-on: ubuntu-latest

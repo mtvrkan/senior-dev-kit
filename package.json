@@ -7,14 +7,35 @@
   "engines": {
     "node": ">=22.6.0"
   },
+  "bin": {
+    "senior-dev-kit": "bin/cli.mjs"
+  },
+  "files": [
+    "bin/",
+    "agents/",
+    "agent_docs/",
+    "commands/",
+    "examples/",
+    "hooks/",
+    "presets/",
+    "rules/",
+    "security/",
+    "skills/",
+    "install.sh",
+    "install.ps1",
+    "global-CLAUDE.md",
+    "settings-template.json",
+    "*.md"
+  ],
   "scripts": {
-    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/install.test.ts",
+    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/install.test.ts scripts/hooks.test.ts",
     "validate": "node --experimental-strip-types scripts/validate-skills.ts",
     "stale-check": "node --experimental-strip-types scripts/check-stale.ts",
     "link-check": "node --experimental-strip-types scripts/check-links.ts",
+    "routing-eval": "node --experimental-strip-types scripts/routing-eval.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint scripts/",
-    "check": "npm test && npm run validate && npm run stale-check && npm run link-check && npm run typecheck && npm run lint"
+    "check": "npm test && npm run validate && npm run stale-check && npm run link-check && npm run routing-eval && npm run typecheck && npm run lint"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

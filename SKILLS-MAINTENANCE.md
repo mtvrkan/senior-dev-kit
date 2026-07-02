@@ -32,6 +32,7 @@ Skills are slash-command-style, auto-invocable playbooks; they must be reviewed 
 | `feature-build` | Scoped medium feature implementation | 2026-07-02 |
 | `feature-plan` | Planning for large/multi-file/architecture features (no code) | 2026-07-02 |
 | `from-scratch` | New project bootstrap with phase gates | 2026-07-01 |
+| `kit-doctor` | Kit installation diagnosis — counts, settings, version drift | 2026-07-02 |
 | `llm-integration` | LLM/AI API integration, RAG, prompt engineering, tool use | 2026-07-01 |
 | `migration-review` | Migration deployment safety (follows `db-change`) | 2026-07-02 |
 | `monorepo-task` | Workspace-scoped task routing for monorepos | 2026-07-01 |

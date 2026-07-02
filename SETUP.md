@@ -16,8 +16,8 @@ KIT ≠ PROJECT. KIT is this folder, PROJECT is a separate project.
 Sets up in PROJECT:
 
 - 17 subagent files + `ROUTING.md` (18 files total) → `PROJECT/.claude/agents/`
-- 33 skill directories → `PROJECT/.claude/skills/`
-- 12 slash command files → `PROJECT/.claude/commands/`
+- 34 skill directories → `PROJECT/.claude/skills/`
+- 13 slash command files → `PROJECT/.claude/commands/`
 - Security rules → `PROJECT/.claude/settings.json`
 - Full stack rules → `PROJECT/.claude/stack-rules.md`
 - Compact routing file → `PROJECT/CLAUDE.md`
@@ -150,26 +150,27 @@ Also copy `KIT/agents/ROUTING.md` to `PROJECT/.claude/agents/ROUTING.md` — it 
 
 ### 2b — Copy skill directories
 
-Create `PROJECT/.claude/skills/` directory. Read the following 33 subdirectories from `KIT/skills/` and write to `PROJECT/.claude/skills/` (each subdirectory contains `SKILL.md`):
+Create `PROJECT/.claude/skills/` directory. Read the following 34 subdirectories from `KIT/skills/` and write to `PROJECT/.claude/skills/` (each subdirectory contains `SKILL.md`):
 
 ```text
 academic-write, api-design, api-versioning, article-write, bug-fix,
 code-audit, code-review, data-modeling, db-change, deep-research, dep-check,
 docs-update, env-audit, feature-build, feature-plan, from-scratch,
-llm-integration, migration-review, monorepo-task, new-page, new-screen,
-performance-check, plan-first, refactor-safe, release-check, release-gate,
-safe-review, security-review, security-scan, smart-task, strategy-plan,
-test-writer, ui-change
+kit-doctor, llm-integration, migration-review, monorepo-task, new-page,
+new-screen, performance-check, plan-first, refactor-safe, release-check,
+release-gate, safe-review, security-review, security-scan, smart-task,
+strategy-plan, test-writer, ui-change
 ```
 
 ### 2c — Copy command files
 
-Create `PROJECT/.claude/commands/` directory. Read the following 12 files from `KIT/commands/` and write:
+Create `PROJECT/.claude/commands/` directory. Read the following 13 files from `KIT/commands/` and write:
 
 ```text
-agents-guide.md, deep-research.md, dep-check.md, performance-check.md,
-plan-first.md, release-gate.md, safe-review.md, security-scan.md,
-seo-check.md, smart-task.md, strategy-plan.md, article-write.md
+agents-guide.md, article-write.md, deep-research.md, dep-check.md,
+kit-doctor.md, performance-check.md, plan-first.md, release-gate.md,
+safe-review.md, security-scan.md, seo-check.md, smart-task.md,
+strategy-plan.md
 ```
 
 ### 2d — Copy settings.json
@@ -385,7 +386,7 @@ export CLAUDE_CODE_SUBAGENT_MODEL=claude-haiku-4-5-20251001  # default for anony
 Provide a brief summary containing:
 
 - Detected stack and selected presets
-- Installed file counts: `[17 agents, 33 skills, 12 commands, 11 rules, 15 agent_docs]`
+- Installed file counts: `[17 agents, 34 skills, 13 commands, 11 rules, 15 agent_docs]`
 - If monorepo: how many subproject CLAUDE.md created
 - If security templates installed: pre-commit enable command
 - First use: open project in Claude Code, converse normally — routing is automatic

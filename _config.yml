@@ -1,0 +1,25 @@
+# GitHub Pages (Jekyll) — zero-build docs site straight from the repo markdown.
+# Enable: repo Settings → Pages → Source: "Deploy from a branch" → main / (root).
+# Every .md renders at its path (README.md → site root, INSTALL.md → /INSTALL, …).
+title: Senior Dev Kit
+description: Agent, skill and rule kit that gives Claude Code senior engineering team behavior.
+theme: jekyll-theme-cayman
+markdown: kramdown
+
+# Keep tooling and machine-only files out of the rendered site.
+exclude:
+  - node_modules/
+  - scripts/
+  - bin/
+  - eval/
+  - hooks/hooks.json
+  - package.json
+  - package-lock.json
+  - tsconfig.json
+  - eslint.config.js
+  - settings.json
+  - settings-template.json
+  - install.sh
+  - install.ps1
+  - .claude/
+  - .claude-plugin/

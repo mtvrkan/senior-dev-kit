@@ -190,12 +190,13 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
     test-engineer.md
     ui-fixer.md
     writer.md
-  skills/                      (33 skills)
+  skills/                      (34 skills)
     academic-write/SKILL.md
     api-design/SKILL.md
     api-versioning/SKILL.md
     article-write/SKILL.md
     bug-fix/SKILL.md
+    code-audit/SKILL.md
     code-review/SKILL.md
     data-modeling/SKILL.md
     db-change/SKILL.md
@@ -206,6 +207,7 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
     feature-build/SKILL.md
     feature-plan/SKILL.md
     from-scratch/SKILL.md
+    kit-doctor/SKILL.md
     llm-integration/SKILL.md
     migration-review/SKILL.md
     monorepo-task/SKILL.md
@@ -223,10 +225,11 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
     strategy-plan/SKILL.md
     test-writer/SKILL.md
     ui-change/SKILL.md
-  commands/                    (12 slash commands)
+  commands/                    (13 slash commands)
     agents-guide.md
     deep-research.md
     dep-check.md
+    kit-doctor.md
     performance-check.md
     plan-first.md
     release-gate.md

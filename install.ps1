@@ -178,6 +178,15 @@ Copy-Item -Path (Join-Path $ScriptDir "agent_docs\*") -Destination $dest -Recurs
 Verify-Copy (Join-Path $ScriptDir "agent_docs") $dest "agent_docs"
 Ok "agent_docs/ ($(Count-Files $dest) files)"
 
+# --- hooks (opt-in enforcement layer — copied but NOT activated; see hooks/README.md) ---
+Step "Copying hooks (opt-in — activate via settings.json, see hooks/README.md)..."
+$dest = Join-Path $ClaudeDir "hooks"
+Backup-DirIfExists $dest
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Copy-Item -Path (Join-Path $ScriptDir "hooks\*") -Destination $dest -Recurse -Force
+Verify-Copy (Join-Path $ScriptDir "hooks") $dest "hooks"
+Ok "hooks/ ($(Count-Files $dest) files) — opt-in, not active until wired into settings.json"
+
 # --- global-CLAUDE.md (when no project-specific preset is requested) ---
 if ($Preset -eq "") {
     Step "Copying global-CLAUDE.md..."

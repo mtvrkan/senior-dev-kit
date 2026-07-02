@@ -20,6 +20,7 @@ Commands are manually invoked prompt files (`/name`) with YAML frontmatter (`des
 | `article-write` | Manually trigger article/long-form content writing | 2026-07-02 |
 | `deep-research` | Manually trigger multi-source research on a topic | 2026-07-02 |
 | `dep-check` | Manually trigger a dependency CVE/license/outdated audit | 2026-07-02 |
+| `kit-doctor` | Diagnose a kit installation — counts, settings, version drift | 2026-07-02 |
 | `performance-check` | Manually trigger a performance issue analysis | 2026-07-02 |
 | `plan-first` | Manually force plan-first behavior before risky work | 2026-07-02 |
 | `release-gate` | Manually trigger a pre-release safety check | 2026-07-02 |

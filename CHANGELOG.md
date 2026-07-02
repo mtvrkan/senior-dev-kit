@@ -13,6 +13,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `hooks/` — deterministic enforcement layer: the `protected-paths.mjs` PreToolUse hook intercepts any Edit/Write/NotebookEdit into secrets, auth, payment, migration, or CI/IaC paths and downgrades it to an explicit permission prompt naming the responsible guard agent — a harness guarantee on top of the CLAUDE.md prompt-level hard stops. Fails open on unknown input, `.env.example`-style templates excluded, `SDK_ALLOW_PROTECTED=1` escape hatch, opt-in by design (installers copy it, never activate it); 22 behavior tests in `scripts/hooks.test.ts`; `hooks/hooks.json` wires it automatically in plugin installs
+- `.claude-plugin/` — Claude Code plugin + marketplace manifests, so the kit installs via `/plugin marketplace add` + `/plugin install` with commands/agents/skills/hooks registering automatically
+- `bin/cli.mjs` + package.json `bin`/`files` — `npx senior-dev-kit [--detect | --preset=<name>]` wrapper that picks the right installer per platform and forwards flags; installers stay the single source of truth
+- `eval/golden-prompts.json` + `scripts/routing-eval.ts` — routing behavior under test: 33 realistic TR+EN prompts pinned to expected agents. Static half (agents exist, every agent covered, no duplicates) runs in `npm run check` and a new repo-ci job; live half (`RUN_ROUTING_EVAL=1`) asks the model to route each prompt via the `claude` CLI and fails below the 90% threshold — manual/weekly via `.github/workflows/routing-eval.yml`
+- `skills/kit-doctor` + `commands/kit-doctor.md` — read-only installation diagnosis (component counts vs shipped, settings parse + deny-rule floor, hook wiring state, version drift, routing-table integrity) with a COMPONENT/EXPECTED/FOUND verdict table; counts across README/INSTALL/SETUP/VERIFY updated to 34 skills / 13 commands
+- `examples/with-vs-without-kit.md` — the same three requests (schema change, mobile CSS fix, "fix CSS in the login form") handled with and without the kit, labeled illustrative; examples count now 15
+- `README.tr.md` — full Turkish README with language switcher links in both directions
+- `.github/ISSUE_TEMPLATE/` — bug report (with kit-doctor output field) and preset request forms
+- `_config.yml` — zero-build GitHub Pages config (Cayman theme, tooling excluded) so the markdown docs render as a site by enabling Pages
+- `install.sh` / `install.ps1` — copy `hooks/` to `~/.claude/hooks/` (explicitly announced as opt-in, not activated); installer e2e tests assert the new directory
 - ESLint (flat config, typescript-eslint) for `scripts/` — new `npm run lint`, wired into `npm run check` and a new SHA-pinned `eslint` CI job; `devDependencies` gain `eslint`, `typescript-eslint`, `@eslint/js`
 - `scripts/validate-skills.test.ts` — output-format contract tests pinning the machine-greppable summary-line shapes of validate-skills.ts, check-stale.ts, and check-links.ts so a reworded summary is a deliberate change, not an accident
 - `*-MAINTENANCE.md` (all five) — a note above each review table explaining that the clustered 2026-06-30/07-01 dates are the v1.0–v1.0.1 release baseline (a real item-by-item review), with later edits staggering dates naturally
@@ -67,6 +77,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `INSTALL.md` — the expected-files tree claimed "33 skills" but listed only 32: `code-audit/SKILL.md` was missing from the tree (added in the code-audit release, never reflected here)
 - `scripts/lib/frontmatter.ts` / `scripts/lib/links.ts` / `scripts/validate-skills.ts` — a UTF-8 BOM (common when files are saved by Windows editors) no longer breaks validation: `parseFrontmatter` and `findDuplicateFrontmatterKeys` would misreport a BOM'd file as having no frontmatter, the link checker would miss a first-line heading as an anchor target, and the agent→skill cross-reference would silently skip a BOM'd agent file; all entry points now share a `stripBom` helper (regression test added)
 - `agents/ROUTING.md` — the db-guard → migration-guard hand-off read as both mandatory and optional; now explicit: mandatory forward (schema-design requests always reach migration-guard), optional reverse (a pure migration review runs migration-guard standalone)
 - `scripts/check-stale.ts` — a review-table row that fails the expected `| \`name\` | ... | YYYY-MM-DD |` format is now reported as malformed instead of being silently skipped and misreported as an untracked item

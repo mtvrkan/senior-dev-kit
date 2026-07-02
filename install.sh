@@ -191,6 +191,14 @@ cp -r "${SCRIPT_DIR}/agent_docs/." "${CLAUDE_DIR}/agent_docs/"
 verify_copy "${SCRIPT_DIR}/agent_docs" "${CLAUDE_DIR}/agent_docs" "agent_docs"
 print_ok "agent_docs/ ($(count_files "${CLAUDE_DIR}/agent_docs") files)"
 
+# --- hooks (opt-in enforcement layer — copied but NOT activated; see hooks/README.md) ---
+print_step "Copying hooks (opt-in — activate via settings.json, see hooks/README.md)..."
+backup_dir_if_exists "${CLAUDE_DIR}/hooks"
+mkdir -p "${CLAUDE_DIR}/hooks"
+cp -r "${SCRIPT_DIR}/hooks/." "${CLAUDE_DIR}/hooks/"
+verify_copy "${SCRIPT_DIR}/hooks" "${CLAUDE_DIR}/hooks" "hooks"
+print_ok "hooks/ ($(count_files "${CLAUDE_DIR}/hooks") files) — opt-in, not active until wired into settings.json"
+
 # --- global-CLAUDE.md (when no project-specific preset is requested) ---
 if [[ -z "${PRESET}" ]]; then
   print_step "Copying global-CLAUDE.md..."

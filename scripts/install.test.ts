@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url'
 
 // fileURLToPath handles Windows drive letters natively — no manual /C:/ fixups.
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url))
-const COPIED_DIRS = ['rules', 'skills', 'commands', 'agents', 'agent_docs']
+const COPIED_DIRS = ['rules', 'skills', 'commands', 'agents', 'agent_docs', 'hooks']
 
 // Temp dirs are tracked and force-removed after the suite — the rmSync at the
 // end of a test never runs when an assertion throws, which would leak the dir.

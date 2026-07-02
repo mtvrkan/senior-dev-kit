@@ -42,12 +42,12 @@ Plus `ROUTING.md` (decision tree reference, not counted as an agent).
 ## 3 — Skill Count
 
 Count the `SKILL.md` files in `PROJECT/.claude/skills/`.
-Expected: **33**
+Expected: **34**
 
 Expected subdirectories:
 academic-write, api-design, api-versioning, article-write, bug-fix, code-audit, code-review,
 data-modeling, db-change, deep-research, dep-check, docs-update, env-audit,
-feature-build, feature-plan, from-scratch, llm-integration, migration-review,
+feature-build, feature-plan, from-scratch, kit-doctor, llm-integration, migration-review,
 monorepo-task, new-page, new-screen, performance-check, plan-first, refactor-safe,
 release-check, release-gate, safe-review, security-review, security-scan,
 smart-task, strategy-plan, test-writer, ui-change
@@ -57,12 +57,12 @@ smart-task, strategy-plan, test-writer, ui-change
 ## 4 — Slash Command Count
 
 Count the `.md` files in `PROJECT/.claude/commands/`.
-Expected: **12**
+Expected: **13**
 
 Expected:
-agents-guide.md, deep-research.md, dep-check.md, performance-check.md, plan-first.md,
-release-gate.md, safe-review.md, security-scan.md, seo-check.md, smart-task.md,
-strategy-plan.md, article-write.md
+agents-guide.md, article-write.md, deep-research.md, dep-check.md, kit-doctor.md,
+performance-check.md, plan-first.md, release-gate.md, safe-review.md,
+security-scan.md, seo-check.md, smart-task.md, strategy-plan.md
 
 ---
 

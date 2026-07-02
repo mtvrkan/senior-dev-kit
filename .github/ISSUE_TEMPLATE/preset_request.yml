@@ -1,0 +1,33 @@
+name: Preset request
+description: Request a new stack preset (or an update to an existing one).
+labels: [preset]
+body:
+  - type: input
+    id: stack
+    attributes:
+      label: Stack
+      placeholder: e.g. Phoenix/Elixir 1.7, SolidStart, Ktor 3
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Request type
+      options:
+        - New preset
+        - Update existing preset (framework major version, deprecated pattern, wrong guidance)
+    validations:
+      required: true
+  - type: textarea
+    id: conventions
+    attributes:
+      label: Key conventions the preset should encode
+      description: The 5-10 decisions that make this stack different — state management, testing command, folder layout, ORM/query safety, deploy shape. Cite official docs where the choice is opinionated.
+    validations:
+      required: true
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I can open a PR for this following PRESET-MAINTENANCE.md (CLAUDE.md + compact.md + maintenance row)

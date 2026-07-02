@@ -1,3 +1,5 @@
+**English** | [Türkçe](README.tr.md)
+
 # Senior Dev Kit
 
 Agent, skill and rule kit that gives Claude Code senior engineering team behavior.
@@ -13,7 +15,7 @@ First decide the scope — **all projects on this machine** (global `~/.claude/`
 | Your situation | Use | What you get |
 | --- | --- | --- |
 | Brand-new project — Claude should plan and build it | **Option A** | A lean, **generated 7-agent project team** (not the full kit — see note below) |
-| Every project on this machine should get the kit | **Option B** | Full kit (17 agents, 33 skills, 12 commands, 11 rules) in global `~/.claude/` |
+| Every project on this machine should get the kit | **Option B** | Full kit (17 agents, 34 skills, 13 commands, 11 rules) in global `~/.claude/` |
 | One existing project, you do the copying | **Option C** | Full kit in that project's `.claude/` |
 | One existing project, Claude does the copying | **Option D** | Full kit in `.claude/`, optionally global too |
 
@@ -54,6 +56,22 @@ bash install.sh --preset=nextjs-saas
 
 # Windows
 .\install.ps1 -Preset nextjs-saas
+```
+
+**One-liner alternative (Node 22.6+, no clone needed):** the npm wrapper picks the
+right installer for your platform and forwards the same flags:
+
+```bash
+npx github:<owner>/senior-dev-kit --detect     # or --preset=nextjs-saas
+```
+
+**Plugin alternative:** the repo ships a Claude Code plugin manifest
+(`.claude-plugin/`) — add it as a marketplace and install, and the commands,
+agents, skills, and the [protected-path hook](hooks/README.md) register automatically:
+
+```text
+/plugin marketplace add <owner>/senior-dev-kit
+/plugin install senior-dev-kit@senior-dev-kit
 ```
 
 > **Windows note:** Examples throughout the docs use forward-slash paths (`project/.claude/`). In PowerShell use backslashes (`project\.claude\`) — and quote any path containing spaces. If a copied command with mixed slashes fails, see [TROUBLESHOOTING.md — Paths with backslashes break scripts](TROUBLESHOOTING.md#paths-with-backslashes-break-scripts).
@@ -98,7 +116,7 @@ User: add SBOM to Docker CI pipeline
 
 ### Slash commands
 
-**Command files** (12 — rich behavior definitions):
+**Command files** (13 — rich behavior definitions):
 
 | Command | What it does |
 | --- | --- |
@@ -114,9 +132,10 @@ User: add SBOM to Docker CI pipeline
 | `/strategy-plan [goal]` | Roadmap and strategy analysis |
 | `/article-write [topic]` | Blog post or technical article |
 | `/agents-guide` | List all agents and routing rules |
+| `/kit-doctor [scope]` | Diagnose the kit installation — counts, settings, drift |
 
 **Skill shortcuts** (invoke by name — always available):
-`/security-review` · `/api-design` · `/api-versioning` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · and all 33 skills
+`/security-review` · `/api-design` · `/api-versioning` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · and all 34 skills
 
 > **Commands vs Skills:** Command files (`commands/*.md`) use the older Claude Code slash-command format — plain markdown with a `$ARGUMENTS` placeholder, read into context on invocation. Skill files (`skills/*/SKILL.md`) use the newer SKILL.md system with rich frontmatter (`model`, `effort`, `allowed-tools`, `when_to_use`) that Claude Code resolves before the skill runs. Skills can also fire automatically when Claude Code detects a matching context; commands only fire when explicitly invoked.
 
@@ -192,7 +211,7 @@ Put the most specific preset's content into `.claude/stack-rules.md` and inline 
 
 ## What's included
 
-### Skills (33)
+### Skills (34)
 
 Skills fire two ways: most are **auto-invoked** when their `description`
 matches the task (many are also wired into agents via the agent's `skills:`
@@ -211,7 +230,7 @@ intentional, not orphaned: it is invoked directly.
 `code-review`, `safe-review`, `security-review`, `security-scan`, `test-writer`, `performance-check`, `code-audit`
 
 **DevOps and Environment:**
-`release-check`, `release-gate`, `env-audit`, `dep-check`, `monorepo-task`
+`release-check`, `release-gate`, `env-audit`, `dep-check`, `monorepo-task`, `kit-doctor`
 
 **Content and Research:**
 `docs-update`, `article-write`, `academic-write`, `deep-research`, `strategy-plan`
@@ -248,9 +267,9 @@ intentional, not orphaned: it is invoked directly.
 
 These docs are **not preloaded** into every session. `global-CLAUDE.md` contains a `Lazy-load docs:` directive that lists them. When a skill's body or a rule references one (e.g. "see `agent_docs/architecture.md` for full patterns"), Claude reads it from disk on demand. This keeps large reference docs out of context on tasks that don't need them.
 
-### Examples (14 worked walkthroughs)
+### Examples (15 worked walkthroughs)
 
-Concrete before/after flows showing stack detection → files copied → auto-generated `stack-rules.md` → 3 real usage flows → per-task cost estimates.
+Concrete before/after flows showing stack detection → files copied → auto-generated `stack-rules.md` → 3 real usage flows → per-task cost estimates. Start with [`examples/with-vs-without-kit.md`](examples/with-vs-without-kit.md) — the same three requests handled with and without the kit.
 
 | Stack | File |
 | --- | --- |
@@ -268,6 +287,7 @@ Concrete before/after flows showing stack detection → files copied → auto-ge
 | Flutter + Supabase | `examples/flutter-supabase.md` |
 | Kotlin Android + Firebase | `examples/kotlin-android-firebase.md` |
 | Swift iOS + Supabase | `examples/swift-ios-supabase.md` |
+| With vs without the kit (any stack) | `examples/with-vs-without-kit.md` |
 
 ### Presets (49 stacks, 98 files)
 
@@ -297,6 +317,17 @@ Each preset ships as `CLAUDE.md` (full detail) + `compact.md` (token-optimized s
 
 `security/Dockerfile.template` — multi-stage, non-root, health-check Dockerfile template (Node, Python, Go variants)
 
+### Hooks (opt-in) — deterministic enforcement
+
+Everything above is prompt discipline; [`hooks/`](hooks/README.md) turns the most
+important rule into a harness guarantee. The `protected-paths` PreToolUse hook
+intercepts any Edit/Write into secrets, auth, payment, migration, or CI/IaC paths
+and downgrades it to an explicit permission prompt naming the guard agent that
+should review the change first — regardless of what the model decided. The
+installer copies `hooks/` but never activates it; wiring it into `settings.json`
+is a deliberate user step (see [hooks/README.md](hooks/README.md)). Installed as a
+plugin, the hook registers automatically.
+
 ---
 
 ## Rule Precedence
@@ -324,6 +355,14 @@ npm run validate
 ```
 
 CI runs this automatically on every push (`.github/workflows/repo-ci.yml`).
+
+The kit's *routing behavior* is under test too, not just its files:
+[`eval/golden-prompts.json`](eval/golden-prompts.json) pins 33 realistic requests
+(TR+EN mixed) to the agent that should handle them. `npm run routing-eval` runs the
+free static half on every push (all expected agents exist, every agent covered);
+`RUN_ROUTING_EVAL=1 npm run routing-eval` asks the model to actually route each
+prompt and fails below a 90% score — triggered manually or weekly via
+`.github/workflows/routing-eval.yml` when an `ANTHROPIC_API_KEY` secret is set.
 
 This is the kit's own dev tooling — it lints and validates this repository, not your project. To also run secret scanning, markdown lint, and shellcheck locally, install pre-commit:
 
@@ -353,7 +392,12 @@ senior-dev-kit/
 │       └── repo-ci.yml      ← CI: markdown lint · YAML lint · typecheck · skill validation · shellcheck · PSScriptAnalyzer · stale-check · SHA-pin verification
 ├── scripts/
 │   ├── validate-skills.ts   ← SKILL.md/agent frontmatter validation script
-│   └── check-stale.ts       ← Cross-checks docs against files on disk
+│   ├── check-stale.ts       ← Cross-checks docs against files on disk
+│   └── routing-eval.ts      ← Golden-prompt routing evaluation (static + live)
+├── bin/                     ← npx CLI wrapper around the installers
+├── eval/                    ← golden-prompts.json — routing behavior test set
+├── hooks/                   ← Opt-in enforcement hooks (protected-paths) + plugin wiring
+├── .claude-plugin/          ← Claude Code plugin + marketplace manifests
 ├── agents/                  ← 17 agent definitions (architect, security-guard, bug-hunter…) + ROUTING.md (decision tree, not an agent)
 ├── presets/                 ← 49 stack-specific rule sets (98 files: CLAUDE.md + compact.md each)
 │   ├── web/
@@ -367,11 +411,11 @@ senior-dev-kit/
 │   ├── messaging/
 │   ├── ai/
 │   └── generic/
-├── skills/                  ← 33 skill definitions (SKILL.md each)
-├── commands/                ← 12 slash command definitions
+├── skills/                  ← 34 skill definitions (SKILL.md each)
+├── commands/                ← 13 slash command definitions
 ├── rules/                   ← 11 path-scoped rule files
 ├── agent_docs/              ← 15 lazy-load deep reference docs
-├── examples/                ← 14 worked walkthroughs (stack → files copied → 3 usage flows → per-task costs)
+├── examples/                ← 15 worked walkthroughs (stack → files copied → 3 usage flows → per-task costs)
 └── security/                ← .gitleaks.toml · .semgrep.yml · .pre-commit-config.yaml · dependabot.yml · workflows/
 ```
 
