@@ -6,6 +6,8 @@ This document defines version support, deprecation timelines, and review cadence
 
 ## Version Support Matrix
 
+> Dates clustered around 2026-06-30/07-01 are the v1.0–v1.0.1 release baseline: the entire kit was reviewed item-by-item in that pre-release hardening pass, so the shared date reflects a real review, not a bulk stamp. Later edits stagger the dates naturally.
+
 Each preset targets the **current stable major version** of its framework at the time of last update.
 The version window is listed here so users can judge whether a preset is still applicable.
 
@@ -40,7 +42,7 @@ The version window is listed here so users can judge whether a preset is still a
 | **Database** | `sqlite` | SQLite 3.x | 2026-06-30 |
 | **Database** | `mongodb` | MongoDB 7.x | 2026-06-30 |
 | **Database** | `redis` | Redis 7.x | 2026-06-30 |
-| **Database** | `supabase` | Supabase (latest) | 2026-06-30 |
+| **Database** | `supabase` | supabase-js 2.x · CLI 1.x+ | 2026-06-30 |
 | **Database** | `firebase` | Firebase 10.x SDK | 2026-06-30 |
 | **Mobile** | `flutter` | Flutter 3.x · Dart 3.x | 2026-06-30 |
 | **Mobile** | `kotlin-android` | Kotlin 1.9+ · Compose 1.6+ | 2026-06-30 |
@@ -48,7 +50,7 @@ The version window is listed here so users can judge whether a preset is still a
 | **Mobile** | `react-native` | RN 0.73+ · Expo SDK 50+ | 2026-06-30 |
 | **Runtime** | `bun` | Bun 1.x | 2026-06-30 |
 | **Runtime** | `deno` | Deno 1.40+ / 2.x | 2026-06-30 |
-| **Runtime** | `cloudflare-workers` | Workers Runtime (latest) | 2026-06-30 |
+| **Runtime** | `cloudflare-workers` | Workers Runtime · Wrangler 3+ | 2026-06-30 |
 | **API** | `trpc` | tRPC v11 | 2026-06-30 |
 | **API** | `graphql` | GraphQL 16.x · Apollo 4.x | 2026-06-30 |
 | **API** | `websocket` | WS / Socket.IO 4.x | 2026-06-30 |

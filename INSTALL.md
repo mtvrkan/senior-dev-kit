@@ -227,7 +227,7 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
     agents-guide.md
     deep-research.md
     dep-check.md
-    perf-check.md
+    performance-check.md
     plan-first.md
     release-gate.md
     safe-review.md
@@ -235,7 +235,7 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
     seo-check.md
     smart-task.md
     strategy-plan.md
-    write-article.md
+    article-write.md
   rules/                       (11 path-scoped rules)
     000-security.md
     001-conventions.md
@@ -273,7 +273,7 @@ CLAUDE.md
 
 ## Applying to an existing project
 
-After copying the files, if an existing `.claude/settings.json` exists, merge it manually — preserve the `deny` list and `skillOverrides`.
+After copying the files, if an existing `.claude/settings.json` exists, merge it manually — preserve the `deny` list.
 
 ---
 

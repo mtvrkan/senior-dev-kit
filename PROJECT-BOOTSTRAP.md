@@ -1,6 +1,8 @@
 # PROJECT BOOTSTRAP — Autonomous Software Team Setup
 
 > **Purpose:** When Claude Code reads this file, it first scans the project with minimal tokens, detects the technologies used (or intended), then **generates a project-specific `.claude/` setup itself** (CLAUDE.md, settings, agents, skills, rules). After that, every phase stays faithful to that setup, delegating to multiple subagents and operating like a professional software company — with **planning as a hard gate** and **security designed in from the first line**, all under strict TDD.
+>
+> **How this relates to the rest of the kit:** This bootstrap deliberately generates a **lean 7-agent roster** (architect, security-reviewer, implementer, test-author, reviewer, debugger, researcher) sized for a brand-new project — it does **not** install the kit's 17 prebuilt agents, 33 skills, or 12 commands. The generated team is a from-scratch template tailored to your stack; the prebuilt kit is a broader, maintained catalogue. If you later want the full kit in the same project, run the installer (README.md Options B/C/D) on top — the two coexist, and the installer backs up anything it would overwrite.
 
 ---
 

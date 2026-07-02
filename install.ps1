@@ -33,6 +33,18 @@ function Backup-ClaudeMd {
 # reflects what was copied, not a hardcoded number.
 function Count-Files($path) { @(Get-ChildItem -Path $path -File -Recurse).Count }
 
+# Fails the install if the destination holds fewer files than the kit ships
+# (-lt because a reinstall may merge over extra user-added files), so a
+# truncated or partial copy can't end in a misleading "Done".
+function Verify-Copy($src, $dest, $label) {
+    $srcCount = Count-Files $src
+    $destCount = Count-Files $dest
+    if ($destCount -lt $srcCount) {
+        Write-Error "${label}/ copy incomplete — expected at least $srcCount files, found $destCount. Re-run the installer." -ErrorAction Continue
+        exit 1
+    }
+}
+
 # Backs up an existing destination directory (if it already has files) to a
 # timestamped sibling before it gets overwritten, so a repeated install never
 # silently destroys customizations the user placed directly under ~/.claude/.
@@ -127,6 +139,7 @@ $dest = Join-Path $ClaudeDir "rules"
 Backup-DirIfExists $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "rules\*") -Destination $dest -Recurse -Force
+Verify-Copy (Join-Path $ScriptDir "rules") $dest "rules"
 Ok "rules/ ($(Count-Files $dest) files)"
 
 # --- skills ---
@@ -135,6 +148,7 @@ $dest = Join-Path $ClaudeDir "skills"
 Backup-DirIfExists $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "skills\*") -Destination $dest -Recurse -Force
+Verify-Copy (Join-Path $ScriptDir "skills") $dest "skills"
 Ok "skills/ ($(Count-Files $dest) files)"
 
 # --- commands ---
@@ -143,6 +157,7 @@ $dest = Join-Path $ClaudeDir "commands"
 Backup-DirIfExists $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "commands\*") -Destination $dest -Recurse -Force
+Verify-Copy (Join-Path $ScriptDir "commands") $dest "commands"
 Ok "commands/ ($(Count-Files $dest) files)"
 
 # --- agents ---
@@ -151,6 +166,7 @@ $dest = Join-Path $ClaudeDir "agents"
 Backup-DirIfExists $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "agents\*") -Destination $dest -Recurse -Force
+Verify-Copy (Join-Path $ScriptDir "agents") $dest "agents"
 Ok "agents/ ($(Count-Files $dest) files)"
 
 # --- agent_docs ---
@@ -159,6 +175,7 @@ $dest = Join-Path $ClaudeDir "agent_docs"
 Backup-DirIfExists $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "agent_docs\*") -Destination $dest -Recurse -Force
+Verify-Copy (Join-Path $ScriptDir "agent_docs") $dest "agent_docs"
 Ok "agent_docs/ ($(Count-Files $dest) files)"
 
 # --- global-CLAUDE.md (when no project-specific preset is requested) ---
@@ -172,9 +189,15 @@ if ($Preset -eq "") {
 # --- preset ---
 if ($Preset -ne "") {
     $presetPath = $null
-    Get-ChildItem -Path (Join-Path $ScriptDir "presets") -Directory | ForEach-Object {
-        $candidate = Join-Path $_.FullName "$Preset\CLAUDE.md"
-        if (-not $presetPath -and (Test-Path $candidate)) { $presetPath = $candidate }
+    # Guard the whole lookup on presets/ existing: under $ErrorActionPreference
+    # = 'Stop' a bare Get-ChildItem on a missing directory would abort the
+    # install with a raw error (install.sh warns gracefully instead — keep parity).
+    $presetsRoot = Join-Path $ScriptDir "presets"
+    if (Test-Path $presetsRoot) {
+        Get-ChildItem -Path $presetsRoot -Directory | ForEach-Object {
+            $candidate = Join-Path $_.FullName "$Preset\CLAUDE.md"
+            if (-not $presetPath -and (Test-Path $candidate)) { $presetPath = $candidate }
+        }
     }
 
     if ($presetPath) {
@@ -183,11 +206,13 @@ if ($Preset -ne "") {
         $claudeMd = Join-Path $ClaudeDir "CLAUDE.md"
         Copy-Item $presetPath $claudeMd -Force
         Ok "Preset '$Preset' installed as CLAUDE.md"
-    } else {
+    } elseif (Test-Path $presetsRoot) {
         Warn "Preset '$Preset' not found. Available presets:"
-        Get-ChildItem -Path (Join-Path $ScriptDir "presets") -Recurse -Filter "CLAUDE.md" |
+        Get-ChildItem -Path $presetsRoot -Recurse -Filter "CLAUDE.md" |
             ForEach-Object { $_.FullName -replace [regex]::Escape((Join-Path $ScriptDir "presets\")) -replace "\\CLAUDE.md" } |
             Sort-Object
+    } else {
+        Warn "Preset '$Preset' not found. (presets/ directory is missing from this kit copy)"
     }
 }
 

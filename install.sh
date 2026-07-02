@@ -30,6 +30,20 @@ backup_claude_md() {
 # reflects what was copied, not a hardcoded number.
 count_files() { find "$1" -type f | wc -l | tr -d ' '; }
 
+# Fails the install if the destination holds fewer files than the kit ships
+# (-lt because a reinstall may merge over extra user-added files), so a
+# truncated or partial copy can't end in a misleading "Done".
+verify_copy() {
+  local src="$1" dest="$2" label="$3"
+  local src_count dest_count
+  src_count=$(count_files "${src}")
+  dest_count=$(count_files "${dest}")
+  if [[ "${dest_count}" -lt "${src_count}" ]]; then
+    echo "Error: ${label}/ copy incomplete — expected at least ${src_count} files, found ${dest_count}. Re-run the installer." >&2
+    exit 1
+  fi
+}
+
 # Backs up an existing destination directory (if it already has files) to a
 # timestamped sibling before it gets overwritten, so a repeated install never
 # silently destroys customizations the user placed directly under ~/.claude/.
@@ -66,7 +80,7 @@ fi
 if [[ "${DETECT}" == "true" && -z "${PRESET}" ]]; then
   print_step "Auto-detecting stack..."
   if [[ -f "package.json" ]]; then
-    PKG=$(cat package.json)
+    PKG=$(<package.json)
     if echo "$PKG" | grep -q '"next"';          then PRESET="nextjs-saas"
     elif echo "$PKG" | grep -q '"@nestjs/core"'; then PRESET="nestjs"
     elif echo "$PKG" | grep -q '"@angular/core"'; then PRESET="angular"
@@ -126,10 +140,14 @@ echo ""
 echo "Target: ${CLAUDE_DIR}"
 echo ""
 read -r -p "Continue? [y/N] " confirm
-if [[ "${confirm,,}" != "y" ]]; then
-  echo "Aborted."
-  exit 0
-fi
+# case instead of ${confirm,,}: macOS ships bash 3.2, which lacks ,, expansion
+case "$confirm" in
+  [Yy]) ;;
+  *)
+    echo "Aborted."
+    exit 0
+    ;;
+esac
 
 mkdir -p "${CLAUDE_DIR}"
 
@@ -138,6 +156,7 @@ print_step "Copying rules..."
 backup_dir_if_exists "${CLAUDE_DIR}/rules"
 mkdir -p "${CLAUDE_DIR}/rules"
 cp -r "${SCRIPT_DIR}/rules/." "${CLAUDE_DIR}/rules/"
+verify_copy "${SCRIPT_DIR}/rules" "${CLAUDE_DIR}/rules" "rules"
 print_ok "rules/ ($(count_files "${CLAUDE_DIR}/rules") files)"
 
 # --- skills ---
@@ -145,6 +164,7 @@ print_step "Copying skills..."
 backup_dir_if_exists "${CLAUDE_DIR}/skills"
 mkdir -p "${CLAUDE_DIR}/skills"
 cp -r "${SCRIPT_DIR}/skills/." "${CLAUDE_DIR}/skills/"
+verify_copy "${SCRIPT_DIR}/skills" "${CLAUDE_DIR}/skills" "skills"
 print_ok "skills/ ($(count_files "${CLAUDE_DIR}/skills") files)"
 
 # --- commands ---
@@ -152,6 +172,7 @@ print_step "Copying commands..."
 backup_dir_if_exists "${CLAUDE_DIR}/commands"
 mkdir -p "${CLAUDE_DIR}/commands"
 cp -r "${SCRIPT_DIR}/commands/." "${CLAUDE_DIR}/commands/"
+verify_copy "${SCRIPT_DIR}/commands" "${CLAUDE_DIR}/commands" "commands"
 print_ok "commands/ ($(count_files "${CLAUDE_DIR}/commands") files)"
 
 # --- agents ---
@@ -159,6 +180,7 @@ print_step "Copying agents..."
 backup_dir_if_exists "${CLAUDE_DIR}/agents"
 mkdir -p "${CLAUDE_DIR}/agents"
 cp -r "${SCRIPT_DIR}/agents/." "${CLAUDE_DIR}/agents/"
+verify_copy "${SCRIPT_DIR}/agents" "${CLAUDE_DIR}/agents" "agents"
 print_ok "agents/ ($(count_files "${CLAUDE_DIR}/agents") files)"
 
 # --- agent_docs ---
@@ -166,6 +188,7 @@ print_step "Copying agent_docs (lazy-load reference)..."
 backup_dir_if_exists "${CLAUDE_DIR}/agent_docs"
 mkdir -p "${CLAUDE_DIR}/agent_docs"
 cp -r "${SCRIPT_DIR}/agent_docs/." "${CLAUDE_DIR}/agent_docs/"
+verify_copy "${SCRIPT_DIR}/agent_docs" "${CLAUDE_DIR}/agent_docs" "agent_docs"
 print_ok "agent_docs/ ($(count_files "${CLAUDE_DIR}/agent_docs") files)"
 
 # --- global-CLAUDE.md (when no project-specific preset is requested) ---

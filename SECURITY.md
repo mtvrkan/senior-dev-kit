@@ -48,8 +48,12 @@ Out of scope:
 
 The kit enforces several defence-in-depth measures:
 
-1. **25 Bash/Read deny rules** in `settings.json` — blocks `rm -rf`, `git push --force`, `curl | bash`, secret file reads, and similar destructive patterns.
+1. **56 Read/Bash deny rules** in `settings.json` — blocks `rm -rf`/`rm -fr` (including trailing-slash and glob forms), `find -delete` on root paths, `git push --force`, `curl | bash`/`curl | sh` and the `bash <(curl …)` process-substitution form, `sudo rm`/`sudo chmod`/`sudo chown`, `chmod` 777/000 in short and long flag forms, `pip`/`pip3 --break-system-packages`, secret file reads, and similar destructive patterns.
 2. **Guard agents with `permissionMode: plan`** — `security-guard`, `db-guard`, `migration-guard`, and `devops-guard` produce a written plan and pause for explicit user approval before any implementation.
 3. **OWASP 2025 passive scan** — every code change is silently scanned for injection, IDOR, mass assignment, ReDoS, SSRF, and supply chain issues.
 4. **SHA-pinned GitHub Actions** — all Actions in this repo are pinned to a full commit SHA, not mutable version tags.
 5. **Secret file protection** — `global-CLAUDE.md` hard-stops any read of `.env`, `*.pem`, `*.key`, SSH keys, and service account files.
+
+## Security CI Templates
+
+Reusable security workflow templates for **user projects** live in [`security/`](security/): dependency audit, container scan, and security gate workflows (`security/workflows/`), a hardened `Dockerfile.template`, and a Dependabot config. Copy them into your own repo — they are templates, not this repo's CI (this repo's own CI is `.github/workflows/`).

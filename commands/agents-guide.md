@@ -1,3 +1,7 @@
+---
+description: List all installed Senior Dev Kit agents and when to use each one.
+---
+
 # /agents-guide
 
 List all installed Senior Dev Kit agents and when to use each one.

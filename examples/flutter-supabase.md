@@ -217,7 +217,7 @@ ESTIMATED IMPROVEMENT: list render time 800ms → ~120ms
 
 | Task | Agent | Model | Typical cost |
 | --- | --- | --- | --- |
-| New screen (4 files) | senior-engineer | sonnet | ~$0.04 |
+| New screen (4 files, Flow A) | ui-fixer | haiku | ~$0.006 |
 | Supabase table + RLS | db-guard | opus | ~$0.18 |
 | Performance review | performance-guard | sonnet | ~$0.05 |
 | Widget bug fix | bug-hunter | sonnet | ~$0.02 |

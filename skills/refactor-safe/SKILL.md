@@ -15,6 +15,8 @@ Behavior must be identical before and after. If tests don't exist: write them FI
 3. Diffs >150 lines → split into sequential mini-refactors. No features/bugfixes in same diff.
 4. Read budget: refactored file + grep for symbol importers + existing test file. Imports updated across independent files → apply in one parallel batch.
 
+Deep reference: `agent_docs/testing-strategy.md` (baseline coverage before refactor) · `agent_docs/architecture.md` (module boundary rules).
+
 ## Output
 
 ```text

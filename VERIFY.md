@@ -2,6 +2,8 @@
 
 Read this file and perform each check in order. Report results as [OK] / [FAIL].
 
+> **Shortcut:** instead of counting files by hand, open Claude Code in the project and run `/smart-task verify kit installation` — Claude performs the checks below and reports the counts (see [UPGRADE.md — After upgrading](UPGRADE.md#after-upgrading--run-verifymd)). The manual steps below remain the source of truth.
+
 **PROJECT** = The project root currently open in Claude Code (current working directory)
 
 ---
@@ -58,9 +60,9 @@ Count the `.md` files in `PROJECT/.claude/commands/`.
 Expected: **12**
 
 Expected:
-agents-guide.md, deep-research.md, dep-check.md, perf-check.md, plan-first.md,
+agents-guide.md, deep-research.md, dep-check.md, performance-check.md, plan-first.md,
 release-gate.md, safe-review.md, security-scan.md, seo-check.md, smart-task.md,
-strategy-plan.md, write-article.md
+strategy-plan.md, article-write.md
 
 ---
 

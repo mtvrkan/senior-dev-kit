@@ -12,6 +12,8 @@ Agents encode role-specific behavior and routing signals; they must be reviewed 
 
 ## Version Support Matrix
 
+> Dates clustered around 2026-06-30/07-01 are the v1.0–v1.0.1 release baseline: the entire kit was reviewed item-by-item in that pre-release hardening pass, so the shared date reflects a real review, not a bulk stamp. Later edits stagger the dates naturally.
+
 | Agent | Role / Domain | Last Reviewed |
 | --- | --- | --- |
 | `academic-writer` | Academic papers, theses, literature reviews, grant proposals | 2026-07-01 |

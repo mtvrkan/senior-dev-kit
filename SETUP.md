@@ -167,16 +167,16 @@ test-writer, ui-change
 Create `PROJECT/.claude/commands/` directory. Read the following 12 files from `KIT/commands/` and write:
 
 ```text
-agents-guide.md, deep-research.md, dep-check.md, perf-check.md,
+agents-guide.md, deep-research.md, dep-check.md, performance-check.md,
 plan-first.md, release-gate.md, safe-review.md, security-scan.md,
-seo-check.md, smart-task.md, strategy-plan.md, write-article.md
+seo-check.md, smart-task.md, strategy-plan.md, article-write.md
 ```
 
 ### 2d — Copy settings.json
 
 Read `KIT/settings-template.json` (the canonical template — `KIT/settings.json` is the kit's own dev/CI config, not for copying into a consumer project).
 If `PROJECT/.claude/settings.json` does not exist: write it.
-If it exists: merge field-by-field — keep the project's existing `permissions.allow` entries, but replace `permissions.deny` and `skillOverrides` with the template's values (these encode security baselines that should not be weakened).
+If it exists: merge field-by-field — keep the project's existing `permissions.allow` entries, but replace `permissions.deny` with the template's values (it encodes a security baseline that should not be weakened).
 
 ### 2e — Copy rules files
 
@@ -389,5 +389,5 @@ Provide a brief summary containing:
 - If monorepo: how many subproject CLAUDE.md created
 - If security templates installed: pre-commit enable command
 - First use: open project in Claude Code, converse normally — routing is automatic
-- Slash command reminder: `/smart-task`, `/plan-first`, `/safe-review`, `/security-scan`, `/dep-check`, `/perf-check`, `/seo-check`
+- Slash command reminder: `/smart-task`, `/plan-first`, `/safe-review`, `/security-scan`, `/dep-check`, `/performance-check`, `/seo-check`
 - To verify: read `KIT/VERIFY.md` and validate setup

@@ -14,6 +14,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const SKILLS_DIR    = process.env.SKILLS_DIR   ?? join(__dirname, '..', 'skills')
 const AGENTS_DIR    = process.env.AGENTS_DIR   ?? join(__dirname, '..', 'agents')
 const SETTINGS_FILE = process.env.SETTINGS_FILE ?? join(__dirname, '..', 'settings.json')
+const COMMANDS_DIR  = process.env.COMMANDS_DIR ?? join(__dirname, '..', 'commands')
+const GLOBAL_CLAUDE_FILE = process.env.GLOBAL_CLAUDE_FILE ?? join(__dirname, '..', 'global-CLAUDE.md')
 
 const REQUIRED   = ['description', 'allowed-tools']
 const RECOMMENDED = ['when_to_use']
@@ -25,6 +27,22 @@ const VALID_MODELS = new Set([
   'claude-haiku-4-5-20251001',
   'claude-fable-5',
 ])
+// A model ID not in VALID_MODELS but matching this shape is treated as a warning,
+// not an error, so a newly released Claude model doesn't hard-break CI before
+// anyone updates the set above. Anything else (typos, non-Claude IDs) stays an error.
+const CLAUDE_MODEL_ID_RE = /^claude-[a-z0-9][a-z0-9.-]*$/
+
+function checkModelId(rel: string, model: string): 'ok' | 'warn' | 'error' {
+  if (VALID_MODELS.has(model)) return 'ok'
+  if (CLAUDE_MODEL_ID_RE.test(model)) {
+    console.warn(`  ⚠ ${rel} — unrecognised model id: '${model}' (if this is a newly released model, add it to VALID_MODELS in scripts/validate-skills.ts and to CONTRIBUTING.md)`)
+    warnings++
+    return 'warn'
+  }
+  console.error(`  ✗ ${rel} — invalid model id: '${model}' (use full model id, e.g. claude-sonnet-5)`)
+  errors++
+  return 'error'
+}
 const SKILL_BODY_MAX_LINES = 20
 // Tool names as they appear in `allowed-tools:` (skills) / `tools:` (agents) — comma-separated,
 // not a YAML list. Catches copy/paste typos (e.g. "Wrte") that would otherwise silently
@@ -44,6 +62,10 @@ let errors = 0
 let warnings = 0
 let checked = 0
 
+function missingRequiredFields(fm: Record<string, string>, fields: readonly string[]): string[] {
+  return fields.filter(field => !fm[field] || fm[field].trim() === '')
+}
+
 function validateSkill(filePath: string): void {
   const content = readFileSync(filePath, 'utf8')
   const fm = parseFrontmatter(content)
@@ -56,12 +78,10 @@ function validateSkill(filePath: string): void {
   }
 
   let ok = true
-  for (const field of REQUIRED) {
-    if (!fm[field] || fm[field].trim() === '') {
-      console.error(`  ✗ ${rel} — missing required field: ${field}`)
-      errors++
-      ok = false
-    }
+  for (const field of missingRequiredFields(fm, REQUIRED)) {
+    console.error(`  ✗ ${rel} — missing required field: ${field}`)
+    errors++
+    ok = false
   }
 
   for (const field of RECOMMENDED) {
@@ -71,9 +91,7 @@ function validateSkill(filePath: string): void {
     }
   }
 
-  if (fm.model && !VALID_MODELS.has(fm.model)) {
-    console.error(`  ✗ ${rel} — invalid model id: '${fm.model}' (use full model id, e.g. claude-sonnet-5)`)
-    errors++
+  if (fm.model && checkModelId(rel, fm.model) === 'error') {
     ok = false
   }
 
@@ -142,7 +160,7 @@ if (existsSync(AGENTS_DIR)) {
     const skillsKeyMatch = match[1].match(/^skills:(.*)$/m)
     if (!skillsKeyMatch) continue
 
-    let refs: string[] = []
+    let refs: string[]
     const blockMatch = match[1].match(/^skills:\r?\n((?:\s{2,}-\s+\S+\r?\n?)+)/m)
     if (blockMatch) {
       refs = (blockMatch[1].match(/^\s+-\s+(\S+)/gm) || []).map(r => r.replace(/^\s+-\s+/, '').trim())
@@ -221,18 +239,14 @@ if (existsSync(AGENTS_DIR)) {
       continue
     }
     let agentOk = true
-    for (const field of AGENT_REQUIRED) {
-      if (!fm[field] || fm[field].trim() === '') {
-        console.error(`  ✗ agents/${file} — missing required field: ${field}`)
-        agentFmErrors++
-        errors++
-        agentOk = false
-      }
-    }
-    if (fm.model && !VALID_MODELS.has(fm.model)) {
-      console.error(`  ✗ agents/${file} — invalid model id: '${fm.model}'`)
+    for (const field of missingRequiredFields(fm, AGENT_REQUIRED)) {
+      console.error(`  ✗ agents/${file} — missing required field: ${field}`)
       agentFmErrors++
       errors++
+      agentOk = false
+    }
+    if (fm.model && checkModelId(`agents/${file}`, fm.model) === 'error') {
+      agentFmErrors++
       agentOk = false
     }
     if (fm.tools) {
@@ -257,25 +271,121 @@ if (existsSync(AGENTS_DIR)) {
   console.log(`\n${agentFmChecked} agents frontmatter validated — ${agentFmErrors} error(s)`)
 }
 
-// Cross-reference: verify settings.json skillOverrides point to existing skills
-if (existsSync(SETTINGS_FILE)) {
-  console.log('\nValidating settings.json skillOverrides...\n')
-  let settingsErrors = 0
-  let settingsChecked = 0
-  try {
-    const settings = JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'))
-    const overrides: Record<string, unknown> = settings.skillOverrides ?? {}
-    for (const skillName of Object.keys(overrides)) {
-      settingsChecked++
-      if (!validSkills.has(skillName)) {
-        console.error(`  ✗ settings.json skillOverrides — references non-existent skill: '${skillName}'`)
-        settingsErrors++
-        errors++
+// Validate command frontmatter: description required; argument-hint recommended
+// when the body substitutes $ARGUMENTS (it's what the / autocomplete shows users).
+if (existsSync(COMMANDS_DIR)) {
+  console.log('\nValidating command frontmatter...\n')
+  let cmdErrors = 0
+  let cmdChecked = 0
+  for (const file of readdirSync(COMMANDS_DIR)) {
+    if (!file.endsWith('.md')) continue
+    const content = readFileSync(join(COMMANDS_DIR, file), 'utf8')
+    const fm = parseFrontmatter(content)
+    cmdChecked++
+    if (!fm) {
+      console.error(`  ✗ commands/${file} — missing frontmatter (--- block with description: required)`)
+      cmdErrors++
+      errors++
+      continue
+    }
+    let cmdOk = true
+    for (const field of missingRequiredFields(fm, ['description'])) {
+      console.error(`  ✗ commands/${file} — missing required field: ${field}`)
+      cmdErrors++
+      errors++
+      cmdOk = false
+    }
+    if (content.includes('$ARGUMENTS') && (!fm['argument-hint'] || fm['argument-hint'].trim() === '')) {
+      console.warn(`  ⚠ commands/${file} — uses $ARGUMENTS but has no argument-hint`)
+      warnings++
+    }
+    if (!content.includes('$ARGUMENTS') && fm['argument-hint'] && fm['argument-hint'].trim() !== '') {
+      console.warn(`  ⚠ commands/${file} — declares argument-hint but the body never substitutes $ARGUMENTS`)
+      warnings++
+    }
+    for (const dupeKey of findDuplicateFrontmatterKeys(content)) {
+      console.error(`  ✗ commands/${file} — duplicate frontmatter key: '${dupeKey}'`)
+      cmdErrors++
+      errors++
+      cmdOk = false
+    }
+    if (cmdOk) console.log(`  ✓ commands/${file.replace(/\.md$/, '')}`)
+  }
+  console.log(`\n${cmdChecked} commands validated — ${cmdErrors} error(s)`)
+}
+
+// Cross-reference: every agent name that global-CLAUDE.md routes to (the AGENT
+// ROUTING table's Agent column and the "→ agent" natural-language signals)
+// must exist as agents/<name>.md — otherwise routing silently points nowhere.
+// A missing default global-CLAUDE.md is itself an error (the installer ships it);
+// a missing GLOBAL_CLAUDE_FILE override is deliberate test isolation and skips.
+if (!existsSync(GLOBAL_CLAUDE_FILE)) {
+  if (!process.env.GLOBAL_CLAUDE_FILE) {
+    console.error('\n  ✗ global-CLAUDE.md — required kit file is missing (installers copy it as ~/.claude/CLAUDE.md)')
+    errors++
+  }
+} else if (existsSync(AGENTS_DIR)) {
+  console.log('\nValidating global-CLAUDE.md routing targets...\n')
+  const globalContent = readFileSync(GLOBAL_CLAUDE_FILE, 'utf8')
+  const agentFiles = new Set(
+    readdirSync(AGENTS_DIR)
+      .filter(f => f.endsWith('.md') && f !== 'ROUTING.md')
+      .map(f => f.replace(/\.md$/, ''))
+  )
+  const routedAgents = new Set<string>()
+  const lines = globalContent.split(/\r?\n/)
+  // Table rows are parsed only inside the "## AGENT ROUTING" section (up to the
+  // next "## " heading or "---" rule). Rows that don't match the expected
+  // | signal | agent | haiku/sonnet/opus | tier | shape are flagged as malformed
+  // instead of silently skipped — a swapped column must not drop an agent from
+  // validation unnoticed.
+  const sectionStart = lines.findIndex(l => /^##\s.*AGENT ROUTING/.test(l))
+  if (sectionStart !== -1) {
+    for (let i = sectionStart + 1; i < lines.length; i++) {
+      if (/^##\s/.test(lines[i]) || lines[i].trim() === '---') break
+      const line = lines[i].trim()
+      if (!line.startsWith('|')) continue
+      if (/^\|[\s|:-]*\|$/.test(line)) continue // separator row
+      const cols = line.split('|').map(c => c.trim())
+      if (cols.length >= 5 && cols[3].toLowerCase() === 'model') continue // header row
+      if (cols.length >= 5 && /^(haiku|sonnet|opus)$/.test(cols[3]) && /^[a-z][a-z0-9-]*$/.test(cols[2])) {
+        routedAgents.add(cols[2])
       } else {
-        console.log(`  ✓ settings.json → ${skillName}`)
+        console.error(`  ✗ global-CLAUDE.md — malformed AGENT ROUTING row (expected | signal | agent | haiku/sonnet/opus | tier |): '${line.slice(0, 80)}'`)
+        errors++
       }
     }
-    console.log(`\n${settingsChecked} skillOverrides checked — ${settingsErrors} broken reference(s)`)
+  }
+  // Natural-language signal lines: "keyword/keyword → agent-name | ..." — the
+  // block starts at the NATURAL LANGUAGE SIGNALS marker and ends at a blank line.
+  // ([a-z0-9-]* so even a hypothetical single-letter agent name is captured.)
+  const nlStart = lines.findIndex(l => l.includes('NATURAL LANGUAGE SIGNALS'))
+  if (nlStart !== -1) {
+    for (let i = nlStart + 1; i < lines.length && lines[i].trim() !== ''; i++) {
+      for (const m of lines[i].matchAll(/→\s*([a-z][a-z0-9-]*)/g)) {
+        routedAgents.add(m[1])
+      }
+    }
+  }
+  let routingTargetErrors = 0
+  for (const name of [...routedAgents].sort()) {
+    if (agentFiles.has(name)) {
+      console.log(`  ✓ global-CLAUDE.md → ${name}`)
+    } else {
+      console.error(`  ✗ global-CLAUDE.md routes to non-existent agent: '${name}' (no agents/${name}.md)`)
+      routingTargetErrors++
+      errors++
+    }
+  }
+  console.log(`\n${routedAgents.size} routing targets checked — ${routingTargetErrors} missing agent file(s)`)
+}
+
+// settings.json must stay parseable (its deny list is a security baseline)
+if (existsSync(SETTINGS_FILE)) {
+  console.log('\nValidating settings.json...\n')
+  try {
+    JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'))
+    console.log('  ✓ settings.json parses')
   } catch (e) {
     const err = e as Error
     console.error(`  ✗ settings.json — failed to parse: ${err.message}`)

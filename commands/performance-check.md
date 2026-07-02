@@ -1,4 +1,9 @@
-# /perf-check
+---
+description: Analyze the codebase for performance issues without running the app.
+argument-hint: "[area or file — optional]"
+---
+
+# /performance-check
 
 Analyze the current codebase for performance issues: $ARGUMENTS
 

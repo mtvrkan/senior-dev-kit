@@ -47,8 +47,9 @@ type Subscription {
 }
 
 // Resolver (graphql-ws + Redis pub-sub)
-import { PubSub } from 'graphql-subscriptions'
+import { withFilter } from 'graphql-subscriptions'
 import { RedisPubSub } from 'graphql-redis-subscriptions'  // multi-server
+import { redisPublisher, redisSubscriber } from '@/lib/redis'  // ioredis clients
 
 const pubsub = new RedisPubSub({ publisher: redisPublisher, subscriber: redisSubscriber })
 

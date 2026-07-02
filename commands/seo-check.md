@@ -1,3 +1,8 @@
+---
+description: Audit the project for SEO, AEO, Core Web Vitals, and technical SEO issues.
+argument-hint: "[page or route — optional]"
+---
+
 # /seo-check
 
 Audit the project for SEO, AEO (AI Engine Optimization), Core Web Vitals, and technical SEO issues: $ARGUMENTS

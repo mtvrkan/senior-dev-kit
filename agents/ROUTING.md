@@ -2,6 +2,8 @@
 
 Highest-priority signal wins. Read top-to-bottom; stop at the first match.
 
+**Precedence order (memorize this line):** guard-area noun (Steps 1 and 3) > stack trace (Step 2) > task-type verb (Step 4). A guard-area noun anywhere in the request always outranks every other signal — "fix CSS in the login form" is security-guard territory, not ui-fixer. Ties between two guard areas are resolved by blast radius (see "Multiple guard signals"); ties between non-guard signals by the [Conflict resolution](#conflict-resolution--when-two-signals-match) table.
+
 ---
 
 ## Step 1 — Hard stop check (always first)

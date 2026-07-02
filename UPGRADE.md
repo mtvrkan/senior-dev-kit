@@ -90,8 +90,12 @@ Key sections to check after each release:
 
 ### `settings.json`
 
-Compare `settings-template.json` from the new release against your `.claude/settings.json`.
-Add any new `permissions.deny` entries. Do not overwrite your existing allow/deny list.
+Two files in the repo look alike but have different jobs: `settings.json` is the kit's reference copy (it's what `npm run validate` checks and what the docs describe), while `settings-template.json` is the starting copy you install into a project as `.claude/settings.json`. The two are kept content-identical in the repo except that only the reference copy sets `env` — your installed copy then diverges as you customize it.
+
+On upgrade, compare `settings-template.json` from the new release against your `.claude/settings.json`:
+
+1. Add any new `permissions.deny` entries from the template.
+2. Keep your own allow/deny additions — merge, never replace the file wholesale.
 
 ### `stack-rules.md`
 
@@ -140,3 +144,9 @@ To get notified of new releases without manual checking:
 - Or add the repo to your RSS reader via `[repo-url]/releases.atom`
 
 There is no automatic update mechanism — changes to `.claude/` must always be reviewed before applying.
+
+---
+
+## If something breaks after upgrading
+
+See [TROUBLESHOOTING.md — Version mismatch problems](TROUBLESHOOTING.md#version-mismatch-problems) for version checks and the session-restart requirement after `.claude/` changes.

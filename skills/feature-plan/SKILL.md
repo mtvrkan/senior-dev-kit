@@ -3,12 +3,12 @@ name: feature-plan
 description: Use before implementing large, multi-file, architecture, DB, auth, payment, or unclear features. Produces a detailed plan; no code.
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically for large, unclear, risky, or multi-file features that need a plan before code.
-argument-hint: "[feature to plan]"
+argument-hint: "[feature — goal, constraints, affected areas if known]"
 ---
 
 # feature-plan
 
-Produce a detailed, executable plan for multi-file/risky features. No code edits, wait for confirmation. Auto-fires for clear feature work — for non-feature or ambiguous-scope tasks, use `plan-first` instead.
+Produce a detailed, executable plan for multi-file/risky features. No code edits, wait for confirmation. Auto-fires for clear feature work — for non-feature or ambiguous-scope tasks, use `plan-first` instead. If the feature description lacks a goal or scope, fill `OPEN:` with the missing questions instead of guessing.
 
 ## Output format
 

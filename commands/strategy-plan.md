@@ -1,3 +1,8 @@
+---
+description: Produce a strategic plan or decision analysis with options and trade-offs.
+argument-hint: "[decision or goal]"
+---
+
 # /strategy-plan
 
 Produce a strategic plan or decision analysis for: $ARGUMENTS

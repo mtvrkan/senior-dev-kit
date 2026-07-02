@@ -1,4 +1,9 @@
-# /write-article
+---
+description: Write an article or long-form content with research and editing passes.
+argument-hint: "[topic]"
+---
+
+# /article-write
 
 Write an article or long-form content on: $ARGUMENTS
 

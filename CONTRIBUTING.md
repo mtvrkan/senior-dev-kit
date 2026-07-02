@@ -1,6 +1,6 @@
 # Contributing to Senior Dev Kit
 
-Thank you for contributing. This guide covers the four most common contribution types: presets, agents, skills, and rules.
+Thank you for contributing. This guide covers the five most common contribution types: presets, agents, skills, rules, and commands.
 
 ## Before You Start
 
@@ -53,15 +53,19 @@ model: claude-sonnet-5
 ---
 permissionMode: default        # "plan" is required (not optional) for guard agents — see below
 effort: medium
-color: blue
+color: blue                    # cosmetic only — tints the agent's label in the Claude Code UI/transcript
 ---
 ```
 
+`color` has no routing or behavioral effect; it only sets the display colour Claude Code uses for the agent's name in the UI/transcript. Pick any colour name Claude Code supports (the kit currently uses blue, red, green, yellow, purple, orange, pink, cyan, teal, gray, indigo). The security-focused agents lean red by convention, but this is cosmetic, not contract.
+
+**Which part of an agent file is authoritative?** The frontmatter `description` is the *routing surface* — it's what Claude reads when deciding whether to spawn the agent, so keep it to 1–2 sentences of "use for X". The file body (including any HARD CONSTRAINTS section) is the *behavior contract* — it governs what the agent does once running. If they ever disagree, fix the description to match the body, not the other way round.
+
 Valid model IDs: `claude-haiku-4-5-20251001` · `claude-sonnet-5` · `claude-opus-4-8` · `claude-fable-5`
 
-> **Keeping model IDs current:** When Anthropic releases a new model, add its ID to **both** the `VALID_MODELS` set in `scripts/validate-skills.ts` **and** the list above. The validator rejects any agent or skill that references an unrecognised model ID.
+> **Keeping model IDs current:** When Anthropic releases a new model, add its ID to **both** the `VALID_MODELS` set in `scripts/validate-skills.ts` **and** the list above. A model ID that looks like a Claude ID (`claude-...`) but isn't in the set produces a **warning** (so a newly released model doesn't break CI before the list is updated); anything else — typos, non-Claude IDs — is a hard **error**.
 
-Guard agents (those that plan but don't implement) **must** set `permissionMode: plan`.
+Guard agents (those that plan but don't implement) **must** set `permissionMode: plan`. Operationally, `permissionMode: plan` means the agent runs in Claude Code's plan mode: it can read and analyze but cannot edit files or run mutating commands — it produces a plan the user approves before implementation is handed to a builder agent. That's the entire point of the guard agents (security-guard, db-guard, migration-guard, devops-guard): protected-area changes always get a reviewed plan first. `npm run validate` fails if a guard agent is missing it. All other agents use `permissionMode: default`.
 
 ### After adding an agent
 
@@ -98,7 +102,7 @@ disable-model-invocation: true    # skill never auto-fires from context; only ru
 
 `disable-model-invocation` and `model` are independent: the former controls *whether* the skill can trigger automatically, the latter controls *which model* runs it once triggered (manually or automatically). Manual-only skills (`smart-task`, `plan-first`, `safe-review`, `release-gate`) set both together — `disable-model-invocation: true` to require explicit invocation, plus a `model:` for when that explicit invocation happens.
 
-Keep the body under 20 non-blank lines. Longer content belongs in `agent_docs/`.
+Keep the body under 20 non-blank lines — `npm run validate` enforces this as a hard error. Longer content belongs in `agent_docs/`.
 
 Add a row for your skill in `SKILLS-MAINTENANCE.md` with today's date as "Last Reviewed".
 
@@ -123,6 +127,32 @@ Follow the numbering convention:
 | 800–899 | LLM / AI safety |
 | 900–999 | Performance |
 
+## Adding a Command
+
+Commands live in `commands/<name>.md`. Each file is a slash-command prompt template: YAML frontmatter, then a body whose first line is `# /<name>`; `$ARGUMENTS` marks where the user's input is substituted (see `commands/dep-check.md` for a typical shape).
+
+### Required frontmatter fields
+
+```yaml
+---
+description: One sentence — what the command does (shown in the / autocomplete menu).
+---
+```
+
+### Optional frontmatter fields
+
+```yaml
+---
+argument-hint: "[target]"  # shown in autocomplete — the validator warns if the body uses $ARGUMENTS without one
+---
+```
+
+1. Create `commands/<name>.md` following an existing command as a template.
+2. Add a row in `COMMANDS-MAINTENANCE.md` with today's date as "Last Reviewed" — `npm run stale-check` fails on untracked command files.
+3. Run `npm run validate` — it fails on a command without frontmatter or `description`.
+4. Add the command to the table in `README.md` and to `CHANGELOG.md` under `[Unreleased]`.
+5. If the command overlaps an existing skill (e.g. `/dep-check` vs the `dep-check` skill), cross-reference the pair in both files so users know which to reach for.
+
 ## Updating the Maintenance Tables
 
 **Any PR that modifies a preset, rule, agent, skill, or command must update the "Last Reviewed" date** for that item in its maintenance table: `PRESET-MAINTENANCE.md`, `RULES-MAINTENANCE.md`, `AGENTS-MAINTENANCE.md`, `SKILLS-MAINTENANCE.md`, or `COMMANDS-MAINTENANCE.md`. The `npm run stale-check` script and CI will fail if an item is listed without a date, if the date is malformed, or if an item on disk isn't tracked in its table.
@@ -133,7 +163,7 @@ If you add a new item, add a new row. If you remove an item, remove its row.
 
 ```bash
 npm test            # unit + integration tests
-npm run validate    # skill frontmatter, agent cross-refs, settings.json, presets
+npm run validate    # skill/agent/command frontmatter, routing cross-refs, settings.json, presets
 npm run stale-check # *-MAINTENANCE.md date freshness + untracked-item detection
 npm run link-check  # internal markdown links resolve to real files
 npm run check       # all four in sequence

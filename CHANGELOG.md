@@ -7,17 +7,77 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### BREAKING
+
+- `commands/perf-check.md` → `commands/performance-check.md` and `commands/write-article.md` → `commands/article-write.md` — the two commands whose names diverged from their skill counterparts now match them exactly. Migration: invoke `/performance-check` and `/article-write`; if you copied the old files into a project's `.claude/commands/`, delete `perf-check.md` / `write-article.md` and copy the renamed files in
+
 ### Added
 
-- `.github/workflows/repo-ci.yml` — `install-e2e` matrix job that executes the installer test suite on ubuntu-latest and windows-latest; the windows leg pins tests to Windows PowerShell 5.1 via the new `INSTALL_TEST_SHELL` env override in `scripts/install.test.ts`
+- ESLint (flat config, typescript-eslint) for `scripts/` — new `npm run lint`, wired into `npm run check` and a new SHA-pinned `eslint` CI job; `devDependencies` gain `eslint`, `typescript-eslint`, `@eslint/js`
+- `scripts/validate-skills.test.ts` — output-format contract tests pinning the machine-greppable summary-line shapes of validate-skills.ts, check-stale.ts, and check-links.ts so a reworded summary is a deliberate change, not an accident
+- `*-MAINTENANCE.md` (all five) — a note above each review table explaining that the clustered 2026-06-30/07-01 dates are the v1.0–v1.0.1 release baseline (a real item-by-item review), with later edits staggering dates naturally
+
+- `.github/workflows/repo-ci.yml` — `install-e2e` matrix job that executes the installer test suite on ubuntu-latest, macos-latest, and windows-latest; the windows leg pins tests to Windows PowerShell 5.1 via the new `INSTALL_TEST_SHELL` env override in `scripts/install.test.ts`, the macOS leg guards install.sh against bash-4-only syntax (macOS ships bash 3.2)
 - `presets/README.md` — documents how presets activate (installer `--preset` / `--detect`, manual copy, SETUP.md), the `CLAUDE.md` + `compact.md` structure, and the purpose of `generic/fallback` and `generic/monorepo`
 - 18 skills gained `argument-hint` frontmatter so direct `/skill-name` invocation shows what `$ARGUMENTS` expects (api-design, bug-fix, code-review, data-modeling, db-change, dep-check, docs-update, feature-build, feature-plan, migration-review, new-page, new-screen, performance-check, refactor-safe, release-check, security-review, test-writer, ui-change)
+- `scripts/lib/links.ts` · `scripts/check-links.ts` — the link checker now validates anchors: same-file `#section` links and cross-file `file.md#section` links are checked against the target file's actual headings (GitHub-style slugs, duplicate `-1`/`-2` suffixes, `<a id/name>` anchors); previously `file.md#nonexistent` passed silently
+- `README.md` — "Which option do I need?" decision table at the top of Quick Start: scope choice (global vs per-project) plus an explicit callout that Option A generates a lean 7-agent team rather than installing the full kit
+- `PROJECT-BOOTSTRAP.md` — "How this relates to the rest of the kit" note clarifying the generated 7-agent roster is intentionally different from the kit's 17 prebuilt agents, and how to layer the full kit on top afterwards
+- `CONTRIBUTING.md` — "Adding a Command" section (commands were the only tracked content type without contribution docs); documented the cosmetic `color` agent frontmatter field; noted the 20-line skill body limit is enforced as a hard error by `npm run validate`
+- `SECURITY.md` — "Security CI Templates" section pointing to `security/` so the reusable user-project workflows are discoverable
+- `UPGRADE.md` ↔ `TROUBLESHOOTING.md` — cross-links between the upgrade guide and the "Version mismatch problems" troubleshooting section
+- `commands/*.md` — all 12 commands gained YAML frontmatter (`description`, plus `argument-hint` where the body substitutes `$ARGUMENTS`), so `/` autocomplete shows what each command does and expects; previously commands were the only content type without structured, validated frontmatter
+- `scripts/validate-skills.ts` — two new validation sections: command frontmatter (missing `description` is a hard error; `$ARGUMENTS` without `argument-hint` warns) and global-CLAUDE.md routing targets (every agent name the AGENT ROUTING table or the natural-language signal block points to must exist as `agents/<name>.md`)
+- `install.sh` / `install.ps1` — post-copy verification: after each component copy the installer compares the destination file count against what the kit ships and aborts on a shortfall, so a truncated or partial copy can no longer end in a misleading "Done"
+- `settings.json` / `settings-template.json` — three `sudo` elevation deny rules (`sudo rm`, `sudo chmod`, `sudo chown`) for defence-in-depth alongside the existing destructive-command denials
+- `settings.json` / `settings-template.json` — nine more deny variants closing bypass forms of existing rules: `chmod -R 777` / `chmod 000` / `chmod -R 000` (the rule only matched literal `chmod 777`), `rm -fr /` / `rm -fr ~` / `rm -fr .` (flag-order variant, same class as the earlier pip `--break-system-packages` ordering fix), `curl * | sh` / `wget * -O- | sh` (only `| bash` was denied), and `npx -y *` (only the long `--yes` flag was denied)
+- `scripts/validate-skills.test.ts` — new unit coverage: GitHub-slug anchor extraction (duplicate `-1`/`-2` suffixes, `<a id>` anchors, code fences, HTML comments, malformed percent-encoding), malformed model IDs rejected as errors (not warnings), command frontmatter validation, and routing-target validation
+- `README.md` — Windows path callout in Quick Start; `VERIFY.md` — pointer to the automated `/smart-task verify kit installation` route; `CONTRIBUTING.md` — operational explanation of what `permissionMode: plan` does, a frontmatter-based "Adding a Command" guide, and a note on which part of an agent file is authoritative (description = routing surface, body = behavior contract); `UPGRADE.md` — clarified the roles of `settings.json` (kit reference) vs `settings-template.json` (install copy) and the merge-don't-replace rule
+- `agents/ROUTING.md` — one-line precedence order at the top (guard-area noun > stack trace > task-type verb) so tie-breaking is stated centrally instead of scattered across the conflict-resolution table
+- `skills/bug-fix`, `skills/migration-review`, `skills/refactor-safe` — explicit "Deep reference" pointers to the `agent_docs/` files that carry their detailed patterns (error-handling, zero-downtime migration, testing-strategy/architecture)
+- `settings.json` / `settings-template.json` — 17 more deny variants closing remaining bypass forms (39 → 56 rules): `pip3 install --break-system-packages` (both flag orders — only `pip` was denied), `bash <(curl …)` / `sh <(curl …)` / `bash <(wget …)` / `sh <(wget …)` process substitution (only the pipe form was denied), `chmod --recursive 777/000` (long-flag form), `rm -rf ~/` / `rm -rf ./` / `rm -rf /*` and the `-fr` equivalents (trailing-slash and glob forms of already-denied targets), and `find . -delete` / `find / -delete` / `find ~ -delete`; SECURITY.md deny-rule count updated to match
+- `.gitignore` — patterns for ad-hoc review/analysis artifacts (`CODE_*_REPORT.txt`, `code_blocks_report.txt`, etc.) so scratch reports can't be committed by accident
+- `skills/code-review`, `skills/feature-build` — explicit "Do not use for" boundary lines routing to the neighboring skill (`security-review`/`code-audit`/`dep-check`/`release-gate` and `bug-fix`/`ui-change`/`feature-plan`/`from-scratch` respectively)
+- `skills/db-change`, `skills/data-modeling` — "Deep reference" pointers to `agent_docs/zero-downtime-migration.md` and `agent_docs/architecture.md`
+- `skills/smart-task`, `skills/feature-plan` — explicit handling for empty/vague `$ARGUMENTS` (infer from conversation → ask one specific question / surface gaps in `OPEN:`) plus sharper `argument-hint` text
+
+### Removed
+
+- `settings.json` / `settings-template.json` — the `skillOverrides` key: it is not a documented Claude Code setting, so it was silently ignored. The behavior it promised (making `smart-task`, `plan-first`, `safe-review`, `release-gate` manual-only) is already delivered by `disable-model-invocation: true` in those skills' frontmatter — the documented mechanism. The validator's skillOverrides cross-reference check became a plain settings.json parse check; INSTALL.md / SETUP.md / UPGRADE.md merge instructions no longer tell users to preserve the dead key
+
+### Changed
+
+- `scripts/validate-skills.ts` — an unknown model ID that still looks like a Claude ID (`claude-...`) is now a warning instead of a hard error, so a newly released model doesn't break CI before `VALID_MODELS` is updated; malformed/non-Claude IDs remain errors (new regression test covers this)
+- `.github/workflows/repo-ci.yml` — the SHA-pin check now counts scanned workflow files and fails if zero were found (previously a moved/renamed workflows directory produced a vacuous "All actions are SHA-pinned" pass); also scans `*.yaml` in addition to `*.yml` and no longer suppresses `find` errors
+- `.github/workflows/release.yml` — both run steps now set `set -euo pipefail` explicitly
+- `security/workflows/dependency-audit.yml` · `security/workflows/container-scan.yml` — the detect jobs' multi-line `run:` blocks now set `set -euo pipefail`, so a failed write to `$GITHUB_OUTPUT` fails the step instead of silently producing empty outputs (which would skip every downstream audit/scan job)
+- `scripts/lib/links.ts` — HTML comment blocks (`<!-- -->`) are blanked out before link/anchor extraction, so commented-out headings no longer count as anchor targets and commented-out links are not checked; reported line numbers are preserved
+- `scripts/validate-skills.test.ts` / `scripts/install.test.ts` — repo-root resolution now uses `fileURLToPath` instead of a hand-rolled Windows drive-letter regex on `URL.pathname`
+- `scripts/check-stale.ts` — the malformed-row regex is compiled once at module scope instead of per file scan
+- `scripts/validate-skills.ts` — routing-table parsing is now scoped to the "## AGENT ROUTING" section and flags malformed rows (swapped columns) as errors instead of silently skipping them; a missing default `global-CLAUDE.md` is now itself a validation error; a command that declares `argument-hint` without using `$ARGUMENTS` now warns
+- `scripts/lib/links.ts` — the cross-file anchor cache is shared across the whole check run instead of rebuilt per source file
+- `.github/workflows/repo-ci.yml` — new `check-links` job so broken internal links/anchors fail CI, not just the local `npm run check`
+- `scripts/validate-skills.ts` — the three copies of the required-frontmatter-field loop (skills, agents, commands) are unified behind a `missingRequiredFields` helper
+- `scripts/validate-skills.test.ts` / `scripts/install.test.ts` — temp directories are tracked and force-removed in an `after()` suite hook; previously the `rmSync` at the end of each test never ran when an assertion threw, leaking the directory
+- `scripts/check-stale.ts` — the "README.md count claims match disk" success line is only printed when README.md was actually found and checked
+- `PRESET-MAINTENANCE.md` — `supabase` and `cloudflare-workers` version columns pin concrete minimums (supabase-js 2.x · CLI 1.x+, Wrangler 3+) instead of "latest"
+- `skills/article-write` — Turkish-output wording harmonized with `agents/writer.md` and `commands/article-write.md` ("If writing in Turkish: natural language, not machine-translated tone")
 
 ### Fixed
 
 - `agents/ROUTING.md` — the db-guard → migration-guard hand-off read as both mandatory and optional; now explicit: mandatory forward (schema-design requests always reach migration-guard), optional reverse (a pure migration review runs migration-guard standalone)
 - `scripts/check-stale.ts` — a review-table row that fails the expected `| \`name\` | ... | YYYY-MM-DD |` format is now reported as malformed instead of being silently skipped and misreported as an untracked item
 - `README.md` — Skills section now explains auto-invoked vs manual-only (`disable-model-invocation`) skills, so skills not referenced by any agent aren't mistaken for orphans
+- `install.sh` — `--detect` reads `package.json` via `$(<...)` instead of spawning `cat`
+- `SECURITY.md` — deny-rule count corrected (the list had grown past the documented 25; now 39 after the sudo, chmod-variant, and bypass-variant additions)
+- `install.sh` — the confirm prompt used `${confirm,,}` (bash 4+ lowercase expansion), which fails with "bad substitution" on macOS's default bash 3.2; replaced with a POSIX `case` match
+- `presets/ai/llm-integration/CLAUDE.md` — RAG example used an `openai` client that was never imported or initialized (now explicit, with a note that Anthropic has no embeddings API); `voyage-3` was mislabeled "(Anthropic)" — it is a Voyage AI model that Anthropic recommends; the model table's `opus-4-8` shorthand expanded to the full `claude-opus-4-8` ID
+- `presets/api/graphql/CLAUDE.md` — the subscriptions example imported `PubSub` (unused) but not `withFilter` (used), and the `redisPublisher`/`redisSubscriber` clients appeared from nowhere; imports now match what the snippet actually uses
+- `examples/flutter-supabase.md` — the cost table attributed Flow A's new-screen task to senior-engineer/sonnet while the flow itself (and ROUTING.md) routes new screens to ui-fixer/haiku; the row now matches the flow
+- `examples/laravel-mysql.md` · `examples/rails-postgres.md` — the schema-change flows claimed "migration keyword → migration-guard" although the input is a schema signal that routes to db-guard, and the escalation line used migration-guard's reason text; both now say "DB schema signal → db-guard" / "schema change detected", matching ROUTING.md and rules/500-database.md
+- `examples/README.md` — the post-install `.claude/rules/` tree stopped at `600-devops.md`; now lists all 11 rules including `700-observability`, `800-llm-safety`, `900-performance`
+- `CHANGELOG.md` — the v1.0.0 command enumeration still showed `perf-check` / `write-article` with no hint they were renamed; annotated as historical names
+- `install.ps1` — the `-Preset` lookup no longer aborts with a raw PowerShell error when `presets/` is missing from the kit copy; it warns gracefully, matching install.sh behavior
 
 ---
 
@@ -98,6 +158,8 @@ Every `compact.md` carries 8-15 dense, actionable lines — not a placeholder su
 #### Commands (12 slash commands)
 
 `smart-task` · `plan-first` · `safe-review` · `security-scan` · `release-gate` · `dep-check` · `perf-check` · `seo-check` · `deep-research` · `strategy-plan` · `write-article` · `agents-guide`
+
+> Historical v1.0.0 names — `perf-check` and `write-article` were renamed to `performance-check` and `article-write` after this release (see Unreleased).
 
 #### Agent docs (15 lazy-load reference files)
 

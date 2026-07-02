@@ -20,3 +20,5 @@ Output GO / NO-GO per checkpoint:
 8. BACKUP REQUIRED: flag if a backup must be taken before running
 
 Final output: GO / NO-GO | risk summary | required steps before applying
+
+Deep reference: `agent_docs/zero-downtime-migration.md` — expand/contract phases, batched backfills, deploy ordering.

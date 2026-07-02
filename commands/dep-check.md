@@ -1,3 +1,8 @@
+---
+description: Audit project dependencies for CVEs, license issues, outdated versions, and deprecated packages.
+argument-hint: "[package or scope — optional]"
+---
+
 # /dep-check
 
 Audit all project dependencies for CVEs, license issues, outdated versions, and deprecated packages: $ARGUMENTS

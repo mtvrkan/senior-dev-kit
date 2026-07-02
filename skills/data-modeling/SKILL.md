@@ -20,3 +20,5 @@ MIGRATION IMPACT: what changes if evolving an existing model
 ANTI-PATTERNS AVOIDED: [list what was explicitly rejected and why]
 
 Use for new/greenfield model design; once a concrete schema change is ready to apply, hand off to `db-change`.
+
+Deep reference: `agent_docs/architecture.md` — layering and module boundaries that decide where models and repositories live.

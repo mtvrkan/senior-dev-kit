@@ -6,6 +6,19 @@ Agent, skill and rule kit that gives Claude Code senior engineering team behavio
 
 ## Quick Start
 
+### Which option do I need?
+
+First decide the scope — **all projects on this machine** (global `~/.claude/`, Option B) or **one project** (its `.claude/`, Options A/C/D) — then pick a row:
+
+| Your situation | Use | What you get |
+| --- | --- | --- |
+| Brand-new project — Claude should plan and build it | **Option A** | A lean, **generated 7-agent project team** (not the full kit — see note below) |
+| Every project on this machine should get the kit | **Option B** | Full kit (17 agents, 33 skills, 12 commands, 11 rules) in global `~/.claude/` |
+| One existing project, you do the copying | **Option C** | Full kit in that project's `.claude/` |
+| One existing project, Claude does the copying | **Option D** | Full kit in `.claude/`, optionally global too |
+
+> **Option A installs a different team.** `PROJECT-BOOTSTRAP.md` generates a minimal 7-agent roster (architect, security-reviewer, implementer, test-author, reviewer, debugger, researcher) tailored to a brand-new project — not the kit's 17 prebuilt agents. To use the full kit in that project afterwards, run Option B, C, or D on top.
+
 ### Option A — New project (recommended)
 
 Copy `PROJECT-BOOTSTRAP.md` to your project root, then tell Claude Code:
@@ -42,6 +55,8 @@ bash install.sh --preset=nextjs-saas
 # Windows
 .\install.ps1 -Preset nextjs-saas
 ```
+
+> **Windows note:** Examples throughout the docs use forward-slash paths (`project/.claude/`). In PowerShell use backslashes (`project\.claude\`) — and quote any path containing spaces. If a copied command with mixed slashes fails, see [TROUBLESHOOTING.md — Paths with backslashes break scripts](TROUBLESHOOTING.md#paths-with-backslashes-break-scripts).
 
 ### Option C — Manual install for a single project
 
@@ -93,11 +108,11 @@ User: add SBOM to Docker CI pipeline
 | `/security-scan` | Run full passive security scan |
 | `/release-gate` | Pre-release GO / NO-GO checklist |
 | `/dep-check` | Dependency CVE + outdated analysis |
-| `/perf-check` | Bundle, N+1, CWV performance analysis |
+| `/performance-check` | Bundle, N+1, CWV performance analysis |
 | `/seo-check` | SEO, AEO, Core Web Vitals audit |
 | `/deep-research [topic]` | Multi-source research, fact-checking |
 | `/strategy-plan [goal]` | Roadmap and strategy analysis |
-| `/write-article [topic]` | Blog post or technical article |
+| `/article-write [topic]` | Blog post or technical article |
 | `/agents-guide` | List all agents and routing rules |
 
 **Skill shortcuts** (invoke by name — always available):

@@ -163,7 +163,10 @@ your-project/
     │   ├── 300-testing.md
     │   ├── 400-mobile.md
     │   ├── 500-database.md
-    │   └── 600-devops.md
+    │   ├── 600-devops.md
+    │   ├── 700-observability.md
+    │   ├── 800-llm-safety.md
+    │   └── 900-performance.md
     ├── skills/
     │   ├── bug-fix/SKILL.md
     │   ├── feature-build/SKILL.md

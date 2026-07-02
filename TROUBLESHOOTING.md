@@ -241,6 +241,8 @@ Valid model IDs (check for typos):
 - `claude-haiku-4-5-20251001`
 - `claude-fable-5`
 
+An ID that looks like a Claude model (`claude-...`) but isn't in this list only produces a warning, not a failure — if it's a newly released model, add it to `VALID_MODELS` in `scripts/validate-skills.ts` and to CONTRIBUTING.md.
+
 ---
 
 ### `npm test` fails — "Cannot find module"
@@ -293,6 +295,8 @@ ls $env:USERPROFILE\.claude
 ---
 
 ## Version mismatch problems
+
+For the full upgrade procedure (what changes between versions, how to merge customizations), see [UPGRADE.md](UPGRADE.md).
 
 ### How to check which version is installed
 

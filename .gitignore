@@ -38,3 +38,10 @@ venv/
 *.bak
 *.orig
 .cache/
+
+# Ad-hoc review/analysis artifacts — never distribute
+CODE_*_REPORT.txt
+CODE_*_FINDINGS.txt
+CODE_BLOCKS_MANIFEST.csv
+code_blocks_report.txt
+focused_codeblocks.txt

@@ -1,3 +1,8 @@
+---
+description: Review the current diff or a target for correctness, security, and consistency.
+argument-hint: "[target — defaults to current diff]"
+---
+
 # /safe-review
 
 Review the current diff or target: $ARGUMENTS

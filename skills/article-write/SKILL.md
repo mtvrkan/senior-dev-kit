@@ -12,7 +12,7 @@ Topic: $ARGUMENTS or derive from context.
 
 1. Outline first — section outline before prose. Verify facts via WebSearch/WebFetch, or flag uncertain claims [NEEDS VERIFICATION].
 2. Write section by section, matching requested tone (technical/casual/formal/persuasive). Clear headings, short paragraphs, concrete examples, active voice.
-3. Never fabricate facts, stats, or quotes. Turkish output: natural, not machine-translated. Opening hook + closing CTA/summary always.
+3. Never fabricate facts, stats, or quotes. If writing in Turkish: natural language, not machine-translated tone. Opening hook + closing CTA/summary always.
 4. Review for clarity, accuracy, flow, and audience fit before finishing.
 
 ## Output

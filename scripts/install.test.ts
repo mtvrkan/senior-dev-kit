@@ -1,15 +1,27 @@
 // Integration tests for install.sh / install.ps1 — runs each installer end-to-end
 // against a throwaway HOME/USERPROFILE and asserts on what actually landed on disk.
 // Run: node --experimental-strip-types --test scripts/install.test.ts
-import { test, describe } from 'node:test'
+import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'child_process'
 import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync, readdirSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
+import { fileURLToPath } from 'url'
 
-const REPO_ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')
+// fileURLToPath handles Windows drive letters natively — no manual /C:/ fixups.
+const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url))
 const COPIED_DIRS = ['rules', 'skills', 'commands', 'agents', 'agent_docs']
+
+// Temp dirs are tracked and force-removed after the suite — the rmSync at the
+// end of a test never runs when an assertion throws, which would leak the dir.
+const TEMP_DIRS: string[] = []
+after(() => { for (const d of TEMP_DIRS) rmSync(d, { recursive: true, force: true }) })
+function makeTempDir(prefix: string): string {
+  const dir = mkdtempSync(prefix)
+  TEMP_DIRS.push(dir)
+  return dir
+}
 
 function hasCommand(cmd: string, args: string[]): boolean {
   const r = spawnSync(cmd, args)
@@ -42,7 +54,7 @@ function runInstallPs1(args: string[], userProfile: string, input: string) {
 
 describe('install.sh', { skip: HAS_BASH ? false : 'bash not available in this environment' }, () => {
   test('copies rules/skills/commands/agents/agent_docs and installs global-CLAUDE.md on confirm', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     const result = runInstallSh([], home, 'y\n')
     assert.strictEqual(result.status, 0, `install.sh failed: ${result.stderr}`)
     const claudeDir = join(home, '.claude')
@@ -55,7 +67,7 @@ describe('install.sh', { skip: HAS_BASH ? false : 'bash not available in this en
   })
 
   test('aborts without copying anything when confirmation is declined', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     const result = runInstallSh([], home, 'n\n')
     assert.strictEqual(result.status, 0)
     assert.ok(result.stdout.includes('Aborted'), `expected "Aborted" in output, got: ${result.stdout}`)
@@ -64,7 +76,7 @@ describe('install.sh', { skip: HAS_BASH ? false : 'bash not available in this en
   })
 
   test('--preset installs the matching preset CLAUDE.md byte-for-byte instead of global-CLAUDE.md', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     const result = runInstallSh(['--preset=react-vite'], home, 'y\n')
     assert.strictEqual(result.status, 0, `install.sh failed: ${result.stderr}`)
     const installed = readFileSync(join(home, '.claude', 'CLAUDE.md'), 'utf8')
@@ -74,7 +86,7 @@ describe('install.sh', { skip: HAS_BASH ? false : 'bash not available in this en
   })
 
   test('backs up an existing CLAUDE.md exactly once before a second install overwrites it', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     runInstallSh([], home, 'y\n')
     const second = runInstallSh(['--preset=react-vite'], home, 'y\n')
     assert.strictEqual(second.status, 0, `install.sh failed: ${second.stderr}`)
@@ -84,7 +96,7 @@ describe('install.sh', { skip: HAS_BASH ? false : 'bash not available in this en
   })
 
   test('backs up an edited skills/ file before a second install overwrites it', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     runInstallSh([], home, 'y\n')
     const editedFile = join(home, '.claude', 'skills', 'bug-fix', 'SKILL.md')
     writeFileSync(editedFile, 'user customization')
@@ -100,7 +112,7 @@ describe('install.sh', { skip: HAS_BASH ? false : 'bash not available in this en
   })
 
   test('rejects a --preset value containing invalid characters before touching the filesystem', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     const result = runInstallSh(['--preset=Not_Valid!'], home, '')
     assert.notStrictEqual(result.status, 0)
     assert.ok(result.stderr.includes('invalid --preset value'), `expected error message, got: ${result.stderr}`)
@@ -109,7 +121,7 @@ describe('install.sh', { skip: HAS_BASH ? false : 'bash not available in this en
   })
 
   test('warns and lists available presets when --preset matches nothing, without writing CLAUDE.md', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     const result = runInstallSh(['--preset=nonexistent-stack'], home, 'y\n')
     assert.strictEqual(result.status, 0)
     assert.ok(result.stdout.includes('not found'), `expected "not found" in output, got: ${result.stdout}`)
@@ -121,7 +133,7 @@ describe('install.sh', { skip: HAS_BASH ? false : 'bash not available in this en
 
 describe('install.ps1', { skip: PWSH ? false : 'no PowerShell (pwsh/powershell) available in this environment' }, () => {
   test('copies rules/skills/commands/agents/agent_docs and installs global-CLAUDE.md on confirm', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     const result = runInstallPs1([], home, 'y\n')
     assert.strictEqual(result.status, 0, `install.ps1 failed: ${result.stderr}`)
     const claudeDir = join(home, '.claude')
@@ -134,7 +146,7 @@ describe('install.ps1', { skip: PWSH ? false : 'no PowerShell (pwsh/powershell) 
   })
 
   test('aborts without copying anything when confirmation is declined', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     const result = runInstallPs1([], home, 'n\n')
     assert.strictEqual(result.status, 0)
     assert.ok(result.stdout.includes('Aborted'), `expected "Aborted" in output, got: ${result.stdout}`)
@@ -143,7 +155,7 @@ describe('install.ps1', { skip: PWSH ? false : 'no PowerShell (pwsh/powershell) 
   })
 
   test('-Preset installs the matching preset CLAUDE.md byte-for-byte instead of global-CLAUDE.md', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     const result = runInstallPs1(['-Preset', 'react-vite'], home, 'y\n')
     assert.strictEqual(result.status, 0, `install.ps1 failed: ${result.stderr}`)
     const installed = readFileSync(join(home, '.claude', 'CLAUDE.md'), 'utf8')
@@ -153,7 +165,7 @@ describe('install.ps1', { skip: PWSH ? false : 'no PowerShell (pwsh/powershell) 
   })
 
   test('backs up an edited skills/ file before a second install overwrites it', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     runInstallPs1([], home, 'y\n')
     const editedFile = join(home, '.claude', 'skills', 'bug-fix', 'SKILL.md')
     writeFileSync(editedFile, 'user customization')
@@ -169,7 +181,7 @@ describe('install.ps1', { skip: PWSH ? false : 'no PowerShell (pwsh/powershell) 
   })
 
   test('backs up an existing CLAUDE.md exactly once before a second install overwrites it', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     runInstallPs1([], home, 'y\n')
     const second = runInstallPs1(['-Preset', 'react-vite'], home, 'y\n')
     assert.strictEqual(second.status, 0, `install.ps1 failed: ${second.stderr}`)
@@ -179,7 +191,7 @@ describe('install.ps1', { skip: PWSH ? false : 'no PowerShell (pwsh/powershell) 
   })
 
   test('warns and lists available presets when -Preset matches nothing, without writing CLAUDE.md', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     const result = runInstallPs1(['-Preset', 'nonexistent-stack'], home, 'y\n')
     assert.strictEqual(result.status, 0, `install.ps1 failed: ${result.stderr}`)
     assert.ok(result.stdout.includes('not found'), `expected "not found" in output, got: ${result.stdout}`)
@@ -189,7 +201,7 @@ describe('install.ps1', { skip: PWSH ? false : 'no PowerShell (pwsh/powershell) 
   })
 
   test('rejects a -Preset value containing invalid characters before touching the filesystem', () => {
-    const home = mkdtempSync(join(tmpdir(), 'install-home-'))
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
     const result = runInstallPs1(['-Preset', 'Not_Valid!'], home, '')
     assert.notStrictEqual(result.status, 0)
     assert.ok(!existsSync(join(home, '.claude')), 'should exit before creating anything')

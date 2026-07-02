@@ -6,12 +6,14 @@ allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Manually invoke when task scope or risk is unclear — classifies by tier and routes to the correct skill.
 model: claude-sonnet-5
 effort: medium
-argument-hint: "[task or target]"
+argument-hint: "[task — goal plus any known files or constraints]"
 ---
 
 # smart-task
 
 Classify and route: $ARGUMENTS
+
+If the argument is empty or too vague to classify, infer the task from recent conversation; still ambiguous → ask ONE specific question, then classify.
 
 ## Tier detection
 

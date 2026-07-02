@@ -13,6 +13,8 @@ argument-hint: "[feature description]"
 3. Auto-test: backend (service/controller/handler/repo) → `jest [file].spec.ts --no-coverage`, no spec → add 3 tests (happy+edge+error). Mobile/API route → targeted test. Pure UI → TEST: skipped.
 4. Hard stop: auth/payment/DB schema/migrations/secrets/CI → escalate, don't implement. No new deps without justification.
 
+Do not use for: bug fixes (`bug-fix`), pure UI tweaks (`ui-change`), large/architectural features (`feature-plan` first), or greenfield projects (`from-scratch`).
+
 ## Output
 
 ```text

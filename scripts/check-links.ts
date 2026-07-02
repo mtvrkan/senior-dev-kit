@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Scans every markdown file in the repo for relative links pointing to files
- * that don't exist on disk. Skips external URLs (http:, mailto:, etc.) and
- * same-file anchor-only links (#foo).
+ * that don't exist on disk, and for anchor links (#section, file.md#section)
+ * pointing to headings that don't exist. Skips external URLs (http:, mailto:, etc.).
  *
  * Usage: node --experimental-strip-types scripts/check-links.ts
  */
@@ -37,7 +37,8 @@ for (const file of files) {
   const content = readFileSync(file, 'utf8')
   for (const b of findBrokenLinks(file, content)) {
     const rel = relative(ROOT, b.file).replace(/\\/g, '/')
-    console.error(`  ✗ ${rel}:${b.line} — broken link to '${b.target}'`)
+    const what = b.reason === 'missing-anchor' ? 'link to missing anchor' : 'broken link to'
+    console.error(`  ✗ ${rel}:${b.line} — ${what} '${b.target}'`)
     totalBroken++
   }
 }

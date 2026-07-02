@@ -98,12 +98,12 @@ RISK: T2 · senior-engineer · new API endpoint
 Add a published_at timestamp to products
 ```
 
-**Auto-routing:** migration keyword → `migration-guard`
+**Auto-routing:** DB schema signal → `db-guard` (hands off to `migration-guard` for the migration file)
 
 **Output**
 
 ```text
-ESCALATE TO: db-guard — migration file detected
+ESCALATE TO: db-guard — schema change detected
 
 DB CHANGE REVIEW
 Change: products.published_at TIMESTAMPTZ nullable

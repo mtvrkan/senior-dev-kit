@@ -1,3 +1,8 @@
+---
+description: Research a topic thoroughly across multiple sources with fact-checking.
+argument-hint: "[topic]"
+---
+
 # /deep-research
 
 Research this topic thoroughly: $ARGUMENTS

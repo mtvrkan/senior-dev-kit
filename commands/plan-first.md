@@ -1,3 +1,8 @@
+---
+description: Force plan-first behavior — produce a plan for the task with no code edits.
+argument-hint: "[task]"
+---
+
 # /plan-first
 
 Plan this work safely. No code edits.

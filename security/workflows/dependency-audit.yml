@@ -58,6 +58,7 @@ jobs:
       - name: Detect manifest files
         id: files
         run: |
+          set -euo pipefail
           exists_any() {
             for pattern in "$@"; do
               if compgen -G "$pattern" > /dev/null; then echo true; return; fi

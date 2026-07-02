@@ -1,3 +1,8 @@
+---
+description: Classify and route a task to the right agent and skill before coding.
+argument-hint: "[task]"
+---
+
 # /smart-task
 
 Classify and route the task before coding.

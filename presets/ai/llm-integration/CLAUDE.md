@@ -4,10 +4,10 @@
 
 | Need | Model | Why |
 | --- | --- | --- |
-| Complex reasoning, long context | claude-sonnet-5 / opus-4-8 | Best quality |
+| Complex reasoning, long context | claude-sonnet-5 / claude-opus-4-8 | Best quality |
 | Fast, cheap, high-volume | claude-haiku-4-5-20251001 | Low latency + cost |
 | Structured output (JSON) | Any Claude model + tool_use | More reliable than JSON-mode |
-| Embeddings | text-embedding-3-small (OpenAI) / voyage-3 (Anthropic) | Match to retrieval use case |
+| Embeddings | voyage-3 (Voyage AI — Anthropic-recommended) / text-embedding-3-small (OpenAI) | Anthropic has no embeddings API |
 
 Never hardcode model name in business logic — inject via config/env (`MODEL_ID=...`).
 
@@ -73,6 +73,10 @@ if (toolUse && toolUse.type === 'tool_use') {
 ## RAG — Retrieval Augmented Generation
 
 ```typescript
+// Anthropic has no embeddings API — use Voyage AI (recommended) or OpenAI
+import OpenAI from 'openai'
+const openai = new OpenAI()  // swap for the 'voyageai' client if using voyage-3
+
 // 1. Embed the query
 const embedding = await openai.embeddings.create({
   model: 'text-embedding-3-small',

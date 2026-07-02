@@ -1,3 +1,8 @@
+---
+description: Run a pre-release safety checklist with a GO / NO-GO verdict per item.
+argument-hint: "[release or version]"
+---
+
 # /release-gate
 
 Prepare a release safety check for: $ARGUMENTS

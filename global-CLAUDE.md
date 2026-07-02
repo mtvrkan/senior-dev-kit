@@ -221,7 +221,7 @@ Patterns below are abbreviated for brevity — each rule file's own frontmatter 
 800-llm-safety (**/ai/**,**/llm/**,**/openai/**,**/anthropic/**,**/claude/**) — prompt injection, output trust, cost controls
 900-performance (**/*.ts,**/*.tsx,**/*.py,**/*.go,**/*.java,**/*.cs) — CWV budgets, bundle limits, API latency, N+1
 
-Lazy-load docs: agent_docs/architecture.md | design-system.md | testing-strategy.md |
+Lazy-load docs (all under agent_docs/): architecture.md | design-system.md | testing-strategy.md |
 security-protocols.md | api-design-patterns.md | seo-patterns.md | error-handling-patterns.md |
 from-scratch-guide.md | new-page-guide.md | new-screen-guide.md | dep-check-guide.md |
 env-audit-guide.md | api-versioning-guide.md | academic-writing-guide.md | zero-downtime-migration.md

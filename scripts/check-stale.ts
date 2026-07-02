@@ -39,6 +39,9 @@ const MS_PER_DAY = 86_400_000
 // Matches rows with a backtick-quoted name and a YYYY-MM-DD date.
 // Example:  | **Web** | `nextjs-saas` | Next.js 14–15 | 2026-06-30 |
 const ROW_RE = /\|\s*`([a-zA-Z0-9-]+)`\s*\|[^|]+\|\s*(\d{4}-\d{2}-\d{2})\s*\|/g
+// Same pattern without the global flag — safe for repeated .test() calls
+// (a global regex would carry lastIndex state between lines).
+const ROW_LINE_RE = new RegExp(ROW_RE.source)
 
 // A row inside a "Last Reviewed" table that fails ROW_RE (moved date column,
 // missing backticks, extra pipes) would otherwise be skipped silently and its
@@ -46,7 +49,6 @@ const ROW_RE = /\|\s*`([a-zA-Z0-9-]+)`\s*\|[^|]+\|\s*(\d{4}-\d{2}-\d{2})\s*\|/g
 // flag non-parsing rows as malformed. Other tables in the same files
 // (e.g. Trigger/Action) carry no review dates and are ignored.
 function flagMalformedReviewRows(fileContent: string, fileLabel: string): void {
-  const rowLineRe = new RegExp(ROW_RE.source)
   let inReviewTable = false
   for (const rawLine of fileContent.split('\n')) {
     const line = rawLine.trim()
@@ -60,7 +62,7 @@ function flagMalformedReviewRows(fileContent: string, fileLabel: string): void {
     }
     if (!inReviewTable) continue
     if (/^\|[\s|:-]*\|$/.test(line)) continue // separator row
-    if (!rowLineRe.test(line)) {
+    if (!ROW_LINE_RE.test(line)) {
       const name = line.match(/`([a-zA-Z0-9-]+)`/)
       malformedDates.push(
         `${name ? name[1] : `'${line.slice(0, 60)}'`} (${fileLabel}) — row does not match the expected table format (| \`name\` | ... | YYYY-MM-DD |)`
@@ -356,7 +358,9 @@ if (exitCode === 0) {
   if (orphaned.length === 0) {
     console.log(`✓ No orphaned maintenance table rows.`)
   }
-  console.log(`✓ README.md count claims match disk.`)
+  if (existsSync(README_FILE)) {
+    console.log(`✓ README.md count claims match disk.`)
+  }
 }
 
 process.exit(exitCode)

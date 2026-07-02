@@ -39,6 +39,7 @@ jobs:
       - name: Detect Docker files
         id: files
         run: |
+          set -euo pipefail
           any=false
           root=false
           compose=false

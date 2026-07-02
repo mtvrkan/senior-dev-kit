@@ -19,3 +19,5 @@ Before any database change, produce this analysis:
 7. TESTS REQUIRED: what must be verified before applying
 
 Prefer additive changes. Never approve destructive operations without explicit user confirmation. For new entity/relation design before any schema exists, start with `data-modeling` instead.
+
+Deep reference: `agent_docs/zero-downtime-migration.md` — expand/contract phases and deploy ordering for multi-step strategies.

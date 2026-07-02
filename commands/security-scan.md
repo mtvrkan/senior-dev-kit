@@ -1,3 +1,8 @@
+---
+description: Run or plan a security scan for auth, payment, DB, API, secrets, or CI changes.
+argument-hint: "[target]"
+---
+
 # /security-scan
 
 Run or plan a security scan for: $ARGUMENTS

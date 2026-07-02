@@ -13,10 +13,14 @@
     "stale-check": "node --experimental-strip-types scripts/check-stale.ts",
     "link-check": "node --experimental-strip-types scripts/check-links.ts",
     "typecheck": "tsc --noEmit",
-    "check": "npm test && npm run validate && npm run stale-check && npm run link-check && npm run typecheck"
+    "lint": "eslint scripts/",
+    "check": "npm test && npm run validate && npm run stale-check && npm run link-check && npm run typecheck && npm run lint"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
-    "typescript": "^5.8.0"
+    "eslint": "^10.6.0",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.62.1"
   }
 }
