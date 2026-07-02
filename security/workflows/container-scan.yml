@@ -85,10 +85,10 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@b5730b8fd6c7a23571ce51c85b703a7af12e9847  # v3.10.0
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2  # v3.10.0
 
       - name: Build image (without pushing)
-        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f6b8c1  # v6.15.0
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4  # v6.15.0
         with:
           context: .
           push: false
@@ -118,14 +118,14 @@ jobs:
           category: trivy
 
       - name: Generate container SBOM
-        uses: anchore/sbom-action@e85651e4a9d9e72c05db7dd3f29ee4c72def2af2  # v0.15.11
+        uses: anchore/sbom-action@7ccf588e3cf3cc2611714c2eeae48550fbc17552  # v0.15.11
         with:
           image: ${{ env.IMAGE_NAME }}:scan
           format: cyclonedx-json
           output-file: container-sbom.cdx.json
 
       - name: Upload container SBOM
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549a0d0dc4a34b2  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: container-sbom-${{ github.sha }}
           path: container-sbom.cdx.json
