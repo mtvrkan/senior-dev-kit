@@ -35,6 +35,12 @@ describe('parseFrontmatter', () => {
     assert.strictEqual(parseFrontmatter('description: foo\n---\nbody'), null)
   })
 
+  test('tolerates a UTF-8 BOM before the opening ---', () => {
+    const bom = String.fromCharCode(0xfeff)
+    const fm = parseFrontmatter(bom + '---\ndescription: BOM file\nallowed-tools: Read\n---\nbody')
+    assert.strictEqual(fm!.description, 'BOM file')
+  })
+
   test('parses required fields from a valid block', () => {
     const content = [
       '---',

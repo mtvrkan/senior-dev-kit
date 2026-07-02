@@ -40,6 +40,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `skills/code-review`, `skills/feature-build` — explicit "Do not use for" boundary lines routing to the neighboring skill (`security-review`/`code-audit`/`dep-check`/`release-gate` and `bug-fix`/`ui-change`/`feature-plan`/`from-scratch` respectively)
 - `skills/db-change`, `skills/data-modeling` — "Deep reference" pointers to `agent_docs/zero-downtime-migration.md` and `agent_docs/architecture.md`
 - `skills/smart-task`, `skills/feature-plan` — explicit handling for empty/vague `$ARGUMENTS` (infer from conversation → ask one specific question / surface gaps in `OPEN:`) plus sharper `argument-hint` text
+- `settings.json` / `settings-template.json` — 32 more deny rules (56 → 88): download-pipe-execute via `zsh` and `wget -qO-`, disk destruction (`dd of=/dev/…`, `mkfs`, `shred`), Windows recursive deletes (`rd /s`, `rmdir /s`, `Remove-Item -Recurse -Force`), git data-loss commands (`branch -D main/master`, `push --delete`, `push origin :…`, `reflog expire`), and Read rules for home-directory credential stores (`~/.aws/**`, `~/.kube/config`, `~/.npmrc`, `~/.netrc`, `~/.docker/config.json`, `~/.pgpass`, `~/.vault-token`, Gradle/Maven credentials, shell history) plus project-relative `.npmrc`/`.netrc`
+- `SECURITY.md` — scope note stating plainly that deny rules are prefix/glob matchers (defence-in-depth, not a sandbox) and naming the layers above them
 
 ### Removed
 
@@ -65,6 +67,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `scripts/lib/frontmatter.ts` / `scripts/lib/links.ts` / `scripts/validate-skills.ts` — a UTF-8 BOM (common when files are saved by Windows editors) no longer breaks validation: `parseFrontmatter` and `findDuplicateFrontmatterKeys` would misreport a BOM'd file as having no frontmatter, the link checker would miss a first-line heading as an anchor target, and the agent→skill cross-reference would silently skip a BOM'd agent file; all entry points now share a `stripBom` helper (regression test added)
 - `agents/ROUTING.md` — the db-guard → migration-guard hand-off read as both mandatory and optional; now explicit: mandatory forward (schema-design requests always reach migration-guard), optional reverse (a pure migration review runs migration-guard standalone)
 - `scripts/check-stale.ts` — a review-table row that fails the expected `| \`name\` | ... | YYYY-MM-DD |` format is now reported as malformed instead of being silently skipped and misreported as an untracked item
 - `README.md` — Skills section now explains auto-invoked vs manual-only (`disable-model-invocation`) skills, so skills not referenced by any agent aren't mistaken for orphans

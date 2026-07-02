@@ -3,6 +3,7 @@
 // Skips external URLs (any scheme, e.g. http:, mailto:).
 import { existsSync, readFileSync } from 'fs'
 import { dirname, resolve } from 'path'
+import { stripBom } from './frontmatter.ts'
 
 const LINK_RE = /\[[^\]]*\]\(([^)]+)\)/g
 const SCHEME_RE = /^[a-z][a-z0-9+.-]*:/i
@@ -29,8 +30,10 @@ const HTML_ANCHOR_RE = /<a\s+(?:[^>]*\s)?(?:id|name)=["']([^"']+)["']/gi
 // Blanks out <!-- ... --> blocks (including multi-line ones) while preserving
 // newlines, so commented-out headings don't become anchor targets and
 // commented-out links aren't checked — without shifting reported line numbers.
+// Also strips a leading UTF-8 BOM, which would otherwise hide a first-line heading
+// from the ^-anchored HEADING_RE.
 function stripHtmlComments(content: string): string {
-  return content.replace(/<!--[\s\S]*?-->/g, m => m.replace(/[^\n]/g, ' '))
+  return stripBom(content).replace(/<!--[\s\S]*?-->/g, m => m.replace(/[^\n]/g, ' '))
 }
 
 export function extractLinks(content: string): LinkRef[] {

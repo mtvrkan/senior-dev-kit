@@ -6,7 +6,7 @@
 import { readFileSync, readdirSync, existsSync } from 'fs'
 import { join, relative, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { parseFrontmatter, findDuplicateFrontmatterKeys } from './lib/frontmatter.ts'
+import { parseFrontmatter, findDuplicateFrontmatterKeys, stripBom } from './lib/frontmatter.ts'
 import { validatePresetClaudeMd, findPresetDirs, checkCompactMd } from './lib/presets.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -154,7 +154,7 @@ if (existsSync(AGENTS_DIR)) {
   for (const file of readdirSync(AGENTS_DIR)) {
     if (!file.endsWith('.md')) continue
     const content = readFileSync(join(AGENTS_DIR, file), 'utf8')
-    const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/)
+    const match = stripBom(content).match(/^---\r?\n([\s\S]*?)\r?\n---/)
     if (!match) continue
 
     const skillsKeyMatch = match[1].match(/^skills:(.*)$/m)

@@ -48,7 +48,9 @@ Out of scope:
 
 The kit enforces several defence-in-depth measures:
 
-1. **56 Read/Bash deny rules** in `settings.json` — blocks `rm -rf`/`rm -fr` (including trailing-slash and glob forms), `find -delete` on root paths, `git push --force`, `curl | bash`/`curl | sh` and the `bash <(curl …)` process-substitution form, `sudo rm`/`sudo chmod`/`sudo chown`, `chmod` 777/000 in short and long flag forms, `pip`/`pip3 --break-system-packages`, secret file reads, and similar destructive patterns.
+1. **88 Read/Bash deny rules** in `settings.json` — blocks `rm -rf`/`rm -fr` (including trailing-slash and glob forms), `find -delete` on root paths, disk destruction (`dd of=/dev/…`, `mkfs`, `shred`), Windows recursive deletes (`rd /s`, `Remove-Item -Recurse -Force`), `git push --force` and other git data-loss commands (`branch -D main/master`, `push --delete`, `reflog expire`), download-pipe-execute in every common form (`curl|wget` piped to `bash`/`sh`/`zsh`, `wget -qO-`, and `bash <(curl …)` process substitution), `sudo rm`/`sudo chmod`/`sudo chown`, `chmod` 777/000 in short and long flag forms, `pip`/`pip3 --break-system-packages`, and secret-file reads covering both project-relative files and home-directory credential stores (`~/.aws/**`, `~/.kube/config`, `~/.npmrc`, `~/.netrc`, `~/.docker/config.json`, shell history, and more).
+
+   **Scope note:** deny rules are prefix/glob matchers on the command string — defence-in-depth, not a sandbox. They stop the destructive patterns an assistant would plausibly emit; they cannot enumerate every shell-equivalent form. The guard agents and `global-CLAUDE.md` hard stops are the layers above them.
 2. **Guard agents with `permissionMode: plan`** — `security-guard`, `db-guard`, `migration-guard`, and `devops-guard` produce a written plan and pause for explicit user approval before any implementation.
 3. **OWASP 2025 passive scan** — every code change is silently scanned for injection, IDOR, mass assignment, ReDoS, SSRF, and supply chain issues.
 4. **SHA-pinned GitHub Actions** — all Actions in this repo are pinned to a full commit SHA, not mutable version tags.

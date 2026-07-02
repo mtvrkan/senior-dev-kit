@@ -1,8 +1,14 @@
+// A UTF-8 BOM (common when files are saved by Windows editors) would make the
+// ^--- anchor miss and misreport the file as having no frontmatter at all.
+export function stripBom(content: string): string {
+  return content.charCodeAt(0) === 0xfeff ? content.slice(1) : content
+}
+
 // Parses YAML-like frontmatter from a markdown file.
 // Returns a flat key→value object, or null if no --- block is found.
 // List items, blank lines, and indented continuation lines are skipped.
 export function parseFrontmatter(content: string): Record<string, string> | null {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/)
+  const match = stripBom(content).match(/^---\r?\n([\s\S]*?)\r?\n---/)
   if (!match) return null
   const fm: Record<string, string> = {}
   for (const line of match[1].split(/\r?\n/)) {
@@ -19,7 +25,7 @@ export function parseFrontmatter(content: string): Record<string, string> | null
 // Returns any top-level frontmatter keys that appear more than once — a copy/paste
 // mistake the flat key→value parse above would otherwise silently resolve by last-write-wins.
 export function findDuplicateFrontmatterKeys(content: string): string[] {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/)
+  const match = stripBom(content).match(/^---\r?\n([\s\S]*?)\r?\n---/)
   if (!match) return []
   const seen = new Set<string>()
   const duplicates = new Set<string>()
