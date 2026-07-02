@@ -22,6 +22,16 @@ export function parseFrontmatter(content: string): Record<string, string> | null
   return fm
 }
 
+// Returns the markdown body after the closing frontmatter delimiter (or '' if there
+// is no frontmatter block). Reuses the same non-greedy regex as parseFrontmatter so a
+// literal "\n---" inside the body itself (e.g. a YAML code sample) can't be mistaken
+// for the closing delimiter the way a plain indexOf('\n---') scan would.
+export function getBodyAfterFrontmatter(content: string): string {
+  const stripped = stripBom(content)
+  const match = stripped.match(/^---\r?\n[\s\S]*?\r?\n---/)
+  return match ? stripped.slice(match[0].length) : ''
+}
+
 // Returns any top-level frontmatter keys that appear more than once — a copy/paste
 // mistake the flat key→value parse above would otherwise silently resolve by last-write-wins.
 export function findDuplicateFrontmatterKeys(content: string): string[] {

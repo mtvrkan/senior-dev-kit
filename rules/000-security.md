@@ -51,7 +51,7 @@ Run silently. If any check fires: STOP → flag → propose fix → continue.
 
 ## SUPPLY CHAIN RULES (2025)
 
-- Pin ALL GitHub Actions to full commit SHA — never mutable tags (enforcement active Aug 2025)
+- Pin ALL GitHub Actions to full commit SHA — never mutable tags (enforced since Aug 2025)
   `uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2`
 - Use OIDC for cloud auth (AWS/GCP/Azure) — never long-lived secrets in Actions secrets
 - `npm ci` in CI (never `npm install`) — `ci` already fails on a lockfile/manifest mismatch, no flag needed; `--frozen-lockfile` is a Yarn/pnpm flag, not npm's (npm warns "Unknown cli config" today and will hard-error in a future major version)

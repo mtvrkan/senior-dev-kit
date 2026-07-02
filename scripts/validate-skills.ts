@@ -6,7 +6,7 @@
 import { readFileSync, readdirSync, existsSync } from 'fs'
 import { join, relative, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { parseFrontmatter, findDuplicateFrontmatterKeys, stripBom } from './lib/frontmatter.ts'
+import { parseFrontmatter, findDuplicateFrontmatterKeys, getBodyAfterFrontmatter, stripBom } from './lib/frontmatter.ts'
 import { validatePresetClaudeMd, findPresetDirs, checkCompactMd } from './lib/presets.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -109,8 +109,7 @@ function validateSkill(filePath: string): void {
     ok = false
   }
 
-  const frontmatterEnd = content.indexOf('\n---', content.indexOf('---') + 3)
-  const body = frontmatterEnd !== -1 ? content.slice(frontmatterEnd + 4) : ''
+  const body = getBodyAfterFrontmatter(content)
   const bodyLines = body.split('\n').filter(l => l.trim() !== '').length
   if (bodyLines > SKILL_BODY_MAX_LINES) {
     console.error(`  ✗ ${rel} — body is ${bodyLines} non-blank lines (required ≤${SKILL_BODY_MAX_LINES} per CONTRIBUTING.md); split detail into agent_docs/`)

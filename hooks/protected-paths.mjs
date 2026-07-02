@@ -21,6 +21,8 @@
 // (a future Claude Code format change), it exits 0 rather than bricking
 // every edit — the prompt-level hard stops in CLAUDE.md remain the fallback.
 
+import { realpathSync } from 'fs'
+
 // Patterns are written in lowercase and tested against a lowercased path:
 // Windows and macOS filesystems are case-insensitive, so `Middleware.ts` or
 // `DOCKERFILE.prod` must trigger the same prompt as their lowercase forms.
@@ -99,8 +101,22 @@ if (!filePath) process.exit(0)
 
 const displayPath = filePath.replace(/\\/g, '/')
 const normalized = displayPath.toLowerCase()
+
+// Resolve symlinks so an innocuous-looking alias (e.g. `config.json` symlinked
+// to `.env`) can't reach a protected file without tripping the pattern match
+// below — realpathSync resolves every path component, so a symlinked parent
+// directory is covered too. Most edits are to files that don't exist yet
+// (Write of a new file) or aren't symlinks, so ENOENT/EINVAL there just means
+// "match on the literal path only", not a hook failure.
+let resolvedNormalized = normalized
+try {
+  resolvedNormalized = realpathSync(filePath).replace(/\\/g, '/').toLowerCase()
+} catch {
+  // no-op: fall back to the literal path
+}
+
 for (const category of CATEGORIES) {
-  if (category.patterns.some(re => re.test(normalized))) {
+  if (category.patterns.some(re => re.test(normalized) || re.test(resolvedNormalized))) {
     if (process.env.SDK_ALLOW_PROTECTED === '1') {
       console.error(
         JSON.stringify({

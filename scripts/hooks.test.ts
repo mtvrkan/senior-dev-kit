@@ -4,7 +4,9 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'child_process'
+import { mkdtempSync, writeFileSync, symlinkSync, rmSync } from 'fs'
 import { join } from 'path'
+import { tmpdir } from 'os'
 import { fileURLToPath } from 'url'
 
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url))
@@ -119,6 +121,27 @@ describe('protected-paths hook', () => {
     assert.strictEqual(r.status, 0)
     assert.strictEqual(r.stdout, '')
     assert.strictEqual(r.stderr, '')
+  })
+
+  test('resolves symlinks so an alias name cannot reach a protected file', t => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'sdk-hook-'))
+    const target = join(tmpDir, '.env')
+    const alias = join(tmpDir, 'config.json')
+    writeFileSync(target, 'SECRET=1')
+    try {
+      symlinkSync(target, alias)
+    } catch {
+      // Creating symlinks needs elevated privileges/Developer Mode on some
+      // Windows setups — skip rather than fail the suite on those machines.
+      t.skip('symlink creation not permitted on this machine')
+      rmSync(tmpDir, { recursive: true, force: true })
+      return
+    }
+    const r = runHook(editPayload(alias))
+    const out = JSON.parse(r.stdout)
+    assert.strictEqual(out.hookSpecificOutput.permissionDecision, 'ask')
+    assert.ok(out.hookSpecificOutput.permissionDecisionReason.includes('secrets'))
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 
   test('fails open on malformed input', () => {
