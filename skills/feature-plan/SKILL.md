@@ -8,7 +8,7 @@ argument-hint: "[feature — goal, constraints, affected areas if known]"
 
 # feature-plan
 
-Produce a detailed, executable plan for multi-file/risky features. No code edits, wait for confirmation. Auto-fires for clear feature work — for non-feature or ambiguous-scope tasks, use `plan-first` instead. If the feature description lacks a goal or scope, fill `OPEN:` with the missing questions instead of guessing.
+Produce a detailed, executable plan for multi-file/risky features. No code edits, wait for confirmation. Auto-fires for clear feature work (the request names a thing to build). For non-feature risky work — a refactor, a config/infra change, an ambiguous "make X better" ask — use `plan-first` instead; it takes the same output format at opus-level effort. If the feature description lacks a goal or scope, fill `OPEN:` with the missing questions instead of guessing.
 
 ## Output format
 

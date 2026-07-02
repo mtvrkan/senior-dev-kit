@@ -33,6 +33,10 @@ describe('protected-paths hook', () => {
     ['services/billing/invoice.ts', 'payment/billing'],
     ['db/migrations/20260701_add_users.sql', 'DB schema/migration'],
     ['prisma/schema.prisma', 'DB schema/migration'],
+    ['db/migrate/20260701120000_add_users.rb', 'DB schema/migration'], // Rails: db/migrate/ (singular)
+    ['drizzle/0001_snowy_avengers.sql', 'DB schema/migration'], // Drizzle default output dir, not migrations/
+    ['alembic/versions/ae1027a6acf.py', 'DB schema/migration'], // SQLAlchemy/Alembic
+    ['db/20260701120000_create_users.sql', 'DB schema/migration'], // timestamped filename outside any migrations dir
     ['.github/workflows/ci.yml', 'CI/CD & infrastructure'],
     ['Dockerfile', 'CI/CD & infrastructure'],
     ['infra/main.tf', 'CI/CD & infrastructure'],

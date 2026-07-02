@@ -8,6 +8,8 @@ argument-hint: "[file, endpoint, or area to profile]"
 
 # performance-check
 
+`code-review` flags obvious N+1/perf smells inline as one of ten checks on a diff; this skill is the deep-dive when that flag needs an actual investigation, or when the user names a slow endpoint/query directly.
+
 Investigate in this order:
 
 1. QUERY PATTERNS: N+1 problems, missing indexes, full table scans

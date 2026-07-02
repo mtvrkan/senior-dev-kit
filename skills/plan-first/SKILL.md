@@ -11,7 +11,7 @@ argument-hint: "[task or target]"
 
 # plan-first
 
-Plan this work safely: $ARGUMENTS. No code edits — produce plan, then wait for "go". Manual override to force deep, opus-level planning on any risky or ambiguous-scope task (not just features — see `feature-plan` for the auto-firing feature-specific version).
+Plan this work safely: $ARGUMENTS. No code edits — produce plan, then wait for "go". Manual override to force deep, opus-level planning on any risky or ambiguous-scope task — refactors, config/infra changes, or "make X better" asks that `feature-plan` wouldn't auto-fire on because nothing new is being built. Also invoke this directly when a request would auto-fire `feature-plan` but you want opus-level depth instead of the default.
 
 ## Output format
 

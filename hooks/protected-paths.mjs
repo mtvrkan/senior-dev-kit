@@ -57,7 +57,17 @@ const CATEGORIES = [
   {
     name: 'DB schema/migration',
     guard: 'migration-guard',
-    patterns: [/(^|\/)migrations?\//, /\.prisma$/, /(^|\/)schema\.(sql|rb)$/, /drizzle\.config\./, /knexfile\./],
+    patterns: [
+      /(^|\/)migrations?\//,
+      /(^|\/)migrate\//, // Rails convention: db/migrate/ (singular, no "s")
+      /(^|\/)drizzle\//, // Drizzle's default migration output dir isn't named migrations/
+      /(^|\/)alembic\/versions\//, // SQLAlchemy/Alembic revision files
+      /\.prisma$/,
+      /(^|\/)schema\.(sql|rb)$/,
+      /drizzle\.config\./,
+      /knexfile\./,
+      /(^|\/)\d{4,}[_-][^/]+\.(sql|rb|py|ts|js)$/, // timestamped/numbered migration filenames outside any of the above dirs
+    ],
   },
   {
     name: 'CI/CD & infrastructure',

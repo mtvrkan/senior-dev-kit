@@ -188,6 +188,8 @@ When two rules conflict, the highest rule in this list wins:
 | `**/*.ts` / `**/*.tsx` / `**/*.py` / `**/*.go` / `**/*.cs` | 900-performance.md |
 | Everything else | 001-conventions.md |
 
+`700-observability.md` and `900-performance.md` intentionally auto-load together for almost the same file types — this is not a precedence conflict; both apply simultaneously (700 governs what to log, 900 governs latency/bundle budgets). The "highest wins" rule above only resolves cases where two rules give contradictory instructions for the same file; these two never contradict, so apply both in full.
+
 ## OBSERVABILITY
 
 When adding/changing any service, handler, or job:

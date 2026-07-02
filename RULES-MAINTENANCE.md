@@ -16,16 +16,16 @@ Rules carry engineering standards loaded into every session; they must be review
 | Rule File | Scope / Domain | Last Reviewed |
 | --- | --- | --- |
 | `000-security` | Security scan, OWASP 2025, supply chain | 2026-06-30 |
-| `001-conventions` | Architecture detection, modern tech preferences | 2026-06-30 |
+| `001-conventions` | Architecture detection, modern tech preferences | 2026-07-02 |
 | `100-web` | Design tokens, 8px grid, SEO, WCAG 2.2 | 2026-06-30 |
 | `200-api` | REST, OpenAPI 3.1, RFC 7807, rate limiting | 2026-06-30 |
 | `300-testing` | Test pyramid, mock policy, coverage targets | 2026-06-30 |
 | `400-mobile` | iOS/Android/Flutter/RN platform patterns | 2026-06-30 |
 | `500-database` | Schema safety, N+1 prevention, RLS | 2026-06-30 |
 | `600-devops` | Dockerfile, GitHub Actions, IaC security | 2026-06-30 |
-| `700-observability` | Logging levels, metrics, tracing | 2026-06-30 |
+| `700-observability` | Logging levels, metrics, tracing | 2026-07-02 |
 | `800-llm-safety` | Prompt injection, cost controls, AI safety | 2026-06-30 |
-| `900-performance` | CWV budgets, N+1, bundle limits | 2026-06-30 |
+| `900-performance` | CWV budgets, N+1, bundle limits | 2026-07-02 |
 
 ---
 

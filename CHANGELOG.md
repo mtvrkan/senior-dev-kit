@@ -7,10 +7,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `settings.json` / `settings-template.json` — the `curl|wget | bash/sh/zsh`, process-substitution, and `-c` inline-interpreter deny rules matched only the bare interpreter name; added `/bin/`- and `/usr/bin/`-qualified path variants (e.g. `curl * | /bin/bash`) so the literal-string matcher can't be bypassed by spelling out the interpreter's full path. Deny rule count: 101 → 119. `SECURITY.md` updated to match.
+- `hooks/protected-paths.mjs` — the DB schema/migration category only matched a `migrations?/` directory, missing Rails' `db/migrate/` (singular), Drizzle's default `drizzle/` output dir, Alembic's `alembic/versions/`, and timestamped/numbered migration filenames living outside any of those conventions. Added patterns for all four; added matching cases to `scripts/hooks.test.ts` (119 → 123 tests).
+- `skills/code-review/SKILL.md` — resolved a scope contradiction: the skill said "do not use for security-focused audits" while its own checklist included an auth-gap check. Clarified that code-review's auth/injection items are an inline sanity check on the diff, not a substitute for `security-review`; same fix for the performance item vs. `performance-check`.
+
 ### Changed
 
 - `agents/ROUTING.md` — added a Mermaid flowchart summarizing the Step 1–4 decision tree as a reading aid alongside the authoritative tables
-- `rules/700-observability.md` / `rules/900-performance.md` — cross-referenced each other with a `Related:` note; the two rules auto-load for nearly identical glob sets (logging vs. latency/bundle budgets on the same files)
+- `rules/700-observability.md` / `rules/900-performance.md` — cross-referenced each other with a `Related:` note; the two rules auto-load for nearly identical glob sets (logging vs. latency/bundle budgets on the same files). Made explicit in both files and in `rules/001-conventions.md`'s scope-signals table that this is intentional co-loading, not an unresolved precedence conflict — the two rules never give contradictory instructions.
+- `skills/feature-plan/SKILL.md` / `skills/plan-first/SKILL.md` — sharpened the auto-fire vs. manual-override distinction with a concrete rule ("names a thing to build" vs. refactor/config/ambiguous work) instead of just "features vs. non-features."
+- `skills/performance-check/SKILL.md` — added a one-line cross-reference clarifying its relationship to `code-review`'s inline perf flag.
 
 ---
 

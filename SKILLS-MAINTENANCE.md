@@ -38,8 +38,8 @@ Skills are slash-command-style, auto-invocable playbooks; they must be reviewed 
 | `monorepo-task` | Workspace-scoped task routing for monorepos | 2026-07-01 |
 | `new-page` | New admin panel page/screen from scratch (web) | 2026-07-01 |
 | `new-screen` | New mobile screen/bottom sheet from scratch | 2026-07-01 |
-| `performance-check` | Slow code, slow queries, bundle size, caching, latency | 2026-07-01 |
-| `plan-first` | Manual plan-first gate before risky/multi-file work | 2026-07-01 |
+| `performance-check` | Slow code, slow queries, bundle size, caching, latency | 2026-07-02 |
+| `plan-first` | Manual plan-first gate before risky/multi-file work | 2026-07-02 |
 | `refactor-safe` | Behavior-preserving refactors with strong verification | 2026-07-02 |
 | `release-check` | Pre-release build/test/migration/env/changelog check | 2026-07-01 |
 | `release-gate` | Manual pre-release gate (tests, build, migrations, rollback) | 2026-07-01 |

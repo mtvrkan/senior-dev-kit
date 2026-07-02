@@ -8,9 +8,9 @@ argument-hint: "[files or diff scope (optional — defaults to recent changes)]"
 
 # code-review
 
-Review for actionable risks only. Skip subjective style. Read changed files + directly imported deps only. Auto-fires after meaningful changes — for a manual, higher-effort review before merge/deploy, use `safe-review` instead.
+Review for actionable risks only. Skip subjective style. Read changed files + directly imported deps only. Auto-fires after meaningful changes — for a manual, higher-effort review before merge/deploy, use `safe-review` instead. If the user's own words ask for a deeper or manual pre-merge pass (not just "review this"), or if this diff touches a guarded domain (auth/payment/DB/CI), prefer `safe-review`.
 
-Do not use for: security-focused audits (`security-review`), whole-repo health scans (`code-audit`), dependency CVE checks (`dep-check`), or pre-release gating (`release-gate`).
+Do not use for: a dedicated, exhaustive security audit (`security-review`) — items (5) and (7) below are an inline sanity check on the diff, not a substitute for one; whole-repo health scans (`code-audit`); dependency CVE checks (`dep-check`); pre-release gating (`release-gate`); or a deep performance investigation (`performance-check`) — item (10) below is a quick flag, not a profiling pass.
 
 Review order: (1) correctness bugs — logic errors, off-by-one, wrong condition, unhandled null/undefined. (2) regressions — breaks behavior callers depend on? (3) breaking changes — endpoint removed/renamed, required field added → grep for callers. (4) missing validation — unvalidated input reaching DB or executing code. (5) auth gaps — unauthenticated access, missing ownership check, role bypass.
 (6) data loss — overwriting without backup, missing transaction, destructive op. (7) injection — SQL/NoSQL/XSS/command via unsanitized input. (8) race conditions — non-atomic check-then-act, missing lock. (9) missing tests — behavior changed with no test update. (10) performance — N+1, expensive loop, unnecessary full-table scan.

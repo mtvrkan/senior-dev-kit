@@ -3,7 +3,7 @@ description: "Logging, metrics, tracing — every service and handler change"
 globs: "**/*.ts,**/*.py,**/*.go,**/*.java,**/*.cs,**/*.rb"
 ---
 
-> Related: [`900-performance.md`](900-performance.md) auto-loads for almost the same glob set — this file covers what to log, that one covers latency/bundle budgets. Keep tool/version recommendations in sync if you touch both.
+> Related: [`900-performance.md`](900-performance.md) auto-loads for almost the same glob set — this file covers what to log, that one covers latency/bundle budgets. They never contradict, so both apply in full (not a precedence conflict — see `001-conventions.md`'s Rule Precedence section). Keep tool/version recommendations in sync if you touch both.
 
 ## LOGGING RULES — zero console.log in production
 
