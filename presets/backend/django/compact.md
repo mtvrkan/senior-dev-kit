@@ -1,4 +1,4 @@
-- Detect frontend approach: Django Admin (+Unfold/Jazzmin), DRF+SPA, HTMX templates, plain Blade templates
+- Detect frontend approach: Django Admin (+Unfold/Jazzmin), DRF+SPA, HTMX templates, plain Django templates
 - Views: keep thin — all validation in serializers/FormRequest/managers, not views; `ModelViewSet` permission_classes required
 - Permissions: `permission_classes` on every viewset; check object ownership with `has_object_permission`; never trust client-sent user IDs
 - N+1: use `select_related` / `prefetch_related` for relations; `transaction.atomic()` for multi-step writes
