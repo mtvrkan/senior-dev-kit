@@ -1,6 +1,9 @@
 ﻿# Install Senior Dev Kit to $env:USERPROFILE\.claude\
 # Usage: .\install.ps1 [-Preset react-vite]
 [CmdletBinding()]
+# Write-Host is deliberate here: this is an interactive installer whose colored
+# status lines are UI, not pipeline data — Write-Output would pollute the pipeline.
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
 param(
     [string]$Preset  = "",
     [switch]$Detect
@@ -31,14 +34,14 @@ function Backup-ClaudeMd {
 
 # Counts files actually present in a destination dir so the install summary
 # reflects what was copied, not a hardcoded number.
-function Count-Files($path) { @(Get-ChildItem -Path $path -File -Recurse).Count }
+function Get-FileCount($path) { @(Get-ChildItem -Path $path -File -Recurse).Count }
 
 # Fails the install if the destination holds fewer files than the kit ships
 # (-lt because a reinstall may merge over extra user-added files), so a
 # truncated or partial copy can't end in a misleading "Done".
-function Verify-Copy($src, $dest, $label) {
-    $srcCount = Count-Files $src
-    $destCount = Count-Files $dest
+function Test-Copy($src, $dest, $label) {
+    $srcCount = Get-FileCount $src
+    $destCount = Get-FileCount $dest
     if ($destCount -lt $srcCount) {
         Write-Error "${label}/ copy incomplete — expected at least $srcCount files, found $destCount. Re-run the installer." -ErrorAction Continue
         exit 1
@@ -48,7 +51,7 @@ function Verify-Copy($src, $dest, $label) {
 # Backs up an existing destination directory (if it already has files) to a
 # timestamped sibling before it gets overwritten, so a repeated install never
 # silently destroys customizations the user placed directly under ~/.claude/.
-function Backup-DirIfExists($dest) {
+function Backup-Dir($dest) {
     if (Test-Path $dest) {
         $hasContent = Get-ChildItem -Path $dest -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($hasContent) {
@@ -136,56 +139,56 @@ New-Item -ItemType Directory -Force -Path $ClaudeDir | Out-Null
 # --- rules ---
 Step "Copying rules..."
 $dest = Join-Path $ClaudeDir "rules"
-Backup-DirIfExists $dest
+Backup-Dir $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "rules\*") -Destination $dest -Recurse -Force
-Verify-Copy (Join-Path $ScriptDir "rules") $dest "rules"
-Ok "rules/ ($(Count-Files $dest) files)"
+Test-Copy (Join-Path $ScriptDir "rules") $dest "rules"
+Ok "rules/ ($(Get-FileCount $dest) files)"
 
 # --- skills ---
 Step "Copying skills..."
 $dest = Join-Path $ClaudeDir "skills"
-Backup-DirIfExists $dest
+Backup-Dir $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "skills\*") -Destination $dest -Recurse -Force
-Verify-Copy (Join-Path $ScriptDir "skills") $dest "skills"
-Ok "skills/ ($(Count-Files $dest) files)"
+Test-Copy (Join-Path $ScriptDir "skills") $dest "skills"
+Ok "skills/ ($(Get-FileCount $dest) files)"
 
 # --- commands ---
 Step "Copying commands..."
 $dest = Join-Path $ClaudeDir "commands"
-Backup-DirIfExists $dest
+Backup-Dir $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "commands\*") -Destination $dest -Recurse -Force
-Verify-Copy (Join-Path $ScriptDir "commands") $dest "commands"
-Ok "commands/ ($(Count-Files $dest) files)"
+Test-Copy (Join-Path $ScriptDir "commands") $dest "commands"
+Ok "commands/ ($(Get-FileCount $dest) files)"
 
 # --- agents ---
 Step "Copying agents..."
 $dest = Join-Path $ClaudeDir "agents"
-Backup-DirIfExists $dest
+Backup-Dir $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "agents\*") -Destination $dest -Recurse -Force
-Verify-Copy (Join-Path $ScriptDir "agents") $dest "agents"
-Ok "agents/ ($(Count-Files $dest) files)"
+Test-Copy (Join-Path $ScriptDir "agents") $dest "agents"
+Ok "agents/ ($(Get-FileCount $dest) files)"
 
 # --- agent_docs ---
 Step "Copying agent_docs (lazy-load reference)..."
 $dest = Join-Path $ClaudeDir "agent_docs"
-Backup-DirIfExists $dest
+Backup-Dir $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "agent_docs\*") -Destination $dest -Recurse -Force
-Verify-Copy (Join-Path $ScriptDir "agent_docs") $dest "agent_docs"
-Ok "agent_docs/ ($(Count-Files $dest) files)"
+Test-Copy (Join-Path $ScriptDir "agent_docs") $dest "agent_docs"
+Ok "agent_docs/ ($(Get-FileCount $dest) files)"
 
 # --- hooks (opt-in enforcement layer — copied but NOT activated; see hooks/README.md) ---
 Step "Copying hooks (opt-in — activate via settings.json, see hooks/README.md)..."
 $dest = Join-Path $ClaudeDir "hooks"
-Backup-DirIfExists $dest
+Backup-Dir $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "hooks\*") -Destination $dest -Recurse -Force
-Verify-Copy (Join-Path $ScriptDir "hooks") $dest "hooks"
-Ok "hooks/ ($(Count-Files $dest) files) — opt-in, not active until wired into settings.json"
+Test-Copy (Join-Path $ScriptDir "hooks") $dest "hooks"
+Ok "hooks/ ($(Get-FileCount $dest) files) — opt-in, not active until wired into settings.json"
 
 # --- global-CLAUDE.md (when no project-specific preset is requested) ---
 if ($Preset -eq "") {

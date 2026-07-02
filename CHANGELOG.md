@@ -77,6 +77,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `install.ps1` — first real CI run of the PSScriptAnalyzer job surfaced pre-existing warnings that had never executed on GitHub before: `Count-Files`/`Verify-Copy`/`Backup-DirIfExists` renamed to the approved-verb, singular-noun forms `Get-FileCount`/`Test-Copy`/`Backup-Dir`, and the installer's deliberate interactive `Write-Host` output is now suppressed with a documented justification attribute instead of tripping `PSAvoidUsingWriteHost` (14/14 e2e tests still green)
+- `.github/ISSUE_TEMPLATE/preset_request.yml` — 204-character description line folded under yamllint's 200-char limit (the one hard error in the first YAML Lint CI run)
 - `INSTALL.md` — the expected-files tree claimed "33 skills" but listed only 32: `code-audit/SKILL.md` was missing from the tree (added in the code-audit release, never reflected here)
 - `scripts/lib/frontmatter.ts` / `scripts/lib/links.ts` / `scripts/validate-skills.ts` — a UTF-8 BOM (common when files are saved by Windows editors) no longer breaks validation: `parseFrontmatter` and `findDuplicateFrontmatterKeys` would misreport a BOM'd file as having no frontmatter, the link checker would miss a first-line heading as an anchor target, and the agent→skill cross-reference would silently skip a BOM'd agent file; all entry points now share a `stripBom` helper (regression test added)
 - `agents/ROUTING.md` — the db-guard → migration-guard hand-off read as both mandatory and optional; now explicit: mandatory forward (schema-design requests always reach migration-guard), optional reverse (a pure migration review runs migration-guard standalone)

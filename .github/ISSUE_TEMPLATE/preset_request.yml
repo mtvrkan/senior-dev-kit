@@ -22,7 +22,9 @@ body:
     id: conventions
     attributes:
       label: Key conventions the preset should encode
-      description: The 5-10 decisions that make this stack different — state management, testing command, folder layout, ORM/query safety, deploy shape. Cite official docs where the choice is opinionated.
+      description: >-
+        The 5-10 decisions that make this stack different — state management, testing command,
+        folder layout, ORM/query safety, deploy shape. Cite official docs where the choice is opinionated.
     validations:
       required: true
   - type: checkboxes
