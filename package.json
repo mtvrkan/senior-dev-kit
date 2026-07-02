@@ -4,6 +4,14 @@
   "description": "Agent, skill and rule kit that gives Claude Code senior engineering team behavior.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mtvrkan/senior-dev-kit.git"
+  },
+  "homepage": "https://github.com/mtvrkan/senior-dev-kit#readme",
+  "bugs": {
+    "url": "https://github.com/mtvrkan/senior-dev-kit/issues"
+  },
   "engines": {
     "node": ">=22.6.0"
   },

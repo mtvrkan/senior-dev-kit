@@ -60,13 +60,13 @@ bash install.sh --preset=nextjs-saas
 **Tek komutluk alternatif (Node 22.6+, clone gerekmez):** npm sarmalayıcısı platformunuza uygun installer'ı seçer ve aynı bayrakları iletir:
 
 ```bash
-npx github:<owner>/senior-dev-kit --detect     # veya --preset=nextjs-saas
+npx github:mtvrkan/senior-dev-kit --detect     # veya --preset=nextjs-saas
 ```
 
 **Plugin alternatifi:** repo bir Claude Code plugin manifesti içerir (`.claude-plugin/`) — marketplace olarak ekleyip kurduğunuzda komutlar, agent'lar, skill'ler ve [korumalı-yol hook'u](hooks/README.md) otomatik kaydolur:
 
 ```text
-/plugin marketplace add <owner>/senior-dev-kit
+/plugin marketplace add mtvrkan/senior-dev-kit
 /plugin install senior-dev-kit@senior-dev-kit
 ```
 

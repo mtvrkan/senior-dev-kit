@@ -62,7 +62,7 @@ bash install.sh --preset=nextjs-saas
 right installer for your platform and forwards the same flags:
 
 ```bash
-npx github:<owner>/senior-dev-kit --detect     # or --preset=nextjs-saas
+npx github:mtvrkan/senior-dev-kit --detect     # or --preset=nextjs-saas
 ```
 
 **Plugin alternative:** the repo ships a Claude Code plugin manifest
@@ -70,7 +70,7 @@ npx github:<owner>/senior-dev-kit --detect     # or --preset=nextjs-saas
 agents, skills, and the [protected-path hook](hooks/README.md) register automatically:
 
 ```text
-/plugin marketplace add <owner>/senior-dev-kit
+/plugin marketplace add mtvrkan/senior-dev-kit
 /plugin install senior-dev-kit@senior-dev-kit
 ```
 
