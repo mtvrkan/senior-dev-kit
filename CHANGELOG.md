@@ -7,6 +7,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [1.0.1] — 2026-07-02
+
 ### Fixed
 
 - `hooks/protected-paths.mjs` — the hook matched only the literal `tool_input.file_path` string, so a symlink whose name didn't look protected (e.g. `config.json` pointing at `.env`) could reach a protected file without tripping the prompt. Now resolves the path with `realpathSync` (falling back to the literal path when the target doesn't exist yet, e.g. a new `Write`) and matches both; `scripts/hooks.test.ts` adds a symlink-alias regression case (123 → 124 tests, skipped gracefully on machines without symlink privileges).
