@@ -4,6 +4,24 @@ Highest-priority signal wins. Read top-to-bottom; stop at the first match.
 
 **Precedence order (memorize this line):** guard-area noun (Steps 1 and 3) > stack trace (Step 2) > task-type verb (Step 4). A guard-area noun outranks every other signal whenever the request **changes that guarded surface** — "fix CSS in the login form" is security-guard territory, not ui-fixer. A request that only *references* a guarded area without touching its code (writing tests against it, documenting it, researching it) routes by task type instead. Ties between two guard areas are resolved by blast radius (see "Multiple guard signals"); ties between non-guard signals by the [Conflict resolution](#conflict-resolution--when-two-signals-match) table.
 
+The same logic as a flowchart — the tables below are the source of truth, this is a reading aid:
+
+```mermaid
+flowchart TD
+    Start([Request]) --> S1{"Step 1 — Hard stop:<br/>auth/payment/DB schema/<br/>CI-CD/secrets/infra?"}
+    S1 -->|Yes| Guard[Route to guard agent —<br/>plan only, no implementation]
+    S1 -->|No| S2{"Step 2 — Stack trace<br/>or error present?"}
+    S2 -->|Yes, touches guard area| Guard
+    S2 -->|Yes, no guard area| BugHunter[bug-hunter]
+    S2 -->|No| S3{"Step 3 — Guarded domain<br/>signal in request?"}
+    S3 -->|Yes| Guard
+    S3 -->|No| S4{"Step 4 — Task-type signal"}
+    S4 --> Table[Route per task-type table]
+    Guard --> Multi{Multiple guards matched?}
+    Multi -->|Yes| Sequence["Sequence by blast radius —<br/>each plan shown before the next"]
+    Multi -->|No| Approve[Plan → explicit approval → implement]
+```
+
 ---
 
 ## Step 1 — Hard stop check (always first)

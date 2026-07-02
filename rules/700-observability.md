@@ -3,6 +3,8 @@ description: "Logging, metrics, tracing — every service and handler change"
 globs: "**/*.ts,**/*.py,**/*.go,**/*.java,**/*.cs,**/*.rb"
 ---
 
+> Related: [`900-performance.md`](900-performance.md) auto-loads for almost the same glob set — this file covers what to log, that one covers latency/bundle budgets. Keep tool/version recommendations in sync if you touch both.
+
 ## LOGGING RULES — zero console.log in production
 
 | Level | When to use |

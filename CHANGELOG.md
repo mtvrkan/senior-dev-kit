@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- `agents/ROUTING.md` — added a Mermaid flowchart summarizing the Step 1–4 decision tree as a reading aid alongside the authoritative tables
+- `rules/700-observability.md` / `rules/900-performance.md` — cross-referenced each other with a `Related:` note; the two rules auto-load for nearly identical glob sets (logging vs. latency/bundle budgets on the same files)
+
+---
+
 ## [1.0.0] — 2026-07-02
 
 Initial public release.
