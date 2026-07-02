@@ -1,0 +1,8 @@
+- Good for: local dev, embedded, mobile (Flutter/iOS/Android), desktop, test DBs, small single-user apps
+- Write contention: single writer by default; enable WAL mode for concurrent readers (`PRAGMA journal_mode=WAL`)
+- Parameterized queries only — never string interpolation; SQLite is vulnerable to injection like any SQL DB
+- FK enforcement: off by default — enable per connection (`PRAGMA foreign_keys=ON`)
+- Indexes: add for frequent `WHERE` / `ORDER BY` / `JOIN` columns; `EXPLAIN QUERY PLAN` to verify usage
+- Schema changes: use migration tool if configured; track schema version; never silent drift
+- File path safety: never interpolate user input into DB file path; dev DB ≠ production behavior
+- Anti: assuming SQLite concurrency matches PostgreSQL; large concurrent write workloads without WAL; schema drift without tracking

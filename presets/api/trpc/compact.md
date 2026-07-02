@@ -1,0 +1,10 @@
+- Every procedure must have a Zod input schema — no `z.any()`, no missing `.input()`, no raw unknown
+- Never expose protected logic via `publicProcedure` — use `protectedProcedure` (or project equivalent) for auth-gated endpoints
+- Auth: `ctx.session` / `ctx.user` from context is the source of truth — never accept user identity from procedure input
+- Authorization: check resource ownership in procedure before returning or mutating — not just in middleware
+- Business logic: in service layer, not in the procedure handler — handlers are thin orchestrators
+- Output: use `.output()` schema for critical response shapes; enforce at the boundary, not just TypeScript types
+- N+1: batch DB calls for relation fetching in query procedures — never call DB per item in a list
+- Batching: use tRPC built-in client batching; avoid multiple serial procedure calls where one would suffice
+- Verification: `tsc --noEmit` (type safety across client/server) → `eslint` → targeted procedure tests
+- Anti: missing zod input; protected logic in publicProcedure; user identity from input; business logic in handler; serial calls

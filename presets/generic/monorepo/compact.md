@@ -1,0 +1,9 @@
+- Import only via declared package exports (`import { X } from '@repo/ui'`) — never from internal paths (`../../packages/ui/src/X`)
+- Shared package changes affect all consumers — check reverse-dependency impact before editing `packages/*`
+- App-specific code stays inside its app; cross-app shared logic belongs in a `packages/*` library
+- Commands: run lint/test/build inside the affected workspace (`cd apps/web && pnpm build`); root-level `-r` commands affect all packages
+- Scope: a task scoped to `apps/web` must not touch `apps/api` or `packages/*` unless explicitly required — flag as separate step
+- Only the exported surface of a package is the contract; internal implementation can change without notice
+- Shared type changes: update all consuming workspaces in same PR — never leave a consumer behind (TypeScript will catch it)
+- Dependency placement: add to the workspace that uses it (`apps/web/package.json`), not root, unless it's a dev tooling dep
+- Anti: cross-importing app internals; root-level commands for single-app fix; root-level dep for one-workspace use; breaking package internals

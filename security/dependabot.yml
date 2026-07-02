@@ -1,0 +1,121 @@
+# Dependabot configuration
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Copy to: .github/dependabot.yml in your project
+# Remove sections that don't apply to your stack
+
+version: 2
+
+updates:
+  # Node.js / npm
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+    open-pull-requests-limit: 10
+    groups:
+      # Group minor/patch updates into a single PR
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      prod-dependencies-minor:
+        dependency-type: production
+        update-types: [minor, patch]
+    ignore:
+      # Major updates: review manually
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+
+  # Python / pip
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # Major updates: review manually — re-verify SHA pins after bumping
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+
+  # Docker
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  # Go modules
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  # Rust / Cargo
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  # PHP / Composer (Laravel)
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  # Ruby / Bundler (Rails)
+  - package-ecosystem: bundler
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  # .NET / NuGet
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  # Dart / Flutter (pub)
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  # Java / Maven (remove if the project uses Gradle instead)
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  # Java / Gradle (remove if the project uses Maven instead)
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  # Terraform (if using terraform-specific modules)
+  # - package-ecosystem: terraform
+  #   directory: /terraform
+  #   schedule:
+  #     interval: weekly

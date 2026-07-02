@@ -1,0 +1,148 @@
+name: Container Security Scan
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'Dockerfile*'
+      - 'docker-compose*.yml'
+      - '.dockerignore'
+  pull_request:
+    paths:
+      - 'Dockerfile*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  packages: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # hashFiles() cannot gate a job-level `if:` — it is evaluated against the
+  # runner's workspace before checkout, so it always returns '' and every
+  # gated job would be silently skipped. This job does a real checkout,
+  # detects which Docker files exist, and the scan jobs gate on its outputs.
+  detect:
+    name: Detect Docker Files
+    runs-on: ubuntu-latest
+    outputs:
+      any-dockerfile: ${{ steps.files.outputs.any-dockerfile }}
+      root-dockerfile: ${{ steps.files.outputs.root-dockerfile }}
+      compose: ${{ steps.files.outputs.compose }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Detect Docker files
+        id: files
+        run: |
+          set -euo pipefail
+          any=false
+          root=false
+          compose=false
+          if find . -name 'Dockerfile*' -not -path '*/node_modules/*' -not -path '*/.git/*' -print -quit | grep -q .; then
+            any=true
+          fi
+          if [ -f Dockerfile ]; then
+            root=true
+          fi
+          if compgen -G 'docker-compose*.yml' > /dev/null; then
+            compose=true
+          fi
+          {
+            echo "any-dockerfile=${any}"
+            echo "root-dockerfile=${root}"
+            echo "compose=${compose}"
+          } >> "$GITHUB_OUTPUT"
+
+  hadolint:
+    name: Dockerfile Lint
+    runs-on: ubuntu-latest
+    needs: detect
+    if: needs.detect.outputs.any-dockerfile == 'true'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Run Hadolint
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf  # v3.1.0
+        with:
+          # recursive + a name pattern lints every Dockerfile variant
+          # (Dockerfile, Dockerfile.prod, ...) anywhere in the repo, matching
+          # the any-dockerfile gate above.
+          dockerfile: Dockerfile*
+          recursive: true
+          failure-threshold: warning
+
+  build-and-scan:
+    name: Build and Scan Image
+    runs-on: ubuntu-latest
+    needs: detect
+    if: needs.detect.outputs.root-dockerfile == 'true'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2  # v3.10.0
+
+      - name: Build image (without pushing)
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4  # v6.15.0
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/image.tar
+
+      - name: Load image
+        run: docker load --input /tmp/image.tar
+
+      - name: Scan with Trivy (CRITICAL + HIGH)
+        uses: aquasecurity/trivy-action@6e7b7d1fd3e4fef0c5fa8cce1229c54b2c9bd0d8  # v0.30.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:scan
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@4dd16135b69a43b6c8efb853346f8437d92d3c93  # v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
+
+      - name: Generate container SBOM
+        uses: anchore/sbom-action@7ccf588e3cf3cc2611714c2eeae48550fbc17552  # v0.15.11
+        with:
+          image: ${{ env.IMAGE_NAME }}:scan
+          format: cyclonedx-json
+          output-file: container-sbom.cdx.json
+
+      - name: Upload container SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: container-sbom-${{ github.sha }}
+          path: container-sbom.cdx.json
+
+  docker-compose-check:
+    name: Docker Compose Security Check
+    runs-on: ubuntu-latest
+    needs: detect
+    if: needs.detect.outputs.compose == 'true'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Scan docker-compose with Trivy
+        uses: aquasecurity/trivy-action@6e7b7d1fd3e4fef0c5fa8cce1229c54b2c9bd0d8  # v0.30.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: '0'  # informational only for compose files

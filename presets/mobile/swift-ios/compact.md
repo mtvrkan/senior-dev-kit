@@ -1,0 +1,9 @@
+- Respect async/await/Combine/callback patterns already in project; no blocking the main thread
+- Do not modify entitlements, permissions, in-app purchases, signing, or auth unless requested
+- Anti: force unwraps in user-facing flows, main-thread blocking, entitlement changes for UI tasks, hardcoded Color(hex:) for semantic UI
+- NEW SCREEN: find similar view first → use NavigationStack + existing pattern → @Observable/@StateObject ViewModel with enum State {loading/loaded/empty/error} → render all states
+- Required states: Loading (ProgressView().frame(maxWidth:.infinity, maxHeight:.infinity)), Empty (ContentUnavailableView iOS17+ or custom VStack), Error (icon+message+retry button), Populated
+- Components: NavigationStack, List/LazyVStack, ProgressView, ContentUnavailableView, Button.borderedProminent/bordered, TextField/SecureField in Form, .sheet/.fullScreenCover, .confirmationDialog, .alert, .swipeActions
+- Spacing: 8pt grid — 4,8,12,16,20,24,32pt. Never arbitrary values
+- Colors: semantic system colors (Color(.systemBackground), Color(.label), Color(.secondaryLabel), Color(.systemRed)) or Asset Catalog named colors — never Color(hex:) for semantic UI
+- Typography: system text styles (.largeTitle, .title, .headline, .subheadline, .body, .footnote, .caption) — never .system(size: N) for semantic text. Dynamic Type must work

@@ -1,0 +1,10 @@
+- Use `bun install/add/remove` — never npm/yarn in Bun project
+- Test: `bun test [file]` (Jest-compatible API, `mock()` from bun:test — not jest.fn())
+- File I/O: prefer `Bun.file()` + `Bun.write()` over node:fs
+- SQLite: `import { Database } from "bun:sqlite"` — always parameterized `prepare("... ?")` + `.get(val)`
+- Password: `Bun.password.hash(pw)` (Argon2id) · `Bun.password.verify(pw, hash)` — not bcrypt
+- Elysia: `t.Object()` schema on all route inputs (runtime validation) · `.onError()` at app/group level
+- Hono: `zValidator("json", z.object(...))` for input validation
+- Hot reload: `bun --hot src/index.ts` (stateful) · TypeScript runs natively, no compile step
+- Commit `bun.lockb` — binary lockfile, always version-controlled
+- Anti: mixing npm/yarn · `jest.fn()` · `node:fs` for simple reads · string-interpolated SQLite queries

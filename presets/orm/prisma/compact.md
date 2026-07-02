@@ -1,0 +1,9 @@
+- Never edit `schema.prisma` unless DB change is explicitly routed through db-guard skill
+- Migrations: `prisma migrate dev` (dev) / `prisma migrate deploy` (prod) — never `db push` in production
+- Queries: use `select`/`include` to fetch only needed fields — never implicit full-object loads
+- N+1: use `include: { relation: true }` or separate batched query — never `.relation` access inside a loop
+- Transactions: `prisma.$transaction([...])` for multi-step atomic writes; handle `P2002` (unique) and `P2025` (not found) errors
+- Never modify generated Prisma client files (`node_modules/.prisma`) — they are overwritten on generate
+- Validation: validate input before passing to Prisma calls; Prisma trusts what you give it
+- Additive changes: new nullable column or new model is safe; NOT NULL column on existing table requires default or migration steps
+- Anti: schema changes for UI-only tasks; `db push` in CI/prod; N+1 relation access in loops; ignoring unique constraint errors

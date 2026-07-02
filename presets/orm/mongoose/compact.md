@@ -1,0 +1,9 @@
+- Never pass `req.body` directly to query or update operations — validate and allowlist fields first (mass assignment risk)
+- Schema: define validation rules in Mongoose schema (`required`, `enum`, `min/max`); use ObjectId consistently for references
+- Queries: filter fields explicitly — never `Model.find(req.body)` or `Model.updateOne({}, req.body)` directly
+- Atomic updates: use `$inc`, `$set`, `$push` operators — never read-modify-write for counters/quotas (race condition risk)
+- N+1: use `.populate('relation')` in same query — never call `.populate()` inside a loop on each document
+- Indexes: define in schema (`index: true` or `unique: true`); add for frequent `find()` filter fields; `ensureIndexes()` in migration
+- Error handling: catch `MongoServerError code 11000` (duplicate key) explicitly; never let it propagate as 500
+- Transactions: `session.withTransaction(async () => { ... })` for multi-document atomic writes (requires replica set)
+- Anti: `req.body` directly in update; implicit lazy populate in loops; missing index on frequent filter; swallowing duplicate key error

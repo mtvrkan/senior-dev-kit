@@ -1,0 +1,9 @@
+- Data: prefer `+page.server.ts` load fn for initial data; `+server.ts` for API endpoints; never bare fetch in component
+- Validation: always in load fn / server action — never client-only; use Zod if installed
+- Forms: `<form method="POST" use:enhance>` + optional `superforms`+Zod — match project; `$page.form` for action result
+- Permissions: server-side only — never enforce business rules in `+page.svelte` alone
+- Progressive enhancement: forms must work without JS via SvelteKit actions
+- Secrets: server-only modules (`$env/static/private`) — never import in `+page.svelte`
+- Pre-code: find similar `+page.svelte` → find `+layout.svelte` → identify data source → list UI lib → plan 4 states
+- Verification: `svelte-check` → `eslint` → `vitest run` → `vite build`
+- Anti: `$lib/server` imports in browser code; business limits enforced only in UI; broad route rewrites for local fixes

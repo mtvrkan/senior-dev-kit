@@ -1,0 +1,9 @@
+- Factory pattern: `create_app()` + blueprints — never `from app import app` (circular import)
+- Validate all input at route boundary: marshmallow `Schema.load()` or Pydantic `model_validate()` → 422 on error
+- SQL: SQLAlchemy ORM or `text("... WHERE id = :id", {"id": id})` — NEVER f-string/format in raw SQL
+- Ownership check: `if resource.user_id != current_user.id: abort(403)` — every resource route
+- Transactions: `db.session.commit()` with `db.session.rollback()` in except — multi-step writes only
+- N+1: `joinedload(Post.author)` / `selectinload` on relationships used in loops
+- Errors: `@app.errorhandler(Exception)` global handler · `app.logger.exception()` · never raw stack traces to client
+- Verify: `pytest [file] -x -q` · `ruff check .` · `mypy app/` if configured
+- Anti: business logic in routes · `from app import app` · raw `request.json` to ORM · `db.create_all()` in prod · `except: pass`

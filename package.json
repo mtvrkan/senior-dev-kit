@@ -1,0 +1,56 @@
+{
+  "name": "senior-dev-kit",
+  "version": "1.0.0",
+  "description": "Agent, skill and rule kit that gives Claude Code senior engineering team behavior.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mtvrkan/senior-dev-kit.git"
+  },
+  "homepage": "https://github.com/mtvrkan/senior-dev-kit#readme",
+  "bugs": {
+    "url": "https://github.com/mtvrkan/senior-dev-kit/issues"
+  },
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "bin": {
+    "senior-dev-kit": "bin/cli.mjs"
+  },
+  "files": [
+    "bin/",
+    "agents/",
+    "agent_docs/",
+    "commands/",
+    "examples/",
+    "hooks/",
+    "presets/",
+    "rules/",
+    "security/",
+    "skills/",
+    "install.sh",
+    "install.ps1",
+    "global-CLAUDE.md",
+    "settings-template.json",
+    "*.md"
+  ],
+  "scripts": {
+    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/install.test.ts scripts/hooks.test.ts",
+    "validate": "node --experimental-strip-types scripts/validate-skills.ts",
+    "stale-check": "node --experimental-strip-types scripts/check-stale.ts",
+    "link-check": "node --experimental-strip-types scripts/check-links.ts",
+    "routing-eval": "node --experimental-strip-types scripts/routing-eval.ts",
+    "deny-cost": "node --experimental-strip-types scripts/deny-cost.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint scripts/",
+    "check": "npm test && npm run validate && npm run stale-check && npm run link-check && npm run routing-eval && npm run typecheck && npm run lint"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.0.0",
+    "eslint": "^10.6.0",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.62.1"
+  }
+}

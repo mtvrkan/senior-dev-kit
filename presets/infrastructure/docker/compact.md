@@ -1,0 +1,11 @@
+- Multi-stage builds: builder stage for compilation, minimal final stage — discard dev tools and build artifacts
+- Base image: pin to specific version tag (`node:22-alpine`) — never `latest` in production Dockerfiles
+- Non-root user: `RUN adduser -S appuser && USER appuser` — never run as root in production containers
+- Secrets: use runtime env vars or Docker secrets — never hardcode credentials in Dockerfile or commit `.env` files
+- `.dockerignore`: exclude `node_modules`, `.git`, `*.env`, `dist`, `*.log` — never COPY source artifacts into final image
+- Networking: use Docker internal networks; expose only ports that must be public; never expose DB ports to host in production
+- Healthcheck: add `HEALTHCHECK --interval=30s --timeout=10s CMD wget -qO- http://localhost:PORT/health || exit 1`
+- Security scan: `docker scout cves <image>` or `trivy image <image>` before shipping
+- `docker-compose.yml` is protected — do not modify unless explicitly requested
+- Verification: `docker compose config` → `docker compose build` → `docker scout cves <image>`
+- Anti: `latest` tag; secrets in Dockerfile; root user; DB ports exposed; bind-mounting source in production; no healthcheck

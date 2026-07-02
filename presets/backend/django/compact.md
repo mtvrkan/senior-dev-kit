@@ -1,0 +1,9 @@
+- Detect frontend approach: Django Admin (+Unfold/Jazzmin), DRF+SPA, HTMX templates, plain Blade templates
+- Views: keep thin — all validation in serializers/FormRequest/managers, not views; `ModelViewSet` permission_classes required
+- Permissions: `permission_classes` on every viewset; check object ownership with `has_object_permission`; never trust client-sent user IDs
+- N+1: use `select_related` / `prefetch_related` for relations; `transaction.atomic()` for multi-step writes
+- No accidental migrations — only create if explicitly DB-change routed via db-guard skill
+- Logging: `logger = logging.getLogger(__name__)` — never `print()` in views; never expose stack traces in responses
+- Pre-code: find similar view/template → use project's base template → identify auth pattern → plan 4 states
+- Verification: `pytest -x -q` or `python manage.py test` → `ruff check .` → `mypy` (if configured)
+- Anti: migrations as side effect of unrelated work; skipping permission_classes; broad settings changes; mass assignment in serializers

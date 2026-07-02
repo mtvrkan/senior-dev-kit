@@ -1,0 +1,9 @@
+- Detect frontend: Filament (Resource/Page API), Inertia+React/Vue, Livewire, or Blade+Alpine
+- Architecture: route → controller → Service/Action → model; FormRequest for validation — never raw `$request` in controller
+- Security: check policies/gates + ownership; `$fillable` guard prevents mass assignment; never trust `request()->user()` IDs without check
+- Migrations: do not create unless explicitly DB-change routed; always additive; `transaction` for multi-step writes
+- N+1: eager load with `with(['relation'])` — never lazy in loops; `select_related` equivalents
+- Filament: use `TextColumn/TextInput/Action` — never hand-roll table HTML; `Notification::make()->success()->send()` not flash
+- Pre-code: find similar page → use existing layout → identify auth+frontend pattern → plan 4 states
+- Verification: `php artisan test --filter Name` → `./vendor/bin/pint` → `phpstan analyse` (if configured)
+- Anti: business logic in controllers; migrations during unrelated tasks; trusting request user IDs; skipping fillable/guarded

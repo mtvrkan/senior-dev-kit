@@ -1,0 +1,163 @@
+# Semgrep custom rules — security patterns specific to this project
+# Docs: https://semgrep.dev/docs/writing-rules/
+#
+# Run: semgrep --config .semgrep.yml --error
+# CI: see workflows/security-gate.yml
+
+rules:
+  # SQL Injection
+  - id: sql-injection-string-format
+    pattern-either:
+      - pattern: $DB.query(f"...{$VAR}...")
+      - pattern: $DB.execute("..." + $VAR + "...")
+      - pattern: $DB.execute("..." % $VAR)
+    message: "SQL injection risk: use parameterized queries"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      owasp: "A05:2025 - Injection"
+      cwe: "CWE-89"
+
+  - id: sql-injection-template-literal
+    patterns:
+      - pattern: |
+          `...${$X}...`
+      - pattern-regex: (?i)(select|insert|update|delete)\s
+    message: "SQL injection risk: use parameterized queries with ? or $1 placeholders"
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      owasp: "A05:2025 - Injection"
+
+  # XSS
+  - id: dangerously-set-inner-html
+    patterns:
+      - pattern: '<$TAG dangerouslySetInnerHTML={{__html: $INPUT}} />'
+      - metavariable-pattern:
+          metavariable: $INPUT
+          patterns:
+            - pattern-not: DOMPurify.sanitize(...)
+    message: "XSS risk: use DOMPurify.sanitize() before dangerouslySetInnerHTML"
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      owasp: "A05:2025 - Injection"
+
+  # Eval usage
+  - id: no-eval
+    patterns:
+      - pattern: eval($CODE)
+    message: "eval() is a code injection vector. Refactor to avoid it."
+    severity: ERROR
+    languages: [javascript, typescript, python]
+    metadata:
+      owasp: "A05:2025 - Injection"
+
+  # Python unsafe YAML
+  - id: yaml-unsafe-load
+    patterns:
+      - pattern-either:
+          - pattern: yaml.load($DATA)
+          - pattern: yaml.load($DATA, Loader=$LOADER)
+      - pattern-not: yaml.load($DATA, Loader=yaml.SafeLoader)
+    message: "yaml.load() is unsafe unless Loader=yaml.SafeLoader is set: use yaml.safe_load() instead"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      owasp: "A08:2025 - Software and Data Integrity Failures"
+      cwe: "CWE-502"
+
+  # Python pickle
+  - id: python-pickle-loads
+    patterns:
+      - pattern: pickle.loads($DATA)
+    message: "pickle.loads() from untrusted input enables arbitrary code execution"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: "CWE-502"
+
+  # Python subprocess shell=True
+  - id: subprocess-shell-true
+    pattern-either:
+      - pattern: subprocess.run($CMD, ..., shell=True, ...)
+      - pattern: subprocess.call($CMD, ..., shell=True, ...)
+      - pattern: subprocess.Popen($CMD, ..., shell=True, ...)
+    message: "shell=True with user input enables command injection. Use list form instead."
+    severity: WARNING
+    languages: [python]
+    metadata:
+      owasp: "A05:2025 - Injection"
+
+  # Hardcoded secrets
+  - id: hardcoded-secret-assignment
+    patterns:
+      - pattern: $KEY = "..."
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i)(password|secret|api_key|apikey|access_token|auth_token|private_key)
+    message: "Possible hardcoded credential: use environment variables or secret manager"
+    severity: WARNING
+    languages: [python, javascript, typescript, go]
+
+  # CORS wildcard with credentials
+  - id: cors-wildcard-credentials
+    patterns:
+      - pattern: |
+          res.header("Access-Control-Allow-Origin", "*")
+          ...
+          res.header("Access-Control-Allow-Credentials", "true")
+    message: "CORS with wildcard origin and credentials is a security risk"
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      owasp: "A02:2025 - Security Misconfiguration"
+
+  # JWT algorithm none
+  - id: jwt-algorithm-none
+    pattern-either:
+      - pattern: 'jwt.verify($TOKEN, $SECRET, {algorithms: ["none"], ...})'
+      - pattern: 'jwt.sign($PAYLOAD, $SECRET, {algorithm: "none", ...})'
+    message: "JWT with algorithm 'none' bypasses signature verification"
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      owasp: "A04:2025 - Cryptographic Failures"
+
+  # Mass assignment
+  - id: mass-assignment-object-assign
+    patterns:
+      - pattern-either:
+          - pattern: Object.assign($MODEL, $REQ.body)
+          - pattern: '{...$MODEL, ...$REQ.body}'
+    message: "Mass assignment risk: allowlist fields instead of assigning the full request body"
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      owasp: "A01:2025 - Broken Access Control"
+      cwe: "CWE-915"
+
+  - id: mass-assignment-model-create
+    patterns:
+      - pattern-either:
+          - pattern: $MODEL.create($REQ.body)
+          - pattern: $MODEL.update($REQ.body)
+          - pattern: '$MODEL.create({...$REQ.body})'
+          - pattern: '$MODEL.update({...$REQ.body}, ...)'
+    message: "Mass assignment risk: pass an explicit allowlisted object, not the raw request body"
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      owasp: "A01:2025 - Broken Access Control"
+      cwe: "CWE-915"
+
+  # Go SQL injection
+  - id: go-sql-string-format
+    pattern-either:
+      - pattern: db.Query(fmt.Sprintf("...", $VAR))
+      - pattern: db.Exec(fmt.Sprintf("...", $VAR))
+    message: "SQL injection via fmt.Sprintf: use parameterized queries"
+    severity: ERROR
+    languages: [go]
+    metadata:
+      owasp: "A05:2025 - Injection"

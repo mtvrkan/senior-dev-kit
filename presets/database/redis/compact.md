@@ -1,0 +1,9 @@
+- Use Redis for: cache, rate limits, sessions, queues, leaderboards, pub/sub — not as primary source of truth for critical data
+- Key naming: `{namespace}:{entity}:{id}` pattern (e.g. `cache:user:123`); always namespace to avoid collisions
+- TTL: every cache key must have TTL (`EX` / `EXPIRE`) — no indefinite keys; define invalidation strategy upfront
+- Atomic ops: `INCR`/`DECR` for counters; `SET NX EX` for distributed locks; `EVAL` (Lua) for multi-key atomics
+- Race conditions: never read-modify-write outside `MULTI/EXEC` or Lua script for shared counters
+- Sensitive data: do not store passwords, tokens, or PII unencrypted; treat Redis as semi-public cache tier
+- Eviction: configure `maxmemory-policy` — `allkeys-lru` for cache, `noeviction` for queues; set `maxmemory` limit
+- Fallback: always handle Redis unavailability — cache miss should fall back to DB, not crash the request
+- Anti: no TTL on cache keys; critical data only in Redis without persistence; non-atomic quota updates; secrets in plaintext

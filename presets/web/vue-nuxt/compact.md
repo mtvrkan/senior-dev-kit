@@ -1,0 +1,9 @@
+- Composition API only (`<script setup lang="ts">`) — never Options API in new components
+- Data fetching: `useAsyncData` / `useFetch` — never bare `$fetch` in setup (breaks SSR caching)
+- State: Pinia setup stores for cross-component state; `useState` for SSR-safe scoped state; local `ref` for component-only
+- Server routes: always verify session server-side; validate body with Zod via `readValidatedBody(event, Schema.parse)`
+- SSR: no `window`/`document` at module level — wrap in `onMounted` or `import.meta.client`; never `Math.random()` in shared code
+- Secrets: `useRuntimeConfig().mySecret` (server-only) — never `runtimeConfig.public` for secrets
+- Pre-code: find similar page → find layout (`~/layouts/`) → identify data pattern → list UI lib components → plan 4 states
+- Verification: `nuxt lint` → `vue-tsc --noEmit` → `vitest run` → `nuxt build`
+- Anti: server/DB logic in client composables; $fetch without useAsyncData; window outside onMounted; secrets in public config; missing async states

@@ -1,0 +1,15 @@
+# Normalize all text files to LF in the repo; Git still checks them out
+# using the OS-native line ending unless a specific rule below overrides it.
+* text=auto eol=lf
+
+# Windows-only scripts must keep CRLF — PowerShell's ISE/console and some
+# older parsers misbehave on LF-only .ps1 files.
+*.ps1 text eol=crlf
+
+# Binary-ish or generated files: never run line-ending or diff normalization.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+package-lock.json -diff

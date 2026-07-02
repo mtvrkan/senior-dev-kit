@@ -1,0 +1,10 @@
+- Schema is a protected contract — prefer additive changes; use `@deprecated(reason: "...")` before removing any field
+- Nullability: do not change non-null → nullable or vice versa without impact analysis; breaking for clients
+- Resolvers: keep thin — validate/sanitize all input args; delegate business logic to service layer
+- Auth: check authorization per field for sensitive data — not just at query/mutation root level
+- N+1: use DataLoader (or equivalent) for every relation resolver — never resolve related entities in a loop
+- Limits: enforce query complexity + depth limits in schema config — prevent abusive/introspective queries
+- Introspection: disable in production (`introspection: false`) unless explicitly required
+- Subscriptions: auth check in `subscribe` function (not just HTTP middleware); ownership filter via `withFilter`; Redis PubSub for multi-server
+- Verification: `graphql-codegen` after schema change; `graphql-inspector` for breaking change detection; run resolver tests
+- Anti: business logic in resolvers; N+1 without DataLoader; introspection in prod; auth only at root; in-memory PubSub for multi-server

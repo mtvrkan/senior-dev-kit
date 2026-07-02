@@ -1,0 +1,10 @@
+- Detect: NgModule-based (pre-v17) vs standalone components (v17+) — match existing pattern exactly
+- Services: all data fetching/business logic via `inject()` DI — never `HttpClient` directly in components when a service exists
+- Signals (v17+): `signal()` + `computed()` for local state; Observable streams via `async` pipe or `takeUntilDestroyed()`
+- Cleanup: always unsubscribe — `takeUntilDestroyed()` (v16+) / `async` pipe / `ngOnDestroy+Subject` — match project pattern
+- Guards: `CanActivateFn` on all protected routes — never check auth logic in component `ngOnInit`
+- Forms: detect ReactiveFormsModule vs ngModel — match project; `[disabled]="form.invalid || isSubmitting"` + loading indicator
+- Interceptors: never modify global interceptors/providers for a local feature — scope to feature providers only
+- Pre-code: find similar component → find shell/layout → identify data pattern → list UI lib → plan 4 states
+- Verification: `ng lint` → `ng test --watch=false` → `ng build --configuration=production`
+- Anti: HttpClient in components; subscribing without cleanup; global interceptor change for local feature; `any` in templates

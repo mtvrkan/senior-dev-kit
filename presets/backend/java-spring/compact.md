@@ -1,0 +1,10 @@
+- Layers: @RestController (thin) → @Service (logic) → @Repository · never skip · constructor injection always (not @Autowired field)
+- DTOs: never return @Entity from controller · `record CreateUserRequest(@NotBlank @Email String email, ...)` · @Valid on @RequestBody
+- Validation: Bean Validation annotations on DTOs · @RestControllerAdvice handles MethodArgumentNotValidException → 422 + ProblemDetail (RFC 7807)
+- Authorization: ownership check in service — `if (!post.getUserId().equals(requestingUserId)) throw new AccessDeniedException(...)` · @PreAuthorize on service methods
+- JPA N+1: `@Query("SELECT u FROM User u LEFT JOIN FETCH u.posts")` or `@EntityGraph(attributePaths={"posts"})` — never lazy-load in loop
+- Transactions: `@Transactional` on service class · `@Transactional(readOnly=true)` on reads · rolls back on RuntimeException
+- SQL: JPQL named params `WHERE u.email = :email` / Criteria API for dynamic · NEVER string concat in queries
+- Errors: `ProblemDetail.forStatusAndDetail(status, message)` (Spring 6+) · Content-Type: application/problem+json · global @RestControllerAdvice
+- Verify: `./gradlew test --tests "*.ClassName"` · `./gradlew build -x test` · `./gradlew spotlessCheck` if configured
+- Anti: @Entity from controller · logic in @RestController · string SQL concat · modifying SecurityConfig · field @Autowired · catching Exception → 200

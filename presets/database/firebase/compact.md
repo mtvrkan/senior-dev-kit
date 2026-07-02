@@ -1,0 +1,9 @@
+- Security rules are mandatory backend security — never rely on client-side checks; validate ownership and roles in rules/Cloud Functions
+- Auth: always use `request.auth.uid` in rules — never trust `request.resource.data.userId` (client-controlled, spoofable)
+- Document design: structure around query patterns; avoid deeply nested collections; consider read/write cost at scale
+- Indexes: composite indexes required for `where().orderBy()` queries — Firestore will error at runtime without them
+- Writes: `batch()` for multi-document atomicity (no rollback); `transaction()` for read-then-write consistency
+- Reads: always `.limit(N)` on collection reads; paginate via cursor (`startAfter(lastDoc)`) — never unbounded reads
+- Offline: `enableIndexedDbPersistence()` for web; handle offline → reconnect state explicitly
+- Security rule changes: go through security-guard skill — rule errors silently block all access
+- Anti: public writes without strict rules; service account key in client code; unbounded collection reads; enforcing limits only on client

@@ -1,0 +1,12 @@
+- Rails 7.2+/8.0: Hotwire (Turbo + Stimulus) default · Zeitwerk autoload · Solid Queue (Rails 8 built-in)
+- Strong params: `params.require(:user).permit(:name, :email)` — every controller action that accepts input
+- Authorization: Pundit/action_policy `before_action :authorize_user!` · check ownership on every resource
+- N+1: `includes(:author)` / `preload` / `eager_load` for associations used in views — never lazy in loops
+- Transactions: `ActiveRecord::Base.transaction { ... }` for multi-step writes · raise to rollback
+- Controller pattern: `before_action :set_resource` → thin action → redirect/render · no business logic in actions
+- Service objects: complex logic → `app/services/` · form objects → `app/forms/` · query objects → `app/queries/`
+- Turbo: `render :new, status: :unprocessable_entity` on validation fail (422 triggers Turbo frame replace)
+- Flash: `flash.now[:notice]` + Turbo Streams — never JavaScript `alert()`
+- Migrations: additive first · never destructive without backfill plan · `db-guard` before any schema change
+- Verify: `bundle exec rspec` · `bundle exec rubocop -a` · `bundle exec brakeman` (security scan)
+- Anti: business logic in callbacks · fat controllers · `render json:` in HTML controllers · destructive migrations without plan

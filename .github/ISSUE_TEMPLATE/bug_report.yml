@@ -1,0 +1,48 @@
+name: Bug report
+description: Something in the kit misbehaves — installer, validation, routing, a skill, or docs.
+labels: [bug]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Installer (install.sh / install.ps1 / npx CLI)
+        - Routing (wrong agent / tier)
+        - Skill or command behavior
+        - Hooks
+        - Validation scripts (npm run check)
+        - Settings / deny rules
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did you ask / run, and what did the kit do instead of the expected behavior?
+      placeholder: |
+        Prompt or command: ...
+        Expected: routed to db-guard with a plan
+        Actual: senior-engineer edited the migration directly
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: kit-doctor output
+      description: Run `/kit-doctor` (or the VERIFY.md checklist) and paste the verdict — it pins down install-state issues immediately.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Kit version
+      placeholder: v1.0.1 (see CHANGELOG.md)
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: Windows 11 / macOS 15 / Ubuntu 24.04 — and PowerShell or bash version if installer-related

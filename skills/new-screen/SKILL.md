@@ -1,0 +1,25 @@
+---
+name: new-screen
+description: Use when building a brand-new mobile screen, bottom sheet, or major UI section from scratch in Kotlin/Compose, Flutter, or Swift/SwiftUI. Enforces design quality gates. Do NOT use for modifying existing screens — use ui-change instead.
+allowed-tools: Read, Grep, Glob, Bash, Edit, Write
+when_to_use: Use automatically when the task is to create a new screen or major UI section in a mobile app from scratch.
+argument-hint: "[screen name]"
+---
+
+# new-screen
+
+New mobile screen from scratch. Follow this protocol — do not skip steps. See `agent_docs/new-screen-guide.md` for UiState patterns, component palettes, platform tokens, and the quality gate checklist.
+
+1. Detect platform: build.gradle(.kts) → Kotlin/Compose | pubspec.yaml → Flutter | .xcodeproj/.swift → Swift/SwiftUI.
+2. Find a similar existing screen and read it fully — extract navigation/routing pattern, state management, component structure.
+3. Plan all 4 states (loading | empty | error | populated), output plan before coding. Wait for "go" if 3+ components, form, or auth/payment data.
+4. Build in order: UiState/state class → ViewModel/Controller → screen skeleton → loading → error → empty → populated → forms/dialogs/sheets → previews.
+5. Colors/typography from theme/semantic tokens only — never hardcoded. Spacing: 4dp/8pt grid only. Feedback: Snackbar/SnackBar/.alert — never Toast/alert().
+
+## Output
+
+```text
+· [platform] [screen name — files created]
+REF: [similar screen] | STATES: loading ✓ | empty ✓ | error ✓ | populated ✓
+VERIFY: [lint/analyze — ✓] | RISK: low | medium
+```
