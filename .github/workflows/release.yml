@@ -36,6 +36,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "Senior Dev Kit ${GITHUB_REF_NAME}" \
-            --notes-file release-notes.txt
+          # Idempotent: a re-triggered tag push (e.g. a moved tag) must not fail on
+          # an already-published release — update it in place instead of erroring.
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            echo "Release ${GITHUB_REF_NAME} already exists — updating title/notes."
+            gh release edit "${GITHUB_REF_NAME}" \
+              --title "Senior Dev Kit ${GITHUB_REF_NAME}" \
+              --notes-file release-notes.txt
+          else
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "Senior Dev Kit ${GITHUB_REF_NAME}" \
+              --notes-file release-notes.txt
+          fi
