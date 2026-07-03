@@ -7,6 +7,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [1.0.3] — 2026-07-03
+
 ### Changed
 
 - `rules/001-conventions.md` — trimmed the always-loaded (`alwaysApply: true`) rule to cut per-session context cost, since this file loads into **every** session regardless of what's being edited. Removed four sections that were either pure duplicates of richer path-scoped content or belonged in a narrower scope: `DATABASE PROTOCOLS` (a subset of `500-database.md`'s ORM table) and `OBSERVABILITY` (a subset of `700-observability.md`'s logging rules) were deleted outright; `STATE MANAGEMENT (2025)` moved to `100-web.md` (web rows) with mobile rows already covered by `400-mobile.md`; `API PATTERN SELECTION` + the `Result<T,E>` boundary rule moved to `200-api.md`. Each relocated concern now loads only when a matching file is edited instead of on every session. Content parity preserved (targets already held or now hold the guidance); no validator references the removed sections. `001-conventions.md`: 202 → ~150 lines.

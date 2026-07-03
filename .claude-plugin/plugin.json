@@ -1,6 +1,6 @@
 {
   "name": "senior-dev-kit",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Senior engineering team behavior for Claude Code: 17 routed agents, 34 skills, 13 commands, tiered risk gates, guard agents for auth/DB/CI, and a deterministic protected-path hook.",
   "author": {
     "name": "Mehmet Türkan"
