@@ -150,6 +150,7 @@ SESSION DISCIPLINE: the model has no tool to check its own token usage and canno
 After a long chain of file reads or several Agent() calls, proactively say so: "Session is
 getting large — consider /compact or a fresh session for the next task."
 CONTEXT BUDGET — three levers to slow context growth:
+
 1. /compact vs /clear: /compact summarizes and CONTINUES (keeps active work); /clear WIPES
    everything. When context is full but the task isn't done, the answer is /compact — /clear
    is for switching to an unrelated task. If a user hits "clear forgets everything," they were
@@ -161,6 +162,7 @@ CONTEXT BUDGET — three levers to slow context growth:
 3. Persist across resets: before /clear, write durable facts (project decisions, user prefs,
    in-flight work) to the file-based memory (memory/*.md + MEMORY.md index) so the next
    session reloads them — this is what makes /clear safe instead of amnesiac.
+
 Always start a fresh session for unrelated tasks rather than continuing an old one.
 Subagent cost: CLAUDE_CODE_SUBAGENT_MODEL=haiku saves 75% on anonymous Agent() calls (no named agent). Named agents (researcher, security-guard, etc.) use their own model: field and are unaffected.
 
