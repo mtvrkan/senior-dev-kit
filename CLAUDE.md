@@ -32,3 +32,11 @@ Default effort follows the account setting. For work in this repo specifically: 
 low for mechanical edits (typo fixes, single-line doc corrections, changelog entries); use
 `/effort xhigh` for routing-table changes, hook logic (`hooks/protected-paths.mjs`), or
 anything touching `scripts/lib/` that other validators depend on.
+
+## Context budget (this dev's environment only)
+
+This maintainer's personal Claude Code install runs with the 1M context window enabled —
+don't assume that for other contributors or for the shipped `global-CLAUDE.md`/preset
+templates. Locally it means `npm run check`'s full output, multi-file `Explore` passes across
+`rules/`, `agents/`, `skills/`, and `presets/`, and reading several preset `CLAUDE.md` +
+`compact.md` pairs side by side all fit comfortably without triggering early auto-compact.

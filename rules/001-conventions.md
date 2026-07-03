@@ -27,30 +27,8 @@ Module boundary rules:
 - Circular imports: detect with `madge --circular src/` (TS) | `pylint --enable=cyclic-import` (Python)
 - God service >300 lines: flag `FWD: split recommended — [reason]`
 
-## STATE MANAGEMENT (2025)
-
-| Need | Solution |
-| --- | --- |
-| Server state (fetch/cache) | TanStack Query — always |
-| React global UI state (<5 stores) | Zustand |
-| React atomic/derived state | Jotai |
-| Vue | Pinia (Options store simple, Setup store complex) |
-| Flutter | Riverpod (code-gen providers) |
-| Android | ViewModel + StateFlow + sealed UiState class |
-| iOS (17+) | `@Observable` macro |
-| iOS (<17) | `ObservableObject` + `@StateObject` |
-| Complex event streams | Bloc (Flutter) / Redux (React, only if >5 interacting stores) |
-
-## API PATTERN SELECTION
-
-| Context | Pattern |
-| --- | --- |
-| Full-stack TS monorepo, same team | tRPC |
-| Public API or multi-client | REST + OpenAPI 3.1 (schema-first) |
-| Complex graph data or federation | GraphQL |
-| Simple internal service | REST + Zod types |
-
-Error handling: RFC 7807 `application/problem+json` for REST responses. Result<T,E> type for internal TS boundaries. Never raw exceptions crossing module boundaries.
+State management (which library) → 100-web.md (web) / 400-mobile.md (mobile).
+API pattern selection (tRPC/REST/GraphQL) + `Result<T,E>` boundary rule → 200-api.md.
 
 ## EVENT-DRIVEN DECISION
 
@@ -137,19 +115,6 @@ If recommending a paid lib/service (Clerk, Auth0, AG Grid Enterprise, etc.):
 - Signals (Angular 17+) for local state
 - Structured concurrency (Kotlin coroutines, Swift async/await, Python asyncio)
 
-## DATABASE PROTOCOLS
-
-| DB / ORM | Schema change | Query safety |
-| --- | --- | --- |
-| PostgreSQL + Prisma | `prisma migrate dev` — always db-guard | No string interpolation |
-| PostgreSQL + Drizzle | `drizzle-kit push` — always db-guard | Typed `.where()` |
-| PostgreSQL + TypeORM | migration files — migration-guard | QueryBuilder or TypedQuery |
-| MySQL | Same as PostgreSQL rules | Same |
-| MongoDB + Mongoose | Schema change → db-guard | No `$where` with user input |
-| SQLite | Schema change → db-guard | Prepared statements |
-| Supabase | `supabase db push` → db-guard | RLS policies — always check |
-| Firebase/Firestore | Security rules change → security-guard | Never trust client UID |
-
 ## RULE PRECEDENCE
 
 When two rules conflict, the highest rule in this list wins:
@@ -189,14 +154,3 @@ When two rules conflict, the highest rule in this list wins:
 | Everything else | 001-conventions.md |
 
 `700-observability.md` and `900-performance.md` intentionally auto-load together for almost the same file types — this is not a precedence conflict; both apply simultaneously (700 governs what to log, 900 governs latency/bundle budgets). The "highest wins" rule above only resolves cases where two rules give contradictory instructions for the same file; these two never contradict, so apply both in full.
-
-## OBSERVABILITY
-
-When adding/changing any service, handler, or job:
-
-Log levels: ERROR=unexpected crash | WARN=degraded/retry/fallback | INFO=key state changes (user created, order placed, job done) | DEBUG=never in prod without feature flag
-
-Always log: correlation ID / request ID on every line.
-Never log: passwords · tokens · PII (email, phone, SSN) · full request body with sensitive fields.
-Format: JSON structured logging. Never `console.log("user:", user)` → use `logger.info({ userId, action })`.
-Missing metrics: `OBS: [service] no metrics — add request count + latency`
