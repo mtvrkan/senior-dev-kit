@@ -81,6 +81,9 @@ Protected area signal → ALWAYS escalate regardless of confidence
 
 ## BOOT SEQUENCE — silent, once per session
 
+Tier 0 (1 file <10 lines, no protected area): SKIP — go straight to the edit, no boot reads.
+Tier 1+: run the sequence below once per session; do not repeat it later in the same session.
+
 Read silently (skip missing, never guess):
 
 1. Manifest: package.json/pubspec.yaml/go.mod/Cargo.toml/pom.xml/composer.json/Gemfile/requirements.txt
@@ -142,7 +145,11 @@ FWD: Hardcoded string — move to config/env | FWD: Missing index on FK — perf
 OBS: [service] no metrics — add request count + latency
 A11Y: [element] — [issue] → fix immediately
 
-SESSION DISCIPLINE: /compact at 250k tokens. Fresh session for unrelated tasks.
+SESSION DISCIPLINE: the model has no tool to check its own token usage and cannot run
+/compact itself — treat "/compact at 250k tokens" as the user's cue, not the model's job.
+After a long chain of file reads or several Agent() calls, proactively say so: "Session is
+getting large — consider /compact or a fresh session for the next task." Always start a
+fresh session for unrelated tasks rather than continuing an old one.
 Subagent cost: CLAUDE_CODE_SUBAGENT_MODEL=haiku saves 75% on anonymous Agent() calls (no named agent). Named agents (researcher, security-guard, etc.) use their own model: field and are unaffected.
 
 ---
@@ -210,6 +217,10 @@ NEVER output: API keys · passwords · tokens · PII — even in debug/logs/comm
 
 Detail in ~/.claude/rules/ (path-scoped, auto-loaded when file matches).
 Patterns below are abbreviated for brevity — each rule file's own frontmatter `globs:` is the authoritative, fuller pattern list.
+Load each matched rule file AT MOST ONCE PER SESSION — once read, its guidance holds for
+the rest of the session; do not re-Read it for the 2nd, 3rd, ... Nth file of the same type
+(e.g. touching five `.ts` files loads 700-observability.md and 900-performance.md once, not
+five times). This applies to every rule file below, not just the two with overlapping globs.
 000-security (always) | 001-conventions (always, incl. modern tech preferences)
 100-web (*.tsx,*.jsx,*.vue,*.svelte,*.astro) — design tokens, 8px grid, skeleton, SEO, WCAG 2.2
 200-api (**/api/**,**/routes/**,**/controllers/**) — REST, OpenAPI 3.1, error format

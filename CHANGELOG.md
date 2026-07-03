@@ -7,6 +7,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `global-CLAUDE.md` — three session-token-bloat bugs that let context grow far past the kit's own "SESSION DISCIPLINE" target before Claude Code's automatic compaction ever kicked in: (1) BOOT SEQUENCE ran unconditionally every session with no tier gate, so even a Tier 0 one-line fix paid for 6+ silent file reads; (2) path-scoped rules under RULES REFERENCE (e.g. `700-observability.md` and `900-performance.md`, whose globs both match nearly every `.ts`/`.py`/`.go`/`.java`/`.cs` file) had no "load once per session" instruction, so touching N files of the same type could re-load the same full rule file N times; (3) "`/compact at 250k tokens`" read as something the model executes, but `/compact` is a user-facing slash command with no model-callable equivalent and the model has no tool to introspect its own token usage, so the instruction was a structural no-op. Gated BOOT SEQUENCE by tier, added an explicit once-per-session cache rule for all path-scoped rules, and reworded SESSION DISCIPLINE into an actionable nudge (tell the user to `/compact` or start fresh) instead of a phantom self-command.
+- `settings.json` / `settings-template.json` — 8 of the `curl|wget <(...)` process-substitution deny rules (`Bash(bash <(curl *)`, and the `/bin/bash`, `sh`, `/bin/sh` × `curl`/`wget` variants) were missing their closing parenthesis, e.g. `"Bash(bash <(curl *)"` instead of `"Bash(bash <(curl *))"`. Claude Code's own settings schema validator rejects a settings.json containing these malformed rules outright (caught while wiring the deny list into a live install); a plain file copy doesn't validate at write time, so the break was silent until the rules were actually loaded. Deny rule count unchanged at 119 (syntax fix only, no rules added or removed).
+
 ---
 
 ## [1.0.1] — 2026-07-02
