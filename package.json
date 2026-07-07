@@ -1,6 +1,6 @@
 {
   "name": "senior-dev-kit",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Agent, skill and rule kit that gives Claude Code senior engineering team behavior.",
   "type": "module",
   "license": "MIT",

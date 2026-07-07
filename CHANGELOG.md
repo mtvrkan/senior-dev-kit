@@ -7,6 +7,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [1.0.4] — 2026-07-07
+
 ### Added
 
 - `rules/100-web.md` — new `DESIGN CONTINUITY` section: check existing tokens/typography/spacing/component structure before any UI edit (color/warm-cool harmony included), and vary layout per section instead of repeating the same template.
