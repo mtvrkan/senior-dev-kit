@@ -16,8 +16,8 @@ Rules carry engineering standards loaded into every session; they must be review
 | Rule File | Scope / Domain | Last Reviewed |
 | --- | --- | --- |
 | `000-security` | Security scan, OWASP 2025, supply chain | 2026-06-30 |
-| `001-conventions` | Architecture detection, modern tech preferences | 2026-07-03 |
-| `100-web` | Design tokens, 8px grid, SEO, WCAG 2.2, state mgmt | 2026-07-03 |
+| `001-conventions` | Architecture detection, modern tech preferences | 2026-07-07 |
+| `100-web` | Design tokens, 8px grid, SEO, WCAG 2.2, state mgmt | 2026-07-07 |
 | `200-api` | REST, OpenAPI 3.1, RFC 7807, pattern selection | 2026-07-03 |
 | `300-testing` | Test pyramid, mock policy, coverage targets | 2026-06-30 |
 | `400-mobile` | iOS/Android/Flutter/RN platform patterns | 2026-06-30 |

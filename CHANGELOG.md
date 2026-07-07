@@ -7,6 +7,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `rules/100-web.md` — new `DESIGN CONTINUITY` section: check existing tokens/typography/spacing/component structure before any UI edit (color/warm-cool harmony included), and vary layout per section instead of repeating the same template.
+- `rules/001-conventions.md` — `HOLISTIC CONSISTENCY` table gained a row requiring a terse `CHANGELOG.md` bullet (what + why) for any code change or bugfix in shipped/consumer projects.
+- `global-CLAUDE.md` — `CORE BEHAVIORS` gained a `RESEARCH SCOPE` line: read only files relevant to the change, no full-tree scans, reuse prior analysis instead of re-reading.
+
 ---
 
 ## [1.0.3] — 2026-07-03

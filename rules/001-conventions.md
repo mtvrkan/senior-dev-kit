@@ -48,6 +48,7 @@ Direct call when: sync response needed | <50ms | single consumer
 | Permission added | All UI guards that should check it |
 | Config key added | `.env.example` updated; docs if public |
 | Dep removed | All imports referencing it |
+| Any code change / bugfix | 1 terse bullet in project's `CHANGELOG.md` (what + why, no long prose) |
 
 ## FORWARD COMPATIBILITY FLAGS — mark, never block
 
