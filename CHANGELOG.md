@@ -7,6 +7,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `rules/100-web.md` — `DESIGN CONTINUITY`'s "vary layout per section" line miscast intra-site variety as the goal, which fought cohesion within a single project. Corrected: within one project, every section/page stays visually unified (same tokens/hierarchy/spacing end-to-end); the "don't repeat the same template" intent is cross-project scope — don't default to the previous project's design when starting a new one.
+
 ---
 
 ## [1.0.4] — 2026-07-07
