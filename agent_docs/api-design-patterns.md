@@ -164,9 +164,9 @@ const nextCursor = hasMore ? items[items.length - 1].id : null
 return { items, nextCursor, hasMore }
 ```
 
-## VERSIONING STRATEGY (DEEP DIVE)
+## VERSIONING STRATEGY
 
-### Semantic API versioning
+Semantic rule for deciding WHEN to version (the how — routing/deprecation-headers/migration-doc/OpenAPI templates — is in `agent_docs/api-versioning-guide.md`):
 
 ```text
 MAJOR (v1 → v2): breaking change — required field added, field removed, format changed
@@ -175,33 +175,6 @@ PATCH: bug fixes, clarifications — no contract change
 ```
 
 Only version on MAJOR breaks. Minor/patch: add without versioning.
-
-### Migration guide format
-
-```markdown
-## Migration: v1 → v2
-
-### Breaking Changes
-- `user.name` split into `user.firstName` + `user.lastName`
-- `order.total` now returned in cents (integer), not dollars (float)
-- `DELETE /users/{id}` now returns 204 (was 200)
-
-### Timeline
-- v2 available: 2027-01-01
-- v1 deprecated: 2027-04-01 (Deprecation header added)
-- v1 sunset: 2027-07-01 (endpoint removed)
-
-### Code changes needed
-[specific migration examples]
-```
-
-Deprecation header in API response:
-
-```http
-Deprecation: true
-Sunset: Tue, 01 Jul 2027 00:00:00 GMT
-Link: <https://api.example.com/v2>; rel="successor-version"
-```
 
 ## IDEMPOTENCY IMPLEMENTATION
 

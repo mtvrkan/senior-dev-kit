@@ -4,6 +4,9 @@ description: Use to audit dependencies for security vulnerabilities, outdated ve
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use before adding a new dependency, before a release, or when asked to audit packages.
 argument-hint: "[package name (optional — defaults to full audit)]"
+context: fork
+agent: devops-guard
+effort: medium
 ---
 
 # dep-check

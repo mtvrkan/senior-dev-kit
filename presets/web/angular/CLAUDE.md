@@ -199,12 +199,7 @@ export class PageComponent {
 
 Or with `AsyncPipe` + `BehaviorSubject` if project uses that pattern — match existing.
 
-### Universal rules
-
-**Loading:** `<mat-skeleton>` / `<p-skeleton>` / spinner — shape matching real content
-**Empty:** icon + message + optional action button — `*ngIf="!items.length"`
-**Error:** message + retry button — never swallow error silently
-**Populated:** real content
+Loading/empty/error state detail is in `rules/100-web.md`'s THREE MANDATORY STATES section. Angular-specific: `<mat-skeleton>` / `<p-skeleton>` for loading; `*ngIf="!items.length"` for empty; `*ngIf="error()"` for error — never swallow silently.
 
 **Form pattern:**
 

@@ -234,7 +234,15 @@ Both opening and closing `---` lines are required.
 
 ### `npm run validate` fails with "invalid model id"
 
-Valid model IDs (check for typos):
+Use a generic alias (check for typos) — this is the default going forward:
+
+- `opus`
+- `sonnet`
+- `haiku`
+- `fable`
+- `inherit`
+
+Full dated IDs are still accepted for deliberate pinning:
 
 - `claude-sonnet-5`
 - `claude-opus-4-8`

@@ -4,6 +4,9 @@ description: Use before implementing large, multi-file, architecture, DB, auth, 
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically for large, unclear, risky, or multi-file features that need a plan before code.
 argument-hint: "[feature — goal, constraints, affected areas if known]"
+context: fork
+agent: architect
+effort: high
 ---
 
 # feature-plan

@@ -22,11 +22,11 @@ Claude Code'a kıdemli mühendislik takımı davranışı kazandıran agent, ski
 | Durumunuz | Kullanın | Ne alırsınız |
 | --- | --- | --- |
 | Yepyeni proje — Claude kurup yapılandırsın | **Seçenek A** | Yalın, **üretilmiş 7 agent'lık proje takımı** (tam kit değil — alttaki nota bakın) |
-| Bu makinedeki her proje kiti kullansın | **Seçenek B** | Tam kit (17 agent, 34 skill, 13 komut, 11 rule) global `~/.claude/` içinde |
+| Bu makinedeki her proje kiti kullansın | **Seçenek B** | Tam kit (14 agent, 32 skill, 11 komut, 11 rule) global `~/.claude/` içinde |
 | Mevcut proje, kopyalamayı siz yapacaksınız | **Seçenek C** | Tam kit o projenin `.claude/`'sinde |
 | Mevcut proje, kopyalamayı Claude yapsın | **Seçenek D** | Tam kit `.claude/`'de, istenirse global kurulum da |
 
-> **Seçenek A farklı bir takım kurar.** `PROJECT-BOOTSTRAP.md`, PHASE 0'dan başlayarak minimal 7 agent'lık kadroyu üretir (architect, security-reviewer, implementer, test-author, reviewer, debugger, researcher) — kitin hazır 17 agent'ını değil. Sonradan aynı projede tam kiti kullanmak için üzerine Seçenek B, C veya D'yi çalıştırın.
+> **Seçenek A farklı bir takım kurar.** `PROJECT-BOOTSTRAP.md`, PHASE 0'dan başlayarak minimal 7 agent'lık kadroyu üretir (architect, security-reviewer, implementer, test-author, reviewer, debugger, researcher) — kitin hazır 14 agent'ını değil. Sonradan aynı projede tam kiti kullanmak için üzerine Seçenek B, C veya D'yi çalıştırın.
 
 ### Seçenek A — Yeni proje (önerilen)
 
@@ -117,7 +117,7 @@ User: Docker CI pipeline'ına SBOM ekle
 
 ### Slash komutları
 
-**Komut dosyaları** (13 — zengin davranış tanımları):
+**Komut dosyaları** (11 — zengin davranış tanımları):
 
 | Komut | Ne yapar |
 | --- | --- |
@@ -130,13 +130,11 @@ User: Docker CI pipeline'ına SBOM ekle
 | `/performance-check` | Bundle, N+1, CWV performans analizi |
 | `/seo-check` | SEO, AEO, Core Web Vitals denetimi |
 | `/deep-research [topic]` | Çok kaynaklı araştırma, doğrulama |
-| `/strategy-plan [goal]` | Yol haritası ve strateji analizi |
-| `/article-write [topic]` | Blog yazısı veya teknik makale |
 | `/agents-guide` | Tüm agent'ları ve yönlendirme kurallarını listeler |
 | `/kit-doctor [scope]` | Kit kurulumunu teşhis eder — sayılar, settings, sürüm kayması |
 
 **Skill kısayolları** (adıyla çağırın — her zaman kullanılabilir):
-`/security-review` · `/api-design` · `/api-versioning` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · ve 34 skill'in tamamı
+`/security-review` · `/api-design` · `/api-versioning` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · ve 32 skill'in tamamı
 
 > **Komutlar ve Skill'ler:** Komut dosyaları (`commands/*.md`) Claude Code'un eski slash-komut formatını kullanır — `$ARGUMENTS` yer tutuculu düz markdown, çağrıldığında bağlama okunur. Skill dosyaları (`skills/*/SKILL.md`) zengin frontmatter'lı (`model`, `effort`, `allowed-tools`, `when_to_use`) yeni SKILL.md sistemini kullanır. Skill'ler eşleşen bağlam algılandığında otomatik de tetiklenebilir; komutlar yalnızca açıkça çağrıldığında çalışır.
 
@@ -152,7 +150,7 @@ Tam tablo için [README.md — Picking a Preset](README.md#picking-a-preset) bö
 
 ## Kitin içinde ne var
 
-### Skill'ler (34)
+### Skill'ler (32)
 
 Skill'ler iki şekilde tetiklenir: çoğu, `description` alanı görevle eşleştiğinde **otomatik çağrılır** (çoğu ayrıca agent'ların `skills:` alanına bağlıdır); bazıları ise **yalnızca manueldir** — `/skill-adi` ile çağrılır ve `disable-model-invocation: true` işaretlidir (örn. `smart-task`, `plan-first`, `safe-review`, `release-gate`, `kit-doctor`). Hiçbir agent'ın referans vermediği skill yetim değildir: doğrudan çağrılmak için vardır.
 
@@ -164,7 +162,7 @@ Skill'ler iki şekilde tetiklenir: çoğu, `description` alanı görevle eşleş
 
 **DevOps ve Ortam:** `release-check`, `release-gate`, `env-audit`, `dep-check`, `monorepo-task`, `kit-doctor`
 
-**İçerik ve Araştırma:** `docs-update`, `article-write`, `academic-write`, `deep-research`, `strategy-plan`
+**İçerik ve Araştırma:** `docs-update`, `deep-research`, `codebase-overview`
 
 **AI/LLM:** `llm-integration`
 
@@ -220,9 +218,9 @@ Aşağıdaki hiçbir sayı hafızadan iddia edilmiyor — her biri yanındaki ko
 
 | Kontrol | Komut | Sonuç |
 | --- | --- | --- |
-| Unit + entegrasyon testleri | `npm test` | **119/119 geçiyor** (21 suite — frontmatter doğrulama, her iki platformda install script davranışı, audit loglama dahil protected-path hook davranışı) |
-| Skill/agent/command/preset frontmatter | `npm run validate` | 34 skill · 17 agent · 13 command · 49 preset — 0 hata; hand-off zinciri bütünlüğünü (`db-change` → `migration-review` vb.) ve guard-agent `permissionMode: plan` zorunluluğunu içerir |
-| Dahili doküman linkleri | `npm run link-check` | 226 markdown dosyası, 0 kırık link/anchor |
+| Unit + entegrasyon testleri | `npm test` | **130/130 geçiyor** (23 suite — frontmatter doğrulama, her iki platformda install script davranışı, audit loglama dahil protected-path hook davranışı) |
+| Skill/agent/command/preset frontmatter | `npm run validate` | 32 skill · 14 agent · 11 command · 49 preset — 0 hata; hand-off zinciri bütünlüğünü (`db-change` → `migration-review` vb.) ve guard-agent `permissionMode: plan` zorunluluğunu içerir |
+| Dahili doküman linkleri | `npm run link-check` | 219 markdown dosyası, 0 kırık link/anchor |
 | Bakım tablosu tazeliği | `npm run stale-check` | 5 bakım tablosunun tamamında 0 bayat/öksüz kayıt |
 | Type check / lint | `npm run typecheck` · `npm run lint` | temiz |
 | Yönlendirme doğruluğu (canlı) | `RUN_ROUTING_EVAL=1 npm run routing-eval` | **32/33 (%97)** — aşağıya bakın |
@@ -254,4 +252,4 @@ pre-commit run --all-files
 
 ## Token maliyeti referansı
 
-Görev tipi başına tipik maliyetler (haiku ile UI düzeltmesi ~$0.001'den, opus ile mimari planlama ~$0.25'e) İngilizce README'nin [Token cost reference](README.md#token-cost-reference) tablosundadır — bu rakamlar **tahmini**, yukarıdaki routing-eval/deny-cost sayıları gibi ölçülmüş değil. Maliyet düşürme: `settings.json`'daki `CLAUDE_CODE_SUBAGENT_MODEL=claude-haiku-4-5-20251001` anonim alt-görevleri haiku'ya yönlendirir (~%75 tasarruf).
+Görev tipi başına tipik maliyetler (haiku ile UI düzeltmesi ~$0.001'den, opus ile mimari planlama ~$0.25'e) İngilizce README'nin [Token cost reference](README.md#token-cost-reference) tablosundadır — bu rakamlar **tahmini**, yukarıdaki routing-eval/deny-cost sayıları gibi ölçülmüş değil. Maliyet düşürme: `settings.json`'daki `CLAUDE_CODE_SUBAGENT_MODEL=haiku` anonim alt-görevleri haiku'ya yönlendirir (~%75 tasarruf).

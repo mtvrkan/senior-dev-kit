@@ -13,11 +13,11 @@ The version window is listed here so users can judge whether a preset is still a
 
 | Category | Preset | Supported Version(s) | Last Reviewed |
 | --- | --- | --- | --- |
-| **Web** | `nextjs-saas` | Next.js 14–15 | 2026-06-30 |
-| **Web** | `react-vite` | React 18–19 · Vite 5–6 | 2026-06-30 |
-| **Web** | `vue-nuxt` | Vue 3.x · Nuxt 3.x | 2026-06-30 |
-| **Web** | `sveltekit` | SvelteKit 2.x | 2026-06-30 |
-| **Web** | `angular` | Angular 17–18 | 2026-06-30 |
+| **Web** | `nextjs-saas` | Next.js 14–15 | 2026-07-15 |
+| **Web** | `react-vite` | React 18–19 · Vite 5–6 | 2026-07-15 |
+| **Web** | `vue-nuxt` | Vue 3.x · Nuxt 3.x | 2026-07-15 |
+| **Web** | `sveltekit` | SvelteKit 2.x | 2026-07-15 |
+| **Web** | `angular` | Angular 17–18 | 2026-07-15 |
 | **Web** | `astro` | Astro 4–5 | 2026-06-30 |
 | **Web** | `remix` | Remix 2.x | 2026-06-30 |
 | **Backend** | `nestjs` | NestJS 10–11 | 2026-06-30 |

@@ -8,95 +8,20 @@ argument-hint: "[page or route — optional]"
 Audit the project for SEO, AEO (AI Engine Optimization), Core Web Vitals, and technical SEO issues: $ARGUMENTS
 
 You are running an SEO and AEO audit. Analyze the codebase for SEO issues and optimization opportunities.
+Full checklists, expected metadata shape, JSON-LD schema table, and CWV risk detail are in
+`agent_docs/seo-patterns.md` — read it before auditing rather than re-deriving these from scratch.
 
-**Step 1 — Detect framework**
+**Step 1 — Detect framework.** Next.js (App Router vs Pages) / Nuxt / SvelteKit / Astro / Remix — each has a different metadata API; check `agent_docs/seo-patterns.md` for the framework-specific shape.
 
-Check for: Next.js (App Router vs Pages), Nuxt, SvelteKit, Astro, Remix. Each has different metadata APIs.
+**Step 2 — Metadata audit.** Scan page/layout files against `seo-patterns.md`'s metadata checklist (title/description length, canonical, OG tags, twitter:card, duplicate metadata across pages).
 
-**Step 2 — Metadata audit**
+**Step 3 — Structured data check.** Look for JSON-LD in page files; flag missing/incorrect schema per `seo-patterns.md`'s page-type → schema table, and syntax errors or missing required fields.
 
-Scan all page/layout files for:
+**Step 4 — Technical SEO.** sitemap/robots presence and correctness, 404 page, image `alt` coverage, JS-only internal links, unintended `noindex`, `<h1>` uniqueness and heading hierarchy, mobile viewport meta.
 
-✓ Correct: Next.js App Router metadata
+**Step 5 — Core Web Vitals risk scan.** LCP (hero image `priority`/`fetchpriority`, missing `sizes`), CLS (`<img>` missing dimensions, non-`next/font` Google Fonts link, post-hydration shift), INP (long handlers without `startTransition`/debouncing, heavy per-render `useEffect`).
 
-```typescript
-export const metadata: Metadata = {
-  title: '...',  // under 60 chars
-  description: '...',  // under 160 chars
-  openGraph: { ... },
-  alternates: { canonical: '...' },
-}
-```
-
-Flag issues:
-
-- Missing `title` on any page
-- Missing `description` on any page
-- `title` over 60 characters (truncated in SERPs)
-- `description` over 160 characters (truncated)
-- Missing `canonical` URL (duplicate content risk)
-- Missing OG tags (social sharing won't have preview)
-- OG image not 1200×630px
-- Missing `twitter:card` meta
-- Pages with identical titles/descriptions (duplicate metadata)
-
-**Step 3 — Structured data check**
-
-Look for JSON-LD in page files. Flag missing schemas:
-
-| Page type | Expected schema |
-| --- | --- |
-| Blog post | `Article` or `BlogPosting` |
-| Product | `Product` with `AggregateRating` |
-| FAQ section | `FAQPage` |
-| How-to guides | `HowTo` |
-| Home/about | `Organization` |
-| Navigation | `BreadcrumbList` |
-| Events | `Event` |
-
-Also check: JSON-LD for syntax errors, required fields (name, description, url).
-
-**Step 4 — Technical SEO**
-
-Check for:
-
-- `sitemap.ts` / `sitemap.xml` exists and covers all public pages
-- `robots.ts` / `robots.txt` exists and doesn't block important pages
-- `404.tsx` exists and returns proper 404 status
-- Image `alt` attributes: scan `<img>` tags without `alt` or with empty `alt`
-- Internal links use `<a href>` (not JS-only navigation)
-- No `noindex` on pages that should be indexed
-- `<h1>` present and unique on every page
-- Heading hierarchy: h1 → h2 → h3 (no skipping levels)
-- Mobile viewport meta: `<meta name="viewport" content="width=device-width, initial-scale=1">`
-
-**Step 5 — Core Web Vitals risk scan**
-
-LCP risks (flag each):
-
-- Hero image without `priority` prop (Next.js) or `fetchpriority="high"`
-- Large hero image without proper `sizes` attribute
-
-CLS risks (flag each):
-
-- `<img>` without `width` and `height` attributes
-- Font loaded via `<link>` to Google Fonts (use `next/font` instead)
-- Content that shifts after hydration
-
-INP risks (flag each):
-
-- Long event handlers without `startTransition` or debouncing
-- Heavy `useEffect` running on every render
-
-**Step 6 — AEO / AI Engine Optimization**
-
-Check content structure for AI citability:
-
-- Does H1 directly answer the primary page intent?
-- Does the first paragraph provide a direct answer (not fluff)?
-- Are key facts in list format (easier for AI to extract)?
-- Are there FAQ sections with question headings?
-- Are statistics and claims cited?
+**Step 6 — AEO / AI Engine Optimization.** Apply `seo-patterns.md`'s AEO principles (direct-answer H1/lead paragraph, structured facts, definition pattern, cited sources, FAQ question-headings).
 
 **Output format:**
 

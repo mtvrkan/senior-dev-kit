@@ -84,10 +84,9 @@ Primary hue: [HSL base] | Neutral: slate/gray/zinc | Success/Warning/Destructive
 --muted  --muted-foreground  --accent  --accent-foreground
 --destructive  --destructive-foreground  --border  --input  --ring  --radius
 
-## Spacing: 8px base. Valid: 4 8 12 16 24 32 48 64 96 128px only.
-## Typography: Perfect Fourth (1.333). xs/sm/base/lg/xl/2xl/3xl/4xl.
-## Motion: --duration-fast:150ms --duration-base:300ms --ease-enter/exit
-## Component States: loading=skeleton | empty=icon+headline+description+CTA | error=message+retry
+## Spacing/typography/motion/component-state rules: fixed, not project-specific —
+## see agent_docs/design-system.md (8px grid, Perfect Fourth scale, motion tokens)
+## and rules/100-web.md (THREE MANDATORY STATES) instead of restating them here.
 ```
 
 ---

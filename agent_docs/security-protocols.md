@@ -15,20 +15,22 @@ Framework: STRIDE per component
 
 Run STRIDE for: new API endpoints · auth changes · file upload features · payment flows · admin panels.
 
-## OWASP TOP 10 2025
+## OWASP TOP 10 2025 — concrete mitigations
 
-| # | Category | Key mitigations |
-| --- | --- | --- |
-| A01 | Broken Access Control | RBAC + ABAC at service layer, not UI only. Check `userId === resource.userId` on every read/write. |
-| A02 | Cryptographic Failures | TLS everywhere. Argon2id for passwords. AES-256-GCM for data at rest. Never MD5/SHA1 for security. |
-| A03 | **Supply Chain** (↑ NEW #3) | SHA-pin GitHub Actions. Audit `npm audit` / `pip-audit`. SBOM on release. Lockfile integrity. |
-| A04 | Insecure Design | Threat model new features. Fail secure by default. Defense in depth. |
-| A05 | Security Misconfiguration | Security headers (CSP, HSTS, X-Frame-Options). Disable debug in prod. No default credentials. |
-| A06 | Vulnerable Components | CVE scan in CI. Dependabot auto-PRs. Keep major versions current. |
-| A07 | Auth Failures | MFA for admin. Account lockout after N failures. Secure session invalidation. |
-| A08 | Software/Data Integrity | HMAC for webhooks. Signed releases. Don't deserialize untrusted data. |
-| A09 | Logging Failures | Log auth events, privilege changes, failed access. Redact PII in logs. |
-| A10 | **Exceptional Conditions** (NEW) | Handle all error states explicitly. Never silently swallow exceptions. |
+Category names/ranks/triggers are in `rules/000-security.md` (always loaded) — this is the mitigation detail that doesn't fit there:
+
+| # | Key mitigations |
+| --- | --- |
+| A01 | RBAC + ABAC at service layer, not UI only. Check `userId === resource.userId` on every read/write. |
+| A02 | TLS everywhere. Argon2id for passwords. AES-256-GCM for data at rest. Never MD5/SHA1 for security. |
+| A03 | SHA-pin GitHub Actions (see `agent_docs/devops-security-guide.md`). Audit `npm audit` / `pip-audit`. SBOM on release. Lockfile integrity. |
+| A04 | Threat model new features. Fail secure by default. Defense in depth. |
+| A05 | Security headers (CSP, HSTS, X-Frame-Options). Disable debug in prod. No default credentials. |
+| A06 | CVE scan in CI. Dependabot auto-PRs. Keep major versions current. |
+| A07 | MFA for admin. Account lockout after N failures. Secure session invalidation. |
+| A08 | HMAC for webhooks. Signed releases. Don't deserialize untrusted data. |
+| A09 | Log auth events, privilege changes, failed access. Redact PII in logs. |
+| A10 | Handle all error states explicitly. Never silently swallow exceptions. |
 
 ## AUTHENTICATION PATTERNS
 
@@ -243,20 +245,15 @@ const safeFilename = `${crypto.randomUUID()}${allowedExtension}`
 
 ## SUPPLY CHAIN SECURITY (OWASP A03 2025)
 
-```yaml
-# GitHub Actions: pin to commit SHA (never mutable tags)
-- uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+GitHub Actions SHA-pinning and SBOM generation commands are in `agent_docs/devops-security-guide.md` — canonical home, not repeated here.
 
+```yaml
 # Lockfile integrity: commit lockfiles, verify in CI
 npm ci             # ← uses lockfile exactly, fails if package.json changed without update
 pip install --require-hashes -r requirements.txt
 
 # Dependabot: auto-PR for security updates
 # .github/dependabot.yml — enable for npm, pip, docker, github-actions separately
-
-# SBOM on every release:
-syft dir:. -o cyclonedx-json > sbom.cdx.json
-grype sbom:sbom.cdx.json  # vulnerability scan on SBOM
 ```
 
 ## SECRETS MANAGEMENT

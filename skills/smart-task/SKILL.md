@@ -4,7 +4,7 @@ description: Manually invoke to classify the task, choose tier/risk/agent/skill,
 disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Manually invoke when task scope or risk is unclear — classifies by tier and routes to the correct skill.
-model: claude-sonnet-5
+model: sonnet
 effort: medium
 argument-hint: "[task — goal plus any known files or constraints]"
 ---
@@ -28,4 +28,4 @@ If the argument is empty or too vague to classify, infer the task from recent co
 **T0-1:** `TIER: 0 | SKILL: [skill] | FILE: [path:line — action] | VERIFY: [command]` — proceed immediately.
 **T2:** `TIER: 2 | SKILL: [skill] | RISK: medium` then `[P:A] [file] — [action]; [P:B] [file] — [action]` + `CONTRACT:` + `TEST:` + `VERIFY:`. Wait for "go" if non-obvious.
 **T3+:** `TIER: 3 | SKILL: [skill] | RISK: high | GUARD: [agent]` then `GOAL:` + `[P:A/B] [file] — [action]` + `CONTRACT:` + `PROTECTED:` + `VERIFY:` + `ROLLBACK:`. Do not proceed until user confirms.
-Grep/glob to find real paths before listing. Every step: specific file + action. Mark independent steps `[P:GroupName]`. Auto-test fires after backend/mobile/API-route changes.
+Classify from the user's stated files/description first — grep/glob only to confirm an ambiguous path or when scope is genuinely unclear, never a repo-wide sweep just to pick a tier. Every step: specific file + action. Mark independent steps `[P:GroupName]`. Auto-test fires after backend/mobile/API-route changes.

@@ -43,7 +43,7 @@ Agents live in `agents/<name>.md` with YAML frontmatter.
 name: my-agent
 description: One sentence — when to use this agent.
 tools: Read, Grep, Glob, Edit, Write, Bash
-model: claude-sonnet-5
+model: sonnet
 ---
 ```
 
@@ -61,7 +61,9 @@ color: blue                    # cosmetic only — tints the agent's label in th
 
 **Which part of an agent file is authoritative?** The frontmatter `description` is the *routing surface* — it's what Claude reads when deciding whether to spawn the agent, so keep it to 1–2 sentences of "use for X". The file body (including any HARD CONSTRAINTS section) is the *behavior contract* — it governs what the agent does once running. If they ever disagree, fix the description to match the body, not the other way round.
 
-Valid model IDs: `claude-haiku-4-5-20251001` · `claude-sonnet-5` · `claude-opus-4-8` · `claude-fable-5`
+Use a generic alias by default — it tracks Anthropic's current snapshot for that tier so the file doesn't go stale: `opus` · `sonnet` · `haiku` · `fable` · `inherit` (runs the subagent on the parent conversation's model).
+
+Full dated IDs remain valid for deliberate pinning (e.g. reproducibility) — leave a `# pinned` or `# reproducibility` comment so a future edit doesn't "helpfully" convert it back to an alias: `claude-haiku-4-5-20251001` · `claude-sonnet-5` · `claude-opus-4-8` · `claude-fable-5`
 
 > **Keeping model IDs current:** When Anthropic releases a new model, add its ID to **both** the `VALID_MODELS` set in `scripts/validate-skills.ts` **and** the list above. A model ID that looks like a Claude ID (`claude-...`) but isn't in the set produces a **warning** (so a newly released model doesn't break CI before the list is updated); anything else — typos, non-Claude IDs — is a hard **error**.
 
@@ -93,12 +95,16 @@ allowed-tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 name: my-skill                    # defaults to the folder name if omitted
 when_to_use: Condition that triggers automatic invocation.  # recommended — validator warns (doesn't fail) if omitted
-model: claude-sonnet-5            # overrides the default model for this skill's run
-effort: medium                    # low | medium | high | xhigh | max
+model: sonnet                     # overrides the default model for this skill's run — alias preferred, full ID for deliberate pinning
+effort: medium                    # low | medium | high — xhigh/max are session-level /effort overrides, not definition defaults; validator rejects them here
 argument-hint: "[task or target]" # shown in autocomplete for manual invocation, e.g. /my-skill [task]
 disable-model-invocation: true    # skill never auto-fires from context; only runs via explicit /my-skill invocation
+context: fork                     # isolate a long/noisy skill run (many-file reads, research, log analysis, test runs) into its own context
+agent: my-agent                   # required with context: fork — which agents/<name>.md runs the forked work; validator checks it exists
 ---
 ```
+
+Use `context: fork` for skills whose own procedure is long or noisy (broad codebase reads, multi-source research, log/test-output analysis) — isolating that into the target agent's own context keeps the noise out of the main conversation. Leave it off for short, single-step procedures the user should see happen inline (e.g. "write a commit message in this format"), or for skills with a mid-task user checkpoint baked into their own steps (outline approval, phase gates) that a one-shot forked run would skip.
 
 `disable-model-invocation` and `model` are independent: the former controls *whether* the skill can trigger automatically, the latter controls *which model* runs it once triggered (manually or automatically). Manual-only skills (`smart-task`, `plan-first`, `safe-review`, `release-gate`) set both together — `disable-model-invocation: true` to require explicit invocation, plus a `model:` for when that explicit invocation happens.
 

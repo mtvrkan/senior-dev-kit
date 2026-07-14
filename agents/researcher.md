@@ -2,7 +2,7 @@
 name: researcher
 description: Use for deep research, fact-checking, competitive analysis, market research, technology comparisons, and multi-source information gathering. Produces a cited report.
 tools: WebSearch, WebFetch, Read, Grep, Glob
-model: claude-opus-4-8
+model: opus
 permissionMode: plan
 effort: high
 color: blue
@@ -34,8 +34,6 @@ Rules:
 
 ## Escalation contracts
 
-- If research requires writing a full article → delegate to: writer
-- If research is for a strategic decision → share findings with: strategist
 - If research uncovers a security vulnerability in a codebase → escalate to: security-guard
 
 ## Output format

@@ -148,71 +148,13 @@ Always include:
 
 ## SEO / AEO (App Router)
 
-### Metadata — every route needs its own
+Full metadata example, JSON-LD types, CWV budget table, and checklist are in `rules/100-web.md`'s
+"SEO (Web projects — Next.js 15 patterns)" section — it's already Next.js-specific and loads for
+every `.tsx` file, same as this preset. Only the delta worth stating here:
 
-```typescript
-// app/layout.tsx — global defaults
-export const metadata: Metadata = {
-  title: { template: '%s | SiteName', default: 'SiteName' },
-  description: '...',
-  metadataBase: new URL('https://example.com'),
-  openGraph: { type: 'website', images: [{ url: '/og.png', width: 1200, height: 630 }] },
-  twitter: { card: 'summary_large_image' },
-}
-
-// app/[page]/page.tsx — dynamic route
-export async function generateMetadata({ params }): Promise<Metadata> {
-  return {
-    title: 'Page Title',          // ≤60 chars
-    description: '...',           // ≤160 chars
-    alternates: { canonical: '/page' },
-  }
-}
-```
-
-Never leave static metadata only in root layout — every route segment needs `generateMetadata`.
-
-### JSON-LD structured data — by page type
-
-```tsx
-// Organization (home / about)
-{ "@type": "Organization", "name": "...", "url": "...", "logo": "..." }
-
-// Article (blog post)
-{ "@type": "Article", "headline": "...", "datePublished": "...", "author": {...} }
-
-// FAQPage (support / docs)
-{ "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": "...", "acceptedAnswer": {...} }] }
-
-// Product (pricing / landing)
-{ "@type": "Product", "name": "...", "offers": { "price": "...", "priceCurrency": "USD" } }
-```
-
-### Core Web Vitals — budgets
-
-| Metric | Budget | Fix |
-| --- | --- | --- |
-| LCP | <2.5s | `<Image priority>` on hero · `preload` hints |
-| CLS | <0.1 | `width`+`height` on every `<img>` · `next/font` |
-| INP | <200ms | `scheduler.yield()` in handlers · avoid layout thrash |
-
-Every `<img>` (not `<Image>`) must have `width` + `height` attributes. No exceptions.
-
-### AEO content structure (AI Engine Optimization)
-
-For marketing pages and docs: H1 + first paragraph must directly answer the primary query.
-Use `<ul>` / `<ol>` for facts and lists (AI systems prefer structured content for citation).
-Never use vague headlines like "Learn More" — be specific about what the section answers.
-
-### New page SEO checklist
-
-- [ ] `generateMetadata()` with unique title (≤60 chars) + description (≤160 chars)
-- [ ] OpenGraph image (1200×630) — use `opengraph-image.tsx` per route if dynamic
-- [ ] JSON-LD script matching page content type
-- [ ] `alternates.canonical` set
-- [ ] Exactly one `<h1>` per page
-- [ ] All `<img>` have `width` + `height` or `aspect-ratio` (CLS prevention)
-- [ ] Semantic HTML: `<main>`, `<article>`, `<nav>`, `<section>`
+Never leave static metadata only in root layout — every route segment needs its own `generateMetadata`.
+Marketing/docs pages: H1 + first paragraph must directly answer the primary query (AEO); use
+`<ul>`/`<ol>` for facts and lists — AI systems prefer structured content for citation.
 
 ---
 

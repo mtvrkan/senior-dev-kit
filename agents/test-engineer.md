@@ -2,7 +2,7 @@
 name: test-engineer
 description: Use to add or update targeted tests for changed behavior, business rules, edge cases, and regressions using the existing test framework.
 tools: Read, Grep, Glob, Edit, Write, Bash
-model: claude-sonnet-5
+model: sonnet
 permissionMode: default
 effort: medium
 color: orange

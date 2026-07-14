@@ -2,7 +2,7 @@
 name: docs-writer
 description: Use for README, setup notes, changelog, API docs, usage instructions, and documentation updates.
 tools: Read, Grep, Glob, Edit, Write
-model: claude-haiku-4-5-20251001
+model: haiku
 permissionMode: default
 effort: low
 color: cyan

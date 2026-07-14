@@ -7,6 +7,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+
+- `academic-writer` agent + `academic-write` skill + `agent_docs/academic-writing-guide.md`, `writer` agent + `article-write` skill/command, `strategist` agent + `strategy-plan` skill/command — out of scope for a code/design dev kit (academic writing, general content marketing, and product/business strategy are not software engineering or design work). `researcher`/`deep-research` kept — technology comparison and fact-checking directly serve engineering decisions. Kit now ships 14 agents, 31 skills, 11 commands, 15 agent_docs.
+
+### Changed
+
+- `agents/academic-writer.md`, `agents/devops-guard.md`, `agents/architect.md` — trimmed duplicated "HARD CONSTRAINTS — mirrored" blocks and inlined reference material that already lived in `agent_docs/`; extended to `security-guard`, `db-guard`, `migration-guard`, `performance-guard` (mirrored-constraints removal only — their bodies had no agent_docs duplication).
+- `agents/*.md`, `skills/*.md` `model:` frontmatter — full dated model IDs (`claude-opus-4-8`, ...) converted to generic aliases (`opus`, `sonnet`, `haiku`) so definitions track Anthropic's current snapshot per tier instead of going stale; full IDs remain valid for deliberate pinning. `CLAUDE_CODE_SUBAGENT_MODEL` in `settings.json`/docs/examples aligned to the same alias convention (was a mix of alias in `global-CLAUDE.md` prose vs full dated ID everywhere else).
+- `agents/writer.md` `effort: high` → `medium` before removal (kept for the record: content production doesn't need the deep-reasoning tier).
+- 15 skills whose own procedure is long/noisy (broad reads, multi-source research, log/test analysis) gained `context: fork` + `agent:` to isolate that work in the target agent's own context instead of the main conversation.
+- `agents/performance-guard.md` — added a "Navigation / routing layer" checklist (route-change remounts, missing prefetch, synchronous third-party script loading) so a performance pass starts from known common causes instead of rediscovering them.
+- `global-CLAUDE.md` — removed the `SECURITY — U-SHAPE END` section (fully redundant with the always-loaded `rules/000-security.md`, which covers every point in more detail) and trimmed two smaller redundant command lists (`AUTO-TEST`'s test-command list duplicated the file's own `BOOT SEQUENCE` stack table; `DEPENDENCY AUDIT`'s command list duplicated `rules/000-security.md`'s table) — cuts the always-loaded floor with zero information loss. `CONTEXT BUDGET` gained two levers: drop unused MCP servers (their tool schemas load into context regardless of use), and parallel subagents cost roughly N× tokens, not N÷.
+- Cross-file redundancy trimmed where the duplicate is genuinely co-loaded with its source (not just similar-looking text that never loads together): `agent_docs/security-protocols.md` (OWASP category list restated from `rules/000-security.md`; GitHub Actions SHA-pin example and SBOM commands restated from `agent_docs/devops-security-guide.md`), `agent_docs/api-design-patterns.md` (migration-guide format and deprecation-header example restated from `agent_docs/api-versioning-guide.md`), `agent_docs/from-scratch-guide.md` (spacing/typography/motion values restated — and drifted — from `agent_docs/design-system.md`), `presets/web/nextjs-saas/CLAUDE.md` (SEO/AEO section restated from `rules/100-web.md`, which is already Next.js-specific and co-loads for every `.tsx` file), `presets/web/{react-vite,angular,vue-nuxt,sveltekit}/CLAUDE.md` ("Universal rules" loading/empty/error one-liners restated from `rules/100-web.md`'s THREE MANDATORY STATES), `commands/seo-check.md` (checklists restated from `agent_docs/seo-patterns.md`, which `COMMANDS-MAINTENANCE.md` already claimed as the canonical source but the command never referenced).
+
+### Added
+
+- `scripts/validate-skills.ts` — `AGENT_BODY_MAX_LINES` (150) cap on agent bodies, `checkEffort()` hard-rejecting `effort: xhigh`/`max` in agent or skill frontmatter (session-level `/effort` overrides, not definition defaults), and `agent:` cross-reference validation for `context: fork` skills.
+- `agent_docs/devops-security-guide.md` — Dockerfile/GitHub Actions/IaC/rollback/SBOM reference material extracted from `devops-guard.md`.
+- `skills/codebase-overview/SKILL.md` — generates/refreshes a project architecture overview (directory map, data flow, perf-sensitive integration points) into `PROJECT/.claude/codebase-overview.md`, lazy-loaded rather than inlined into `CLAUDE.md`; forks to `senior-engineer` (needs `Write`, unlike the read-only `architect`). Kit now ships 32 skills.
+
 ---
 
 ## [1.0.5] — 2026-07-07

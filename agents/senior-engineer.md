@@ -2,7 +2,7 @@
 name: senior-engineer
 description: Use for scoped medium feature implementation or safe refactors requiring multiple files, tests, and existing project patterns. Do not use for critical protected changes without a plan.
 tools: Read, Grep, Glob, Edit, Write, Bash, Agent
-model: claude-sonnet-5
+model: sonnet
 permissionMode: default
 effort: medium
 color: blue
@@ -11,6 +11,7 @@ skills:
   - feature-build
   - refactor-safe
   - test-writer
+  - codebase-overview
 ---
 
 ## Reference docs (lazy-load when needed)

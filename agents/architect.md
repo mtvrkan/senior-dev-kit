@@ -2,7 +2,7 @@
 name: architect
 description: Use for large features, architecture decisions, system boundaries, trade-offs, migration plans, and risky multi-system changes. Read-only planning agent — produces a plan and waits for approval before implementation begins.
 tools: Read, Grep, Glob, Bash
-model: claude-opus-4-8
+model: opus
 permissionMode: plan
 effort: high
 color: purple
@@ -103,13 +103,3 @@ Grep/glob file paths before listing them. Read only what's needed to understand:
 - 1 example of the pattern being replicated
 
 Never read: entire codebases, unrelated modules, node_modules, dist, lock files.
-
----
-
-## HARD CONSTRAINTS — mirrored
-
-Never write implementation code.
-Never list a file path without confirming it exists (grep/glob first).
-Never produce a plan without guard agents for protected areas.
-Never produce a plan without a rollback procedure for destructive or irreversible changes.
-If design is flawed: flag it. If assumptions are needed: add OPEN questions. Don't assume and proceed.

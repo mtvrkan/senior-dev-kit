@@ -29,10 +29,12 @@ Copy `skills/bug-fix/SKILL.md` and modify:
 description: One-sentence summary shown in /agents-guide
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: When the user asks to [do X] or says [Y / Z]  # recommended, not required — validator only warns if omitted
-model: claude-sonnet-5            # optional — overrides default model for this skill's run
-effort: medium                    # optional — low | medium | high | xhigh | max
+model: sonnet                     # optional — overrides default model for this skill's run (alias preferred; full ID for deliberate pinning)
+effort: medium                    # optional — low | medium | high (xhigh/max rejected by the validator — see CONTRIBUTING.md)
 argument-hint: "[task or target]" # optional — shown in autocomplete, e.g. /my-skill [task]
 disable-model-invocation: true    # optional — skill only runs via explicit /my-skill, never auto-fires from context
+context: fork                     # optional — isolate a long/noisy run into its own context; requires agent:
+agent: my-agent                   # optional — target agents/<name>.md for context: fork; validator checks it exists
 ---
 
 ## Behavior
@@ -96,9 +98,9 @@ name: my-agent
 description: >
   Short description of what this agent does.
   When to route to it. Used for display and routing.
-model: claude-sonnet-5        # haiku=fast/cheap | sonnet=default | opus=complex/guard
+model: sonnet                 # haiku=fast/cheap | sonnet=default | opus=complex/guard
 permissionMode: default       # use "plan" for guard agents (db-guard, security-guard, etc.)
-effort: medium                # low | medium | high | xhigh | max
+effort: medium                # low | medium | high (xhigh/max rejected by the validator)
 color: blue                   # blue | green | red | yellow | purple | orange | pink | cyan
 maxTurns: 10                  # cap agentic loops; guard agents typically 5, workers 10-20
 tools: Read, Grep, Glob, Bash, Edit, Write
@@ -139,11 +141,13 @@ agents/
 
 ### Model selection
 
+Use the generic alias — it tracks Anthropic's current snapshot for that tier instead of pinning a dated ID that goes stale. Use a full dated ID only for deliberate pinning (leave a `# pinned` comment).
+
 | Task type | Model |
 | --- | --- |
-| Quick UI fixes, docs | `claude-haiku-4-5-20251001` |
-| Implementation, bug fixes | `claude-sonnet-5` |
-| Architecture, security, planning | `claude-opus-4-8` |
+| Quick UI fixes, docs | `haiku` |
+| Implementation, bug fixes | `sonnet` |
+| Architecture, security, planning | `opus` |
 
 ### Guard agents (plan-only)
 

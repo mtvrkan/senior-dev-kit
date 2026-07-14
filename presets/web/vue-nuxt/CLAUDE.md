@@ -172,12 +172,7 @@ const { data, status, error, refresh } = await useAsyncData('key', () => $fetch(
 </template>
 ```
 
-### Universal rules
-
-**Loading:** skeleton rows/cards matching content shape — never blank flash
-**Empty:** icon + message + optional CTA — `v-else-if="!data?.length"`
-**Error:** message + retry button — `v-else-if="error"`
-**Populated:** real content
+Loading/empty/error state detail is in `rules/100-web.md`'s THREE MANDATORY STATES section. Vue-specific: `v-else-if="!data?.length"` for empty, `v-else-if="error"` for error — never a blank flash.
 
 **Form pattern:**
 

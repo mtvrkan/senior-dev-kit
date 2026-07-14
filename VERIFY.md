@@ -27,13 +27,13 @@ PROJECT/.claude/stack-rules.md
 ## 2 — Agent Count
 
 Count the `.md` files in `PROJECT/.claude/agents/`.
-Expected: **18** (17 agents + `ROUTING.md`, which is a routing reference, not an agent)
+Expected: **15** (14 agents + `ROUTING.md`, which is a routing reference, not an agent)
 
-Expected agent names (17):
-academic-writer.md, architect.md, bug-hunter.md, db-guard.md, devops-guard.md,
+Expected agent names (14):
+architect.md, bug-hunter.md, db-guard.md, devops-guard.md,
 docs-writer.md, migration-guard.md, performance-guard.md, researcher.md,
 reviewer.md, security-guard.md, security-scanner.md, senior-engineer.md,
-strategist.md, test-engineer.md, ui-fixer.md, writer.md
+test-engineer.md, ui-fixer.md
 
 Plus `ROUTING.md` (decision tree reference, not counted as an agent).
 
@@ -42,27 +42,27 @@ Plus `ROUTING.md` (decision tree reference, not counted as an agent).
 ## 3 — Skill Count
 
 Count the `SKILL.md` files in `PROJECT/.claude/skills/`.
-Expected: **34**
+Expected: **32**
 
 Expected subdirectories:
-academic-write, api-design, api-versioning, article-write, bug-fix, code-audit, code-review,
+api-design, api-versioning, bug-fix, code-audit, code-review, codebase-overview,
 data-modeling, db-change, deep-research, dep-check, docs-update, env-audit,
 feature-build, feature-plan, from-scratch, kit-doctor, llm-integration, migration-review,
 monorepo-task, new-page, new-screen, performance-check, plan-first, refactor-safe,
 release-check, release-gate, safe-review, security-review, security-scan,
-smart-task, strategy-plan, test-writer, ui-change
+smart-task, test-writer, ui-change
 
 ---
 
 ## 4 — Slash Command Count
 
 Count the `.md` files in `PROJECT/.claude/commands/`.
-Expected: **13**
+Expected: **11**
 
 Expected:
-agents-guide.md, article-write.md, deep-research.md, dep-check.md, kit-doctor.md,
+agents-guide.md, deep-research.md, dep-check.md, kit-doctor.md,
 performance-check.md, plan-first.md, release-gate.md, safe-review.md,
-security-scan.md, seo-check.md, smart-task.md, strategy-plan.md
+security-scan.md, seo-check.md, smart-task.md
 
 ---
 
@@ -84,8 +84,8 @@ Does `PROJECT/.claude/agent_docs/` exist? Count the `.md` files in it.
 Expected: **15**
 
 Expected:
-academic-writing-guide.md, api-design-patterns.md, api-versioning-guide.md,
-architecture.md, dep-check-guide.md, design-system.md, env-audit-guide.md,
+api-design-patterns.md, api-versioning-guide.md,
+architecture.md, dep-check-guide.md, design-system.md, devops-security-guide.md, env-audit-guide.md,
 error-handling-patterns.md, from-scratch-guide.md, new-page-guide.md,
 new-screen-guide.md, security-protocols.md, seo-patterns.md, testing-strategy.md,
 zero-downtime-migration.md
@@ -118,22 +118,22 @@ Read the `PROJECT/.claude/stack-rules.md` file.
 
 Read the `PROJECT/.claude/agents/security-guard.md` file:
 
-- [ ] `model: claude-opus-4-8` present
+- [ ] `model: opus` present
 - [ ] `permissionMode: plan` present
 - [ ] HARD CONSTRAINTS section present (at start AND end — U-shaped)
 
 Read the `PROJECT/.claude/agents/ui-fixer.md` file:
 
-- [ ] `model: claude-haiku-4-5-20251001` present
+- [ ] `model: haiku` present
 - [ ] HARD CONSTRAINTS section present
 
 Read the `PROJECT/.claude/agents/senior-engineer.md` file:
 
-- [ ] `model: claude-sonnet-5` present
+- [ ] `model: sonnet` present
 
 Read the `PROJECT/.claude/agents/devops-guard.md` file:
 
-- [ ] `model: claude-opus-4-8` present
+- [ ] `model: opus` present
 - [ ] `permissionMode: plan` present
 
 ---

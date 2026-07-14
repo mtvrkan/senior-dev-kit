@@ -4,9 +4,11 @@ description: Manually invoke to review the current diff or specified files for b
 disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Manually invoke before merging or deploying to do a read-only review of the current diff or specified files.
-model: claude-sonnet-5
+model: sonnet
 effort: high
 argument-hint: "[task or target]"
+context: fork
+agent: reviewer
 ---
 
 # safe-review

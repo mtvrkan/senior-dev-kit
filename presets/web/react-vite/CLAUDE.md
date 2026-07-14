@@ -57,12 +57,7 @@ Read package.json first — never assume which library is installed.
 4. List components from installed library (not a different one)
 5. Plan all 4 states: loading | empty | error | populated
 
-### Universal rules (apply regardless of UI library)
-
-**Loading:** skeleton matching content shape, or spinner centered in container
-**Empty:** icon + message + optional CTA button — never blank
-**Error:** icon + message + retry button — never crash or blank
-**Populated:** real content
+Loading/empty/error state detail (skeleton shapes, empty-state formula) is in `rules/100-web.md`'s THREE MANDATORY STATES section — applies regardless of UI library.
 
 **Form pattern:**
 

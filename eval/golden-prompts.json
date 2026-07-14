@@ -29,11 +29,8 @@
     { "prompt": "deploy pipeline'a staging environment ekle", "expect": "devops-guard" },
     { "prompt": "update the README with the new install instructions and write a changelog entry", "expect": "docs-writer" },
     { "prompt": "compare Bun and Node for our workload and fact-check the benchmark claims", "expect": "researcher" },
-    { "prompt": "next quarter roadmap: should we build the mobile app or the public API first?", "expect": "strategist" },
     { "prompt": "review this diff before I merge it", "expect": "reviewer" },
     { "prompt": "şu PR'a bir bak, riskli bir şey var mı", "expect": "reviewer" },
-    { "prompt": "write integration tests for the payment webhook handler", "expect": "test-engineer" },
-    { "prompt": "write a blog post announcing our v2 launch", "expect": "writer" },
-    { "prompt": "literatür taramasıyla birlikte akademik formatta bir bölüm yaz", "expect": "academic-writer" }
+    { "prompt": "write integration tests for the payment webhook handler", "expect": "test-engineer" }
   ]
 }

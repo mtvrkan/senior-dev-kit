@@ -4,7 +4,7 @@ description: Use to diagnose a senior-dev-kit installation — component file co
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Manually invoke when the kit misbehaves after an install or upgrade — verifies what is actually on disk instead of guessing.
 disable-model-invocation: true
-model: claude-haiku-4-5-20251001
+model: haiku
 effort: low
 argument-hint: "[scope: global | project | both (default: both)]"
 ---

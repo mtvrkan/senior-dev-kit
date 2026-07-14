@@ -20,11 +20,11 @@ First decide the scope — **all projects on this machine** (global `~/.claude/`
 | Your situation | Use | What you get |
 | --- | --- | --- |
 | Brand-new project — Claude should plan and build it | **Option A** | A lean, **generated 7-agent project team** (not the full kit — see note below) |
-| Every project on this machine should get the kit | **Option B** | Full kit (17 agents, 34 skills, 13 commands, 11 rules) in global `~/.claude/` |
+| Every project on this machine should get the kit | **Option B** | Full kit (14 agents, 32 skills, 11 commands, 11 rules) in global `~/.claude/` |
 | One existing project, you do the copying | **Option C** | Full kit in that project's `.claude/` |
 | One existing project, Claude does the copying | **Option D** | Full kit in `.claude/`, optionally global too |
 
-> **Option A installs a different team.** `PROJECT-BOOTSTRAP.md` generates a minimal 7-agent roster (architect, security-reviewer, implementer, test-author, reviewer, debugger, researcher) tailored to a brand-new project — not the kit's 17 prebuilt agents. To use the full kit in that project afterwards, run Option B, C, or D on top.
+> **Option A installs a different team.** `PROJECT-BOOTSTRAP.md` generates a minimal 7-agent roster (architect, security-reviewer, implementer, test-author, reviewer, debugger, researcher) tailored to a brand-new project — not the kit's 14 prebuilt agents. To use the full kit in that project afterwards, run Option B, C, or D on top.
 
 ### Option A — New project (recommended)
 
@@ -121,7 +121,7 @@ User: add SBOM to Docker CI pipeline
 
 ### Slash commands
 
-**Command files** (13 — rich behavior definitions):
+**Command files** (11 — rich behavior definitions):
 
 | Command | What it does |
 | --- | --- |
@@ -134,13 +134,11 @@ User: add SBOM to Docker CI pipeline
 | `/performance-check` | Bundle, N+1, CWV performance analysis |
 | `/seo-check` | SEO, AEO, Core Web Vitals audit |
 | `/deep-research [topic]` | Multi-source research, fact-checking |
-| `/strategy-plan [goal]` | Roadmap and strategy analysis |
-| `/article-write [topic]` | Blog post or technical article |
 | `/agents-guide` | List all agents and routing rules |
 | `/kit-doctor [scope]` | Diagnose the kit installation — counts, settings, drift |
 
 **Skill shortcuts** (invoke by name — always available):
-`/security-review` · `/api-design` · `/api-versioning` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · and all 34 skills
+`/security-review` · `/api-design` · `/api-versioning` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · and all 32 skills
 
 > **Commands vs Skills:** Command files (`commands/*.md`) use the older Claude Code slash-command format — plain markdown with a `$ARGUMENTS` placeholder, read into context on invocation. Skill files (`skills/*/SKILL.md`) use the newer SKILL.md system with rich frontmatter (`model`, `effort`, `allowed-tools`, `when_to_use`) that Claude Code resolves before the skill runs. Skills can also fire automatically when Claude Code detects a matching context; commands only fire when explicitly invoked.
 
@@ -216,7 +214,7 @@ Put the most specific preset's content into `.claude/stack-rules.md` and inline 
 
 ## What's included
 
-### Skills (34)
+### Skills (32)
 
 Skills fire two ways: most are **auto-invoked** when their `description`
 matches the task (many are also wired into agents via the agent's `skills:`
@@ -238,7 +236,7 @@ intentional, not orphaned: it is invoked directly.
 `release-check`, `release-gate`, `env-audit`, `dep-check`, `monorepo-task`, `kit-doctor`
 
 **Content and Research:**
-`docs-update`, `article-write`, `academic-write`, `deep-research`, `strategy-plan`
+`docs-update`, `deep-research`, `codebase-overview`
 
 **AI/LLM:**
 `llm-integration`
@@ -268,7 +266,7 @@ intentional, not orphaned: it is invoked directly.
 `api-design-patterns.md`, `seo-patterns.md`, `error-handling-patterns.md`,
 `api-versioning-guide.md`, `dep-check-guide.md`, `env-audit-guide.md`,
 `from-scratch-guide.md`, `new-page-guide.md`, `new-screen-guide.md`,
-`academic-writing-guide.md`, `zero-downtime-migration.md`
+`zero-downtime-migration.md`, `devops-security-guide.md`
 
 These docs are **not preloaded** into every session. `global-CLAUDE.md` contains a `Lazy-load docs:` directive that lists them. When a skill's body or a rule references one (e.g. "see `agent_docs/architecture.md` for full patterns"), Claude reads it from disk on demand. This keeps large reference docs out of context on tasks that don't need them.
 
@@ -357,9 +355,9 @@ Nothing below is asserted from memory — every number is reproducible by runnin
 
 | Check | Command | Result |
 | --- | --- | --- |
-| Unit + integration tests | `npm test` | **119/119 passing** (21 suites — frontmatter validation, install script behavior on both platforms, protected-path hook behavior including audit logging) |
-| Skill/agent/command/preset frontmatter | `npm run validate` | 34 skills · 17 agents · 13 commands · 49 presets — 0 errors; includes hand-off chain integrity (`db-change` → `migration-review` etc.) and guard-agent `permissionMode: plan` enforcement |
-| Internal doc links | `npm run link-check` | 226 markdown files, 0 broken links/anchors |
+| Unit + integration tests | `npm test` | **130/130 passing** (23 suites — frontmatter validation, install script behavior on both platforms, protected-path hook behavior including audit logging) |
+| Skill/agent/command/preset frontmatter | `npm run validate` | 32 skills · 14 agents · 11 commands · 49 presets — 0 errors; includes hand-off chain integrity (`db-change` → `migration-review` etc.) and guard-agent `permissionMode: plan` enforcement |
+| Internal doc links | `npm run link-check` | 219 markdown files, 0 broken links/anchors |
 | Maintenance-table freshness | `npm run stale-check` | 0 stale or orphaned entries across all 5 maintenance tables |
 | Type check / lint | `npm run typecheck` · `npm run lint` | clean |
 | Routing accuracy (live) | `RUN_ROUTING_EVAL=1 npm run routing-eval` | **32/33 (97%)** — see below |
@@ -420,7 +418,7 @@ senior-dev-kit/
 ├── eval/                    ← golden-prompts.json — routing behavior test set
 ├── hooks/                   ← Opt-in enforcement hooks (protected-paths) + plugin wiring
 ├── .claude-plugin/          ← Claude Code plugin + marketplace manifests
-├── agents/                  ← 17 agent definitions (architect, security-guard, bug-hunter…) + ROUTING.md (decision tree, not an agent)
+├── agents/                  ← 14 agent definitions (architect, security-guard, bug-hunter…) + ROUTING.md (decision tree, not an agent)
 ├── presets/                 ← 49 stack-specific rule sets (98 files: CLAUDE.md + compact.md each)
 │   ├── web/
 │   ├── backend/
@@ -433,8 +431,8 @@ senior-dev-kit/
 │   ├── messaging/
 │   ├── ai/
 │   └── generic/
-├── skills/                  ← 34 skill definitions (SKILL.md each)
-├── commands/                ← 13 slash command definitions
+├── skills/                  ← 32 skill definitions (SKILL.md each)
+├── commands/                ← 11 slash command definitions
 ├── rules/                   ← 11 path-scoped rule files
 ├── agent_docs/              ← 15 lazy-load deep reference docs
 ├── examples/                ← 15 worked walkthroughs (stack → files copied → 3 usage flows → per-task costs)
@@ -460,7 +458,7 @@ Typical cost per task type at default model routing. Unlike the [routing-eval an
 | Performance analysis | performance-guard | sonnet | ~$0.06 |
 | Docs update | docs-writer | haiku | ~$0.003 |
 
-Cost reduction: `CLAUDE_CODE_SUBAGENT_MODEL=claude-haiku-4-5-20251001` (set in `settings.json`) routes anonymous Agent() calls to haiku, saving ~75% on research/read-only sub-tasks.
+Cost reduction: `CLAUDE_CODE_SUBAGENT_MODEL=haiku` (set in `settings.json`) routes anonymous Agent() calls to haiku, saving ~75% on research/read-only sub-tasks.
 
 ---
 

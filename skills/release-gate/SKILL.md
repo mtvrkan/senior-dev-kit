@@ -4,9 +4,11 @@ description: Manually invoke before release/deploy to check tests, build, migrat
 disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Manually invoke before any release or production deploy to run GO/NO-GO safety checklist.
-model: claude-opus-4-8
+model: opus
 effort: high
 argument-hint: "[task or target]"
+context: fork
+agent: devops-guard
 ---
 
 # release-gate

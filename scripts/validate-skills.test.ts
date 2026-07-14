@@ -708,6 +708,33 @@ describe('model ID validation', () => {
     }
   })
 
+  test('validate-skills.ts accepts all generic model aliases', () => {
+    const aliasModels = ['opus', 'sonnet', 'haiku', 'fable', 'inherit']
+    for (const modelId of aliasModels) {
+      const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+      const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+      const skillDir = join(tmpSkills, 'alias-model-skill')
+      mkdirSync(skillDir, { recursive: true })
+      writeFileSync(join(skillDir, 'SKILL.md'), [
+        '---',
+        'description: A skill with an alias model',
+        'allowed-tools: Read',
+        `model: ${modelId}`,
+        '---',
+        'body',
+      ].join('\n'))
+      const result = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, SKILLS_DIR: tmpSkills, AGENTS_DIR: tmpAgents, SETTINGS_FILE: join(tmpAgents, 'settings.json'), GLOBAL_CLAUDE_FILE: join(tmpAgents, 'global-CLAUDE.md') },
+      })
+      assert.ok(result.includes('Validation PASSED'), `expected PASSED for model alias ${modelId}`)
+      rmSync(tmpSkills, { recursive: true })
+      rmSync(tmpAgents, { recursive: true })
+    }
+  })
+
   test('validate-skills.ts warns (but passes) for a well-formed unknown Claude model ID', () => {
     const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
     const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
@@ -768,6 +795,163 @@ describe('malformed model ID validation', () => {
       rmSync(tmpSkills, { recursive: true })
       assert.ok(threw, `expected non-zero exit for malformed model ID '${badModel}'`)
     }
+  })
+})
+
+describe('effort validation', () => {
+  test('validate-skills.ts accepts low, medium, and high effort in a skill', () => {
+    for (const effort of ['low', 'medium', 'high']) {
+      const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+      const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+      const skillDir = join(tmpSkills, 'valid-effort-skill')
+      mkdirSync(skillDir, { recursive: true })
+      writeFileSync(join(skillDir, 'SKILL.md'), [
+        '---',
+        'description: A skill with valid effort',
+        'allowed-tools: Read',
+        `effort: ${effort}`,
+        '---',
+        'body',
+      ].join('\n'))
+      const result = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, SKILLS_DIR: tmpSkills, AGENTS_DIR: tmpAgents, SETTINGS_FILE: join(tmpAgents, 'settings.json'), GLOBAL_CLAUDE_FILE: join(tmpAgents, 'global-CLAUDE.md') },
+      })
+      assert.ok(result.includes('Validation PASSED'), `expected PASSED for effort ${effort}`)
+      rmSync(tmpSkills, { recursive: true })
+      rmSync(tmpAgents, { recursive: true })
+    }
+  })
+
+  test('validate-skills.ts exits 1 for effort: xhigh or max in a skill (hard rule, no exceptions)', () => {
+    for (const badEffort of ['xhigh', 'max']) {
+      const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+      const skillDir = join(tmpSkills, 'bad-effort-skill')
+      mkdirSync(skillDir, { recursive: true })
+      writeFileSync(join(skillDir, 'SKILL.md'), [
+        '---',
+        'description: A skill with disallowed effort',
+        'allowed-tools: Read',
+        `effort: ${badEffort}`,
+        '---',
+        'body',
+      ].join('\n'))
+      let threw = false
+      try {
+        execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+          cwd: REPO_ROOT,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+          env: { ...process.env, SKILLS_DIR: tmpSkills },
+        })
+      } catch (err) {
+        threw = true
+        const e = err as { stderr?: string; stdout?: string }
+        const out = (e.stderr ?? '') + (e.stdout ?? '')
+        assert.ok(out.includes('not allowed in agent/skill frontmatter'), `expected the hard-rule message for '${badEffort}', got: ${out}`)
+      }
+      rmSync(tmpSkills, { recursive: true })
+      assert.ok(threw, `expected non-zero exit for effort: ${badEffort}`)
+    }
+  })
+
+  test('validate-skills.ts exits 1 for effort: xhigh in an agent file too', () => {
+    const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+    writeFileSync(join(tmpAgents, 'my-agent.md'), [
+      '---',
+      'name: my-agent',
+      'description: An agent with disallowed effort',
+      'tools: Read',
+      'model: sonnet',
+      'effort: xhigh',
+      '---',
+    ].join('\n'))
+    let threw = false
+    try {
+      execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, AGENTS_DIR: tmpAgents },
+      })
+    } catch (err) {
+      threw = true
+      const e = err as { stderr?: string; stdout?: string }
+      const out = (e.stderr ?? '') + (e.stdout ?? '')
+      assert.ok(out.includes('not allowed in agent/skill frontmatter'), `expected the hard-rule message, got: ${out}`)
+    }
+    rmSync(tmpAgents, { recursive: true })
+    assert.ok(threw, 'expected non-zero exit for agent effort: xhigh')
+  })
+})
+
+describe('skill agent: cross-reference (context: fork)', () => {
+  test('validate-skills.ts exits 1 when agent: references a non-existent agent', () => {
+    const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+    const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+    const skillDir = join(tmpSkills, 'forked-skill')
+    mkdirSync(skillDir, { recursive: true })
+    writeFileSync(join(skillDir, 'SKILL.md'), [
+      '---',
+      'description: A forked skill',
+      'allowed-tools: Read',
+      'context: fork',
+      'agent: ghost-agent',
+      '---',
+      'body',
+    ].join('\n'))
+    let threw = false
+    try {
+      execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, SKILLS_DIR: tmpSkills, AGENTS_DIR: tmpAgents },
+      })
+    } catch (err) {
+      threw = true
+      const e = err as { stderr?: string; stdout?: string }
+      const out = (e.stderr ?? '') + (e.stdout ?? '')
+      assert.ok(out.includes("references non-existent agent: 'ghost-agent'"), `expected ghost-agent flagged, got: ${out}`)
+    }
+    rmSync(tmpSkills, { recursive: true })
+    rmSync(tmpAgents, { recursive: true })
+    assert.ok(threw, 'expected non-zero exit when agent: points to a non-existent agent')
+  })
+
+  test('validate-skills.ts passes when agent: references a real agent file', () => {
+    const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+    const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+    writeFileSync(join(tmpAgents, 'real-agent.md'), [
+      '---',
+      'name: real-agent',
+      'description: A real agent',
+      'tools: Read',
+      'model: sonnet',
+      '---',
+    ].join('\n'))
+    const skillDir = join(tmpSkills, 'forked-skill')
+    mkdirSync(skillDir, { recursive: true })
+    writeFileSync(join(skillDir, 'SKILL.md'), [
+      '---',
+      'description: A forked skill',
+      'allowed-tools: Read',
+      'context: fork',
+      'agent: real-agent',
+      '---',
+      'body',
+    ].join('\n'))
+    const result = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, SKILLS_DIR: tmpSkills, AGENTS_DIR: tmpAgents, SETTINGS_FILE: join(tmpAgents, 'settings.json'), GLOBAL_CLAUDE_FILE: join(tmpAgents, 'global-CLAUDE.md') },
+    })
+    assert.ok(result.includes('Validation PASSED'), `expected PASSED for a valid agent: reference, got: ${result}`)
+    rmSync(tmpSkills, { recursive: true })
+    rmSync(tmpAgents, { recursive: true })
   })
 })
 

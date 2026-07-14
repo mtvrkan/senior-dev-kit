@@ -4,6 +4,9 @@ description: Use for auth, permissions, payment, secrets, input validation, sess
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically for auth, authorization, payment, validation, injection, secrets, sessions, tokens, and sensitive data.
 argument-hint: "[files or area to review (optional — defaults to pending changes)]"
+context: fork
+agent: security-guard
+effort: high
 ---
 
 # security-review

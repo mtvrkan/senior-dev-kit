@@ -4,7 +4,7 @@
 
 # Global Claude Senior Protocol v3.1
 
-## HARD STOPS — escalate before any code  <!-- security mirrored at end -->
+## HARD STOPS — escalate before any code  <!-- full passive-scan/OWASP/supply-chain detail in rules/000-security.md, always-loaded -->
 
 NEVER READ OR OUTPUT: `.env` `.env.*` `*.pem` `*.key` `*.p12` `serviceAccountKey.json`
 `*firebase-adminsdk*.json` `*serviceaccount*.json` `.ssh/` `secrets/` `*.lock` `node_modules/` `dist/` `.next/`
@@ -52,14 +52,11 @@ CI-CD/Docker/IaC=3 | API endpoint added/removed/renamed=2 | shared type/DTO chan
 | CI/CD / Docker / IaC | devops-guard | opus | 3-4 |
 | docs / README / changelog | docs-writer | haiku | 0-1 |
 | research / fact-check | researcher | opus | 2-3 |
-| strategy / roadmap | strategist | opus | 3 |
 | API design / versioning | senior-engineer | sonnet | 2-3 |
 | dep audit / dep hygiene | security-scanner | sonnet | 1-2 |
 | new project from scratch | senior-engineer | sonnet | 2 |
 | add / update / write tests | test-engineer | sonnet | 1-2 |
 | code review / PR / diff review | reviewer | sonnet | 1-2 |
-| write content / blog / doc article | writer | sonnet | 1-2 |
-| academic paper / research writing | academic-writer | opus | 2-3 |
 
 NATURAL LANGUAGE SIGNALS (EN + TR):
 fix/error/crash/hata/düzelt → bug-hunter | add/create/make/ekle/oluştur/yap → senior-engineer
@@ -68,9 +65,8 @@ architecture/design/how-built/mimari/nasıl → architect | security/vulnerabili
 slow/performance/N+1/yavaş/performans → performance-guard | DB/schema/tablo → db-guard (ESCALATE)
 migrate/migration/destructive data/veri taşıma → migration-guard (ESCALATE)
 CI/CD/pipeline/Docker/deploy → devops-guard (ESCALATE) | docs/readme/explain/açıkla/belge → docs-writer
-test/spec/write tests/yaz test → test-engineer | write/article/blog/content/makale/içerik → writer
-academic/paper/thesis/akademik/araştırma → academic-writer
-research/fact-check/araştır/doğrula → researcher | strategy/roadmap/strateji/yol haritası → strategist
+test/spec/write tests/yaz test → test-engineer
+research/fact-check/araştır/doğrula → researcher
 
 Model override: agent frontmatter `model:` field takes precedence over this routing table.
 AMBIGUITY: >80% clear → act | 50-80% → state assumption + act | <50% → ask ONCE specifically
@@ -165,6 +161,12 @@ CONTEXT BUDGET — three levers to slow context growth:
 3. Persist across resets: before /clear, write durable facts (project decisions, user prefs,
    in-flight work) to the file-based memory (memory/*.md + MEMORY.md index) so the next
    session reloads them — this is what makes /clear safe instead of amnesiac.
+4. Drop unused MCP servers: every connected server's tool schemas load into context whether
+   or not the session ends up using them, regardless of task. Check /mcp periodically;
+   disconnect anything not relevant to the current project or task.
+5. Parallel subagents multiply cost, not divide it: N agents running concurrently
+   (Agent/Workflow tools) cost roughly N times a single agent's tokens — reserve for
+   genuinely independent work that benefits from isolation, not habitual fan-out.
 
 Always start a fresh session for unrelated tasks rather than continuing an old one.
 Subagent cost: CLAUDE_CODE_SUBAGENT_MODEL=haiku saves 75% on anonymous Agent() calls (no named agent). Named agents (researcher, security-guard, etc.) use their own model: field and are unaffected.
@@ -194,39 +196,16 @@ Tier 3+:   PLAN: goal ≤8 words
 ON: service method | controller | API handler | exported function/class | shared utility | middleware
 OFF: pure CSS/styling | config/env | docs | type-only changes (no logic)
 
-TARGETED TEST ONLY — never full suite for 1-file change:
-Bun: bun test [f] | Vitest: vitest run [f] | Jest: jest [f] --no-coverage
-pytest: pytest [f] -x -q | Go: go test ./pkg/... -run TestName | Cargo: cargo test [name]
-Gradle: ./gradlew test --tests "*.Class" | Flutter: flutter test test/[f]_test.dart
-RSpec: bundle exec rspec spec/[f]_spec.rb | .NET: dotnet test --filter "~Class"
+TARGETED TEST ONLY — never full suite for 1-file change. Use TEST_CMD from BOOT SEQUENCE's
+stack table for the detected stack.
 
 No test file → create minimal spec same turn: happy path + edge + error (3 tests).
 
 VERIFY BY CHANGE TYPE: behavior→test | new file→lint+test | new route→build | CSS→lint | type→type-check
 
-DEPENDENCY AUDIT (auto-trigger on dep add/update):
-bun=bun audit | npm=npm audit --audit-level=moderate | pnpm=pnpm audit
-pip=pip-audit | go=govulncheck ./... | rust=cargo audit | dart=dart pub audit
-php=composer audit | ruby=bundle audit check --update | dotnet=dotnet list package --vulnerable
+DEPENDENCY AUDIT (auto-trigger on dep add/update): command by runtime in
+rules/000-security.md's DEPENDENCY AUDIT COMMANDS table.
 DEP-DRIFT: [pkg] v[current] → v[latest] — [reason]
-
----
-
-## SECURITY — U-SHAPE END (repeated from top, degrades at 80k tokens)
-
-PASSIVE SCAN every change (zero overhead):
-injection · unvalidated input · secrets in output · IDOR · path traversal
-mass assignment · prototype pollution · ReDoS · open redirect · SSRF
-
-OWASP 2025: A01 Access Control | A02 Misconfiguration (↑#2) | A03 Supply Chain (NEW) |
-A04 Crypto | A05-A09 standard | A10 Exceptional Conditions (NEW)
-Hotspots: JS→eval/innerHTML/prototype | Python→pickle.loads/yaml.load()/shell=True
-Go→fmt.Sprintf+SQL | Java→ObjectInputStream/JNDI | PHP→eval/include(input)
-SUPPLY CHAIN: pin GH Actions to full SHA (Aug 2025 enforced). npm ci (never npm install) in CI.
-Review lockfile resolved/integrity changes. Avoid freshly-published packages (<7 days old).
-
-If any passive check triggers: STOP → flag → propose fix → then continue.
-NEVER output: API keys · passwords · tokens · PII — even in debug/logs/comments
 
 ---
 
@@ -255,4 +234,4 @@ deterministically at the harness level — opt-in, activation steps in hooks/REA
 Lazy-load docs (all under agent_docs/): architecture.md | design-system.md | testing-strategy.md |
 security-protocols.md | api-design-patterns.md | seo-patterns.md | error-handling-patterns.md |
 from-scratch-guide.md | new-page-guide.md | new-screen-guide.md | dep-check-guide.md |
-env-audit-guide.md | api-versioning-guide.md | academic-writing-guide.md | zero-downtime-migration.md
+env-audit-guide.md | api-versioning-guide.md | zero-downtime-migration.md | devops-security-guide.md

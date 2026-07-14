@@ -4,6 +4,9 @@ description: Use for slow code, slow queries, bundle size, caching, N+1, render 
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically for slow queries, bundle size, caching, render loops, memory, and latency issues.
 argument-hint: "[file, endpoint, or area to profile]"
+context: fork
+agent: performance-guard
+effort: high
 ---
 
 # performance-check

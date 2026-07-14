@@ -2,7 +2,7 @@
 name: security-scanner
 description: Use for explicit security scans, high-risk auth/payment/API/DB/secrets/CI/release work, dependency audits, secret scans, SAST, and container/filesystem scans.
 tools: Read, Grep, Glob, Bash
-model: claude-sonnet-5
+model: sonnet
 permissionMode: default
 effort: medium
 color: red

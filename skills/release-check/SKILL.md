@@ -4,6 +4,9 @@ description: Use before release/deploy to check build, tests, migrations, env va
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically for pre-release safety review, but do not deploy.
 argument-hint: "[version or release scope (optional)]"
+context: fork
+agent: devops-guard
+effort: medium
 ---
 
 # release-check

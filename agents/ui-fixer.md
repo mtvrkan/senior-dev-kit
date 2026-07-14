@@ -2,7 +2,7 @@
 name: ui-fixer
 description: Use for low-risk frontend-only UI changes — modals, buttons, layout, responsive styling, Tailwind/CSS, component polish, new pages, new screens. Do not use for backend, auth, payment, database, migrations, secrets, or CI.
 tools: Read, Grep, Glob, Edit, Write, Bash
-model: claude-haiku-4-5-20251001
+model: haiku
 permissionMode: default
 effort: low
 color: green

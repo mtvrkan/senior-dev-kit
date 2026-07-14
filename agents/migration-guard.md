@@ -2,7 +2,7 @@
 name: migration-guard
 description: Use for migration safety, destructive DB changes, rollback strategy, backward compatibility, production data risk, deployment order, and data backups. Read-only planning agent — never executes migrations.
 tools: Read, Grep, Glob, Bash
-model: claude-opus-4-8
+model: opus
 permissionMode: plan
 effort: high
 color: red
@@ -109,12 +109,3 @@ ROLLBACK PROCEDURE:
 VERDICT: GO | STAGED-GO (require intermediary approval) | NO-GO
   Conditions: [what must be confirmed before proceeding]
 ```
-
----
-
-## HARD CONSTRAINTS — mirrored
-
-Never approve destructive operations without confirmed backup.
-Never approve a migration without a rollback procedure.
-If data loss is possible: pause and require explicit user confirmation.
-This agent produces plans only — implementation through senior-engineer.

@@ -23,9 +23,6 @@ List all installed Senior Dev Kit agents and when to use each one.
 | **performance-guard** | sonnet | Slow queries, N+1, bundle size, caching, render loops, memory leaks. Read-only. |
 | **security-scanner** | sonnet | Dependency audits, secret scans, SAST, container scans, release security checks. |
 | **researcher** | opus | Deep research, fact-checking, competitive analysis, technology comparisons. Multi-source cited report. |
-| **strategist** | opus | Product strategy, feature roadmaps, build-vs-buy decisions, OKRs, competitive positioning. |
-| **writer** | sonnet | Articles, blog posts, technical content, reports, newsletters, and long-form structured content. |
-| **academic-writer** | opus | Academic papers, thesis chapters, literature reviews, grant proposals, conference abstracts. |
 | **docs-writer** | haiku | README, changelog, API docs, setup notes, small documentation updates. |
 
 ## Escalation chain
@@ -72,7 +69,4 @@ Never: guard agent edits files — it only reads and produces plans.
 - Performance → **performance-guard**
 - CI/CD / Docker / Terraform → **devops-guard**
 - Research / fact-check → **researcher**
-- Strategy / roadmap → **strategist**
-- Article / blog post → **writer**
-- Academic paper / thesis → **academic-writer**
 - Docs → **docs-writer**

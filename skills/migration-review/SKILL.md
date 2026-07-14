@@ -4,6 +4,9 @@ description: Use for migration files, destructive changes, production data risk,
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically for migrations, destructive DB changes, backfills, rollback, and production data risk.
 argument-hint: "[migration file or change]"
+context: fork
+agent: migration-guard
+effort: high
 ---
 
 # migration-review

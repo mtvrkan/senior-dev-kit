@@ -1,6 +1,6 @@
 # Skills Maintenance Policy
 
-This document tracks review dates for the 34 skills in `skills/`.
+This document tracks review dates for the 32 skills in `skills/`.
 Skills are slash-command-style, auto-invocable playbooks; they must be reviewed when:
 
 - The skill's `allowed-tools` no longer matches what its steps actually need
@@ -16,13 +16,12 @@ Skills are slash-command-style, auto-invocable playbooks; they must be reviewed 
 
 | Skill | Purpose | Last Reviewed |
 | --- | --- | --- |
-| `academic-write` | Academic papers, thesis chapters, literature reviews | 2026-07-01 |
 | `api-design` | REST/GraphQL API contract design before implementation | 2026-07-01 |
 | `api-versioning` | Breaking API changes, new API versions, deprecation paths | 2026-07-01 |
-| `article-write` | Articles, blog posts, technical content | 2026-07-02 |
 | `bug-fix` | Localized bugs, runtime errors, failing tests | 2026-07-02 |
 | `code-audit` | Codebase-wide tech debt/quality scan — god files, dead code, duplication | 2026-07-01 |
 | `code-review` | Diff review for bugs, regressions, security, missing tests | 2026-07-02 |
+| `codebase-overview` | Architecture overview — directory map, data flow, perf-sensitive spots | 2026-07-15 |
 | `data-modeling` | Entity/relation/document design before implementation | 2026-07-02 |
 | `db-change` | Schema/model/query design phase (hands off to `migration-review`) | 2026-07-02 |
 | `deep-research` | Multi-source research with cross-verified, cited synthesis | 2026-07-01 |
@@ -47,7 +46,6 @@ Skills are slash-command-style, auto-invocable playbooks; they must be reviewed 
 | `security-review` | Auth, permissions, payment, secrets, injection review | 2026-07-01 |
 | `security-scan` | Dependency, secret, SAST, and container/filesystem scans | 2026-07-01 |
 | `smart-task` | Task classification and tier/risk/agent/skill routing | 2026-07-02 |
-| `strategy-plan` | Product strategy, roadmaps, build-vs-buy, prioritization | 2026-07-01 |
 | `test-writer` | Targeted tests for changed behavior and edge cases | 2026-07-01 |
 | `ui-change` | Small UI changes: modal, button, layout, styling | 2026-07-01 |
 

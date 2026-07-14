@@ -52,7 +52,7 @@ Detected: Next.js SaaS + Prisma + PostgreSQL
 ```json
 {
   "env": {
-    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001"
+    "CLAUDE_CODE_SUBAGENT_MODEL": "haiku"
   },
   "permissions": {
     "deny": [".env", ".env.*", "*.pem", "*.key", "secrets/"]

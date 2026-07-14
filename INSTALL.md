@@ -82,7 +82,7 @@ cp senior-dev-kit/settings-template.json .claude/settings.json
 Copy-Item senior-dev-kit\settings-template.json .claude\settings.json
 ```
 
-> The template intentionally omits one thing the kit's reference `settings.json` sets: the `env` block with `"CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001"` (cuts subagent research cost by ~75%). Add it to your copy if you want that default — the two files' roles are explained in [UPGRADE.md](UPGRADE.md).
+> The template intentionally omits one thing the kit's reference `settings.json` sets: the `env` block with `"CLAUDE_CODE_SUBAGENT_MODEL": "haiku"` (cuts subagent research cost by ~75%). Add it to your copy if you want that default — the two files' roles are explained in [UPGRADE.md](UPGRADE.md).
 
 ---
 
@@ -175,8 +175,7 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
 
 ```text
 .claude/
-  agents/                      (18 files: 17 agents + ROUTING.md)
-    academic-writer.md
+  agents/                      (15 files: 14 agents + ROUTING.md)
     architect.md
     bug-hunter.md
     db-guard.md
@@ -190,18 +189,15 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
     security-guard.md
     security-scanner.md
     senior-engineer.md
-    strategist.md
     test-engineer.md
     ui-fixer.md
-    writer.md
-  skills/                      (34 skills)
-    academic-write/SKILL.md
+  skills/                      (32 skills)
     api-design/SKILL.md
     api-versioning/SKILL.md
-    article-write/SKILL.md
     bug-fix/SKILL.md
     code-audit/SKILL.md
     code-review/SKILL.md
+    codebase-overview/SKILL.md
     data-modeling/SKILL.md
     db-change/SKILL.md
     deep-research/SKILL.md
@@ -226,10 +222,9 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
     security-review/SKILL.md
     security-scan/SKILL.md
     smart-task/SKILL.md
-    strategy-plan/SKILL.md
     test-writer/SKILL.md
     ui-change/SKILL.md
-  commands/                    (13 slash commands)
+  commands/                    (11 slash commands)
     agents-guide.md
     deep-research.md
     dep-check.md
@@ -241,8 +236,6 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
     security-scan.md
     seo-check.md
     smart-task.md
-    strategy-plan.md
-    article-write.md
   rules/                       (11 path-scoped rules)
     000-security.md
     001-conventions.md
@@ -256,12 +249,12 @@ Get-Content senior-dev-kit\presets\database\postgres\compact.md | Add-Content .c
     800-llm-safety.md
     900-performance.md
   agent_docs/                  (15 lazy-load references)
-    academic-writing-guide.md
     api-design-patterns.md
     api-versioning-guide.md
     architecture.md
     dep-check-guide.md
     design-system.md
+    devops-security-guide.md
     env-audit-guide.md
     error-handling-patterns.md
     from-scratch-guide.md

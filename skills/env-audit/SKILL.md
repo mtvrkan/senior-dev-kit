@@ -4,6 +4,9 @@ description: Use to audit environment variables across the codebase. Finds missi
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use when: setting up a new environment, debugging "undefined env var" errors, onboarding new developers, or before a production deployment.
 argument-hint: "[scope: all | frontend | backend | missing-only]"
+context: fork
+agent: devops-guard
+effort: medium
 ---
 
 # env-audit

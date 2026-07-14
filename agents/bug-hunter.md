@@ -2,7 +2,7 @@
 name: bug-hunter
 description: Use for localized bugs, runtime errors, failing tests, console errors, regressions, or broken behavior where root cause can be isolated. Escalate protected areas.
 tools: Read, Grep, Glob, Edit, Write, Bash
-model: claude-sonnet-5
+model: sonnet
 permissionMode: default
 effort: medium
 color: yellow

@@ -1,12 +1,28 @@
 # Agents Maintenance Policy
 
-This document tracks review dates for the 17 subagent definitions in `agents/`.
+This document tracks review dates for the 14 subagent definitions in `agents/`.
 Agents encode role-specific behavior and routing signals; they must be reviewed when:
 
 - The agent's tool list, model, or `permissionMode` no longer matches its risk level
 - `agents/ROUTING.md` signals for the agent drift from what the agent file actually does
 - A referenced skill is renamed, removed, or changes scope
+- The agent body grows past the 150 non-blank-line budget (enforced by `scripts/validate-skills.ts`, `AGENT_BODY_MAX_LINES`) and needs to shed detail into `agent_docs/`
 - More than **12 months** have passed since the last review
+
+## Body size budget
+
+Every agent body loads in full on every invocation of that agent — unlike `agent_docs/`,
+which loads only when the agent's own text points to it. Keep the body to HARD
+CONSTRAINTS + core principles + plan/output format (~150 non-blank lines). Reference
+material that's only needed for some invocations — document/config templates, command
+tables, style/format tables, checklists — belongs in `agent_docs/<topic>.md`, linked from
+a `## Reference docs (lazy-load when needed)` section near the top of the agent file (see
+`agents/architect.md` and `agents/devops-guard.md` for the pattern). Do not restate the
+same reference material in both the agent body and `agent_docs/` — that's tokens spent
+twice for one fact. Do not mirror the same HARD CONSTRAINTS block at both the top and
+bottom of an agent file "for emphasis" — that U-shape repetition technique only pays off
+once a context is long enough to risk mid-context attention decay (tens of thousands of
+tokens), which a single agent body never reaches on its own.
 
 ---
 
@@ -16,7 +32,6 @@ Agents encode role-specific behavior and routing signals; they must be reviewed 
 
 | Agent | Role / Domain | Last Reviewed |
 | --- | --- | --- |
-| `academic-writer` | Academic papers, theses, literature reviews, grant proposals | 2026-07-01 |
 | `architect` | Large features, architecture decisions, migration plans (read-only planning) | 2026-07-01 |
 | `bug-hunter` | Localized bugs, runtime errors, failing tests, regressions | 2026-07-01 |
 | `db-guard` | DB schema changes, data modeling, indexes (read-only planning) | 2026-07-01 |
@@ -29,10 +44,8 @@ Agents encode role-specific behavior and routing signals; they must be reviewed 
 | `security-guard` | Auth, payment, secrets, injection risks, session/token handling (read-only) | 2026-07-01 |
 | `security-scanner` | Security scans, dependency audits, secret scans, SAST | 2026-07-01 |
 | `senior-engineer` | Scoped medium feature implementation and safe refactors | 2026-07-01 |
-| `strategist` | Product strategy, roadmaps, build-vs-buy, OKRs | 2026-07-01 |
 | `test-engineer` | Targeted tests for changed behavior, edge cases, regressions | 2026-07-01 |
 | `ui-fixer` | Low-risk frontend-only UI changes | 2026-07-01 |
-| `writer` | Articles, blog posts, technical content, reports | 2026-07-01 |
 
 ---
 

@@ -19,7 +19,12 @@ const GLOBAL_CLAUDE_FILE = process.env.GLOBAL_CLAUDE_FILE ?? join(__dirname, '..
 
 const REQUIRED   = ['description', 'allowed-tools']
 const RECOMMENDED = ['when_to_use']
-// Update this set whenever Anthropic releases new model IDs.
+// Generic model aliases are the recommended default — they track Anthropic's current
+// snapshot for that tier so agent/skill files don't go stale when a new dated model
+// ships. `inherit` runs the subagent on the parent conversation's model.
+const ALIAS_MODELS = new Set(['opus', 'sonnet', 'haiku', 'fable', 'inherit'])
+// Full dated IDs stay valid for deliberate pinning (e.g. reproducibility — see
+// CONTRIBUTING.md). Update this set whenever Anthropic releases new model IDs.
 // The full list must also be kept in sync with the "Valid model IDs" line in CONTRIBUTING.md.
 const VALID_MODELS = new Set([
   'claude-sonnet-5',
@@ -33,23 +38,51 @@ const VALID_MODELS = new Set([
 const CLAUDE_MODEL_ID_RE = /^claude-[a-z0-9][a-z0-9.-]*$/
 
 function checkModelId(rel: string, model: string): 'ok' | 'warn' | 'error' {
+  if (ALIAS_MODELS.has(model)) return 'ok'
   if (VALID_MODELS.has(model)) return 'ok'
   if (CLAUDE_MODEL_ID_RE.test(model)) {
     console.warn(`  ⚠ ${rel} — unrecognised model id: '${model}' (if this is a newly released model, add it to VALID_MODELS in scripts/validate-skills.ts and to CONTRIBUTING.md)`)
     warnings++
     return 'warn'
   }
-  console.error(`  ✗ ${rel} — invalid model id: '${model}' (use full model id, e.g. claude-sonnet-5)`)
+  console.error(`  ✗ ${rel} — invalid model id: '${model}' (use a generic alias — opus | sonnet | haiku | fable | inherit — or a full model id, e.g. claude-sonnet-5)`)
   errors++
   return 'error'
 }
+// Hard rule: agent/skill frontmatter `effort:` is capped at high — xhigh/max are
+// session-level /effort overrides for the *user's own* main-loop work, not values
+// an agent or skill definition should ship with. No exceptions, no pinning comment
+// escape hatch (unlike model IDs) — always fix to `high` and flag it.
+const VALID_EFFORTS = new Set(['low', 'medium', 'high'])
+
+function checkEffort(rel: string, effort: string): void {
+  if (VALID_EFFORTS.has(effort)) return
+  if (effort === 'xhigh' || effort === 'max') {
+    console.error(`  ✗ ${rel} — effort: ${effort} is not allowed in agent/skill frontmatter (cap is 'high' — xhigh/max are session-level /effort overrides, not definition defaults)`)
+    errors++
+    return
+  }
+  console.error(`  ✗ ${rel} — invalid effort: '${effort}' (use low | medium | high)`)
+  errors++
+}
 const SKILL_BODY_MAX_LINES = 20
+// Agents have more room than skills (constraints + core principles + a plan/output
+// format), but reference material (templates, tables, command lists) belongs in
+// agent_docs/ and gets pulled in only when the task needs it — see the
+// "Reference docs (lazy-load when needed)" pattern in agents/architect.md.
+const AGENT_BODY_MAX_LINES = 150
 // Tool names as they appear in `allowed-tools:` (skills) / `tools:` (agents) — comma-separated,
 // not a YAML list. Catches copy/paste typos (e.g. "Wrte") that would otherwise silently
 // pass since these fields are free-text as far as the frontmatter parser is concerned.
 // Update this set when Claude Code adds or renames tools — the quarterly checklist in
 // SKILLS-MAINTENANCE.md carries the sync reminder.
 const VALID_TOOLS = new Set(['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash', 'Agent', 'WebFetch', 'WebSearch'])
+// Skills that isolate their (long/noisy) run via `context: fork` name the target in
+// `agent:` — cross-checked against agents/ the same way agent `skills:` lists are
+// cross-checked against skills/ below.
+const AGENT_NAMES = existsSync(AGENTS_DIR)
+  ? new Set(readdirSync(AGENTS_DIR).filter(f => f.endsWith('.md') && f !== 'ROUTING.md').map(f => f.replace(/\.md$/, '')))
+  : new Set<string>()
 
 function validateToolList(rel: string, source: string, value: string): void {
   for (const tool of value.split(',').map(t => t.trim()).filter(Boolean)) {
@@ -97,10 +130,26 @@ function validateSkill(filePath: string): void {
     ok = false
   }
 
+  if (fm.effort) {
+    const before = errors
+    checkEffort(rel, fm.effort)
+    if (errors > before) ok = false
+  }
+
   if (fm['allowed-tools']) {
     const before = errors
     validateToolList(rel, 'allowed-tools', fm['allowed-tools'])
     if (errors > before) ok = false
+  }
+
+  if (fm.agent && !AGENT_NAMES.has(fm.agent)) {
+    console.error(`  ✗ ${rel} — 'agent:' references non-existent agent: '${fm.agent}' (must match a file in agents/)`)
+    errors++
+    ok = false
+  }
+  if (fm.context && fm.context !== 'fork') {
+    console.warn(`  ⚠ ${rel} — unrecognised 'context:' value '${fm.context}' (expected 'fork')`)
+    warnings++
   }
 
   for (const dupeKey of findDuplicateFrontmatterKeys(content)) {
@@ -283,6 +332,11 @@ if (existsSync(AGENTS_DIR)) {
       agentFmErrors++
       agentOk = false
     }
+    if (fm.effort) {
+      const before = errors
+      checkEffort(`agents/${file}`, fm.effort)
+      if (errors > before) { agentFmErrors += errors - before; agentOk = false }
+    }
     if (fm.tools) {
       const before = errors
       validateToolList(`agents/${file}`, 'tools', fm.tools)
@@ -296,6 +350,13 @@ if (existsSync(AGENTS_DIR)) {
     }
     if (GUARD_AGENTS.has(agentName) && fm.permissionMode !== 'plan') {
       console.error(`  ✗ agents/${file} — guard agent must have permissionMode: plan (found: '${fm.permissionMode ?? 'missing'}')`)
+      agentFmErrors++
+      errors++
+      agentOk = false
+    }
+    const agentBodyLines = getBodyAfterFrontmatter(content).split('\n').filter(l => l.trim() !== '').length
+    if (agentBodyLines > AGENT_BODY_MAX_LINES) {
+      console.error(`  ✗ agents/${file} — body is ${agentBodyLines} non-blank lines (required ≤${AGENT_BODY_MAX_LINES} per AGENTS-MAINTENANCE.md); move reference material into agent_docs/ and link it under "Reference docs (lazy-load when needed)"`)
       agentFmErrors++
       errors++
       agentOk = false

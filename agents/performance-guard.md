@@ -2,7 +2,7 @@
 name: performance-guard
 description: Use for slow queries, N+1, bundle size, caching, render loops, memory leaks, latency, and expensive computations.
 tools: Read, Grep, Glob, Bash
-model: claude-sonnet-5
+model: sonnet
 permissionMode: plan
 effort: high
 color: orange
@@ -68,6 +68,12 @@ Investigate in impact order:
 - Missing code splitting / dynamic imports
 - `import *` pulling in unused exports
 
+**Navigation / routing layer** (common source of perceived slowness even when bundle/DB are fine):
+
+- Route change causing full component-tree remount instead of a partial update — check route/key structure
+- No prefetch on likely-next routes — framework prefetch left off/default (Next.js `<Link prefetch>`, React Navigation lazy screens, Expo Router)
+- Third-party scripts (analytics, ads, chat widgets) loaded synchronously in `<head>`/root layout — blocks first paint; should defer (`next/script` `strategy="afterInteractive"`/`"lazyOnload"`, or equivalent)
+
 **Cache layer**:
 
 - Missing cache headers on static/infrequent data
@@ -130,13 +136,3 @@ For each approved finding:
 - **Architecture:** `ESCALATE TO: architect — [one sentence]`
 
 Hand off one finding at a time unless independence is confirmed.
-
----
-
-## HARD CONSTRAINTS (bottom)
-
-NEVER modify schema, indexes, or migrations — escalate to db-guard.
-NEVER restructure architecture — escalate to architect.
-NEVER edit files — analysis and handoff only, implementation belongs to senior-engineer.
-NEVER fix multiple coupled findings in one step without verifying independence.
-NEVER skip the analysis phase and go straight to a handoff.

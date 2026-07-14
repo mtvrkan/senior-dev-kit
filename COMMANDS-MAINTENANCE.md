@@ -1,6 +1,6 @@
 # Commands Maintenance Policy
 
-This document tracks review dates for the 13 slash-command definitions in `commands/`.
+This document tracks review dates for the 11 slash-command definitions in `commands/`.
 Commands are manually invoked prompt files (`/name`) with YAML frontmatter (`description` required,
 `argument-hint` expected when the body uses `$ARGUMENTS` — enforced by `npm run validate`); they must be reviewed when:
 
@@ -17,7 +17,6 @@ Commands are manually invoked prompt files (`/name`) with YAML frontmatter (`des
 | Command | Purpose | Last Reviewed |
 | --- | --- | --- |
 | `agents-guide` | List installed agents and when to use each one | 2026-07-02 |
-| `article-write` | Manually trigger article/long-form content writing | 2026-07-02 |
 | `deep-research` | Manually trigger multi-source research on a topic | 2026-07-02 |
 | `dep-check` | Manually trigger a dependency CVE/license/outdated audit | 2026-07-02 |
 | `kit-doctor` | Diagnose a kit installation — counts, settings, version drift | 2026-07-02 |
@@ -26,15 +25,14 @@ Commands are manually invoked prompt files (`/name`) with YAML frontmatter (`des
 | `release-gate` | Manually trigger a pre-release safety check | 2026-07-02 |
 | `safe-review` | Manually trigger a diff/target review | 2026-07-02 |
 | `security-scan` | Manually trigger or plan a security scan | 2026-07-02 |
-| `seo-check` | Audit SEO, AEO, and Core Web Vitals | 2026-07-02 |
+| `seo-check` | Audit SEO, AEO, and Core Web Vitals | 2026-07-15 |
 | `smart-task` | Manually classify and route a task before coding | 2026-07-02 |
-| `strategy-plan` | Manually produce a strategic plan or decision analysis | 2026-07-02 |
 
 ---
 
 ## Naming and skill counterparts
 
-Every command that has a skill counterpart now shares its exact name (`performance-check`, `article-write`, `dep-check`, ...) — the command is the manual-invocation surface; the skill carries the shared logic. The former divergent aliases `/perf-check` and `/write-article` were renamed in this release; see CHANGELOG.
+Every command that has a skill counterpart now shares its exact name (`performance-check`, `dep-check`, ...) — the command is the manual-invocation surface; the skill carries the shared logic. The former divergent aliases `/perf-check` and `/write-article` were renamed in this release; see CHANGELOG.
 
 Two commands are standalone with no skill counterpart, by design — they're one-off audits/lookups, not auto-fireable playbooks:
 

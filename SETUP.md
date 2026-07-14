@@ -136,41 +136,40 @@ Use this list in Step 4b. Now proceed to Step 2.
 
 ### 2a — Copy agent files
 
-Create `PROJECT/.claude/agents/` directory. Read the following 17 agent files from `KIT/agents/` and write to `PROJECT/.claude/agents/`:
+Create `PROJECT/.claude/agents/` directory. Read the following 14 agent files from `KIT/agents/` and write to `PROJECT/.claude/agents/`:
 
 ```text
-academic-writer.md, architect.md, bug-hunter.md, db-guard.md,
+architect.md, bug-hunter.md, db-guard.md,
 devops-guard.md, docs-writer.md, migration-guard.md,
 performance-guard.md, researcher.md, reviewer.md,
 security-guard.md, security-scanner.md, senior-engineer.md,
-strategist.md, test-engineer.md, ui-fixer.md, writer.md
+test-engineer.md, ui-fixer.md
 ```
 
-Also copy `KIT/agents/ROUTING.md` to `PROJECT/.claude/agents/ROUTING.md` — it is a routing reference, not an agent, so `PROJECT/.claude/agents/` ends up with 18 files total (17 agents + ROUTING.md).
+Also copy `KIT/agents/ROUTING.md` to `PROJECT/.claude/agents/ROUTING.md` — it is a routing reference, not an agent, so `PROJECT/.claude/agents/` ends up with 15 files total (14 agents + ROUTING.md).
 
 ### 2b — Copy skill directories
 
-Create `PROJECT/.claude/skills/` directory. Read the following 34 subdirectories from `KIT/skills/` and write to `PROJECT/.claude/skills/` (each subdirectory contains `SKILL.md`):
+Create `PROJECT/.claude/skills/` directory. Read the following 32 subdirectories from `KIT/skills/` and write to `PROJECT/.claude/skills/` (each subdirectory contains `SKILL.md`):
 
 ```text
-academic-write, api-design, api-versioning, article-write, bug-fix,
-code-audit, code-review, data-modeling, db-change, deep-research, dep-check,
+api-design, api-versioning, bug-fix,
+code-audit, code-review, codebase-overview, data-modeling, db-change, deep-research, dep-check,
 docs-update, env-audit, feature-build, feature-plan, from-scratch,
 kit-doctor, llm-integration, migration-review, monorepo-task, new-page,
 new-screen, performance-check, plan-first, refactor-safe, release-check,
 release-gate, safe-review, security-review, security-scan, smart-task,
-strategy-plan, test-writer, ui-change
+test-writer, ui-change
 ```
 
 ### 2c — Copy command files
 
-Create `PROJECT/.claude/commands/` directory. Read the following 13 files from `KIT/commands/` and write:
+Create `PROJECT/.claude/commands/` directory. Read the following 11 files from `KIT/commands/` and write:
 
 ```text
-agents-guide.md, article-write.md, deep-research.md, dep-check.md,
+agents-guide.md, deep-research.md, dep-check.md,
 kit-doctor.md, performance-check.md, plan-first.md, release-gate.md,
-safe-review.md, security-scan.md, seo-check.md, smart-task.md,
-strategy-plan.md
+safe-review.md, security-scan.md, seo-check.md, smart-task.md
 ```
 
 ### 2d — Copy settings.json
@@ -195,10 +194,10 @@ Create `PROJECT/.claude/agent_docs/` directory. Read the following 15 files from
 
 ```text
 architecture.md, api-design-patterns.md, api-versioning-guide.md,
-design-system.md, dep-check-guide.md, env-audit-guide.md,
+design-system.md, dep-check-guide.md, devops-security-guide.md, env-audit-guide.md,
 error-handling-patterns.md, from-scratch-guide.md, new-page-guide.md,
 new-screen-guide.md, security-protocols.md, seo-patterns.md,
-testing-strategy.md, academic-writing-guide.md, zero-downtime-migration.md
+testing-strategy.md, zero-downtime-migration.md
 ```
 
 ### 2g — Security templates (optional — if CI/CD present)
@@ -376,7 +375,7 @@ If it exists: read its content. If its `permissions.deny` list is missing or inc
 Environment variable suggestion (add to shell profile):
 
 ```bash
-export CLAUDE_CODE_SUBAGENT_MODEL=claude-haiku-4-5-20251001  # default for anonymous Agent() calls; named agents use their own model: field
+export CLAUDE_CODE_SUBAGENT_MODEL=haiku  # default for anonymous Agent() calls; named agents use their own model: field
 ```
 
 ---

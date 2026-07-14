@@ -3,9 +3,11 @@ name: security-scan
 description: Use for dependency audits, secret scans, SAST, container/filesystem scans, and release security checks. Do not use for low-risk UI-only tasks.
 when_to_use: Use when dependency audit, secret scan, SAST, or container security review is needed. Auto-trigger on auth/payment/DB/API/secrets/CI/release changes, or explicit user request.
 allowed-tools: Read, Grep, Glob, Bash
-model: claude-sonnet-5
+model: sonnet
 effort: medium
 argument-hint: "[task or target]"
+context: fork
+agent: security-scanner
 ---
 
 # security-scan

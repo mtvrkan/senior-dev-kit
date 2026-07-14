@@ -4,7 +4,7 @@ description: Manually invoke before risky or multi-file work to force plan-first
 disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Manually invoke before any risky, multi-file, or high-tier task to force plan-first behavior.
-model: claude-opus-4-8
+model: opus
 effort: high
 argument-hint: "[task or target]"
 ---

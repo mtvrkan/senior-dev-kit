@@ -113,9 +113,6 @@ Slow query / N+1 / bundle / render loop             → performance-guard (sonne
 Dep CVE / audit / outdated packages                 → security-scanner  (sonnet, Tier 1-2)
 Large feature / architecture / system design        → architect  (opus,   Tier 3)
 Research / fact-check / comparison                  → researcher (opus,   Tier 2-3)
-Strategy / roadmap / product decision               → strategist (opus,   Tier 3)
-Article / blog post / technical content             → writer     (sonnet, Tier 1-2)
-Academic paper / thesis / literature review         → academic-writer (opus, Tier 2-3)
 README / changelog / API docs                       → docs-writer (haiku, Tier 0-1)
 ```
 
@@ -183,6 +180,4 @@ ui-fixer
 | test / spec / coverage | test-engineer |
 | CSS / button / modal / tailwind / layout | ui-fixer |
 | research / find / compare / araştır | researcher |
-| strategy / roadmap / OKR / strateji | strategist |
-| article / blog / write / yaz | writer |
 | README / docs / changelog / belge | docs-writer |

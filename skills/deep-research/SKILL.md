@@ -4,6 +4,9 @@ description: Use for deep, multi-source research — fan-out searches across mul
 allowed-tools: WebSearch, WebFetch, Read, Grep, Glob
 when_to_use: Use when the task requires multi-source factual research, competitive analysis, technology comparison, or market research.
 argument-hint: "[research question or topic]"
+context: fork
+agent: researcher
+effort: high
 ---
 
 # deep-research

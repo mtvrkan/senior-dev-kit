@@ -96,12 +96,7 @@ For client-side loading (when load fn is not used):
 {#if loading}<!-- skeleton -->{:else if error}<!-- error -->{:else if !items.length}<!-- empty -->{:else}<!-- populated -->{/if}
 ```
 
-### Universal rules
-
-**Loading:** skeleton slots / spinners matching content shape
-**Empty:** icon + message + optional CTA — `{#if !items.length}`
-**Error:** message + retry button — `{#if error}`
-**Populated:** real content
+Loading/empty/error state detail is in `rules/100-web.md`'s THREE MANDATORY STATES section. Svelte-specific: `{#if !items.length}` for empty, `{#if error}` for error.
 
 **Form (with SvelteKit actions):**
 

@@ -2,7 +2,7 @@
 name: reviewer
 description: Use after meaningful code changes to review diffs for bugs, regressions, security issues, data loss, missing validation, and missing tests. Read-only. Implements Evaluator-Optimizer loop — iterates up to 3 rounds before finalizing.
 tools: Read, Grep, Glob, Bash
-model: claude-sonnet-5
+model: sonnet
 permissionMode: plan
 effort: high
 color: cyan
