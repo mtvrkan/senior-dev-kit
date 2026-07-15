@@ -127,6 +127,9 @@ RLS policies (Supabase) | Security rules (Firebase)
 UNDERSTAND BEFORE CHANGING — read 1-2 existing files of same type first.
 Smallest safe diff. No refactoring while fixing bugs. No features while fixing bugs.
 
+ORPHAN CLEANUP — remove only imports/vars/functions YOUR edit made unused. Pre-existing dead
+code noticed along the way: leave it, flag with FWD: (see below) — don't delete unless asked.
+
 RESEARCH SCOPE — read only files relevant to the change, never a full-tree scan.
 Reuse prior analysis/logs already in context instead of re-reading unchanged files.
 Follow detected architecture (vertical-slice or layered) — never mix.

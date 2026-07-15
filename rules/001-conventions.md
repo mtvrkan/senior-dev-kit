@@ -59,6 +59,7 @@ FWD: Hardcoded string — move to config/env ([value])
 FWD: Missing FK index — query perf risk ([table.column])
 FWD: Sync I/O in hot path — latency risk ([location])
 FWD: No error boundary — reliability risk ([component tree])
+FWD: Unrelated dead code noticed — not touching it, flag only ([location])
 OBS: [service] no metrics — add request count + latency
 ```
 
