@@ -6,7 +6,8 @@
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
 param(
     [string]$Preset  = "",
-    [switch]$Detect
+    [switch]$Detect,
+    [switch]$NoHooks
 )
 
 # Mirror install.sh's `set -euo pipefail`: stop on the first failed copy or
@@ -143,9 +144,10 @@ if ($Detect -and $Preset -eq "") {
 Write-Host ""
 Write-Host "Senior Dev Kit — Install" -ForegroundColor White
 Write-Host "========================" -ForegroundColor White
-Write-Host "Usage: .\install.ps1 [-Preset nextjs-saas] [-Detect]"
+Write-Host "Usage: .\install.ps1 [-Preset nextjs-saas] [-Detect] [-NoHooks]"
 Write-Host "  -Preset NAME   Install a specific preset as CLAUDE.md"
 Write-Host "  -Detect        Auto-detect stack from package.json / requirements.txt / go.mod etc."
+Write-Host "  -NoHooks       Skip wiring the protected-paths hook into settings.json"
 Write-Host ""
 Write-Host "Target: $ClaudeDir"
 Write-Host ""
@@ -199,14 +201,27 @@ Copy-Item -Path (Join-Path $ScriptDir "agent_docs\*") -Destination $dest -Recurs
 Test-Copy (Join-Path $ScriptDir "agent_docs") $dest "agent_docs"
 Ok "agent_docs/ ($(Get-FileCount $dest) files)"
 
-# --- hooks (opt-in enforcement layer — copied but NOT activated; see hooks/README.md) ---
-Step "Copying hooks (opt-in — activate via settings.json, see hooks/README.md)..."
+# --- hooks (deterministic enforcement layer — see hooks/README.md) ---
+Step "Copying hooks..."
 $dest = Join-Path $ClaudeDir "hooks"
 Backup-Dir $dest
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item -Path (Join-Path $ScriptDir "hooks\*") -Destination $dest -Recurse -Force
 Test-Copy (Join-Path $ScriptDir "hooks") $dest "hooks"
-Ok "hooks/ ($(Get-FileCount $dest) files) — opt-in, not active until wired into settings.json"
+Ok "hooks/ ($(Get-FileCount $dest) files)"
+
+# --- wire protected-paths hook into settings.json (on by default; -NoHooks skips this) ---
+if ($NoHooks) {
+    Warn "hooks not wired (-NoHooks) — see hooks/README.md to enable manually"
+} elseif (Get-Command node -ErrorAction SilentlyContinue) {
+    Step "Wiring protected-paths hook into settings.json..."
+    $settingsPath = Join-Path $ClaudeDir "settings.json"
+    $hookPath = Join-Path $dest "protected-paths.mjs"
+    node (Join-Path $ScriptDir "scripts\wire-hook.mjs") $settingsPath $hookPath
+    Ok "settings.json — protected-paths hook active (auth/payment/DB/secrets/CI edits now prompt for guard review)"
+} else {
+    Warn "node not found — hook not wired automatically. See hooks/README.md to enable manually."
+}
 
 # --- global-CLAUDE.md (when no project-specific preset is requested) ---
 if ($Preset -eq "") {

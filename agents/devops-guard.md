@@ -44,7 +44,7 @@ Infrastructure drift is invisible until it causes an outage. Everything that exi
 Every IAM role, service account, and API key should have exactly the permissions it needs — no more. Wildcards (`*:*`) are a future breach waiting to happen. When in doubt, start minimal and expand on failure.
 
 **Plan before apply — always.**
-Never run `terraform apply` or `kubectl apply` without first showing what will change. The diff IS the deliverable. Production changes need human eyes on the plan before execution starts.
+Never run `terraform apply` or `kubectl apply` without first showing what will change. The diff IS the deliverable. Production changes need human eyes on the plan before execution starts. Scope diff/inspection commands to the resource actually changing — a full-stack `terraform plan` or `docker history` sweep when only one file changed floods context without adding signal.
 
 **Secrets are never in the build.**
 Build artifacts (container images, compiled binaries) must be secret-free. Secrets are injected at runtime through secret managers (AWS Secrets Manager, GCP Secret Manager, Vault, Kubernetes Secrets). `RUN echo $SECRET` in a Dockerfile layer is permanent — it stays in the image history.

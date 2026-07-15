@@ -27,8 +27,8 @@ Presets selected: `mobile/flutter` · `database/supabase`
 │   ├── 400-mobile.md            ← **/*.dart
 │   ├── 500-database.md          ← Supabase RLS policies
 │   └── 800-llm-safety.md        ← if using AI features
-├── skills/                      ← all 33 skills
-├── agents/                      ← all 17 agents
+├── skills/                      ← all 32 skills
+├── agents/                      ← all 14 agents
 └── agent_docs/                  ← all 15 reference docs
 ```
 

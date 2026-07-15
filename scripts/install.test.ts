@@ -4,7 +4,7 @@
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'child_process'
-import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync, readdirSync } from 'fs'
+import { mkdtempSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync, readdirSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import { fileURLToPath } from 'url'
@@ -12,6 +12,13 @@ import { fileURLToPath } from 'url'
 // fileURLToPath handles Windows drive letters natively — no manual /C:/ fixups.
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url))
 const COPIED_DIRS = ['rules', 'skills', 'commands', 'agents', 'agent_docs', 'hooks']
+
+// Minimal shape for the settings.json produced by scripts/wire-hook.mjs — just enough
+// to assert on the PreToolUse entry without pulling in the full Claude Code settings schema.
+interface WiredSettings {
+  permissions?: { allow?: string[] }
+  hooks?: { PreToolUse?: { matcher: string; hooks?: { command: string }[] }[] }
+}
 
 // Temp dirs are tracked and force-removed after the suite — the rmSync at the
 // end of a test never runs when an assertion throws, which would leak the dir.
@@ -120,6 +127,52 @@ describe('install.sh', { skip: HAS_BASH ? false : 'bash not available in this en
     rmSync(home, { recursive: true })
   })
 
+  test('wires the protected-paths hook into settings.json by default', () => {
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
+    const result = runInstallSh([], home, 'y\n')
+    assert.strictEqual(result.status, 0, `install.sh failed: ${result.stderr}`)
+    const settingsPath = join(home, '.claude', 'settings.json')
+    assert.ok(existsSync(settingsPath), 'expected settings.json to be created')
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf8')) as WiredSettings
+    const entry = settings.hooks?.PreToolUse?.find(e => e.matcher === 'Edit|Write|NotebookEdit')
+    assert.ok(entry, 'expected a PreToolUse entry for Edit|Write|NotebookEdit')
+    assert.ok(entry!.hooks![0].command.includes('protected-paths.mjs'), 'expected the command to reference protected-paths.mjs')
+    rmSync(home, { recursive: true })
+  })
+
+  test('--no-hooks skips wiring the hook into settings.json', () => {
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
+    const result = runInstallSh(['--no-hooks'], home, 'y\n')
+    assert.strictEqual(result.status, 0, `install.sh failed: ${result.stderr}`)
+    assert.ok(existsSync(join(home, '.claude', 'hooks', 'protected-paths.mjs')), 'hook file should still be copied')
+    assert.ok(!existsSync(join(home, '.claude', 'settings.json')), 'settings.json should not be created when hooks are skipped')
+    rmSync(home, { recursive: true })
+  })
+
+  test('reinstalling does not duplicate the protected-paths hook entry', () => {
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
+    runInstallSh([], home, 'y\n')
+    const second = runInstallSh([], home, 'y\n')
+    assert.strictEqual(second.status, 0, `install.sh failed: ${second.stderr}`)
+    const settings = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8')) as WiredSettings
+    const entries = settings.hooks!.PreToolUse!.filter(e => e.hooks?.some(h => h.command.includes('protected-paths.mjs')))
+    assert.strictEqual(entries.length, 1, 'expected exactly one protected-paths PreToolUse entry after reinstall')
+    rmSync(home, { recursive: true })
+  })
+
+  test('preserves existing settings.json content when wiring the hook', () => {
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
+    const claudeDir = join(home, '.claude')
+    mkdirSync(claudeDir, { recursive: true })
+    writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({ permissions: { allow: ['Bash(ls)'] } }))
+    const result = runInstallSh([], home, 'y\n')
+    assert.strictEqual(result.status, 0, `install.sh failed: ${result.stderr}`)
+    const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf8'))
+    assert.deepStrictEqual(settings.permissions, { allow: ['Bash(ls)'] }, 'existing permissions should be preserved')
+    assert.ok(settings.hooks?.PreToolUse?.length, 'hook should still be wired in')
+    rmSync(home, { recursive: true })
+  })
+
   test('warns and lists available presets when --preset matches nothing, without writing CLAUDE.md', () => {
     const home = makeTempDir(join(tmpdir(), 'install-home-'))
     const result = runInstallSh(['--preset=nonexistent-stack'], home, 'y\n')
@@ -205,6 +258,39 @@ describe('install.ps1', { skip: PWSH ? false : 'no PowerShell (pwsh/powershell) 
     const result = runInstallPs1(['-Preset', 'Not_Valid!'], home, '')
     assert.notStrictEqual(result.status, 0)
     assert.ok(!existsSync(join(home, '.claude')), 'should exit before creating anything')
+    rmSync(home, { recursive: true })
+  })
+
+  test('wires the protected-paths hook into settings.json by default', () => {
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
+    const result = runInstallPs1([], home, 'y\n')
+    assert.strictEqual(result.status, 0, `install.ps1 failed: ${result.stderr}`)
+    const settingsPath = join(home, '.claude', 'settings.json')
+    assert.ok(existsSync(settingsPath), 'expected settings.json to be created')
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf8')) as WiredSettings
+    const entry = settings.hooks?.PreToolUse?.find(e => e.matcher === 'Edit|Write|NotebookEdit')
+    assert.ok(entry, 'expected a PreToolUse entry for Edit|Write|NotebookEdit')
+    assert.ok(entry!.hooks![0].command.includes('protected-paths.mjs'), 'expected the command to reference protected-paths.mjs')
+    rmSync(home, { recursive: true })
+  })
+
+  test('-NoHooks skips wiring the hook into settings.json', () => {
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
+    const result = runInstallPs1(['-NoHooks'], home, 'y\n')
+    assert.strictEqual(result.status, 0, `install.ps1 failed: ${result.stderr}`)
+    assert.ok(existsSync(join(home, '.claude', 'hooks', 'protected-paths.mjs')), 'hook file should still be copied')
+    assert.ok(!existsSync(join(home, '.claude', 'settings.json')), 'settings.json should not be created when hooks are skipped')
+    rmSync(home, { recursive: true })
+  })
+
+  test('reinstalling does not duplicate the protected-paths hook entry', () => {
+    const home = makeTempDir(join(tmpdir(), 'install-home-'))
+    runInstallPs1([], home, 'y\n')
+    const second = runInstallPs1([], home, 'y\n')
+    assert.strictEqual(second.status, 0, `install.ps1 failed: ${second.stderr}`)
+    const settings = JSON.parse(readFileSync(join(home, '.claude', 'settings.json'), 'utf8')) as WiredSettings
+    const entries = settings.hooks!.PreToolUse!.filter(e => e.hooks?.some(h => h.command.includes('protected-paths.mjs')))
+    assert.strictEqual(entries.length, 1, 'expected exactly one protected-paths PreToolUse entry after reinstall')
     rmSync(home, { recursive: true })
   })
 })

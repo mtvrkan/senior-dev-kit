@@ -27,6 +27,7 @@
     "hooks/",
     "presets/",
     "rules/",
+    "scripts/wire-hook.mjs",
     "security/",
     "skills/",
     "install.sh",

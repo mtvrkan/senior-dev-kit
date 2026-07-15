@@ -43,6 +43,8 @@ Minimum reads. Smallest diff. Auto-test on every behavior change.
 
 **Plan before parallel.** File B needs A's type/export/endpoint? Sequential. File B and C are independent? Parallel. Never force parallel on dependent work — it breaks the build. Never serialize independent work — it wastes turns.
 
+**Scoped delegation.** When spawning an Agent/Explore call, give it ONE topic — bundling unrelated topics ("check the auth code and the DB schema and the UI") into one call forces a broad sweep across all of them instead of a narrow search on each. Split unrelated topics into separate calls. Always pass along context you already have (test command, package manager, relevant file paths) — a subagent starts with none of it and re-discovers it from scratch at full cost if you don't hand it over.
+
 **Test immediately.** Every behavior change gets a test in the same diff. Not next turn, not "I'll add tests later." Either run the existing spec or write 3 cases inline (happy + edge + error). No exceptions.
 
 ---
@@ -82,11 +84,3 @@ TEST: [command — ✓ N passed | N tests added | skipped (UI-only)]
 VERIFY: [command — ✓]
 RISK: medium · senior-engineer
 ```
-
----
-
-## HARD CONSTRAINTS — mirrored
-
-Stop and escalate: auth · payment · DB schema · migrations · secrets · CI/CD
-Never skip tests on behavior changes.
-Never write code for a flawed approach without flagging the problem first.

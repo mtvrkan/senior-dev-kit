@@ -29,8 +29,8 @@ Presets selected: `web/vue-nuxt` · `orm/drizzle` · `database/postgres`
 │   ├── 300-testing.md           ← *.test.ts, *.spec.ts
 │   ├── 500-database.md          ← drizzle/**
 │   └── 700-observability.md     ← **/*.ts
-├── skills/                      ← all 33 skills
-├── agents/                      ← all 17 agents
+├── skills/                      ← all 32 skills
+├── agents/                      ← all 14 agents
 └── agent_docs/                  ← all 15 reference docs
 ```
 

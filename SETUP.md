@@ -15,9 +15,9 @@ KIT ≠ PROJECT. KIT is this folder, PROJECT is a separate project.
 
 Sets up in PROJECT:
 
-- 17 subagent files + `ROUTING.md` (18 files total) → `PROJECT/.claude/agents/`
-- 34 skill directories → `PROJECT/.claude/skills/`
-- 13 slash command files → `PROJECT/.claude/commands/`
+- 14 subagent files + `ROUTING.md` (15 files total) → `PROJECT/.claude/agents/`
+- 32 skill directories → `PROJECT/.claude/skills/`
+- 11 slash command files → `PROJECT/.claude/commands/`
 - Security rules → `PROJECT/.claude/settings.json`
 - Full stack rules → `PROJECT/.claude/stack-rules.md`
 - Compact routing file → `PROJECT/CLAUDE.md`
@@ -27,6 +27,8 @@ Global setup (`~/.claude/` — once, for all projects):
 - 11 path-scoped rules → `~/.claude/rules/`
 - 15 lazy-load agent docs → `~/.claude/agent_docs/`
 - Global CLAUDE.md → `~/.claude/CLAUDE.md`
+- Protected-paths hook → `~/.claude/hooks/`, wired into `~/.claude/settings.json` (the kit's
+  only harness-enforced guardrail — everything else here is prompt discipline)
 
 Project security templates (optional, for projects using CI/CD):
 
@@ -358,10 +360,10 @@ Create `~/.claude/agent_docs/` directory (if missing). Read the 15 files from `K
 
 ```text
 architecture.md, api-design-patterns.md, api-versioning-guide.md,
-design-system.md, dep-check-guide.md, env-audit-guide.md,
+design-system.md, dep-check-guide.md, devops-security-guide.md, env-audit-guide.md,
 error-handling-patterns.md, from-scratch-guide.md, new-page-guide.md,
 new-screen-guide.md, security-protocols.md, seo-patterns.md,
-testing-strategy.md, academic-writing-guide.md, zero-downtime-migration.md
+testing-strategy.md, zero-downtime-migration.md
 ```
 
 These files are read by agents when needed — not loaded every session.
@@ -378,6 +380,36 @@ Environment variable suggestion (add to shell profile):
 export CLAUDE_CODE_SUBAGENT_MODEL=haiku  # default for anonymous Agent() calls; named agents use their own model: field
 ```
 
+### 5e — Wire the protected-paths hook (deterministic enforcement)
+
+Create `~/.claude/hooks/` directory (if missing). Read `KIT/hooks/protected-paths.mjs` and write
+it there.
+
+This hook is the kit's only harness-enforced guardrail — edits into auth/payment/DB
+migrations/secrets/CI/IaC paths get intercepted regardless of what the model decides.
+Everything else in the kit (agent routing, hard stops, escalation) is prompt discipline the
+model follows voluntarily. Wire the hook into `~/.claude/settings.json` under `hooks.PreToolUse`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "node \"<absolute path to home>/.claude/hooks/protected-paths.mjs\"" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Use the real absolute home-directory path — do not write the literal placeholder. Before adding
+this entry, check whether `hooks.PreToolUse` already has one whose `command` contains
+`protected-paths.mjs`; if so, leave it as-is instead of adding a duplicate. Merge into any
+existing `hooks` key rather than overwriting it — the same rule as 5d's `permissions.deny` merge.
+
 ---
 
 ## Step 6 — When done, report
@@ -385,9 +417,11 @@ export CLAUDE_CODE_SUBAGENT_MODEL=haiku  # default for anonymous Agent() calls; 
 Provide a brief summary containing:
 
 - Detected stack and selected presets
-- Installed file counts: `[17 agents, 34 skills, 13 commands, 11 rules, 15 agent_docs]`
+- Installed file counts: `[14 agents, 32 skills, 11 commands, 11 rules, 15 agent_docs]`
 - If monorepo: how many subproject CLAUDE.md created
 - If security templates installed: pre-commit enable command
-- First use: open project in Claude Code, converse normally — routing is automatic
+- Protected-paths hook: wired (or why not — missing `node`, or already present)
+- First use: open project in Claude Code, converse normally — routing is prompt discipline, not
+  harness-enforced (the protected-paths hook is the one exception)
 - Slash command reminder: `/smart-task`, `/plan-first`, `/safe-review`, `/security-scan`, `/dep-check`, `/performance-check`, `/seo-check`
 - To verify: read `KIT/VERIFY.md` and validate setup

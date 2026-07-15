@@ -47,7 +47,13 @@ This agent is READ-ONLY. Findings are routed to senior-engineer for implementati
 
 Read only files in the reported hotspot or named in the task. Do not read unrelated modules.
 
-Investigate in impact order:
+If the report already names a symptom or layer ("slow navigation", "slow query", "large
+bundle"), jump straight to that layer's checklist below — don't march through every layer in
+impact order first. Impact order exists to triage an unscoped "app feels slow" report; a named
+symptom is already scoped, and re-checking DB/render/bundle layers the report never implicated
+just burns tokens re-deriving what the report already told you.
+
+Investigate in impact order (unscoped reports only):
 
 **DB / query layer** (highest impact):
 

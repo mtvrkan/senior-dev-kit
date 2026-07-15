@@ -33,14 +33,14 @@ Detected: Next.js SaaS + Prisma + PostgreSQL
 │   ├── new-page/SKILL.md
 │   ├── db-change/SKILL.md
 │   ├── security-review/SKILL.md
-│   └── ... (all 33 skills)
+│   └── ... (all 32 skills)
 ├── agents/
 │   ├── senior-engineer.md
 │   ├── bug-hunter.md
 │   ├── security-guard.md
 │   ├── db-guard.md
 │   ├── architect.md
-│   └── ... (all 17 agents)
+│   └── ... (all 14 agents)
 └── agent_docs/
     ├── architecture.md
     ├── testing-strategy.md

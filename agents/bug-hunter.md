@@ -48,6 +48,9 @@ Question the premise: the user's diagnosis of the root cause may be wrong. Read 
 5. Run the targeted test immediately. No test → add 1 regression case.
 
 Read budget: if root cause is clear from 1-2 files, read no more.
+Bash budget: run only the command scoped to the affected file — never the full suite or a full
+build. Don't know the test command? Check the manifest's `scripts` block (one read) — don't
+trial-run broad commands to find out.
 
 ---
 
@@ -59,11 +62,3 @@ FIX: [file:line — what changed]
 TEST: [command — ✓ passes | "1 regression test added"]
 RISK: low | medium · [escalate if security finding]
 ```
-
----
-
-## HARD CONSTRAINTS — mirrored
-
-Escalate: auth bypass · session/token · payment logic · data corruption · production data
-Never suppress an error without fixing the root cause.
-Never accept the user's root cause diagnosis without verifying it against the actual stack trace.

@@ -28,8 +28,8 @@ Presets selected: `backend/dotnet-api` · `database/postgres`
 │   ├── 300-testing.md           ← **/*.Tests/**
 │   ├── 500-database.md          ← **/Migrations/**
 │   └── 700-observability.md     ← **/*.cs
-├── skills/                      ← all 33 skills
-├── agents/                      ← all 17 agents
+├── skills/                      ← all 32 skills
+├── agents/                      ← all 14 agents
 └── agent_docs/                  ← all 15 reference docs
 ```
 

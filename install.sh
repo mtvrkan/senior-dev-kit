@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="${HOME}/.claude"
 PRESET=""
 DETECT=false
+NO_HOOKS=false
 # Set by backup_claude_md so the closing summary can point at the backup —
 # without this, a re-install with a different preset replaces CLAUDE.md with
 # only a mid-scroll warning line to show for it.
@@ -81,6 +82,7 @@ for arg in "$@"; do
   case $arg in
     --preset=*) PRESET="${arg#*=}" ;;
     --detect)   DETECT=true ;;
+    --no-hooks) NO_HOOKS=true ;;
   esac
 done
 
@@ -148,9 +150,10 @@ fi
 echo ""
 echo "Senior Dev Kit — Install"
 echo "========================"
-echo "Usage: bash install.sh [--preset=NAME] [--detect]"
+echo "Usage: bash install.sh [--preset=NAME] [--detect] [--no-hooks]"
 echo "  --preset=NAME  Install a specific preset as CLAUDE.md (e.g. --preset=nextjs-saas)"
 echo "  --detect       Auto-detect stack from package.json / requirements.txt / go.mod etc."
+echo "  --no-hooks     Skip wiring the protected-paths hook into settings.json"
 echo ""
 
 # Confirm target
@@ -208,13 +211,24 @@ cp -r "${SCRIPT_DIR}/agent_docs/." "${CLAUDE_DIR}/agent_docs/"
 verify_copy "${SCRIPT_DIR}/agent_docs" "${CLAUDE_DIR}/agent_docs" "agent_docs"
 print_ok "agent_docs/ ($(count_files "${CLAUDE_DIR}/agent_docs") files)"
 
-# --- hooks (opt-in enforcement layer — copied but NOT activated; see hooks/README.md) ---
-print_step "Copying hooks (opt-in — activate via settings.json, see hooks/README.md)..."
+# --- hooks (deterministic enforcement layer — see hooks/README.md) ---
+print_step "Copying hooks..."
 backup_dir_if_exists "${CLAUDE_DIR}/hooks"
 mkdir -p "${CLAUDE_DIR}/hooks"
 cp -r "${SCRIPT_DIR}/hooks/." "${CLAUDE_DIR}/hooks/"
 verify_copy "${SCRIPT_DIR}/hooks" "${CLAUDE_DIR}/hooks" "hooks"
-print_ok "hooks/ ($(count_files "${CLAUDE_DIR}/hooks") files) — opt-in, not active until wired into settings.json"
+print_ok "hooks/ ($(count_files "${CLAUDE_DIR}/hooks") files)"
+
+# --- wire protected-paths hook into settings.json (on by default; --no-hooks skips this) ---
+if [[ "${NO_HOOKS}" == "true" ]]; then
+  print_warn "hooks not wired (--no-hooks) — see hooks/README.md to enable manually"
+elif command -v node >/dev/null 2>&1; then
+  print_step "Wiring protected-paths hook into settings.json..."
+  node "${SCRIPT_DIR}/scripts/wire-hook.mjs" "${CLAUDE_DIR}/settings.json" "${CLAUDE_DIR}/hooks/protected-paths.mjs"
+  print_ok "settings.json — protected-paths hook active (auth/payment/DB/secrets/CI edits now prompt for guard review)"
+else
+  print_warn "node not found — hook not wired automatically. See hooks/README.md to enable manually."
+fi
 
 # --- global-CLAUDE.md (when no project-specific preset is requested) ---
 if [[ -z "${PRESET}" ]]; then

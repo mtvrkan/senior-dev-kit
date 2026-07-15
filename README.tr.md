@@ -192,9 +192,9 @@ Bu dokümanlar her oturuma önceden yüklenmez. `global-CLAUDE.md`'deki `Lazy-lo
 
 Stack tespiti → kopyalanan dosyalar → üretilen `stack-rules.md` → 3 gerçek kullanım akışı → görev başına maliyet tahminleri. Başlangıç için en iyisi: [`examples/with-vs-without-kit.md`](examples/with-vs-without-kit.md) — aynı üç isteğin kitli ve kitsiz nasıl ele alındığı.
 
-### Hooks (opsiyonel) — deterministik zorlama
+### Hooks (varsayılan olarak açık) — deterministik zorlama
 
-Kitin geri kalanı prompt disiplinidir; [`hooks/`](hooks/README.md) en kritik kuralı harness garantisine çevirir. `protected-paths` PreToolUse hook'u; secrets, auth, ödeme, migration veya CI/IaC yollarına yapılan her Edit/Write'ı yakalar ve incelemesi gereken guard agent'ın adını vererek açık izin sorusuna dönüştürür — model ne karar vermiş olursa olsun. Installer `hooks/`'u kopyalar ama asla etkinleştirmez; `settings.json`'a bağlamak bilinçli bir kullanıcı adımıdır ([hooks/README.md](hooks/README.md)). Plugin olarak kurulduğunda hook otomatik kaydolur.
+Kitin geri kalanı prompt disiplinidir; [`hooks/`](hooks/README.md) en kritik kuralı harness garantisine çevirir. `protected-paths` PreToolUse hook'u; secrets, auth, ödeme, migration veya CI/IaC yollarına yapılan her Edit/Write'ı yakalar ve incelemesi gereken guard agent'ın adını vererek açık izin sorusuna dönüştürür — model ne karar vermiş olursa olsun. `install.sh` / `install.ps1` artık `hooks/`'u kopyalayıp otomatik olarak `settings.json`'a bağlıyor; fazladan izin sorularını istemiyorsanız `--no-hooks` / `-NoHooks` ile atlayabilirsiniz (elle etkinleştirmek için [hooks/README.md](hooks/README.md)). Plugin olarak kurulduğunda hook her durumda otomatik kaydolur.
 
 ---
 

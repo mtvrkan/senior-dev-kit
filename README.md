@@ -320,16 +320,17 @@ Each preset ships as `CLAUDE.md` (full detail) + `compact.md` (token-optimized s
 
 `security/Dockerfile.template` — multi-stage, non-root, health-check Dockerfile template (Node, Python, Go variants)
 
-### Hooks (opt-in) — deterministic enforcement
+### Hooks (on by default) — deterministic enforcement
 
 Everything above is prompt discipline; [`hooks/`](hooks/README.md) turns the most
 important rule into a harness guarantee. The `protected-paths` PreToolUse hook
 intercepts any Edit/Write into secrets, auth, payment, migration, or CI/IaC paths
 and downgrades it to an explicit permission prompt naming the guard agent that
-should review the change first — regardless of what the model decided. The
-installer copies `hooks/` but never activates it; wiring it into `settings.json`
-is a deliberate user step (see [hooks/README.md](hooks/README.md)). Installed as a
-plugin, the hook registers automatically.
+should review the change first — regardless of what the model decided.
+`install.sh` / `install.ps1` copy `hooks/` and wire it into `settings.json`
+automatically; pass `--no-hooks` / `-NoHooks` to skip that if you don't want the
+extra permission prompts (see [hooks/README.md](hooks/README.md) to enable it by
+hand later). Installed as a plugin, the hook registers automatically either way.
 
 ---
 
@@ -416,7 +417,7 @@ senior-dev-kit/
 │   └── deny-cost.ts         ← Replays your transcript history against the deny rules
 ├── bin/                     ← npx CLI wrapper around the installers
 ├── eval/                    ← golden-prompts.json — routing behavior test set
-├── hooks/                   ← Opt-in enforcement hooks (protected-paths) + plugin wiring
+├── hooks/                   ← Deterministic enforcement hooks (protected-paths, on by default) + plugin wiring
 ├── .claude-plugin/          ← Claude Code plugin + marketplace manifests
 ├── agents/                  ← 14 agent definitions (architect, security-guard, bug-hunter…) + ROUTING.md (decision tree, not an agent)
 ├── presets/                 ← 49 stack-specific rule sets (98 files: CLAUDE.md + compact.md each)

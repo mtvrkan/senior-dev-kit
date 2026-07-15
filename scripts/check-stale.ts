@@ -316,6 +316,31 @@ if (existsSync(README_FILE)) {
   console.warn('⚠ README.md not found — count-claim cross-check skipped.')
 }
 
+// --- examples/*.md count claims vs actual files on disk ---
+// Each walkthrough restates "all N skills" / "all N agents" in its directory-tree
+// diagram — 15 files repeating the same two numbers is exactly the shape that goes
+// stale silently (a TROUBLESHOOTING.md/PROJECT-BOOTSTRAP.md drift of the same kind
+// was found and fixed by hand once already; this closes the gap so it can't recur).
+const exampleCountMismatches: string[] = []
+if (existsSync(EXAMPLES_DIR)) {
+  const actualSkills = existsSync(SKILLS_DIR)
+    ? readdirSync(SKILLS_DIR, { withFileTypes: true }).filter(e => e.isDirectory() && existsSync(join(SKILLS_DIR, e.name, 'SKILL.md'))).length
+    : 0
+  const actualAgents = existsSync(AGENTS_DIR) ? readdirSync(AGENTS_DIR).filter(f => f.endsWith('.md') && f !== 'ROUTING.md').length : 0
+
+  for (const file of readdirSync(EXAMPLES_DIR).filter(f => f.endsWith('.md') && f !== 'README.md')) {
+    const text = readFileSync(join(EXAMPLES_DIR, file), 'utf8')
+    const skillsMatch = text.match(/all (\d+) skills/)
+    const agentsMatch = text.match(/all (\d+) agents/)
+    if (skillsMatch && parseInt(skillsMatch[1], 10) !== actualSkills) {
+      exampleCountMismatches.push(`examples/${file}: claims "all ${skillsMatch[1]} skills", found ${actualSkills} on disk`)
+    }
+    if (agentsMatch && parseInt(agentsMatch[1], 10) !== actualAgents) {
+      exampleCountMismatches.push(`examples/${file}: claims "all ${agentsMatch[1]} agents", found ${actualAgents} on disk`)
+    }
+  }
+}
+
 let exitCode = 0
 
 if (stale.length > 0) {
@@ -362,6 +387,15 @@ if (headerCountMismatches.length > 0) {
   exitCode = 1
 }
 
+if (exampleCountMismatches.length > 0) {
+  console.error(`\n✗ ${exampleCountMismatches.length} examples/*.md count claim(s) out of sync with disk:\n`)
+  for (const m of exampleCountMismatches) {
+    console.error(`  ✗ ${m}`)
+  }
+  console.error(`\nUpdate the "all N skills"/"all N agents" counts in the affected example(s).`)
+  exitCode = 1
+}
+
 if (malformedDates.length > 0) {
   console.error(`\n✗ ${malformedDates.length} malformed maintenance table row(s)/date(s) — staleness cannot be verified:\n`)
   for (const m of malformedDates) {
@@ -395,6 +429,9 @@ if (exitCode === 0) {
     console.log(`✓ README.md count claims match disk.`)
   }
   console.log(`✓ Maintenance file header counts match disk.`)
+  if (existsSync(EXAMPLES_DIR)) {
+    console.log(`✓ examples/*.md count claims match disk.`)
+  }
 }
 
 process.exit(exitCode)

@@ -28,8 +28,8 @@ Presets selected: `backend/rust-api` · `database/postgres`
 │   ├── 300-testing.md           ← **/*_test.rs, tests/**
 │   ├── 500-database.md          ← **/migrations/**, **/db/**
 │   └── 700-observability.md     ← **/*.rs
-├── skills/                      ← all 33 skills
-├── agents/                      ← all 17 agents
+├── skills/                      ← all 32 skills
+├── agents/                      ← all 14 agents
 └── agent_docs/                  ← all 15 reference docs
 ```
 

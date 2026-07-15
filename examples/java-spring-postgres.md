@@ -28,8 +28,8 @@ Presets selected: `backend/java-spring` · `database/postgres`
 │   ├── 300-testing.md           ← **/*Test.java, **/*Tests.java
 │   ├── 500-database.md          ← **/migrations/**, **/entities/**
 │   └── 700-observability.md     ← **/*.java
-├── skills/                      ← all 33 skills
-├── agents/                      ← all 17 agents
+├── skills/                      ← all 32 skills
+├── agents/                      ← all 14 agents
 └── agent_docs/                  ← all 15 reference docs
 ```
 

@@ -38,6 +38,8 @@ const CATEGORIES = [
       /firebase-adminsdk.*\.json$/,
       /serviceaccount.*\.json$/,
       /(^|\/)secrets\//,
+      /(^|\/)config\/(credentials|secrets)\.json$/,
+      /\.secrets\.baseline/,
     ],
   },
   {
@@ -46,6 +48,9 @@ const CATEGORIES = [
     patterns: [
       /(^|\/)middleware\.(ts|js)$/,
       /(^|\/)auth[^/]*\.(ts|js|py|go|rb|php)$/,
+      /(^|\/)session[^/]*\.(ts|js|py|go|rb|php)$/,
+      /(^|\/)jwt[^/]*\.(ts|js|py|go|rb|php)$/,
+      /(^|\/)oauth[^/]*\.(ts|js|py|go|rb|php)$/,
       /(^|\/)(auth|authentication|authorization)\//,
       /securityconfig\.(java|kt)$/,
       /(^|\/)guards?\//,

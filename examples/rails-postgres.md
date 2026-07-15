@@ -28,8 +28,8 @@ Presets selected: `backend/rails` · `database/postgres`
 │   ├── 300-testing.md           ← spec/**
 │   ├── 500-database.md          ← db/migrate/**
 │   └── 700-observability.md     ← **/*.rb
-├── skills/                      ← all 33 skills
-├── agents/                      ← all 17 agents
+├── skills/                      ← all 32 skills
+├── agents/                      ← all 14 agents
 └── agent_docs/                  ← all 15 reference docs
 ```
 

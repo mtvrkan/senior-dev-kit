@@ -33,19 +33,19 @@ tokens), which a single agent body never reaches on its own.
 | Agent | Role / Domain | Last Reviewed |
 | --- | --- | --- |
 | `architect` | Large features, architecture decisions, migration plans (read-only planning) | 2026-07-01 |
-| `bug-hunter` | Localized bugs, runtime errors, failing tests, regressions | 2026-07-01 |
+| `bug-hunter` | Localized bugs, runtime errors, failing tests, regressions | 2026-07-15 |
 | `db-guard` | DB schema changes, data modeling, indexes (read-only planning) | 2026-07-01 |
-| `devops-guard` | CI/CD, Docker, Terraform, Kubernetes, infrastructure changes | 2026-07-01 |
+| `devops-guard` | CI/CD, Docker, Terraform, Kubernetes, infrastructure changes | 2026-07-15 |
 | `docs-writer` | README, setup notes, changelog, API docs | 2026-07-01 |
 | `migration-guard` | Migration safety, destructive DB changes, rollback strategy (read-only planning) | 2026-07-01 |
-| `performance-guard` | Slow queries, N+1, bundle size, caching, memory leaks | 2026-07-01 |
+| `performance-guard` | Slow queries, N+1, bundle size, caching, memory leaks | 2026-07-15 |
 | `researcher` | Deep research, fact-checking, competitive analysis | 2026-07-01 |
-| `reviewer` | Post-change diff review for bugs, regressions, security (read-only) | 2026-07-01 |
+| `reviewer` | Post-change diff review for bugs, regressions, security (read-only) | 2026-07-15 |
 | `security-guard` | Auth, payment, secrets, injection risks, session/token handling (read-only) | 2026-07-01 |
 | `security-scanner` | Security scans, dependency audits, secret scans, SAST | 2026-07-01 |
-| `senior-engineer` | Scoped medium feature implementation and safe refactors | 2026-07-01 |
+| `senior-engineer` | Scoped medium feature implementation and safe refactors | 2026-07-15 |
 | `test-engineer` | Targeted tests for changed behavior, edge cases, regressions | 2026-07-01 |
-| `ui-fixer` | Low-risk frontend-only UI changes | 2026-07-01 |
+| `ui-fixer` | Low-risk frontend-only UI changes | 2026-07-15 |
 
 ---
 

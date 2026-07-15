@@ -27,8 +27,8 @@ Presets selected: `mobile/kotlin-android`
 │   ├── 001-conventions.md       ← always active
 │   ├── 300-testing.md           ← **/*Test.kt, **/*Spec.kt
 │   └── 400-mobile.md            ← **/*.kt
-├── skills/                      ← all 33 skills
-├── agents/                      ← all 17 agents
+├── skills/                      ← all 32 skills
+├── agents/                      ← all 14 agents
 └── agent_docs/                  ← all 15 reference docs
 ```
 

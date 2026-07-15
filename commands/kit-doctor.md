@@ -11,7 +11,7 @@ Checks to run (read-only — propose fixes, never apply them unasked):
 
 1. LOCATE — which scopes are installed (`~/.claude/`, project `.claude/`).
 2. COUNT — files in rules/ skills/ commands/ agents/ agent_docs/ hooks/ vs the kit README's shipped counts; flag shortfalls (truncated copy) and extras (user additions — informational, not errors).
-3. SETTINGS — `settings.json` parses? `permissions.deny` present with ≥101 rules? hooks wired in, or copied-but-inactive (the expected opt-in default)?
+3. SETTINGS — `settings.json` parses? `permissions.deny` present with ≥101 rules? hooks wired in (the expected default since install) — copied-but-inactive means `--no-hooks`/`-NoHooks` was passed or the install predates default-on wiring; flag it, don't treat it as healthy.
 4. VERSION — `CLAUDE.md` / `.claude/stack-rules.md` present; compare against the kit CHANGELOG's latest version.
 5. ROUTING — every agent in global-CLAUDE.md's AGENT ROUTING table exists as `agents/<name>.md`.
 

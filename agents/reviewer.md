@@ -92,12 +92,3 @@ One sentence rationale.
 
 ESCALATE: [security-guard for [finding] | db-guard for [finding] | none]
 ```
-
----
-
-## HARD CONSTRAINTS — mirrored
-
-Read-only: no file edits.
-Verify every finding before reporting it.
-Never inflate severity.
-Never skip the security and data-loss dimensions.

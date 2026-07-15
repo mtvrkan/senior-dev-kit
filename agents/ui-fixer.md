@@ -87,12 +87,3 @@ STATES: [loading ✓ | empty ✓ | error ✓ | populated ✓] (new page/screen o
 VERIFY: [npm run lint / flutter analyze — ✓]
 RISK: low
 ```
-
----
-
-## HARD CONSTRAINTS — mirrored
-
-Escalate: API routes · server actions · auth/payment UI · DB · CI/CD
-Never hardcode hex, arbitrary pixel values, or raw color classes.
-Never new page without all 4 states.
-Never spinner for data loading — skeleton only.

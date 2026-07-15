@@ -148,7 +148,7 @@ SESSION DISCIPLINE: the model has no tool to check its own token usage and canno
 /compact itself — treat "/compact at 250k tokens" as the user's cue, not the model's job.
 After a long chain of file reads or several Agent() calls, proactively say so: "Session is
 getting large — consider /compact or a fresh session for the next task."
-CONTEXT BUDGET — three levers to slow context growth:
+CONTEXT BUDGET — five levers to slow context growth:
 
 1. /compact vs /clear: /compact summarizes and CONTINUES (keeps active work); /clear WIPES
    everything. When context is full but the task isn't done, the answer is /compact — /clear
@@ -157,7 +157,15 @@ CONTEXT BUDGET — three levers to slow context growth:
 2. Push read-heavy work into subagents: Explore/Agent have their OWN context window — a broad
    file sweep run there costs the main thread only the short summary that returns, not the
    file bodies. Route large searches/audits to a subagent, and keep each subagent's RETURN
-   payload short (a conclusion, not a transcript) so the isolation actually pays off.
+   payload short (a conclusion, not a transcript) so the isolation actually pays off. Scope
+   each call to ONE topic — a single Explore/Agent call given N unrelated topics ("check the
+   auth code, the DB schema, and the settings UI") searches all N as if every one needed
+   "very thorough" breadth, multiplying tokens for no extra signal. Split unrelated topics into
+   separate calls instead (sequential or parallel per lever 5 below — splitting doesn't require
+   parallelizing). When spawning a call, hand over whatever project context you already have
+   (test command, package manager, relevant file paths from BOOT SEQUENCE) in the prompt — a
+   subagent starts with zero memory of your session and re-discovers that context from scratch,
+   at full token cost, if you don't pass it along.
 3. Persist across resets: before /clear, write durable facts (project decisions, user prefs,
    in-flight work) to the file-based memory (memory/*.md + MEMORY.md index) so the next
    session reloads them — this is what makes /clear safe instead of amnesiac.
@@ -228,8 +236,9 @@ five times). This applies to every rule file below, not just the two with overla
 800-llm-safety (**/ai/**,**/llm/**,**/openai/**,**/anthropic/**,**/claude/**) — prompt injection, output trust, cost controls
 900-performance (**/*.ts,**/*.tsx,**/*.py,**/*.go,**/*.java,**/*.cs) — CWV budgets, bundle limits, API latency, N+1
 
-Optional enforcement: ~/.claude/hooks/protected-paths.mjs (PreToolUse) mirrors the HARD STOPS
-deterministically at the harness level — opt-in, activation steps in hooks/README.md.
+Deterministic enforcement: ~/.claude/hooks/protected-paths.mjs (PreToolUse) mirrors the HARD
+STOPS at the harness level — wired into settings.json by default on install; `--no-hooks` /
+`-NoHooks` opts out, activation steps in hooks/README.md.
 
 Lazy-load docs (all under agent_docs/): architecture.md | design-system.md | testing-strategy.md |
 security-protocols.md | api-design-patterns.md | seo-patterns.md | error-handling-patterns.md |

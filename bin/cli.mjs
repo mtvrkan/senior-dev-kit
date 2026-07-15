@@ -21,6 +21,7 @@ Usage:
   senior-dev-kit                  install the full kit to ~/.claude/
   senior-dev-kit --detect         detect the stack from the current directory and pick a preset
   senior-dev-kit --preset=<name>  install with a specific preset (e.g. nextjs-saas)
+  senior-dev-kit --no-hooks       skip wiring the protected-paths hook into settings.json
   senior-dev-kit --help           show this help
 
 Docs: README.md · INSTALL.md · TROUBLESHOOTING.md in the kit root.`)
@@ -39,6 +40,7 @@ if (process.platform === 'win32') {
   const psArgs = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(KIT_ROOT, 'install.ps1')]
   for (const a of args) {
     if (a === '--detect') psArgs.push('-Detect')
+    else if (a === '--no-hooks') psArgs.push('-NoHooks')
     else if (a.startsWith('--preset=')) psArgs.push('-Preset', a.slice('--preset='.length))
     else psArgs.push(a)
   }

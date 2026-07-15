@@ -28,8 +28,8 @@ Presets selected: `backend/nestjs` · `orm/prisma` · `database/postgres`
 │   ├── 300-testing.md           ← *.spec.ts
 │   ├── 500-database.md          ← **/*.prisma, **/migrations/**
 │   └── 700-observability.md     ← **/*.ts
-├── skills/                      ← all 33 skills
-├── agents/                      ← all 17 agents
+├── skills/                      ← all 32 skills
+├── agents/                      ← all 14 agents
 └── agent_docs/                  ← all 15 reference docs
 ```
 
