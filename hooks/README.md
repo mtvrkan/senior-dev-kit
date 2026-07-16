@@ -9,7 +9,7 @@ intercepts the tool call, regardless of what the model decided.
 
 | File | Event | What it does |
 | --- | --- | --- |
-| `protected-paths.mjs` | `PreToolUse` on `Edit\|Write\|NotebookEdit` | Any edit into a protected path (secrets, auth, payment, DB migrations, CI/IaC) is downgraded to an explicit permission prompt naming the guard agent that should review it first. Nothing is silently blocked — the human decides. |
+| `protected-paths.mjs` | `PreToolUse` on `Edit\|Write\|NotebookEdit\|Bash` | Any edit into a protected path (secrets, auth, payment, DB migrations, CI/IaC) is downgraded to an explicit permission prompt naming the guard agent that should review it first. Also catches Bash commands that reach the same paths via a redirect, `sed -i`, a PowerShell cmdlet, `cp`/`mv`, or `git checkout --` (a targeted heuristic, not a shell parser — see the script's header comment for the accepted residual gap). A narrow content-guard separately flags `dangerouslySetInnerHTML` and `subprocess(...shell=True...)` in the text being written, independent of the destination path. Nothing is silently blocked — the human decides. |
 | `hooks.json` | — | Plugin-mode wiring: when the kit is installed as a Claude Code plugin, this file registers the hook automatically via `${CLAUDE_PLUGIN_ROOT}`. |
 
 The hook **fails open**: if Claude Code's hook input format ever changes, the
@@ -30,7 +30,7 @@ no manual wiring needed.
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|NotebookEdit",
+        "matcher": "Edit|Write|NotebookEdit|Bash",
         "hooks": [
           { "type": "command", "command": "node \"$HOME/.claude/hooks/protected-paths.mjs\"" }
         ]

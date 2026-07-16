@@ -24,6 +24,10 @@ function editPayload(filePath: string) {
   return { tool_name: 'Edit', tool_input: { file_path: filePath } }
 }
 
+function bashPayload(command: string) {
+  return { tool_name: 'Bash', tool_input: { command } }
+}
+
 describe('protected-paths hook', () => {
   const askCases: Array<[string, string]> = [
     ['.env', 'secrets'],
@@ -160,5 +164,97 @@ describe('protected-paths hook', () => {
     const r = runHook({ tool_name: 'Edit', tool_input: {} })
     assert.strictEqual(r.status, 0)
     assert.strictEqual(r.stdout, '')
+  })
+
+  // Edit/Write are not the only tools that can reach a protected path — a Bash
+  // command with a redirect, sed -i, or a PowerShell/cp/git equivalent bypasses
+  // the matcher entirely if the hook only inspects Edit/Write/NotebookEdit.
+  describe('Bash bypass detection', () => {
+    const bashAskCases: Array<[string, string]> = [
+      ['echo "SECRET=1" >> .env', 'secrets'],
+      ['echo "SECRET=1" > .env', 'secrets'],
+      ['Set-Content -Path .env -Value "SECRET=1"', 'secrets'],
+      ["Add-Content -Path config/secrets.json -Value '{}'", 'secrets'],
+      ["sed -i 's/foo/bar/' .env", 'secrets'],
+      ["sed -i '' 's/foo/bar/' .env", 'secrets'], // BSD/macOS sed requires the empty backup-suffix arg
+      ['git checkout -- .env', 'secrets'],
+      ['git checkout HEAD -- src/middleware.ts', 'auth'],
+      ['Copy-Item -Path foo.txt -Destination .env', 'secrets'],
+      ['cp foo.txt .env', 'secrets'],
+      ['mv foo.txt db/migrations/001_init.sql', 'DB schema/migration'],
+    ]
+
+    for (const [command, category] of bashAskCases) {
+      test(`asks for Bash: ${command} (${category})`, () => {
+        const r = runHook(bashPayload(command))
+        assert.strictEqual(r.status, 0)
+        const out = JSON.parse(r.stdout)
+        assert.strictEqual(out.hookSpecificOutput.permissionDecision, 'ask')
+        assert.ok(out.hookSpecificOutput.permissionDecisionReason.includes(category))
+      })
+    }
+
+    const bashAllowCases = [
+      'git status',
+      'ls -la',
+      'npm test',
+      'cat .env', // read-only — no write target
+      'echo "hello" > /tmp/scratch.txt',
+      'git checkout -- src/components/Button.tsx',
+    ]
+
+    for (const command of bashAllowCases) {
+      test(`allows Bash: ${command}`, () => {
+        const r = runHook(bashPayload(command))
+        assert.strictEqual(r.status, 0)
+        assert.strictEqual(r.stdout, '')
+      })
+    }
+  })
+
+  // Content-guard: a narrow, high-precision check on the text Edit/Write are
+  // about to write, independent of the destination path. Scoped to exactly
+  // two patterns (dangerouslySetInnerHTML, subprocess shell=True) to keep the
+  // false-positive rate near zero — see rules/000-security.md's passive scan
+  // for the broader (model-judgment) checklist this doesn't try to replace.
+  describe('content-guard', () => {
+    test('asks when Write content contains dangerouslySetInnerHTML', () => {
+      const r = runHook({
+        tool_name: 'Write',
+        tool_input: { file_path: 'src/components/Preview.tsx', content: 'export const X = () => <div dangerouslySetInnerHTML={{ __html: raw }} />' },
+      })
+      const out = JSON.parse(r.stdout)
+      assert.strictEqual(out.hookSpecificOutput.permissionDecision, 'ask')
+      assert.ok(out.hookSpecificOutput.permissionDecisionReason.includes('security-guard'))
+    })
+
+    test('asks when Edit new_string contains subprocess shell=True', () => {
+      const r = runHook({
+        tool_name: 'Edit',
+        tool_input: { file_path: 'scripts/deploy.py', old_string: 'pass', new_string: 'subprocess.run(cmd, shell=True)' },
+      })
+      const out = JSON.parse(r.stdout)
+      assert.strictEqual(out.hookSpecificOutput.permissionDecision, 'ask')
+      assert.ok(out.hookSpecificOutput.permissionDecisionReason.includes('security-guard'))
+    })
+
+    test('allows Write content with neither pattern', () => {
+      const r = runHook({
+        tool_name: 'Write',
+        tool_input: { file_path: 'src/components/Button.tsx', content: 'export const Button = () => <button>Click</button>' },
+      })
+      assert.strictEqual(r.status, 0)
+      assert.strictEqual(r.stdout, '')
+    })
+
+    test('path-based category still wins when both path and content match', () => {
+      const r = runHook({
+        tool_name: 'Edit',
+        tool_input: { file_path: 'src/middleware.ts', old_string: 'x', new_string: 'subprocess.run(cmd, shell=True)' },
+      })
+      const out = JSON.parse(r.stdout)
+      assert.strictEqual(out.hookSpecificOutput.permissionDecision, 'ask')
+      assert.ok(out.hookSpecificOutput.permissionDecisionReason.includes('auth'))
+    })
   })
 })
