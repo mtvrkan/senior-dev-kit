@@ -40,7 +40,7 @@ repos:
         args: ["--config", ".markdownlint.json"]
         types: [markdown]
 
-  # Shell script lint (install.sh)
+  # Shell script lint (any *.sh added to the repo — none ship today)
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.10.0.1
     hooks:

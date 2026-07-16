@@ -1,4 +1,4 @@
-<!-- SCOPE: per-project — installed to PROJECT/CLAUDE.md by install.sh / install.ps1
+<!-- SCOPE: per-project — installed to PROJECT/CLAUDE.md via SETUP.md (Claude-driven copy) or README.md Option C (manual copy)
      Purpose: minimal per-project behavior overlay for the active codebase
      Global file (all projects): global-CLAUDE.md → ~/.claude/CLAUDE.md (see SETUP.md Step 5) -->
 

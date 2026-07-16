@@ -7,7 +7,7 @@ body:
     attributes:
       label: Area
       options:
-        - Installer (install.sh / install.ps1 / npx CLI)
+        - Install (plugin marketplace / SETUP.md walkthrough)
         - Routing (wrong agent / tier)
         - Skill or command behavior
         - Hooks
@@ -32,7 +32,7 @@ body:
     id: doctor
     attributes:
       label: kit-doctor output
-      description: Run `/kit-doctor` (or the VERIFY.md checklist) and paste the verdict — it pins down install-state issues immediately.
+      description: Run `/kit-doctor` (or the SETUP.md Step 6 verify checklist) and paste the verdict — it pins down install-state issues immediately.
       render: text
   - type: input
     id: version
