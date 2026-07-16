@@ -28,9 +28,9 @@ Presets selected: `backend/go-api` · `database/postgres`
 │   ├── 300-testing.md           ← **/*_test.go
 │   ├── 500-database.md          ← **/migrations/**, **/queries/**
 │   └── 700-observability.md     ← **/*.go
-├── skills/                      ← all 32 skills
-├── agents/                      ← all 14 agents
-└── agent_docs/                  ← all 15 reference docs
+├── skills/                      ← all 23 skills
+├── agents/                      ← all 12 agents
+└── agent_docs/                  ← all 16 reference docs
 ```
 
 ---
@@ -57,7 +57,7 @@ Presets selected: `backend/go-api` · `database/postgres`
 ### Protected files (escalate before touching)
 - `internal/auth/` → security-guard
 - `internal/middleware/auth*.go` → security-guard
-- `db/migrations/` → migration-guard
+- `db/migrations/` → db-guard
 
 ## preset: database/postgres
 
@@ -150,7 +150,7 @@ Approve to proceed?
 
 **User:** `/security-scan` — audit before going live
 
-**Routing:** `security-scan` skill → `security-scanner` agent
+**Routing:** `security-scan` skill → `security-guard` agent
 
 **Output (abbreviated):**
 
@@ -189,6 +189,6 @@ IMPLEMENTATION PLAN:
 | --- | --- | --- | --- |
 | Add API endpoint (3-4 files) | senior-engineer | sonnet | ~$0.04 |
 | DB column + migration plan | db-guard | opus | ~$0.15 |
-| Security scan (5-6 files) | security-scanner | sonnet | ~$0.06 |
+| Security scan (5-6 files) | security-guard | sonnet | ~$0.06 |
 | Bug fix (1-2 files) | bug-hunter | sonnet | ~$0.02 |
 | Docs update | docs-writer | haiku | ~$0.003 |

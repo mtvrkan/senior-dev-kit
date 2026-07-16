@@ -1,8 +1,9 @@
 ---
 name: env-audit
-description: Use to audit environment variables across the codebase. Finds missing declarations, leaked defaults, unused vars, and inconsistencies between .env.example and actual usage.
+description: Audits environment variables across the codebase — missing declarations, leaked defaults, unused vars, .env.example drift. Invoke via /env-audit.
+disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
-when_to_use: Use when: setting up a new environment, debugging "undefined env var" errors, onboarding new developers, or before a production deployment.
+when_to_use: Manually invoke when setting up a new environment, debugging "undefined env var" errors, onboarding, or before a production deployment.
 argument-hint: "[scope: all | frontend | backend | missing-only]"
 context: fork
 agent: devops-guard

@@ -22,11 +22,11 @@ Claude Code'a kıdemli mühendislik takımı davranışı kazandıran agent, ski
 | Durumunuz | Kullanın | Ne alırsınız |
 | --- | --- | --- |
 | Yepyeni proje — Claude kurup yapılandırsın | **Seçenek A** | Yalın, **üretilmiş 7 agent'lık proje takımı** (tam kit değil — alttaki nota bakın) |
-| Bu makinedeki her proje kiti kullansın | **Seçenek B** | Tam kit (14 agent, 32 skill, 11 komut, 11 rule) global `~/.claude/` içinde |
+| Bu makinedeki her proje kiti kullansın | **Seçenek B** | Tam kit (12 agent, 23 skill, 2 komut, 11 rule) global `~/.claude/` içinde |
 | Mevcut proje, kopyalamayı siz yapacaksınız | **Seçenek C** | Tam kit o projenin `.claude/`'sinde |
 | Mevcut proje, kopyalamayı Claude yapsın | **Seçenek D** | Tam kit `.claude/`'de, istenirse global kurulum da |
 
-> **Seçenek A farklı bir takım kurar.** `PROJECT-BOOTSTRAP.md`, PHASE 0'dan başlayarak minimal 7 agent'lık kadroyu üretir (architect, security-reviewer, implementer, test-author, reviewer, debugger, researcher) — kitin hazır 14 agent'ını değil. Sonradan aynı projede tam kiti kullanmak için üzerine Seçenek B, C veya D'yi çalıştırın.
+> **Seçenek A farklı bir takım kurar.** `PROJECT-BOOTSTRAP.md`, PHASE 0'dan başlayarak minimal 7 agent'lık kadroyu üretir (architect, security-reviewer, implementer, test-author, reviewer, debugger, researcher) — kitin hazır 12 agent'ını değil. Sonradan aynı projede tam kiti kullanmak için üzerine Seçenek B, C veya D'yi çalıştırın.
 
 ### Seçenek A — Yeni proje (önerilen)
 
@@ -40,54 +40,64 @@ Claude stack'inizi tespit eder, doğru preset'leri seçer ve `.claude/`'yi otoma
 
 ### Seçenek B — Global `~/.claude/` kurulumu (tüm projelere uygulanır)
 
-**Otomatik stack tespiti (önerilen):**
-
-`--detect`, preset seçmek için stack dosyalarını (`package.json`, `requirements.txt`, `go.mod`, ...) **bulunduğunuz dizinden** okur; ama kiti her zaman **global** `~/.claude/`'ye yazar — mevcut projeye değil. Tespitin günlük çalışma şeklinize uygun preset'i seçmesi için önce temsili bir projeye `cd` yapın.
-
-```bash
-# Mac / Linux — package.json / requirements.txt / go.mod üzerinden stack tespit eder
-cd /path/to/your-project && bash /path/to/senior-dev-kit/install.sh --detect
-
-# Windows
-cd C:\path\to\your-project; .\senior-dev-kit\install.ps1 -Detect
-```
-
-**Manuel preset:**
-
-```bash
-# Mac / Linux
-bash install.sh --preset=nextjs-saas
-
-# Windows
-.\install.ps1 -Preset nextjs-saas
-```
-
-**Tek komutluk alternatif (Node 22.6+, clone gerekmez):** npm sarmalayıcısı platformunuza uygun installer'ı seçer ve aynı bayrakları iletir:
-
-```bash
-npx github:mtvrkan/senior-dev-kit --detect     # veya --preset=nextjs-saas
-```
-
-**Plugin alternatifi:** repo bir Claude Code plugin manifesti içerir (`.claude-plugin/`) — marketplace olarak ekleyip kurduğunuzda komutlar, agent'lar, skill'ler ve [korumalı-yol hook'u](hooks/README.md) otomatik kaydolur:
+**Plugin (en hızlısı — agent'lar, skill'ler, komutlar, hook):**
 
 ```text
 /plugin marketplace add mtvrkan/senior-dev-kit
 /plugin install senior-dev-kit@senior-dev-kit
 ```
 
+Bu, agent'ları, skill'leri, komutları ve [korumalı-yol hook'unu](hooks/README.md) otomatik
+olarak kaydeder. `rules/`, `agent_docs/` veya `global-CLAUDE.md`'yi **kurmaz** — plugin formatı
+yol-kapsamlı rule'ları veya global bir CLAUDE.md'yi kapsamaz. Tam kit için (token
+verimliliğinin büyük kısmını sağlayan lazy-load rule katmanı) ayrıca şunu çalıştırın:
+
+```text
+Read SETUP.md and apply Step 5 (global setup) only. Work autonomously.
+```
+
+**Tek seferde her şey (plugin yok, kopyalamayı Claude yapar):** plugin adımını atlayıp
+yukarıdaki komutu doğrudan tam `SETUP.md`'ye (Step 1'den itibaren) karşı çalıştırın — aşağıdaki
+Seçenek D'ye bakın.
+
 > **Windows notu:** Dokümanlardaki örnekler forward-slash yollar kullanır (`project/.claude/`). PowerShell'de ters eğik çizgi kullanın (`project\.claude\`) ve boşluk içeren yolları tırnaklayın. Karışık eğik çizgili bir komut hata verirse [TROUBLESHOOTING.md — Paths with backslashes break scripts](TROUBLESHOOTING.md#paths-with-backslashes-break-scripts) bölümüne bakın.
 
 ### Seçenek C — Tek proje için manuel kurulum
 
-1. Framework preset'inizi seçin (örn. `presets/web/react-vite/CLAUDE.md`).
-2. Projenize `.claude/stack-rules.md` olarak kopyalayın, sonra ona referans veren kısa bir kök `CLAUDE.md` oluşturun (şablon: [INSTALL.md Step 6](INSTALL.md#6-create-claudemd-and-stack-rules)).
-3. `rules/` → `.claude/rules/`
-4. `skills/` → `.claude/skills/`
-5. `agent_docs/` → `.claude/agent_docs/` (opsiyonel — talep üzerine lazy-load edilir)
+1. `.claude/agents/`, `.claude/skills/`, `.claude/commands/`, `.claude/rules/`, `.claude/agent_docs/` dizinlerini oluşturun.
+2. `agents/`, `skills/`, `commands/`, `rules/`, `agent_docs/` klasörlerini bu dizinlere, `settings-template.json`'ı da `.claude/settings.json` olarak kopyalayın.
+3. `global-CLAUDE.md`'yi proje kökünüze `CLAUDE.md` olarak kopyalayın, sonra proje açıklaması, stack preset'leri ve doğrulama komutları ekleyin (tam şablon için [SETUP.md Step 4](SETUP.md#step-4--create-root-claudemd)'e bakın).
+4. Framework preset'inizi/preset'lerinizi seçin (örn. `presets/web/react-vite/compact.md`) ve `compact.md` dosyalarını `.claude/stack-rules.md`'de birleştirin.
+
+```bash
+# Mac / Linux
+mkdir -p .claude/agents .claude/skills .claude/commands .claude/rules .claude/agent_docs
+cp senior-dev-kit/agents/* .claude/agents/
+cp -r senior-dev-kit/skills/* .claude/skills/
+cp senior-dev-kit/commands/* .claude/commands/
+cp senior-dev-kit/rules/* .claude/rules/
+cp senior-dev-kit/agent_docs/* .claude/agent_docs/
+cp senior-dev-kit/settings-template.json .claude/settings.json
+cp senior-dev-kit/global-CLAUDE.md CLAUDE.md
+cat senior-dev-kit/presets/web/react-vite/compact.md >> .claude/stack-rules.md
+```
+
+```powershell
+# Windows PowerShell
+New-Item -ItemType Directory -Force .claude/agents, .claude/skills, .claude/commands, .claude/rules, .claude/agent_docs
+Copy-Item senior-dev-kit\agents\* .claude\agents\
+Copy-Item -Recurse senior-dev-kit\skills\* .claude\skills\
+Copy-Item senior-dev-kit\commands\* .claude\commands\
+Copy-Item senior-dev-kit\rules\* .claude\rules\
+Copy-Item senior-dev-kit\agent_docs\* .claude\agent_docs\
+Copy-Item senior-dev-kit\settings-template.json .claude\settings.json
+Copy-Item senior-dev-kit\global-CLAUDE.md CLAUDE.md
+Get-Content senior-dev-kit\presets\web\react-vite\compact.md | Add-Content .claude\stack-rules.md
+```
 
 ### Seçenek D — Kurulumu Claude yapsın (shell script yok)
 
-Seçenek B veya C'den daha kapsamlı: B (`install.sh`/`install.ps1`) yalnızca global `~/.claude/`'ye yazar; C yalnızca tek projenin `.claude/`'sini kurar. D ikisini birden yapar — proje `.claude/` kurulumu *ve* istenirse global kurulum, otomatik stack tespitiyle — her kopyalama/birleştirme adımını Claude kendisi yürütür. Bash olmayan makinelerde veya proje + global kurulumu tek seferde istediğinizde kullanışlıdır.
+Seçenek B veya C'den daha kapsamlı: B (plugin / `SETUP.md` Step 5) yalnızca global `~/.claude/`'ye yazar; C yalnızca tek projenin `.claude/`'sini kurar. D ikisini birden yapar — proje `.claude/` kurulumu *ve* istenirse global kurulum, otomatik stack tespitiyle — her kopyalama/birleştirme adımını Claude kendisi yürütür. Bash olmayan makinelerde veya proje + global kurulumu tek seferde istediğinizde kullanışlıdır.
 
 ```text
 Read SETUP.md and apply it starting from Step 1. Work autonomously.
@@ -117,26 +127,17 @@ User: Docker CI pipeline'ına SBOM ekle
 
 ### Slash komutları
 
-**Komut dosyaları** (11 — zengin davranış tanımları):
+**Komut dosyaları** (2 — zengin davranış tanımları):
 
 | Komut | Ne yapar |
 | --- | --- |
-| `/smart-task [task]` | Riski ölçer, doğru skill'e yönlendirir |
-| `/plan-first [task]` | Önce plan sunar, onay alır, sonra uygular |
-| `/safe-review` | Diff'i inceler — salt okunur, dosya değiştirmez |
-| `/security-scan` | Tam pasif güvenlik taraması çalıştırır |
-| `/release-gate` | Sürüm öncesi GO / NO-GO kontrol listesi |
-| `/dep-check` | Bağımlılık CVE + güncellik analizi |
-| `/performance-check` | Bundle, N+1, CWV performans analizi |
-| `/seo-check` | SEO, AEO, Core Web Vitals denetimi |
-| `/deep-research [topic]` | Çok kaynaklı araştırma, doğrulama |
 | `/agents-guide` | Tüm agent'ları ve yönlendirme kurallarını listeler |
-| `/kit-doctor [scope]` | Kit kurulumunu teşhis eder — sayılar, settings, sürüm kayması |
+| `/seo-check` | SEO, AEO, Core Web Vitals denetimi |
 
 **Skill kısayolları** (adıyla çağırın — her zaman kullanılabilir):
-`/security-review` · `/api-design` · `/api-versioning` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · ve 32 skill'in tamamı
+`/security-review` · `/api-design` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · ve 23 skill'in tamamı
 
-> **Komutlar ve Skill'ler:** Komut dosyaları (`commands/*.md`) Claude Code'un eski slash-komut formatını kullanır — `$ARGUMENTS` yer tutuculu düz markdown, çağrıldığında bağlama okunur. Skill dosyaları (`skills/*/SKILL.md`) zengin frontmatter'lı (`model`, `effort`, `allowed-tools`, `when_to_use`) yeni SKILL.md sistemini kullanır. Skill'ler eşleşen bağlam algılandığında otomatik de tetiklenebilir; komutlar yalnızca açıkça çağrıldığında çalışır.
+> **Komutlar ve Skill'ler:** Komut dosyaları (`commands/*.md`) Claude Code'un eski slash-komut formatını kullanır — `$ARGUMENTS` yer tutuculu düz markdown, çağrıldığında bağlama okunur. Skill dosyaları (`skills/*/SKILL.md`) zengin frontmatter'lı (`model`, `effort`, `allowed-tools`, `when_to_use`) yeni SKILL.md sistemini kullanır. Skill'ler eşleşen bağlam algılandığında otomatik de tetiklenebilir; komutlar yalnızca açıkça çağrıldığında çalışır. Kit eskiden skill karşılığı olan her skill için ayrı bir komut sunuyordu (`/dep-check`, `/smart-task`, ...) — bunlar kaldırıldı, yetenekleri artık doğrudan aynı isimli skill'de yaşıyor (örn. `/security-scan` doğrudan `security-scan` skill'ini tetikler). Skill karşılığı olmayan yalnızca 2 komut kaldı.
 
 ---
 
@@ -150,23 +151,19 @@ Tam tablo için [README.md — Picking a Preset](README.md#picking-a-preset) bö
 
 ## Kitin içinde ne var
 
-### Skill'ler (32)
+### Skill'ler (23)
 
-Skill'ler iki şekilde tetiklenir: çoğu, `description` alanı görevle eşleştiğinde **otomatik çağrılır** (çoğu ayrıca agent'ların `skills:` alanına bağlıdır); bazıları ise **yalnızca manueldir** — `/skill-adi` ile çağrılır ve `disable-model-invocation: true` işaretlidir (örn. `smart-task`, `plan-first`, `safe-review`, `release-gate`, `kit-doctor`). Hiçbir agent'ın referans vermediği skill yetim değildir: doğrudan çağrılmak için vardır.
+Skill'ler iki şekilde tetiklenir: çoğu, `description` alanı görevle eşleştiğinde **otomatik çağrılır** (çoğu ayrıca agent'ların `skills:` alanına bağlıdır); bazıları ise **yalnızca manueldir** — `/skill-adi` ile çağrılır ve `disable-model-invocation: true` işaretlidir (`code-audit`, `deep-research`, `env-audit`, `kit-doctor`). Hiçbir agent'ın referans vermediği skill yetim değildir: doğrudan çağrılmak için vardır.
 
 **Uygulama:** `feature-build`, `feature-plan`, `bug-fix`, `refactor-safe`, `ui-change`, `new-page`, `new-screen`, `from-scratch`
 
-**Veri ve API:** `data-modeling`, `db-change`, `api-design`, `api-versioning`, `migration-review`
+**Veri ve API:** `db-change`, `api-design`, `migration-review`
 
-**Kalite ve Güvenlik:** `code-review`, `safe-review`, `security-review`, `security-scan`, `test-writer`, `performance-check`, `code-audit`
+**Kalite ve Güvenlik:** `code-review`, `security-review`, `security-scan`, `test-writer`, `performance-check`, `code-audit`
 
-**DevOps ve Ortam:** `release-check`, `release-gate`, `env-audit`, `dep-check`, `monorepo-task`, `kit-doctor`
+**DevOps ve Ortam:** `release-gate`, `env-audit`, `kit-doctor`
 
 **İçerik ve Araştırma:** `docs-update`, `deep-research`, `codebase-overview`
-
-**AI/LLM:** `llm-integration`
-
-**Orkestrasyon:** `smart-task`, `plan-first`
 
 ### Rule'lar (11) — otomatik yüklenir
 
@@ -184,17 +181,17 @@ Skill'ler iki şekilde tetiklenir: çoğu, `description` alanı görevle eşleş
 | `800-llm-safety` | `**/ai/**, **/llm/**, **/anthropic/**` — prompt injection, maliyet kontrolleri |
 | `900-performance` | `**/*.ts, **/*.tsx, **/*.py, **/*.go` — CWV bütçeleri, N+1, bundle limitleri |
 
-### Agent dokümanları (15) — lazy-load, ihtiyaç anında okunur
+### Agent dokümanları (16) — lazy-load, ihtiyaç anında okunur
 
-Bu dokümanlar her oturuma önceden yüklenmez. `global-CLAUDE.md`'deki `Lazy-load docs:` direktifi bunları listeler; bir skill veya rule birine atıf yaptığında Claude dosyayı diskten okur. Büyük referans içerikleri, gerekmedikçe bağlamı şişirmez. Tam liste: [README.md — Agent Docs](README.md#agent-docs-15--lazy-load-read-on-demand).
+Bu dokümanlar her oturuma önceden yüklenmez. `global-CLAUDE.md`'deki `Lazy-load docs:` direktifi bunları listeler; bir skill veya rule birine atıf yaptığında Claude dosyayı diskten okur. Büyük referans içerikleri, gerekmedikçe bağlamı şişirmez. Tam liste: [README.md — Agent Docs](README.md#agent-docs-16--lazy-load-read-on-demand).
 
-### Örnekler (15 adım adım anlatım)
+### Örnekler (4 dosya: 3 adım adım anlatım + bir karşılaştırma)
 
-Stack tespiti → kopyalanan dosyalar → üretilen `stack-rules.md` → 3 gerçek kullanım akışı → görev başına maliyet tahminleri. Başlangıç için en iyisi: [`examples/with-vs-without-kit.md`](examples/with-vs-without-kit.md) — aynı üç isteğin kitli ve kitsiz nasıl ele alındığı.
+Stack tespiti → kopyalanan dosyalar → üretilen `stack-rules.md` → 3 gerçek kullanım akışı → görev başına maliyet tahminleri. Platform sınıfı başına bir temsili anlatım (web: `nextjs-prisma-postgres`, backend: `go-postgres`, mobil: `flutter-supabase`) — stack'e özel rehberlik `presets/` altındadır (her preset'in `CLAUDE.md`'si o stack'in esas kural dosyasıdır). Başlangıç için en iyisi: [`examples/with-vs-without-kit.md`](examples/with-vs-without-kit.md) — aynı üç isteğin kitli ve kitsiz nasıl ele alındığı.
 
 ### Hooks (varsayılan olarak açık) — deterministik zorlama
 
-Kitin geri kalanı prompt disiplinidir; [`hooks/`](hooks/README.md) en kritik kuralı harness garantisine çevirir. `protected-paths` PreToolUse hook'u; secrets, auth, ödeme, migration veya CI/IaC yollarına yapılan her Edit/Write'ı yakalar ve incelemesi gereken guard agent'ın adını vererek açık izin sorusuna dönüştürür — model ne karar vermiş olursa olsun. `install.sh` / `install.ps1` artık `hooks/`'u kopyalayıp otomatik olarak `settings.json`'a bağlıyor; fazladan izin sorularını istemiyorsanız `--no-hooks` / `-NoHooks` ile atlayabilirsiniz (elle etkinleştirmek için [hooks/README.md](hooks/README.md)). Plugin olarak kurulduğunda hook her durumda otomatik kaydolur.
+Kitin geri kalanı prompt disiplinidir; [`hooks/`](hooks/README.md) en kritik kuralı harness garantisine çevirir. `protected-paths` PreToolUse hook'u; secrets, auth, ödeme, migration veya CI/IaC yollarına yapılan her Edit/Write'ı yakalar ve incelemesi gereken guard agent'ın adını vererek açık izin sorusuna dönüştürür — model ne karar vermiş olursa olsun. Claude-driven kurulumlarda `SETUP.md` Step 5e bunu otomatik olarak `settings.json`'a bağlar; fazladan izin sorularını istemiyorsanız o adımı atlayabilirsiniz (elle etkinleştirmek için [hooks/README.md](hooks/README.md)). Plugin olarak kurulduğunda hook her durumda otomatik kaydolur.
 
 ---
 
@@ -218,17 +215,17 @@ Aşağıdaki hiçbir sayı hafızadan iddia edilmiyor — her biri yanındaki ko
 
 | Kontrol | Komut | Sonuç |
 | --- | --- | --- |
-| Unit + entegrasyon testleri | `npm test` | **130/130 geçiyor** (23 suite — frontmatter doğrulama, her iki platformda install script davranışı, audit loglama dahil protected-path hook davranışı) |
-| Skill/agent/command/preset frontmatter | `npm run validate` | 32 skill · 14 agent · 11 command · 49 preset — 0 hata; hand-off zinciri bütünlüğünü (`db-change` → `migration-review` vb.) ve guard-agent `permissionMode: plan` zorunluluğunu içerir |
-| Dahili doküman linkleri | `npm run link-check` | 219 markdown dosyası, 0 kırık link/anchor |
+| Unit + entegrasyon testleri | `npm test` | **122/122 geçiyor** (21 suite — frontmatter doğrulama, audit loglama dahil protected-path hook davranışı) |
+| Skill/agent/command/preset frontmatter | `npm run validate` | 23 skill · 12 agent · 2 command · 49 preset — 0 hata; hand-off zinciri bütünlüğünü (`db-change` → `migration-review` vb.) ve guard-agent `permissionMode: plan` zorunluluğunu içerir |
+| Dahili doküman linkleri | `npm run link-check` | 188 markdown dosyası, 0 kırık link/anchor |
 | Bakım tablosu tazeliği | `npm run stale-check` | 5 bakım tablosunun tamamında 0 bayat/öksüz kayıt |
 | Type check / lint | `npm run typecheck` · `npm run lint` | temiz |
-| Yönlendirme doğruluğu (canlı) | `RUN_ROUTING_EVAL=1 npm run routing-eval` | **32/33 (%97)** — aşağıya bakın |
+| Yönlendirme doğruluğu (canlı) | `RUN_ROUTING_EVAL=1 npm run routing-eval` | önceki 33-prompt'luk sette son ölçüm **32/33 (%97)** — aşağıya bakın |
 | Deny listesi yanlış-pozitif maliyeti | `npm run deny-cost` | gerçek komutların **%0,52**'si — aşağıya bakın |
 
 Tüm setini tek seferde çalıştırmak için `npm run check` — CI'nin her push'ta koştuğu dizinin aynısı (`.github/workflows/repo-ci.yml`).
 
-Kitin *yönlendirme davranışı* da test altındadır: [`eval/golden-prompts.json`](eval/golden-prompts.json), 33 gerçekçi isteği (TR+EN karışık) beklenen agent'a sabitler. `npm run routing-eval` ücretsiz statik yarıyı her push'ta koşar; `RUN_ROUTING_EVAL=1 npm run routing-eval` modele her prompt'u gerçekten yönlendirtir ve %90 altı skorda başarısız olur (`.github/workflows/routing-eval.yml`). Ölçülmüş, varsayılmamış: ilk canlı koşu 28/33 (%85) ile `agents/ROUTING.md`'deki gerçek boşlukları ortaya çıkardı; kapatıldıktan sonra iki ardışık canlı koşu 32/33 (%97) aldı.
+Kitin *yönlendirme davranışı* da test altındadır: [`eval/golden-prompts.json`](eval/golden-prompts.json), 30 gerçekçi isteği (TR+EN karışık) beklenen agent'a sabitler. `npm run routing-eval` ücretsiz statik yarıyı her push'ta koşar; `RUN_ROUTING_EVAL=1 npm run routing-eval` modele her prompt'u gerçekten yönlendirtir ve %90 altı skorda başarısız olur (`.github/workflows/routing-eval.yml`). Ölçülmüş, varsayılmamış: ilk canlı koşu 28/33 (%85) ile `agents/ROUTING.md`'deki gerçek boşlukları ortaya çıkardı; kapatıldıktan sonra iki ardışık canlı koşu, o zamanki 33-prompt'luk sette 32/33 (%97) aldı. Set o zamandan beri 30 prompt'a indirildi ve ajan birleştirmeleri için 4 beklenti güncellendi — güncel sete karşı yeni bir canlı koşu henüz kaydedilmedi.
 
 Deny listesinin kullanım maliyeti de tahmin değil, ölçümdür: `npm run deny-cost`, makinenizdeki Claude Code transcript geçmişindeki her Bash komutunu kitin deny kurallarına karşı yeniden oynatır ve nelerin engellenmiş olacağını raporlar — geliştirme makinesindeki sayılar için [SECURITY.md](SECURITY.md) "Measured cost" notuna bakın.
 
@@ -248,8 +245,8 @@ pre-commit run --all-files
 
 - Kurulum sonrası bir şey çalışmıyorsa: **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — veya `/kit-doctor` çalıştırın.
 - Kendi agent/skill/rule/preset'lerinizi eklemek için: **[EXTENDING.md](EXTENDING.md)** ve **[CONTRIBUTING.md](CONTRIBUTING.md)**.
-- Sürüm yükseltme: **[UPGRADE.md](UPGRADE.md)** · Kurulum doğrulama: **[VERIFY.md](VERIFY.md)** · Güvenlik modeli: **[SECURITY.md](SECURITY.md)**.
+- Sürüm yükseltme: **[UPGRADE.md](UPGRADE.md)** · Kurulum doğrulama: **[SETUP.md — Step 6](SETUP.md#step-6--verify-installation)** · Güvenlik modeli: **[SECURITY.md](SECURITY.md)**.
 
 ## Token maliyeti referansı
 
-Görev tipi başına tipik maliyetler (haiku ile UI düzeltmesi ~$0.001'den, opus ile mimari planlama ~$0.25'e) İngilizce README'nin [Token cost reference](README.md#token-cost-reference) tablosundadır — bu rakamlar **tahmini**, yukarıdaki routing-eval/deny-cost sayıları gibi ölçülmüş değil. Maliyet düşürme: `settings.json`'daki `CLAUDE_CODE_SUBAGENT_MODEL=haiku` anonim alt-görevleri haiku'ya yönlendirir (~%75 tasarruf).
+Görev tipi başına tipik maliyetler (haiku ile UI düzeltmesi ~$0.001'den, opus ile mimari planlama ~$0.25'e) İngilizce README'nin [Token cost reference](README.md#token-cost-reference) tablosundadır — bu rakamlar **tahmini**, yukarıdaki routing-eval/deny-cost sayıları gibi ölçülmüş değil. Maliyet düşürme: `CLAUDE_CODE_SUBAGENT_MODEL`'i global olarak **ayarlamayın** — her subagent'ın modelini ezer, isimli agent'ların kendi `model:` frontmatter'ı dahil (Claude Code'un model çözümleme sırasında ondan daha yüksek önceliğe sahip), opus seviyesi guard agent'larını sessizce düşürür. Gerçekten isimsiz araştırma/salt-okunur alt-görevlerde maliyet kontrolü için `Agent()` çağrısında `model: 'haiku'`'yu doğrudan belirtin.

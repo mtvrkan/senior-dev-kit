@@ -16,31 +16,24 @@ presets/<category>/<name>/
 ```
 
 Categories group by domain (`web/`, `backend/`, `database/`, `mobile/`,
-`infrastructure/`, ...). The installer searches every category, so preset
-names must be unique across the whole tree.
+`infrastructure/`, ...). `SETUP.md` Step 1's detection table searches every
+category, so preset names must be unique across the whole tree.
 
-## Three activation routes
+## Two activation routes
 
-1. **Installer flag** — `bash install.sh --preset=nextjs-saas` or
-   `.\install.ps1 -Preset nextjs-saas` copies that preset's `CLAUDE.md` to
-   `~/.claude/CLAUDE.md` (backing up any existing file first).
-   `--detect` / `-Detect` picks the preset from manifest files in the
-   **current directory** (`package.json` dependencies, `requirements.txt` /
-   `pyproject.toml`, `go.mod`, `Cargo.toml`, `pubspec.yaml`, ...) — run it
-   from the project root, not from the kit clone.
-2. **Manual copy** — copy one preset's `CLAUDE.md` into the project root, or
+1. **Manual copy** — copy one preset's `CLAUDE.md` into the project root, or
    compose several stacks by concatenating their `compact.md` files into
-   `.claude/stack-rules.md` (see [INSTALL.md](../INSTALL.md) Step 6 and the
-   composition guidance in the [README](../README.md#picking-a-preset)).
-3. **Autonomous setup** — ask Claude Code to follow [SETUP.md](../SETUP.md);
-   it detects the stack and writes the files for you.
+   `.claude/stack-rules.md` (see [README.md Option C](../README.md#option-c--manual-install-for-a-single-project)
+   and the composition guidance in [README.md](../README.md#picking-a-preset)).
+2. **Autonomous setup** — ask Claude Code to follow [SETUP.md](../SETUP.md)
+   (Step 1 onward); it reads your manifest files, matches presets from the
+   detection table, and writes the files for you.
 
 ## The `generic/` category
 
 - `generic/fallback` — minimal per-project overlay for stacks with no
-  dedicated preset. Note: `--detect` does not install it automatically — on
-  no match the installer proceeds without a preset; pass
-  `--preset=fallback` to use it.
+  dedicated preset. `SETUP.md` Step 1 selects it automatically when no other
+  row in the detection table matches.
 - `generic/monorepo` — workspace-boundary rules layered on top of a stack
   preset in monorepos; it complements, not replaces, the per-app preset.
 

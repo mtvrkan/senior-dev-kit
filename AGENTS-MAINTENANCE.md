@@ -1,6 +1,6 @@
 # Agents Maintenance Policy
 
-This document tracks review dates for the 14 subagent definitions in `agents/`.
+This document tracks review dates for the 12 subagent definitions in `agents/`.
 Agents encode role-specific behavior and routing signals; they must be reviewed when:
 
 - The agent's tool list, model, or `permissionMode` no longer matches its risk level
@@ -34,15 +34,13 @@ tokens), which a single agent body never reaches on its own.
 | --- | --- | --- |
 | `architect` | Large features, architecture decisions, migration plans (read-only planning) | 2026-07-01 |
 | `bug-hunter` | Localized bugs, runtime errors, failing tests, regressions | 2026-07-15 |
-| `db-guard` | DB schema changes, data modeling, indexes (read-only planning) | 2026-07-01 |
+| `db-guard` | DB schema changes, data modeling, indexes, AND migration deployment safety — destructive changes, rollback strategy (read-only planning) | 2026-07-16 |
 | `devops-guard` | CI/CD, Docker, Terraform, Kubernetes, infrastructure changes | 2026-07-15 |
 | `docs-writer` | README, setup notes, changelog, API docs | 2026-07-01 |
-| `migration-guard` | Migration safety, destructive DB changes, rollback strategy (read-only planning) | 2026-07-01 |
 | `performance-guard` | Slow queries, N+1, bundle size, caching, memory leaks | 2026-07-15 |
 | `researcher` | Deep research, fact-checking, competitive analysis | 2026-07-01 |
 | `reviewer` | Post-change diff review for bugs, regressions, security (read-only) | 2026-07-15 |
-| `security-guard` | Auth, payment, secrets, injection risks, session/token handling (read-only) | 2026-07-01 |
-| `security-scanner` | Security scans, dependency audits, secret scans, SAST | 2026-07-01 |
+| `security-guard` | Auth, payment, secrets, injection risks, session/token handling, PLUS tool-driven security scans, dependency audits, SAST (read-only) | 2026-07-16 |
 | `senior-engineer` | Scoped medium feature implementation and safe refactors | 2026-07-15 |
 | `test-engineer` | Targeted tests for changed behavior, edge cases, regressions | 2026-07-01 |
 | `ui-fixer` | Low-risk frontend-only UI changes | 2026-07-15 |
@@ -62,7 +60,7 @@ tokens), which a single agent body never reaches on its own.
 For each agent:
 
 - [ ] Verify `skills:` frontmatter references still point to existing `skills/` directories
-- [ ] Verify guard agents (`security-guard`, `db-guard`, `migration-guard`, `devops-guard`) still set `permissionMode: plan`
+- [ ] Verify guard agents (`security-guard`, `db-guard`, `devops-guard`) still set `permissionMode: plan`
 - [ ] Verify the agent is still mentioned in `agents/ROUTING.md` with an accurate signal
 - [ ] Update `Last Reviewed` date in this table
 

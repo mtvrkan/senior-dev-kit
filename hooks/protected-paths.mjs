@@ -63,7 +63,7 @@ const CATEGORIES = [
   },
   {
     name: 'DB schema/migration',
-    guard: 'migration-guard',
+    guard: 'db-guard',
     patterns: [
       /(^|\/)migrations?\//,
       /(^|\/)migrate\//, // Rails convention: db/migrate/ (singular, no "s")

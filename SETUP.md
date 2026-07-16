@@ -15,9 +15,9 @@ KIT ≠ PROJECT. KIT is this folder, PROJECT is a separate project.
 
 Sets up in PROJECT:
 
-- 14 subagent files + `ROUTING.md` (15 files total) → `PROJECT/.claude/agents/`
-- 32 skill directories → `PROJECT/.claude/skills/`
-- 11 slash command files → `PROJECT/.claude/commands/`
+- 12 subagent files + `ROUTING.md` (13 files total) → `PROJECT/.claude/agents/`
+- 23 skill directories → `PROJECT/.claude/skills/`
+- 2 slash command files → `PROJECT/.claude/commands/`
 - Security rules → `PROJECT/.claude/settings.json`
 - Full stack rules → `PROJECT/.claude/stack-rules.md`
 - Compact routing file → `PROJECT/CLAUDE.md`
@@ -25,7 +25,7 @@ Sets up in PROJECT:
 Global setup (`~/.claude/` — once, for all projects):
 
 - 11 path-scoped rules → `~/.claude/rules/`
-- 15 lazy-load agent docs → `~/.claude/agent_docs/`
+- 16 lazy-load agent docs → `~/.claude/agent_docs/`
 - Global CLAUDE.md → `~/.claude/CLAUDE.md`
 - Protected-paths hook → `~/.claude/hooks/`, wired into `~/.claude/settings.json` (the kit's
   only harness-enforced guardrail — everything else here is prompt discipline)
@@ -138,40 +138,38 @@ Use this list in Step 4b. Now proceed to Step 2.
 
 ### 2a — Copy agent files
 
-Create `PROJECT/.claude/agents/` directory. Read the following 14 agent files from `KIT/agents/` and write to `PROJECT/.claude/agents/`:
+Create `PROJECT/.claude/agents/` directory. Read the following 12 agent files from `KIT/agents/` and write to `PROJECT/.claude/agents/`:
 
 ```text
 architect.md, bug-hunter.md, db-guard.md,
-devops-guard.md, docs-writer.md, migration-guard.md,
+devops-guard.md, docs-writer.md,
 performance-guard.md, researcher.md, reviewer.md,
-security-guard.md, security-scanner.md, senior-engineer.md,
+security-guard.md, senior-engineer.md,
 test-engineer.md, ui-fixer.md
 ```
 
-Also copy `KIT/agents/ROUTING.md` to `PROJECT/.claude/agents/ROUTING.md` — it is a routing reference, not an agent, so `PROJECT/.claude/agents/` ends up with 15 files total (14 agents + ROUTING.md).
+Also copy `KIT/agents/ROUTING.md` to `PROJECT/.claude/agents/ROUTING.md` — it is a routing reference, not an agent, so `PROJECT/.claude/agents/` ends up with 13 files total (12 agents + ROUTING.md).
 
 ### 2b — Copy skill directories
 
-Create `PROJECT/.claude/skills/` directory. Read the following 32 subdirectories from `KIT/skills/` and write to `PROJECT/.claude/skills/` (each subdirectory contains `SKILL.md`):
+Create `PROJECT/.claude/skills/` directory. Read the following 23 subdirectories from `KIT/skills/` and write to `PROJECT/.claude/skills/` (each subdirectory contains `SKILL.md`):
 
 ```text
-api-design, api-versioning, bug-fix,
-code-audit, code-review, codebase-overview, data-modeling, db-change, deep-research, dep-check,
+api-design, bug-fix,
+code-audit, code-review, codebase-overview, db-change, deep-research,
 docs-update, env-audit, feature-build, feature-plan, from-scratch,
-kit-doctor, llm-integration, migration-review, monorepo-task, new-page,
-new-screen, performance-check, plan-first, refactor-safe, release-check,
-release-gate, safe-review, security-review, security-scan, smart-task,
+kit-doctor, migration-review, new-page,
+new-screen, performance-check, refactor-safe,
+release-gate, security-review, security-scan,
 test-writer, ui-change
 ```
 
 ### 2c — Copy command files
 
-Create `PROJECT/.claude/commands/` directory. Read the following 11 files from `KIT/commands/` and write:
+Create `PROJECT/.claude/commands/` directory. Read the following 2 files from `KIT/commands/` and write:
 
 ```text
-agents-guide.md, deep-research.md, dep-check.md,
-kit-doctor.md, performance-check.md, plan-first.md, release-gate.md,
-safe-review.md, security-scan.md, seo-check.md, smart-task.md
+agents-guide.md, seo-check.md
 ```
 
 ### 2d — Copy settings.json
@@ -192,14 +190,14 @@ Create `PROJECT/.claude/rules/` directory. Read the following 11 files from `KIT
 
 ### 2f — Copy agent docs files
 
-Create `PROJECT/.claude/agent_docs/` directory. Read the following 15 files from `KIT/agent_docs/` and write:
+Create `PROJECT/.claude/agent_docs/` directory. Read the following 16 files from `KIT/agent_docs/` and write:
 
 ```text
 architecture.md, api-design-patterns.md, api-versioning-guide.md,
 design-system.md, dep-check-guide.md, devops-security-guide.md, env-audit-guide.md,
 error-handling-patterns.md, from-scratch-guide.md, new-page-guide.md,
 new-screen-guide.md, security-protocols.md, seo-patterns.md,
-testing-strategy.md, zero-downtime-migration.md
+stack-commands.md, testing-strategy.md, zero-downtime-migration.md
 ```
 
 ### 2g — Security templates (optional — if CI/CD present)
@@ -281,9 +279,9 @@ UI text, color, padding, single-line fix → skip routing, apply directly.
 | Add or update tests | Medium | test-engineer |
 | Diff/PR review | Medium | reviewer |
 | DB schema, model, index | High | db-guard |
-| Migration, data movement | High/Critical | migration-guard |
+| Migration, data movement | High/Critical | db-guard |
 | Auth, payment, permissions, session | High/Critical | security-guard |
-| Security scan | High | security-scanner |
+| Security scan | High | security-guard |
 | Performance issue, N+1, bundle | Medium/High | performance-guard |
 | Documentation | Low | docs-writer |
 
@@ -292,7 +290,7 @@ UI text, color, padding, single-line fix → skip routing, apply directly.
 - ui-fixer → senior-engineer (if touches DB/auth/payment)
 - bug-hunter → security-guard (if finds security vulnerability)
 - senior-engineer → architect (if requires architecture decision)
-- db-guard / migration-guard → STOP + report (on destructive change)
+- db-guard → STOP + report (on destructive change)
 - Every agent: if out of scope, stop and escalate
 
 ## Stack rules (summary)
@@ -356,14 +354,14 @@ If exist, overwrite (for current versions).
 
 ### 5c — Agent documentation (lazy-load)
 
-Create `~/.claude/agent_docs/` directory (if missing). Read the 15 files from `KIT/agent_docs/` and write:
+Create `~/.claude/agent_docs/` directory (if missing). Read the 16 files from `KIT/agent_docs/` and write:
 
 ```text
 architecture.md, api-design-patterns.md, api-versioning-guide.md,
 design-system.md, dep-check-guide.md, devops-security-guide.md, env-audit-guide.md,
 error-handling-patterns.md, from-scratch-guide.md, new-page-guide.md,
 new-screen-guide.md, security-protocols.md, seo-patterns.md,
-testing-strategy.md, zero-downtime-migration.md
+stack-commands.md, testing-strategy.md, zero-downtime-migration.md
 ```
 
 These files are read by agents when needed — not loaded every session.
@@ -374,11 +372,12 @@ Source file: `KIT/settings-template.json` (`KIT/settings.json` is the kit's own 
 If `~/.claude/settings.json` does not exist: write the template as-is.
 If it exists: read its content. If its `permissions.deny` list is missing or incomplete, append the template's deny entries (don't remove existing entries); leave `permissions.allow` and any other existing keys untouched.
 
-Environment variable suggestion (add to shell profile):
-
-```bash
-export CLAUDE_CODE_SUBAGENT_MODEL=haiku  # default for anonymous Agent() calls; named agents use their own model: field
-```
+Do not set `CLAUDE_CODE_SUBAGENT_MODEL` in the shell profile. It overrides every subagent's
+model — including named agents' own `model:` frontmatter, since it takes precedence over it in
+Claude Code's model-resolution order. Setting it globally silently downgrades opus-tier guard
+agents (architect, db-guard, security-guard, devops-guard) to whatever cheaper
+model it names. For cost control on genuinely anonymous exploration calls, pass `model` explicitly
+per `Agent()` call instead.
 
 ### 5e — Wire the protected-paths hook (deterministic enforcement)
 
@@ -412,16 +411,85 @@ existing `hooks` key rather than overwriting it — the same rule as 5d's `permi
 
 ---
 
-## Step 6 — When done, report
+## Step 6 — Verify installation
+
+Perform each check below in order. Report results as [OK] / [FAIL] before moving to Step 7.
+
+### 6a — Required files
+
+For each one: does it exist?
+
+```text
+PROJECT/CLAUDE.md
+PROJECT/.claude/settings.json
+PROJECT/.claude/agents/
+PROJECT/.claude/skills/
+PROJECT/.claude/commands/
+PROJECT/.claude/rules/
+PROJECT/.claude/stack-rules.md
+```
+
+### 6b — Component counts
+
+Count files in each `PROJECT/.claude/` subdirectory:
+
+| Directory | Expected count | Notes |
+| --- | --- | --- |
+| `agents/` | 13 | 12 agents + `ROUTING.md` (routing reference, not an agent) |
+| `skills/` | 23 | `SKILL.md` files, one per subdirectory |
+| `commands/` | 2 | `agents-guide.md`, `seo-check.md` |
+| `rules/` | 11 | `000-security.md` through `900-performance.md` |
+| `agent_docs/` (if copied) | 16 | see Step 2f list |
+
+If any count is short, re-read the missing file(s) from `KIT/` and write them — do not guess which one is missing; diff the expected list above against what's on disk.
+
+### 6c — CLAUDE.md quality
+
+Read `PROJECT/CLAUDE.md`. Does it contain:
+
+- [ ] "TOKEN TIER" table
+- [ ] "AGENT ROUTING" section
+- [ ] "BOOT SEQUENCE" section
+- [ ] "HARD STOPS" — escalation rules
+- [ ] "AUTO-TEST + VERIFICATION" section
+
+### 6d — stack-rules.md content
+
+Read `PROJECT/.claude/stack-rules.md`: not empty (at least 100 characters), contains a `## preset:` heading.
+
+### 6e — Critical agent quality
+
+`PROJECT/.claude/agents/security-guard.md`: `model: opus`, `permissionMode: plan`, HARD CONSTRAINTS section present.
+`PROJECT/.claude/agents/devops-guard.md`: `model: opus`, `permissionMode: plan`.
+`PROJECT/.claude/agents/ui-fixer.md`: `model: haiku`, HARD CONSTRAINTS section present.
+`PROJECT/.claude/agents/senior-engineer.md`: `model: sonnet`.
+
+### 6f — Skill allowed-tools correctness
+
+Should be read-only (Edit/Write **should NOT** be included) — `allowed-tools: Read, Grep, Glob, Bash`:
+`skills/security-review/SKILL.md`, `skills/migration-review/SKILL.md`, `skills/feature-plan/SKILL.md`, `skills/performance-check/SKILL.md`, `skills/release-gate/SKILL.md`.
+
+### 6g — Global installation (if Step 5 was run)
+
+- `~/.claude/CLAUDE.md` exists and contains "Global Claude Senior Protocol"
+- `~/.claude/rules/` — 11 files present
+- `~/.claude/agent_docs/` — 16 files present
+- `~/.claude/settings.json` — `CLAUDE_CODE_SUBAGENT_MODEL` env var **absent** (if present, it overrides every subagent's model, including named agents' own `model:` frontmatter, and should be removed)
+
+If any global check fails: apply Step 5 again for the missing piece.
+
+---
+
+## Step 7 — When done, report
 
 Provide a brief summary containing:
 
 - Detected stack and selected presets
-- Installed file counts: `[14 agents, 32 skills, 11 commands, 11 rules, 15 agent_docs]`
+- Installed file counts: `[12 agents, 23 skills, 2 commands, 11 rules, 16 agent_docs]`
+- Step 6 verification results — [OK] / [FAIL] per check, with fixes applied for any [FAIL]
 - If monorepo: how many subproject CLAUDE.md created
 - If security templates installed: pre-commit enable command
 - Protected-paths hook: wired (or why not — missing `node`, or already present)
 - First use: open project in Claude Code, converse normally — routing is prompt discipline, not
   harness-enforced (the protected-paths hook is the one exception)
-- Slash command reminder: `/smart-task`, `/plan-first`, `/safe-review`, `/security-scan`, `/dep-check`, `/performance-check`, `/seo-check`
-- To verify: read `KIT/VERIFY.md` and validate setup
+- Slash command reminder: `/agents-guide`, `/seo-check`, plus any skill invoked directly by name (`/security-scan`, `/performance-check`, `/feature-plan`, ...)

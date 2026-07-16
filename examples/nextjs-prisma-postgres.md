@@ -33,32 +33,32 @@ Detected: Next.js SaaS + Prisma + PostgreSQL
 │   ├── new-page/SKILL.md
 │   ├── db-change/SKILL.md
 │   ├── security-review/SKILL.md
-│   └── ... (all 32 skills)
+│   └── ... (all 23 skills)
 ├── agents/
 │   ├── senior-engineer.md
 │   ├── bug-hunter.md
 │   ├── security-guard.md
 │   ├── db-guard.md
 │   ├── architect.md
-│   └── ... (all 14 agents)
+│   └── ... (all 12 agents)
 └── agent_docs/
     ├── architecture.md
     ├── testing-strategy.md
-    └── ... (all 15 docs)
+    └── ... (all 16 docs)
 ```
 
 **settings.json:**
 
 ```json
 {
-  "env": {
-    "CLAUDE_CODE_SUBAGENT_MODEL": "haiku"
-  },
   "permissions": {
     "deny": [".env", ".env.*", "*.pem", "*.key", "secrets/"]
   }
 }
 ```
+
+Don't add `CLAUDE_CODE_SUBAGENT_MODEL` here — it overrides every subagent's model, including named
+agents' own `model:` frontmatter (see Step 4 below).
 
 ---
 
@@ -88,7 +88,7 @@ Composite file merging preset + DB rules:
 - middleware.ts → security-guard
 - app/api/auth/** → security-guard
 - prisma/schema.prisma → db-guard
-- prisma/migrations/** → migration-guard
+- prisma/migrations/** → db-guard
 ```
 
 ---
@@ -196,7 +196,7 @@ IMPLEMENTATION PLAN:
 ## Step 4 — Cost optimization in this stack
 
 - `docs-writer` → haiku (set in agent frontmatter); `researcher` → opus (set in agent frontmatter — deep research needs it)
-- `CLAUDE_CODE_SUBAGENT_MODEL=haiku` applies to anonymous Agent() calls only, not named agents with explicit model: frontmatter
+- Do not set `CLAUDE_CODE_SUBAGENT_MODEL` globally — it overrides every subagent's model, named agents included, taking precedence over their own `model:` frontmatter. For cost control on genuinely anonymous exploration calls, pass `model` explicitly per `Agent()` call instead.
 - Implementation agents (senior-engineer, bug-hunter) → sonnet (set in agent frontmatter)
 - Guard agents (security-guard, db-guard, architect) → opus (set in agent frontmatter, rare use)
 

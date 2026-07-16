@@ -1,8 +1,8 @@
-<!-- SCOPE: global — installed to ~/.claude/CLAUDE.md by install.sh / install.ps1
+<!-- SCOPE: global — installed to ~/.claude/CLAUDE.md (plugin install or SETUP.md)
      Purpose: applies to ALL Claude Code sessions across every project
      Per-project file: presets/generic/fallback/CLAUDE.md → PROJECT/CLAUDE.md (see SETUP.md Step 2) -->
 
-# Global Claude Senior Protocol v3.1
+# Global Claude Senior Protocol v4.0
 
 ## HARD STOPS — escalate before any code  <!-- full passive-scan/OWASP/supply-chain detail in rules/000-security.md, always-loaded -->
 
@@ -25,96 +25,51 @@ NEVER output: API keys · passwords · tokens · PII — even in debug/logs/comm
 | 0 | 1 file <10 lines, no protected area | direct | 1 line |
 | 1 | 1-2 files, UI only or isolated bug | direct | 2 lines |
 | 2 | 3-5 files, behavior/API/state change | 3-line plan | 4 lines |
-| 3 | Protected area, multi-system, DB | full plan → approval | 6 lines |
+| 3 | Protected area, multi-system, DB | plan mode → approval | 6 lines |
 | 4 | Destructive, billing, prod data | risk analysis | explicit approval |
 
 Min tier signals (highest wins): auth/JWT/session=3 | payment=3 | DB schema/migration=3
 CI-CD/Docker/IaC=3 | API endpoint added/removed/renamed=2 | shared type/DTO changed=2
 >5 files=2 | DROP/TRUNCATE/bulk-delete=4 | prod config/secrets=4
+Tier 3+: use native plan mode (read-only) for the plan — edits begin only after explicit approval.
 `--now` flag: skips plan on Tier 2 only. Never skips hard stops, Tier 3+ plan, tests, verification.
 
 ---
 
-## AGENT ROUTING — highest signal wins
+## AGENT ROUTING
 
-| Signal | Agent | Model | Tier |
-| --- | --- | --- | --- |
-| CSS/button/modal/copy/animation | ui-fixer | haiku | 0-1 |
-| new page/screen/component | ui-fixer | haiku | 1-2 |
-| error/crash/test fail/bug | bug-hunter | sonnet | 0-2 |
-| normal feature, refactor, clean | senior-engineer | sonnet | 2 |
-| large feature / architecture | architect | opus | 3 |
-| DB schema/model/index | db-guard | opus | 3 |
-| migration / destructive data | migration-guard | opus | 3-4 |
-| auth / payment / security issue | security-guard | opus | 3-4 |
-| security scan / dep audit | security-scanner | sonnet | 2-3 |
-| performance / N+1 / bundle | performance-guard | sonnet | 2-3 |
-| CI/CD / Docker / IaC | devops-guard | opus | 3-4 |
-| docs / README / changelog | docs-writer | haiku | 0-1 |
-| research / fact-check | researcher | opus | 2-3 |
-| API design / versioning | senior-engineer | sonnet | 2-3 |
-| dep audit / dep hygiene | security-scanner | sonnet | 1-2 |
-| new project from scratch | senior-engineer | sonnet | 2 |
-| add / update / write tests | test-engineer | sonnet | 1-2 |
-| code review / PR / diff review | reviewer | sonnet | 1-2 |
+Escalation signals ALWAYS route to their guard (mirrored by the protected-paths hook):
+DB schema/model/index/migration/destructive data → db-guard
+auth / payment / security → security-guard | CI-CD / Docker / IaC → devops-guard
+large feature / architecture → architect (plan-only)
 
-NATURAL LANGUAGE SIGNALS (EN + TR):
-fix/error/crash/hata/düzelt → bug-hunter | add/create/make/ekle/oluştur/yap → senior-engineer
-CSS/button/beautiful/modern/design/modal/buton/güzel/tasarım → ui-fixer | review/examine/look/check/incele/bak → reviewer
-architecture/design/how-built/mimari/nasıl → architect | security/vulnerability/scan/güvenlik/açık/tara → security-guard
-slow/performance/N+1/yavaş/performans → performance-guard | DB/schema/tablo → db-guard (ESCALATE)
-migrate/migration/destructive data/veri taşıma → migration-guard (ESCALATE)
-CI/CD/pipeline/Docker/deploy → devops-guard (ESCALATE) | docs/readme/explain/açıkla/belge → docs-writer
-test/spec/write tests/yaz test → test-engineer
-research/fact-check/araştır/doğrula → researcher
+Everything else: delegate by agent description — each agent's frontmatter states its scope and
+model tier. Full decision tree, tier map, and EN+TR trigger phrases:
+`~/.claude/agents/ROUTING.md` (read on demand, not preloaded).
 
-Model override: agent frontmatter `model:` field takes precedence over this routing table.
 AMBIGUITY: >80% clear → act | 50-80% → state assumption + act | <50% → ask ONCE specifically
-Stack trace present → bug-hunter, no clarification needed
-Protected area signal → ALWAYS escalate regardless of confidence
+Stack trace present → bug-hunter, no clarification needed.
+Protected area signal → ALWAYS escalate regardless of confidence.
 
 ---
 
 ## BOOT SEQUENCE — silent, once per session
 
 Tier 0 (1 file <10 lines, no protected area): SKIP — go straight to the edit, no boot reads.
-Tier 1+: run the sequence below once per session; do not repeat it later in the same session.
-
-Read silently (skip missing, never guess):
+Tier 1+: run once per session (skip missing, never guess):
 
 1. Manifest: package.json/pubspec.yaml/go.mod/Cargo.toml/pom.xml/composer.json/Gemfile/requirements.txt
    PKG_MANAGER: bun.lockb=bun | pnpm-lock.yaml=pnpm | yarn.lock=yarn | package-lock.json=npm | uv.lock=uv | Pipfile.lock=pipenv
    Runtime override: deno.json=Deno | pubspec.yaml=Flutter | *.csproj=.NET | Package.swift=Swift
-2. Config: tsconfig.json/vite.config.*/next.config.*/tailwind.config.*
-   Tailwind v4: @theme in CSS + no tailwind.config.js
+2. Config: tsconfig.json/vite.config.*/next.config.*/tailwind.config.* (Tailwind v4: @theme in CSS, no tailwind.config.js)
 3. CI/CD: .github/workflows/*.yml/Dockerfile/railway.toml/fly.toml → DEPLOY
 4. ORM: *.prisma/migrations/knexfile.*/drizzle.config.* → DB+ORM
 5. Architecture: src/ or app/ 1-level → layered(controllers/services/repos) or vertical-slice(features/)
 6. 1 test file → TEST_CMD, framework | 1 file per layer → CONVENTIONS
 
-Build: TEST_CMD | LINT_CMD | BUILD_CMD | PKG_MANAGER | ARCH | CONVENTIONS
-Mark UNKNOWN if undetectable. Apply overrides:
-
-| Stack | Test | Lint | Build | Type-check |
-| --- | --- | --- | --- | --- |
-| Next.js/TS | vitest run [f] or jest [f] --no-coverage | next lint | next build | tsc --noEmit |
-| NestJS | jest [f].spec.ts --no-coverage | eslint src/ | nest build | tsc --noEmit |
-| Vite+React | vitest run [f] | eslint src/ | vite build | tsc --noEmit |
-| Nuxt 3 | vitest run [f] | nuxt lint | nuxt build | nuxt typecheck |
-| SvelteKit | vitest run [f] | eslint src/ | vite build | svelte-check |
-| Node/Bun | bun test [f] or jest [f] --no-coverage | eslint src/ | tsc | tsc --noEmit |
-| Deno | deno test --allow-* [f] | deno lint | — | deno check [f] |
-| FastAPI | pytest [f] -x -q | ruff check . | — | mypy [f] |
-| Django | python manage.py test [m] | ruff check . | — | mypy [f] |
-| Go | go test ./[pkg]/... -run TestName -v | golangci-lint run | go build ./... | — |
-| Rust | cargo test [name] | cargo clippy | cargo build | — |
-| Flutter | flutter test [f] | flutter analyze | flutter build apk | — |
-| Spring Boot | ./gradlew test --tests "*.Class" | — | ./gradlew build | — |
-| Laravel | php artisan test --filter Name | phpcs | — | phpstan analyse |
-| Rails | bundle exec rspec spec/[f]_spec.rb | rubocop | — | srb tc |
-| .NET | dotnet test --filter "~ClassName" | — | dotnet build | — |
-| Android | ./gradlew test --tests "*.Class" | ./gradlew lint | ./gradlew assembleDebug | — |
-| iOS/Swift | xcodebuild test -scheme [n] -only-testing:[C/m] | swiftlint | xcodebuild build | — |
+Build: TEST_CMD | LINT_CMD | BUILD_CMD | PKG_MANAGER | ARCH | CONVENTIONS. Mark UNKNOWN if undetectable.
+Exact per-stack test/lint/build/type-check commands (18 stacks, targeted-test flags):
+read `~/.claude/agent_docs/stack-commands.md` the first time a command is actually needed.
 
 Protected patterns (Tier 3 always): middleware.ts|auth.ts|app/api/ (Next.js) |
 AuthModule|Guards (NestJS) | settings.py|urls.py (Django) | SecurityConfig (Spring) |
@@ -126,6 +81,9 @@ RLS policies (Supabase) | Security rules (Firebase)
 
 UNDERSTAND BEFORE CHANGING — read 1-2 existing files of same type first.
 Smallest safe diff. No refactoring while fixing bugs. No features while fixing bugs.
+
+SKILL CHECK — before starting any implementation task, check installed skills for a match
+(bug-fix, feature-build, new-page, db-change, …); if one matches, follow it — don't improvise.
 
 ORPHAN CLEANUP — remove only imports/vars/functions YOUR edit made unused. Pre-existing dead
 code noticed along the way: leave it, flag with FWD: (see below) — don't delete unless asked.
@@ -147,40 +105,22 @@ FWD: Hardcoded string — move to config/env | FWD: Missing index on FK — perf
 OBS: [service] no metrics — add request count + latency
 A11Y: [element] — [issue] → fix immediately
 
-SESSION DISCIPLINE: the model has no tool to check its own token usage and cannot run
-/compact itself — treat "/compact at 250k tokens" as the user's cue, not the model's job.
-After a long chain of file reads or several Agent() calls, proactively say so: "Session is
-getting large — consider /compact or a fresh session for the next task."
-CONTEXT BUDGET — five levers to slow context growth:
+CONTEXT DISCIPLINE:
 
-1. /compact vs /clear: /compact summarizes and CONTINUES (keeps active work); /clear WIPES
-   everything. When context is full but the task isn't done, the answer is /compact — /clear
-   is for switching to an unrelated task. If a user hits "clear forgets everything," they were
-   reaching for /clear when they needed /compact + persisted memory.
-2. Push read-heavy work into subagents: Explore/Agent have their OWN context window — a broad
-   file sweep run there costs the main thread only the short summary that returns, not the
-   file bodies. Route large searches/audits to a subagent, and keep each subagent's RETURN
-   payload short (a conclusion, not a transcript) so the isolation actually pays off. Scope
-   each call to ONE topic — a single Explore/Agent call given N unrelated topics ("check the
-   auth code, the DB schema, and the settings UI") searches all N as if every one needed
-   "very thorough" breadth, multiplying tokens for no extra signal. Split unrelated topics into
-   separate calls instead (sequential or parallel per lever 5 below — splitting doesn't require
-   parallelizing). When spawning a call, hand over whatever project context you already have
-   (test command, package manager, relevant file paths from BOOT SEQUENCE) in the prompt — a
-   subagent starts with zero memory of your session and re-discovers that context from scratch,
-   at full token cost, if you don't pass it along.
-3. Persist across resets: before /clear, write durable facts (project decisions, user prefs,
-   in-flight work) to the file-based memory (memory/*.md + MEMORY.md index) so the next
-   session reloads them — this is what makes /clear safe instead of amnesiac.
-4. Drop unused MCP servers: every connected server's tool schemas load into context whether
-   or not the session ends up using them, regardless of task. Check /mcp periodically;
-   disconnect anything not relevant to the current project or task.
-5. Parallel subagents multiply cost, not divide it: N agents running concurrently
-   (Agent/Workflow tools) cost roughly N times a single agent's tokens — reserve for
-   genuinely independent work that benefits from isolation, not habitual fan-out.
+- The model cannot see its own token count or run /compact — after long read chains or several
+  Agent() calls, say: "Session is getting large — consider /compact or a fresh session."
+- /compact summarizes and CONTINUES; /clear WIPES. Task unfinished + context full → /compact.
+  Before /clear: persist durable facts to memory/*.md + MEMORY.md so the next session reloads them.
+- Push read-heavy sweeps into subagents (own context window; only the summary returns). ONE topic
+  per call; pass known project context (TEST_CMD, paths) in the prompt — subagents start blank.
+  Keep subagent RETURN payloads short: a conclusion, not a transcript.
+- N parallel subagents cost ~N× tokens — reserve for genuinely independent work.
+- Unused MCP servers still load their tool schemas — check /mcp, disconnect what's irrelevant.
+- Fresh session for unrelated tasks; never continue an old one out of convenience.
 
-Always start a fresh session for unrelated tasks rather than continuing an old one.
-Subagent cost: CLAUDE_CODE_SUBAGENT_MODEL=haiku saves 75% on anonymous Agent() calls (no named agent). Named agents (researcher, security-guard, etc.) use their own model: field and are unaffected.
+CLAUDE_CODE_SUBAGENT_MODEL overrides EVERY subagent's model (higher precedence than agent
+frontmatter) — never set it globally; it silently downgrades opus-tier guards. For cost control
+pass `model` per Agent() call instead.
 
 ---
 
@@ -207,11 +147,9 @@ Tier 3+:   PLAN: goal ≤8 words
 ON: service method | controller | API handler | exported function/class | shared utility | middleware
 OFF: pure CSS/styling | config/env | docs | type-only changes (no logic)
 
-TARGETED TEST ONLY — never full suite for 1-file change. Use TEST_CMD from BOOT SEQUENCE's
-stack table for the detected stack.
-
+TARGETED TEST ONLY — never full suite for 1-file change. Exact command per stack:
+`~/.claude/agent_docs/stack-commands.md`.
 No test file → create minimal spec same turn: happy path + edge + error (3 tests).
-
 VERIFY BY CHANGE TYPE: behavior→test | new file→lint+test | new route→build | CSS→lint | type→type-check
 
 DEPENDENCY AUDIT (auto-trigger on dep add/update): command by runtime in
@@ -222,28 +160,28 @@ DEP-DRIFT: [pkg] v[current] → v[latest] — [reason]
 
 ## RULES REFERENCE
 
-Detail in ~/.claude/rules/ (path-scoped, auto-loaded when file matches).
-Patterns below are abbreviated for brevity — each rule file's own frontmatter `globs:` is the authoritative, fuller pattern list.
-Load each matched rule file AT MOST ONCE PER SESSION — once read, its guidance holds for
-the rest of the session; do not re-Read it for the 2nd, 3rd, ... Nth file of the same type
-(e.g. touching five `.ts` files loads 700-observability.md and 900-performance.md once, not
-five times). This applies to every rule file below, not just the two with overlapping globs.
+Rules live in ~/.claude/rules/ — the harness injects each automatically when a file matching its
+frontmatter `paths:` globs is read; 000/001 have no `paths:` and load every session. Never
+manually Read a rule file to "load" it: injection is automatic, once per session. Topics:
 000-security (always) | 001-conventions (always, incl. modern tech preferences)
-100-web (*.tsx,*.jsx,*.vue,*.svelte,*.astro) — design tokens, 8px grid, skeleton, SEO, WCAG 2.2
-200-api (**/api/**,**/routes/**,**/controllers/**) — REST, OpenAPI 3.1, error format
-300-testing (*.test.*,*.spec.*) — pyramid ratios, mock policy, naming
-400-mobile (*.swift,*.kt,**/lib/**/*.dart) — platform patterns, Keychain, gestures
-500-database (**/migrations/**,**/*.prisma,**/models/**) — schema safety, N+1, RLS
-600-devops (Dockerfile*,**/.github/**,**/*.tf) — non-root, SHA-pin, SBOM, OIDC
-700-observability (**/*.ts,**/*.py,**/*.go,**/*.java) — logging levels, metrics, tracing, correlation IDs
-800-llm-safety (**/ai/**,**/llm/**,**/openai/**,**/anthropic/**,**/claude/**) — prompt injection, output trust, cost controls
-900-performance (**/*.ts,**/*.tsx,**/*.py,**/*.go,**/*.java,**/*.cs) — CWV budgets, bundle limits, API latency, N+1
+100-web — design tokens, 8px grid, skeleton/empty/error states, motion, SEO, WCAG 2.2
+200-api — REST, OpenAPI 3.1, RFC 7807 errors, auth checklist, rate limiting
+300-testing — pyramid ratios, mock policy, naming, targeted commands
+400-mobile — iOS/Android/Flutter/RN platform patterns, Keychain, a11y
+500-database — schema safety, migrations escalate, N+1, RLS
+600-devops — non-root Docker, SHA-pin Actions, OIDC, SBOM, IaC
+700-observability — log levels, metrics, tracing, correlation IDs
+800-llm-safety — prompt injection, output trust, cost controls
+900-performance — CWV budgets, bundle limits, API latency, N+1
 
-Deterministic enforcement: ~/.claude/hooks/protected-paths.mjs (PreToolUse) mirrors the HARD
-STOPS at the harness level — wired into settings.json by default on install; `--no-hooks` /
-`-NoHooks` opts out, activation steps in hooks/README.md.
+Deterministic enforcement (independent of these instructions): `settings.json`'s
+`permissions.deny` blocks Read of the NEVER READ OR OUTPUT list above;
+`~/.claude/hooks/protected-paths.mjs` (PreToolUse) turns Edit/Write/NotebookEdit into the
+STOP + ESCALATE list into an explicit approval prompt naming the guard agent.
+Activation and opt-out steps: hooks/README.md.
 
-Lazy-load docs (all under agent_docs/): architecture.md | design-system.md | testing-strategy.md |
-security-protocols.md | api-design-patterns.md | seo-patterns.md | error-handling-patterns.md |
-from-scratch-guide.md | new-page-guide.md | new-screen-guide.md | dep-check-guide.md |
-env-audit-guide.md | api-versioning-guide.md | zero-downtime-migration.md | devops-security-guide.md
+Lazy-load docs (all under agent_docs/, read on demand): architecture | design-system |
+testing-strategy | security-protocols | api-design-patterns | seo-patterns |
+error-handling-patterns | from-scratch-guide | new-page-guide | new-screen-guide |
+dep-check-guide | env-audit-guide | api-versioning-guide | zero-downtime-migration |
+devops-security-guide | stack-commands

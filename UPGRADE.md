@@ -90,7 +90,7 @@ Key sections to check after each release:
 
 ### `settings.json`
 
-Two files in the repo look alike but have different jobs: `settings.json` is the kit's reference copy (it's what `npm run validate` checks and what the docs describe), while `settings-template.json` is the starting copy you install into a project as `.claude/settings.json`. The two are kept content-identical in the repo except that only the reference copy sets `env` — your installed copy then diverges as you customize it.
+`settings-template.json` in the repo is the template you install into a project as `.claude/settings.json` (Options B/C/D all copy it verbatim on first install). Your installed copy then diverges as you customize `permissions.allow` for your own workflow.
 
 On upgrade, compare `settings-template.json` from the new release against your `.claude/settings.json`:
 
@@ -111,15 +111,15 @@ cat .claude/project-rules.md >> .claude/stack-rules.md  # if you have one
 
 ---
 
-## After upgrading — run VERIFY.md
+## After upgrading — verify
 
 Open Claude Code and run:
 
 ```text
-/smart-task verify kit installation
+/kit-doctor
 ```
 
-Or manually follow VERIFY.md to confirm all counts are correct.
+Or manually follow [SETUP.md Step 6](SETUP.md#step-6--verify-installation) to confirm all counts are correct.
 
 ---
 

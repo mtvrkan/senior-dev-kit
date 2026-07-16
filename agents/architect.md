@@ -9,7 +9,7 @@ color: purple
 maxTurns: 10
 skills:
   - feature-plan
-  - data-modeling
+  - db-change
 ---
 
 ## Reference docs (lazy-load when needed)

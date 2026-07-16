@@ -11,13 +11,13 @@ effort: high
 
 # feature-plan
 
-Produce a detailed, executable plan for multi-file/risky features. No code edits, wait for confirmation. Auto-fires for clear feature work (the request names a thing to build). For non-feature risky work — a refactor, a config/infra change, an ambiguous "make X better" ask — use `plan-first` instead; it takes the same output format at opus-level effort. If the feature description lacks a goal or scope, fill `OPEN:` with the missing questions instead of guessing.
+Produce a detailed, executable plan for multi-file/risky features. No code edits, wait for confirmation. Auto-fires for clear feature work (the request names a thing to build); also fits non-feature risky work (refactors, config/infra, ambiguous "make X better" asks) when invoked directly. Tier 3+ / protected-area work should run under native plan mode (read-only) with this output format. If the feature description lacks a goal or scope, fill `OPEN:` with the missing questions instead of guessing.
 
 ## Output format
 
 ```text
 GOAL: [≤10 words] | NON-GOALS: [excluded] | RISK: low|medium|high|critical — [why]
-PROTECTED: [auth|payment|DB|secrets|CI|none] | GUARD: [db-guard|security-guard|migration-guard|none]
+PROTECTED: [auth|payment|DB|secrets|CI|none] | GUARD: [db-guard|security-guard|devops-guard|none]
 AFFECTED: `exact/file` — [modify|create] — [why]
 STEPS:
   [P:A] `exact/file` — [fn name+sig | endpoint+DTO | component+props]

@@ -59,7 +59,7 @@ NO  → continue to Step 3
 | payment / billing / invoice / subscription | security-guard | 3 |
 | injection / XSS / CSRF / CVE / vulnerability | security-guard | 3 |
 | DB schema / model / column / index / constraint | db-guard | 3 |
-| migration / ALTER TABLE / DROP / data backfill | migration-guard | 3-4 |
+| migration / ALTER TABLE / DROP / data backfill | db-guard | 3-4 |
 | CI/CD / GitHub Actions / Docker / Terraform / K8s | devops-guard | 3-4 |
 
 Guard agents are **read-only planners** — they produce a written plan and pause for approval.
@@ -70,28 +70,29 @@ Implementation only starts after explicit user approval ("looks good", "proceed"
 When a request matches more than one row in the Step 3 table (e.g. "add an encrypted-token column" = auth + DB schema), route to **all** matching guards, sequenced by blast radius — widest-impact guard plans first, narrower guard reviews its slice before implementation:
 
 ```text
-auth/payment + DB schema   → security-guard (data classification, encryption-at-rest) → db-guard → migration-guard
+auth/payment + DB schema   → security-guard (data classification, encryption-at-rest) → db-guard
 auth/payment + CI/CD       → security-guard (secrets, auth flow) → devops-guard
-DB schema + CI/CD          → db-guard → migration-guard → devops-guard (deploy ordering)
+DB schema + CI/CD          → db-guard → devops-guard (deploy ordering)
 ```
 
 Each guard's plan is shown before the next guard starts — never skip straight to implementation because one guard approved.
 
-### Guard sequencing — DB schema changes always pass through both guards
+### db-guard runs both DB review phases
 
-The db-guard → migration-guard hand-off is **mandatory in the forward direction and optional in reverse**:
-
-- **Forward (mandatory):** any request that starts as a schema-design question never stops at db-guard. db-guard always hands its approved plan to migration-guard for deployment/rollback safety review before senior-engineer implements — even for additive-only changes (new nullable column, new table). This is db-guard's own hard constraint, not optional.
-- **Reverse (not required):** migration-guard never needs a prior db-guard pass. If the request enters the chain at migration-guard (e.g. "review this migration file" with no schema-design question), migration-guard runs standalone.
+db-guard covers schema design AND migration deployment safety in one agent (two output modes):
 
 ```text
-User: "add a column to users" / "add an index" / "drop the legacy_status column"
-  → db-guard (schema design: additive-first, index analysis, risk classification)
-        → migration-guard (deployment order, rollback procedure, zero-downtime staging)
-              → senior-engineer (implements only after BOTH guards approve)
+User: "add a column to users" / "add an index" (additive, GO-tier)
+  → db-guard (schema design: additive-first, index analysis, risk classification
+              + deployment safety: deploy order, rollback procedure, zero-downtime staging)
+        → senior-engineer (implements only after the plan is approved)
+
+User: "drop the legacy_status column" (destructive, STOP-tier — needs explicit user approval + verified backup)
+  → db-guard (schema design flags it STOP + deployment safety spells out the rollback/backup requirement)
+        → user approval required before senior-engineer implements
 
 User: "review this migration file" (migration exists, no schema-design question)
-  → migration-guard alone (standalone review — no db-guard pass required)
+  → db-guard, deployment-safety mode only (MIGRATION SAFETY REVIEW output)
 ```
 
 ---
@@ -110,7 +111,7 @@ New page needing backend (upload, API, DB)          → senior-engineer (sonnet,
 API contract / endpoint design / versioning         → senior-engineer (sonnet, Tier 2-3)
 Normal feature, refactor, multi-file work           → senior-engineer (sonnet, Tier 2)
 Slow query / N+1 / bundle / render loop             → performance-guard (sonnet, Tier 2-3)
-Dep CVE / audit / outdated packages                 → security-scanner  (sonnet, Tier 1-2)
+Dep CVE / audit / outdated packages                 → security-guard (scan mode, Tier 1-2)
 Large feature / architecture / system design        → architect  (opus,   Tier 3)
 Research / fact-check / comparison                  → researcher (opus,   Tier 2-3)
 README / changelog / API docs                       → docs-writer (haiku, Tier 0-1)
@@ -137,7 +138,7 @@ README / changelog / API docs                       → docs-writer (haiku, Tier
 | CSS bug that touches auth session display | security-guard | Auth signal dominates |
 | Performance issue in a DB query | performance-guard reads, db-guard if schema change needed | Read-only perf = performance-guard; schema fix = db-guard |
 | Refactor touching 6+ files | architect (not senior-engineer) | >5 files = Tier 2 min; large scope = Tier 3 |
-| Security scan vs. specific vulnerability fix | security-scanner for audit; security-guard for fix | Scan ≠ fix |
+| Security scan vs. specific vulnerability fix | security-guard both — tool-driven scan mode for audits, code-review mode for fixes | Scan ≠ fix, but one agent owns both modes |
 | Docs update that changes API contract | senior-engineer or architect first; docs-writer after | Contract change precedes docs |
 | "Review my auth/payment/DB/CI code" (review verb + guard-area noun) | The matching Step 3 guard, not reviewer | Guard-area nouns always outrank the generic "review/check" verb — reviewer is for diffs with no guard-area signal |
 | "Design the API contract" for one feature/service | senior-engineer (not architect) | architect is for system-wide / multi-system design; a single service's API contract and versioning is Tier 2-3 engineering |
@@ -155,7 +156,7 @@ ui-fixer
   └─▶ senior-engineer (if backend or state needed)
         └─▶ architect (if scope grows or design ambiguous)
               └─▶ security-guard / devops-guard ─────────────┐
-              └─▶ db-guard ──▶ migration-guard ───────────────┤  (DB schema: always both, in order)
+              └─▶ db-guard (schema design + migration deployment safety) ─┤
               └─▶ performance-guard (read-only; reports back, does not implement) ─┤
                                                                 └─▶ senior-engineer (implements approved plan)
                                                                       └─▶ reviewer (optional post-implementation check)
@@ -174,7 +175,7 @@ ui-fixer
 | auth / login / token / session / JWT / güvenlik | security-guard |
 | slow / perf / N+1 / bundle / yavaş | performance-guard |
 | DB / schema / column / model / tablo | db-guard |
-| migrate / migration / ALTER / DROP | migration-guard |
+| migrate / migration / ALTER / DROP | db-guard |
 | Docker / CI / pipeline / deploy / infra | devops-guard |
 | review / check / incele / bak / diff | reviewer |
 | test / spec / coverage | test-engineer |

@@ -5,26 +5,19 @@ Each example shows: user input → auto-routing → output format.
 
 ## Worked bootstraps
 
-Full setup walkthroughs showing stack detection, generated `stack-rules.md`, and real usage flows:
+Full setup walkthroughs showing stack detection, generated `stack-rules.md`, and real usage flows — one representative walkthrough per platform class:
 
-| Example | Stack | Flows covered |
-| --- | --- | --- |
-| [nextjs-prisma-postgres.md](nextjs-prisma-postgres.md) | Next.js SaaS + Prisma + PostgreSQL | New page, DB column, security review |
-| [nestjs-prisma-postgres.md](nestjs-prisma-postgres.md) | NestJS + Prisma + PostgreSQL | New endpoint, Prisma model + migration, security scan |
-| [fastapi-sqlalchemy-postgres.md](fastapi-sqlalchemy-postgres.md) | FastAPI + SQLAlchemy + PostgreSQL | New endpoint, DB column, security scan |
-| [django-postgres.md](django-postgres.md) | Django + PostgreSQL | New DRF endpoint, DB column, IDOR review |
-| [nuxt-drizzle-postgres.md](nuxt-drizzle-postgres.md) | Nuxt 3 + Drizzle + PostgreSQL | New admin page, DB column, SSR auth review |
-| [laravel-mysql.md](laravel-mysql.md) | Laravel + Filament + MySQL | New Filament resource, migration, mass assignment review |
-| [rails-postgres.md](rails-postgres.md) | Rails 7 + PostgreSQL | New controller action, migration, IDOR review |
-| [dotnet-postgres.md](dotnet-postgres.md) | .NET 8 API + EF Core + PostgreSQL | New endpoint + DTO, EF migration, payment security review |
-| [go-postgres.md](go-postgres.md) | Go REST API + PostgreSQL | New endpoint, soft-delete migration, security scan |
-| [java-spring-postgres.md](java-spring-postgres.md) | Java Spring Boot + PostgreSQL | New endpoint, JPA entity + Flyway migration, security scan |
-| [rust-axum-postgres.md](rust-axum-postgres.md) | Rust Axum + PostgreSQL | New route handler, SQLx migration, unsafe block audit |
-| [flutter-supabase.md](flutter-supabase.md) | Flutter + Supabase | New screen, DB table + RLS, performance review |
-| [kotlin-android-firebase.md](kotlin-android-firebase.md) | Kotlin Android + Firebase (Firestore + Auth) | New screen, Security Rules review, crash fix |
-| [swift-ios-supabase.md](swift-ios-supabase.md) | Swift iOS + Supabase | New screen, RLS table review, auth flash fix |
+| Example | Platform class | Stack | Flows covered |
+| --- | --- | --- | --- |
+| [nextjs-prisma-postgres.md](nextjs-prisma-postgres.md) | Web | Next.js SaaS + Prisma + PostgreSQL | New page, DB column, security review |
+| [go-postgres.md](go-postgres.md) | Backend | Go REST API + PostgreSQL | New endpoint, soft-delete migration, security scan |
+| [flutter-supabase.md](flutter-supabase.md) | Mobile | Flutter + Supabase | New screen, DB table + RLS, performance review |
 
 Each example includes: detected presets → files copied → auto-generated `stack-rules.md` → 3 real usage flows → per-task cost estimates.
+
+Plus [with-vs-without-kit.md](with-vs-without-kit.md) — the same three requests handled with and without the kit.
+
+> **Where did the other stacks go?** Earlier releases shipped a walkthrough per stack (NestJS, Django, Rails, .NET, Spring, Rust, Laravel, Nuxt, Kotlin/Firebase, Swift/Supabase, ...). The flows were near-identical across stacks, so they were consolidated to one walkthrough per platform class. Per-stack guidance lives in [`presets/`](../presets/) — each preset's `CLAUDE.md` is the authoritative rules file for that stack; the examples here are representative walkthroughs, not a stack catalogue.
 
 ---
 
@@ -148,13 +141,13 @@ Approve to proceed?
 
 ## Installed project structure
 
-After running `bash install.sh` or `.\install.ps1` in a project:
+After Claude Code applies `SETUP.md` to a project (or after installing the plugin and running the agent-driven single-project setup):
 
 ```text
 your-project/
 └── .claude/
     ├── CLAUDE.md          ← copied from presets/web/nextjs-saas/CLAUDE.md (or your stack)
-    ├── settings.json      ← deny list + CLAUDE_CODE_SUBAGENT_MODEL=haiku
+    ├── settings.json      ← deny list only (no CLAUDE_CODE_SUBAGENT_MODEL — it would override named agents' own model:)
     ├── rules/
     │   ├── 000-security.md
     │   ├── 001-conventions.md
@@ -170,10 +163,10 @@ your-project/
     ├── skills/
     │   ├── bug-fix/SKILL.md
     │   ├── feature-build/SKILL.md
-    │   └── ... (33 skills)
+    │   └── ... (23 skills)
     └── agent_docs/
         ├── architecture.md
-        └── ... (15 docs, lazy-loaded)
+        └── ... (16 docs, lazy-loaded)
 ```
 
 Claude Code loads `.claude/CLAUDE.md` automatically on every session.

@@ -26,7 +26,7 @@ RISK: T3·db-guard·schema | ROLLBACK: migration 2 deferred → drop is reversib
 
 The drop is deferred to a second release per `agent_docs/zero-downtime-migration.md`.
 If hooks are enabled, any direct edit under `migrations/` additionally triggers a
-permission prompt naming `migration-guard` — even if the model forgot to escalate.
+permission prompt naming `db-guard` — even if the model forgot to escalate.
 
 ## Request 2 — "login butonu mobilde taşıyor, düzelt"
 

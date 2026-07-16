@@ -8,14 +8,14 @@ effort: high
 color: gray
 maxTurns: 8
 skills:
-  - release-check
-  - dep-check
+  - release-gate
+  - security-scan
   - env-audit
 ---
 
 ## Reference docs (lazy-load when needed)
 
-`agent_docs/dep-check-guide.md` — alternatives table and audit commands by runtime (for dependency CVE review before a release)
+`agent_docs/dep-check-guide.md` — alternatives table and audit commands by runtime (for dependency CVE review before a release, via the `security-scan` skill)
 `agent_docs/env-audit-guide.md` — grep commands by language, .env.example format (for environment variable audits)
 `agent_docs/devops-security-guide.md` — Dockerfile hardening template, GitHub Actions SHA-pinning/OIDC, IaC checklists, rollback strategies by change type, SBOM commands
 

@@ -11,7 +11,7 @@
 
 - Respect async/await, Combine, or callback patterns already in the project.
 - Avoid blocking the main thread.
-- Keep CoreData/SwiftData changes behind data-modeling workflow.
+- Keep CoreData/SwiftData changes behind the db-change workflow.
 
 ## Verification
 
