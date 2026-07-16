@@ -16,16 +16,14 @@ The hook **fails open**: if Claude Code's hook input format ever changes, the
 script exits 0 instead of bricking every edit — the CLAUDE.md prompt-level hard
 stops remain as the fallback layer.
 
-## Enabling (copy-install mode)
+## Enabling
 
-`install.sh` / `install.ps1` copy this directory to `~/.claude/hooks/` and then wire it into
-`~/.claude/settings.json` automatically (via `scripts/wire-hook.mjs`) — **on by default** since
-this is the kit's only harness-enforced guardrail; everything else in the kit is prompt
-discipline the model can (in principle) ignore. Pass `--no-hooks` (`install.sh`) or `-NoHooks`
-(`install.ps1`) to skip wiring if you don't want the extra permission prompts.
+**Plugin install:** `hooks.json` registers this hook automatically via `${CLAUDE_PLUGIN_ROOT}` —
+no manual wiring needed.
 
-If you installed via `SETUP.md` (agent-driven, per-project setup) or declined the flag and want
-to turn it on later, merge this into your `~/.claude/settings.json` by hand:
+**SETUP.md / manual install:** copy `protected-paths.mjs` to `~/.claude/hooks/` (or
+`.claude/hooks/` for a project-local install), then merge this into the target
+`settings.json` by hand — `SETUP.md` Step 5e does this for you when Claude runs the install:
 
 ```json
 {
@@ -44,8 +42,9 @@ to turn it on later, merge this into your `~/.claude/settings.json` by hand:
 
 On Windows, replace the command with the expanded absolute path
 (`node "C:\\Users\\<you>\\.claude\\hooks\\protected-paths.mjs"`) — `$HOME` is not
-expanded by every Windows shell. `node scripts/wire-hook.mjs <settings.json path> <hook path>`
-(from a checkout of this repo) does this merge for you idempotently — safe to re-run.
+expanded by every Windows shell. Merge into any existing `hooks` key rather than overwriting it;
+if `hooks.PreToolUse` already has an entry whose `command` contains `protected-paths.mjs`, leave
+it as-is instead of adding a duplicate.
 
 ## Escape hatch
 

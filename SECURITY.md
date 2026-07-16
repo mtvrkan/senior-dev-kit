@@ -33,10 +33,10 @@ Please include:
 
 ## Scope
 
-This kit consists of Markdown configuration files, Bash/PowerShell install scripts, and Node.js validation scripts. The main attack surfaces are:
+This kit consists of Markdown configuration files and Node.js validation/hook scripts. There is no installer script — install happens via the Claude Code plugin marketplace or by Claude reading and applying `SETUP.md`. The main attack surfaces are:
 
-- **Install scripts** (`install.sh`, `install.ps1`) — shell injection via crafted preset names or paths
-- **`settings.json` deny rules** — rules that are too permissive could allow unintended tool calls inside Claude Code
+- **`hooks/protected-paths.mjs`** (PreToolUse hook) — must not itself introduce path-traversal or bypassable matching, since it's the harness-enforced guardrail for secrets/auth/payment/migration/CI paths
+- **`settings-template.json` deny rules** — rules that are too permissive could allow unintended tool calls inside Claude Code
 - **`global-CLAUDE.md` / agent definitions** — prompt injection via malicious content in routed tasks
 
 Out of scope:
@@ -53,7 +53,7 @@ The kit enforces several defence-in-depth measures:
    **Scope note:** deny rules are prefix/glob matchers on the command string — defence-in-depth, not a sandbox. They stop the destructive patterns an assistant would plausibly emit; they cannot enumerate every shell-equivalent form. The guard agents and `global-CLAUDE.md` hard stops are the layers above them.
 
    **Measured cost:** `npm run deny-cost` replays your own machine's Claude Code transcript history against the Bash deny list and reports what it would have blocked, so friction is a number rather than a guess. On the development machine (3,646 real commands across 160 transcripts) the list would have denied 19 commands (0.52%), all from 4 rules: `curl * | node*` / `curl * | python*` catching API responses piped into local one-liners, `npx --yes *` catching Playwright installs, and `rm -rf /*` catching absolute-path deletes (on Git Bash every absolute path starts with `/c/…`, so this rule denies **all** absolute-path recursive deletes on Windows — an accepted trade-off: relative-path deletes still work and the rule keeps blocking root wipes). The inline-interpreter rules (`eval`, `sh -c`, `bash -c`, `zsh -c`) matched zero historical commands. Run the script yourself before adopting the list, and tune any rule whose matches are legitimate for your workflow.
-2. **Guard agents with `permissionMode: plan`** — `security-guard`, `db-guard`, `migration-guard`, and `devops-guard` produce a written plan and pause for explicit user approval before any implementation.
+2. **Guard agents with `permissionMode: plan`** — `security-guard`, `db-guard`, and `devops-guard` produce a written plan and pause for explicit user approval before any implementation.
 3. **OWASP 2025 passive scan** — every code change is silently scanned for injection, IDOR, mass assignment, ReDoS, SSRF, and supply chain issues.
 4. **SHA-pinned GitHub Actions** — all Actions in this repo are pinned to a full commit SHA, not mutable version tags.
 5. **Secret file protection** — `global-CLAUDE.md` hard-stops any read of `.env`, `*.pem`, `*.key`, SSH keys, and service account files.

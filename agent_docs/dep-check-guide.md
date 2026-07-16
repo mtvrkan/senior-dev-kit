@@ -1,6 +1,6 @@
 # Dependency Check Guide
 
-Reference for `/dep-check` skill — open-source alternatives table and dependency philosophy.
+Reference for the `security-scan` skill's dependency-hygiene check — open-source alternatives table and dependency philosophy.
 
 ---
 

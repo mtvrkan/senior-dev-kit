@@ -6,54 +6,25 @@ Common setup problems and their fixes.
 
 ## Installation problems
 
-### `bash install.sh` returns "Permission denied"
+### `/plugin install` doesn't register the agents/skills
 
-```bash
-chmod +x install.sh
-bash install.sh
-```
-
-Or run directly without making it executable: `bash install.sh`
+Confirm the marketplace was added first (`/plugin marketplace add mtvrkan/senior-dev-kit`) and that `/plugin install senior-dev-kit@senior-dev-kit` completed without error. Remember the plugin only covers `agents/`, `skills/`, `commands/`, and the protected-path hook — it does not install `rules/`, `agent_docs/`, or `global-CLAUDE.md`. For those, run `SETUP.md` Step 5 (see [README.md Option B](README.md#option-b--install-to-global-claude-applies-to-all-projects)).
 
 ---
 
-### PowerShell blocks `.\install.ps1` — "running scripts is disabled"
+### `Read SETUP.md and apply it` stops partway or asks unexpected questions
 
-Run this once as Administrator, then retry:
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
----
-
-### `install.sh --detect` picks wrong preset
-
-The auto-detect reads `package.json`, `requirements.txt`, `go.mod` etc. in the **current directory**. Make sure you are inside your project root when running:
-
-```bash
-cd /path/to/my-project
-bash /path/to/senior-dev-kit/install.sh --detect
-```
+SETUP.md is written for autonomous execution — if Claude pauses to ask something not covered by the file (e.g. an ambiguous stack match), answer directly and tell it to continue from the same step. If it seems to have skipped a step, re-run: `Read SETUP.md and re-check Step [N] on this project.`
 
 ---
 
 ### Files installed to wrong location
 
-The default target is `~/.claude/` (global). To install to a specific project instead, copy manually:
-
-```bash
-# From your project root:
-cp -r /path/to/senior-dev-kit/agents     .claude/agents
-cp -r /path/to/senior-dev-kit/skills     .claude/skills
-cp -r /path/to/senior-dev-kit/commands   .claude/commands
-cp -r /path/to/senior-dev-kit/rules      .claude/rules
-cp -r /path/to/senior-dev-kit/agent_docs .claude/agent_docs
-```
+The manual copy commands in [README.md Option C](README.md#option-c--manual-install-for-a-single-project) target the current project's `.claude/`. To install globally instead, replace every `.claude/` destination with `~/.claude/` (macOS/Linux) or `$env:USERPROFILE\.claude\` (Windows), or just run `SETUP.md` Step 5.
 
 ---
 
-## VERIFY.md check failures
+## Verification check failures (SETUP.md Step 6)
 
 ### FAIL — `CLAUDE.md` missing
 
@@ -67,7 +38,7 @@ Or run `SETUP.md` in Claude Code which auto-generates it.
 
 ---
 
-### FAIL — agent count is not 15 (14 agents + `ROUTING.md`)
+### FAIL — agent count is not 13 (12 agents + `ROUTING.md`)
 
 One agent file was not copied. Re-copy the agents folder:
 
@@ -79,11 +50,11 @@ cp senior-dev-kit/agents/* .claude/agents/
 Copy-Item senior-dev-kit\agents\* .claude\agents\ -Force
 ```
 
-Then re-run VERIFY.md.
+Then re-run SETUP.md Step 6.
 
 ---
 
-### FAIL — skill count is less than 32
+### FAIL — skill count is less than 23
 
 You may have an older installation. Re-copy the skills folder:
 
@@ -163,14 +134,15 @@ cp senior-dev-kit/global-CLAUDE.md ~/.claude/CLAUDE.md
 
 ---
 
-### `/smart-task` or `/plan-first` not recognized
+### `/agents-guide`, `/seo-check`, or a skill shortcut not recognized
 
-**Cause:** Command files are missing from `.claude/commands/`.
+**Cause:** Command files are missing from `.claude/commands/`, or skill directories are missing from `.claude/skills/`.
 
 **Fix:**
 
 ```bash
 cp senior-dev-kit/commands/* .claude/commands/
+cp -r senior-dev-kit/skills/* .claude/skills/
 ```
 
 ---
@@ -326,6 +298,6 @@ Restart your Claude Code session (close and reopen the project). Claude Code loa
 
 ## Still stuck?
 
-1. Run VERIFY.md inside Claude Code: `Read VERIFY.md and run all checks on this project.`
+1. Run `SETUP.md` Step 6 inside Claude Code: `Read SETUP.md and run Step 6 (Verify installation) on this project.`
 2. Check the project's GitHub Issues
 3. Open a fresh session and paste the error message

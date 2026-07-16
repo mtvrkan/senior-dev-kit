@@ -1,6 +1,6 @@
 # API Versioning Guide
 
-Reference for `/api-versioning` skill — code templates for parallel versions, deprecation headers, and migration docs.
+Reference for the `api-design` skill's API versioning workflow — code templates for parallel versions, deprecation headers, and migration docs.
 
 ---
 

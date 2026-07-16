@@ -24,7 +24,7 @@ Presets live in `presets/<category>/<name>/`. Each must contain exactly two file
 3. Add a row for your preset in `PRESET-MAINTENANCE.md` with today's date as "Last Reviewed".
 4. Run `npm run validate` — it checks that both files exist and `CLAUDE.md` has non-trivial content.
 5. Add the preset to the table in `README.md` (the "Presets" section) and to `CHANGELOG.md` under `[Unreleased]`.
-6. If the preset has a natural auto-detect signal (e.g. a unique package name), add a detection clause in `install.sh` and `install.ps1`.
+6. If the preset has a natural auto-detect signal (e.g. a unique package name), add a detection row to the matching table in `SETUP.md` Step 1 (Claude reads the manifest and selects presets from that table directly — there's no installer script to update).
 
 ### Preset content requirements
 
@@ -67,7 +67,7 @@ Full dated IDs remain valid for deliberate pinning (e.g. reproducibility) — le
 
 > **Keeping model IDs current:** When Anthropic releases a new model, add its ID to **both** the `VALID_MODELS` set in `scripts/validate-skills.ts` **and** the list above. A model ID that looks like a Claude ID (`claude-...`) but isn't in the set produces a **warning** (so a newly released model doesn't break CI before the list is updated); anything else — typos, non-Claude IDs — is a hard **error**.
 
-Guard agents (those that plan but don't implement) **must** set `permissionMode: plan`. Operationally, `permissionMode: plan` means the agent runs in Claude Code's plan mode: it can read and analyze but cannot edit files or run mutating commands — it produces a plan the user approves before implementation is handed to a builder agent. That's the entire point of the guard agents (security-guard, db-guard, migration-guard, devops-guard): protected-area changes always get a reviewed plan first. `npm run validate` fails if a guard agent is missing it. All other agents use `permissionMode: default`.
+Guard agents (those that plan but don't implement) **must** set `permissionMode: plan`. Operationally, `permissionMode: plan` means the agent runs in Claude Code's plan mode: it can read and analyze but cannot edit files or run mutating commands — it produces a plan the user approves before implementation is handed to a builder agent. That's the entire point of the guard agents (security-guard, db-guard, devops-guard): protected-area changes always get a reviewed plan first. `npm run validate` fails if a guard agent is missing it. All other agents use `permissionMode: default`.
 
 ### After adding an agent
 
@@ -106,7 +106,7 @@ agent: my-agent                   # required with context: fork — which agents
 
 Use `context: fork` for skills whose own procedure is long or noisy (broad codebase reads, multi-source research, log/test-output analysis) — isolating that into the target agent's own context keeps the noise out of the main conversation. Leave it off for short, single-step procedures the user should see happen inline (e.g. "write a commit message in this format"), or for skills with a mid-task user checkpoint baked into their own steps (outline approval, phase gates) that a one-shot forked run would skip.
 
-`disable-model-invocation` and `model` are independent: the former controls *whether* the skill can trigger automatically, the latter controls *which model* runs it once triggered (manually or automatically). Manual-only skills (`smart-task`, `plan-first`, `safe-review`, `release-gate`) set both together — `disable-model-invocation: true` to require explicit invocation, plus a `model:` for when that explicit invocation happens.
+`disable-model-invocation` and `model` are independent: the former controls *whether* the skill can trigger automatically, the latter controls *which model* runs it once triggered (manually or automatically). Manual-only skills (`code-audit`, `deep-research`, `env-audit`, `kit-doctor`) set both together — `disable-model-invocation: true` to require explicit invocation, plus a `model:` for when that explicit invocation happens.
 
 Keep the body under 20 non-blank lines — `npm run validate` enforces this as a hard error. Longer content belongs in `agent_docs/`.
 
@@ -135,7 +135,7 @@ Follow the numbering convention:
 
 ## Adding a Command
 
-Commands live in `commands/<name>.md`. Each file is a slash-command prompt template: YAML frontmatter, then a body whose first line is `# /<name>`; `$ARGUMENTS` marks where the user's input is substituted (see `commands/dep-check.md` for a typical shape).
+Commands live in `commands/<name>.md`. Each file is a slash-command prompt template: YAML frontmatter, then a body whose first line is `# /<name>`; `$ARGUMENTS` marks where the user's input is substituted (see `commands/seo-check.md` for a typical shape).
 
 ### Required frontmatter fields
 
@@ -157,7 +157,7 @@ argument-hint: "[target]"  # shown in autocomplete — the validator warns if th
 2. Add a row in `COMMANDS-MAINTENANCE.md` with today's date as "Last Reviewed" — `npm run stale-check` fails on untracked command files.
 3. Run `npm run validate` — it fails on a command without frontmatter or `description`.
 4. Add the command to the table in `README.md` and to `CHANGELOG.md` under `[Unreleased]`.
-5. If the command overlaps an existing skill (e.g. `/dep-check` vs the `dep-check` skill), cross-reference the pair in both files so users know which to reach for.
+5. If the command overlaps an existing skill (e.g. a new `/foo` command vs an existing `foo` skill), cross-reference the pair in both files so users know which to reach for — this is now the exception rather than the norm: the kit's own 11→2 command consolidation moved every same-named command/skill pair into a single skill, invoked directly by name.
 
 ## Updating the Maintenance Tables
 

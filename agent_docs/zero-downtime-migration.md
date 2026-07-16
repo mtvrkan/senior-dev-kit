@@ -1,6 +1,6 @@
 # Zero-Downtime Migration Pattern
 
-Canonical Expand → Write-both → Backfill → Add-constraint → Contract pattern. Referenced by `db-guard` (schema planning) and `migration-guard` (migration safety review) — if you change this file, both agents pick it up automatically since neither duplicates the steps inline anymore.
+Canonical Expand → Write-both → Backfill → Add-constraint → Contract pattern. Referenced by `db-guard` for both its schema-planning and migration-safety-review output modes — if you change this file, both modes pick it up automatically since neither duplicates the steps inline anymore.
 
 ## The five steps
 
