@@ -35,7 +35,8 @@ Requires analysis:
 - [ ] Column type change → check existing data compatibility
 - [ ] Adding FK constraint to existing data → validate orphans first
 - [ ] Removing column → verify no code references it (search all codebases)
-- [ ] Renaming column → BREAKING if clients read by name (use alias period)
+- [ ] Renaming column via aliased multi-step (add new column, dual-write, backfill, drop old later) → PLAN (db-guard reviews the rollout, not a hard stop)
+- [ ] Renaming column in-place (single migration, no alias period) → STOP, explicit user approval required — breaks any code/client still reading the old name the instant it deploys
 - [ ] Changing index → DROP/CREATE can lock table (use CONCURRENTLY in Postgres)
 - [ ] Removing table → verify no references, archive data if needed
 

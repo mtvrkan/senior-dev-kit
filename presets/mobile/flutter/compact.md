@@ -2,8 +2,8 @@
 - Do not change native Android/iOS config unless requested
 - Anti: rewriting state management for one feature, async business logic in build(), arbitrary colors/sizes
 - NEW SCREEN: find similar screen first → use Scaffold + AppBar → sealed state class (Loading/Loaded/Empty/Error) → render all states in build()
-- Required states: Loading (Center + CircularProgressIndicator.adaptive()), Empty (icon+message+optional FilledButton), Error (message+retry OutlinedButton), Populated
-- Widgets: Scaffold, AppBar, ListView.builder, Card, FilledButton/OutlinedButton/TextButton, TextFormField+Form, FilterChip, AlertDialog via showDialog, showModalBottomSheet, CircularProgressIndicator.adaptive(), ScaffoldMessenger.showSnackBar (never third-party toast for M3 UI)
+- Required states: Loading (shimmer skeleton matching content shape for lists/cards — never CircularProgressIndicator for list loading; CircularProgressIndicator.adaptive() OK for brief full-screen blocks only), Empty (icon+message+optional FilledButton), Error (message+retry OutlinedButton), Populated
+- Widgets: Scaffold, AppBar, ListView.builder, Card, FilledButton/OutlinedButton/TextButton, TextFormField+Form, FilterChip, AlertDialog via showDialog, showModalBottomSheet, shimmer package for list loading, CircularProgressIndicator.adaptive() for brief blocking waits only, ScaffoldMessenger.showSnackBar (never third-party toast for M3 UI)
 - Spacing: 4dp multiples only — 4,8,12,16,20,24,32dp. Never arbitrary values
 - Colors: Theme.of(context).colorScheme.X only — never Colors.blue, Colors.grey, Color(0xFF...)
 - Typography: Theme.of(context).textTheme.X only — never raw TextStyle(fontSize: N)

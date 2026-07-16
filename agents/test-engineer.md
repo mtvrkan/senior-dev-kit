@@ -35,8 +35,8 @@ No padding. Do not write tests for untouched functions.
 
 ## Mock minimally
 
-Mock only: HTTP, DB/ORM, file I/O, external SDKs, Date.now(), Math.random().
-Do NOT mock: internal pure functions, utility functions, type mappers.
+Mock only: external HTTP APIs, email/payment gateways, external SDKs, Date.now(), Math.random().
+Do NOT mock: internal pure functions, utility functions, type mappers, your own DB (use a test DB — see `rules/300-testing.md`).
 
 ## Run targeted only
 

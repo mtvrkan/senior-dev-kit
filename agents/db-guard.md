@@ -72,7 +72,7 @@ Five-step Expand → Write-both → Backfill → Add-constraint → Contract pat
 **REQUIRES PLAN (medium risk, multi-step):**
 
 - Add NOT NULL column → add nullable → backfill → add NOT NULL
-- Rename column → alias period → new col → write-both → backfill → remove old
+- Rename column via aliased multi-step (new col → write-both → backfill → remove old alias later)
 - Change column type → add new col → write-both → backfill → switch reads → remove old
 - Add FK constraint to existing data → verify no orphans first (`SELECT COUNT(*) WHERE old_id NOT IN (...)`)
 - Remove column → verify no code references it (grep all codebases)
@@ -82,7 +82,7 @@ Five-step Expand → Write-both → Backfill → Add-constraint → Contract pat
 - DROP TABLE → backup required, confirm no references
 - TRUNCATE → backup required, confirm intent
 - Mass UPDATE/DELETE → preview affected count, backup
-- Column rename → BREAKING for API clients reading by name
+- Column rename in-place (single migration, no alias period) → BREAKING the instant it deploys for any code/client still reading the old name
 
 ---
 

@@ -84,7 +84,8 @@ useEffect(() => { fetchItems() }, [])
 | Navigation | Expo Router `<Stack>` / `<Tabs>` / `<Link>` |
 | Long list | `<FlashList>` (Shopify, free) — never `<FlatList>` for long lists |
 | Short list | `<FlatList>` or `<ScrollView>` |
-| Loading | `<ActivityIndicator>` centered, or `<Skeleton>` component |
+| Loading (list/card content) | `<Skeleton>` component matching content shape — prefer over a spinner, same as web |
+| Loading (full-screen block, button inline) | `<ActivityIndicator>` centered, or inline within the button |
 | Card | `<Pressable>` + `<View>` with border/shadow, or project's Card component |
 | Primary button | Project's `<Button>` component — or `<Pressable>` + styled `<Text>` |
 | Input | `<TextInput>` with project styling, or `react-hook-form` + `<Controller>` |
@@ -147,11 +148,13 @@ Never: `padding: 17`, `margin: 7`.
 
 ### Required states
 
-**Loading:**
+**Loading** (list/card content — skeleton matching shape; use `<ActivityIndicator>` only for a full-screen block with no list underneath):
 
 ```tsx
-<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-  <ActivityIndicator size="large" color={colors.primary} />
+<View style={{ padding: spacing.base, gap: spacing.sm }}>
+  {[...Array(5)].map((_, i) => (
+    <Skeleton key={i} height={72} borderRadius={12} />
+  ))}
 </View>
 ```
 

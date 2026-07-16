@@ -68,7 +68,8 @@ Add `data-testid` to interactive elements when writing UI tests — do not query
 
 ## TEST FILE POLICY
 
-- Never modify existing test files without explicit user permission
+- Extending an existing test file (adding new `it`/`test` cases for changed behavior) is always allowed
+- Never rewrite or delete existing test cases in a file without explicit user permission — a failing test is a signal to fix the code, not the test
 - When adding a feature, add tests in the SAME turn (not "I'll add tests next")
 - Test file location: co-located with source (`auth.service.ts` → `auth.service.test.ts`)
   OR in `__tests__/` subdirectory — follow what already exists in project

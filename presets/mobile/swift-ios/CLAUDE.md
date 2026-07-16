@@ -174,6 +174,8 @@ VStack(spacing: 5) { ... }
 
 Standard values: 4, 8, 12, 16, 20, 24, 32, 48 pt
 
+Note: 20pt is a deliberate platform exception (Apple HIG's standard margin/inset unit), not a violation — iOS spacing follows HIG conventions, not the stricter web 8px grid in `rules/100-web.md` (which governs `.tsx`/`.vue`/etc. only and doesn't apply to Swift).
+
 ### Required states — all 4
 
 **Loading:**

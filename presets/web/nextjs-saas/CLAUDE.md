@@ -33,8 +33,8 @@ Use this section when building a NEW page, section, or screen that doesn't have 
 Before calling a from-scratch page "done", verify ALL of these:
 
 - [ ] Consistent spacing with the rest of the admin (check an existing page and match its padding/gap values exactly)
-- [ ] Proper loading state (skeleton or spinner — not a blank flash)
-- [ ] Empty state (message + optional CTA when list/table has 0 rows)
+- [ ] Proper loading state (skeleton matching content shape — never spinner for list/card/table, per `rules/100-web.md`)
+- [ ] Empty state: icon + headline + description + CTA button — all 4 required when list/table has 0 rows (per `rules/100-web.md`)
 - [ ] Error state (when fetch fails — show a message, not a crash)
 - [ ] Mobile responsiveness: sidebar collapses, table becomes scrollable or stacks
 - [ ] No raw `<div>` layout — use the project's existing layout wrapper/shell component

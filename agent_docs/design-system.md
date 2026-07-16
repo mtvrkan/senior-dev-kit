@@ -44,14 +44,13 @@ color: hsl(var(--destructive));
 
 ## 8PX GRID — mandatory spacing values
 
-Only these values: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128
+Only these values (matches rules/100-web.md — the canonical list; `p-5`/`p-10`/`p-20` are NOT on it): 4, 8, 12, 16, 24, 32, 48, 64, 96, 128
 
 Tailwind mapping:
 
 ```text
 p-1 = 4px    p-2 = 8px    p-3 = 12px   p-4 = 16px
-p-5 = 20px   p-6 = 24px   p-8 = 32px   p-10 = 40px
-p-12 = 48px  p-16 = 64px  p-20 = 80px  p-24 = 96px
+p-6 = 24px   p-8 = 32px   p-12 = 48px  p-16 = 64px
 ```
 
 Never: `p-[13px]` `p-[17px]` `gap-[18px]` `m-[7px]` — arbitrary values break grid consistency.
@@ -73,8 +72,8 @@ Font pairing by archetype:
 
 | Archetype | Display (headings) | Body |
 | --- | --- | --- |
-| SaaS / DevTool | Inter | Inter |
-| Corporate | Geist | Geist |
+| SaaS / DevTool | Geist | Inter |
+| Corporate | Manrope | Inter |
 | Marketing / Creative | Cal Sans | Inter |
 | Ecommerce | Plus Jakarta Sans | Inter |
 | Healthcare / Education | Source Serif 4 | Source Sans 3 |
@@ -155,14 +154,14 @@ function ErrorState({ error, onRetry }: { error: Error; onRetry: () => void }) {
 ## MOTION TOKENS — standardized animation
 
 ```css
-/* Timing */
---duration-fast:    150ms   /* exits, micro-interactions */
---duration-base:    300ms   /* enters, state changes */
---duration-slow:    500ms   /* page transitions */
---duration-stagger: 50ms    /* per-item in lists */
+/* Timing — matches rules/100-web.md's --transition-* tokens */
+--transition-fast:  100ms   /* micro-interactions: button press, focus ring */
+--transition-base:  200ms   /* hover states, standard transitions */
+--transition-slow:  300ms   /* enter animations (page/component mount) */
+--duration-stagger: 50ms    /* per-item in lists, max 8 items staggered */
 
 /* Easing */
---ease-enter:   cubic-bezier(0, 0, 0.2, 1)  /* decelerate in */
+--ease-enter:   cubic-bezier(0.2, 0, 0, 1)  /* decelerate in — matches rules/100-web.md MOTION RULES */
 --ease-exit:    cubic-bezier(0.4, 0, 1, 1)  /* accelerate out */
 --ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1)  /* spring feel */
 ```
@@ -174,16 +173,16 @@ Enter animation (300ms, decelerate):
 // Framer Motion:
 initial={{ opacity: 0, y: 8 }}
 animate={{ opacity: 1, y: 0 }}
-transition={{ duration: 0.3, ease: [0, 0, 0.2, 1] }}
+transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
 
 // List stagger:
 transition={{ delay: index * 0.05 }}
 ```
 
-Exit animation (150ms, accelerate — faster than enter):
+Exit animation (150ms, accelerate — faster than enter, opacity-only per rules/100-web.md):
 
 ```tsx
-exit={{ opacity: 0, y: -4 }}
+exit={{ opacity: 0 }}
 transition={{ duration: 0.15, ease: [0.4, 0, 1, 1] }}
 ```
 
@@ -253,7 +252,7 @@ shadcn/ui CSS variables auto-switch:
 className="
   bg-primary text-primary-foreground
   hover:bg-primary/90                          /* hover: slight opacity */
-  active:scale-[0.98]                          /* active: slight compress */
+  active:scale-[0.97]                          /* active: slight compress — matches rules/100-web.md button-press scale */
   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  /* focus ring */
   disabled:pointer-events-none disabled:opacity-50  /* disabled */
   transition-all duration-150                  /* smooth transitions */

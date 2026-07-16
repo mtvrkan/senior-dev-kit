@@ -2,7 +2,7 @@
 - State: Zustand for global UI state; TanStack Query v5 for server state; `expo-secure-store` for sensitive data; MMKV for fast local storage
 - Navigation: Expo Router file-based routes; never mix with manual `NavigationContainer` if Expo Router is configured
 - Protected: `app.json`, `eas.json`, signing config, `android/`, `ios/` directories — do not modify unless explicitly requested
-- All 4 states required: Loading (`<ActivityIndicator>` centered), Empty (icon+message+CTA), Error (message+retry), Populated
+- All 4 states required: Loading (`<Skeleton>` matching content shape for lists/cards; `<ActivityIndicator>` only for a full-screen block with no list underneath), Empty (icon+message+CTA), Error (message+retry), Populated
 - Colors: reference from project's `colors.ts` / theme context — never hardcode hex values inline
 - Typography: reference from project's `typography.ts` scale — never `fontSize: 17` inline
 - Spacing: 4pt grid only — `spacing.sm(8)`, `spacing.base(16)`, `spacing.lg(24)` — never `padding: 7`

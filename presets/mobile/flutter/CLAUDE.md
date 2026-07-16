@@ -78,7 +78,8 @@ Screen `build()` renders all states — never return a blank widget.
 | Primary action | `FilledButton` |
 | Secondary action | `OutlinedButton` / `TextButton` |
 | FAB | `FloatingActionButton` / `FloatingActionButton.extended` |
-| Loading indicator | `CircularProgressIndicator.adaptive()` centered in `Center(child: ...)` |
+| Loading (list/card content) | Shimmer skeleton (`shimmer` package) matching content shape — never `CircularProgressIndicator` for list loading (see `rules/400-mobile.md`) |
+| Loading (brief full-screen block, e.g. app splash) | `CircularProgressIndicator.adaptive()` centered in `Center(child: ...)` |
 | Linear progress | `LinearProgressIndicator` at top or inside card |
 | Input field | `TextField` with `InputDecoration` / `TextFormField` inside `Form` |
 | Chip/filter | `FilterChip` / `InputChip` / `ActionChip` |
@@ -147,10 +148,24 @@ Standard values: 4, 8, 12, 16, 20, 24, 32, 48 dp
 
 ### Required states — all 4
 
-**Loading:**
+**Loading** (list/card content — shimmer skeleton, not a spinner):
 
 ```dart
-const Center(child: CircularProgressIndicator.adaptive())
+Shimmer.fromColors(
+  baseColor: Theme.of(context).colorScheme.surfaceVariant,
+  highlightColor: Theme.of(context).colorScheme.surface,
+  child: ListView.builder(
+    itemCount: 6,
+    itemBuilder: (_, __) => Container(
+      height: 72,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+  ),
+)
 ```
 
 **Empty:**

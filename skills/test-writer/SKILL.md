@@ -17,7 +17,7 @@ Fires for backend service/controller/repo/handler/use-case, mobile ViewModel/Use
 
 1. Read budget: changed file + existing test file (`*.spec.ts` / `*_test.go` / `test_*.py`) — 2 files max.
 2. Write 3-6 cases, one assertion each: happy path (1) + edge/boundary (1-2) + error (1) + regression if bugfix (1).
-3. Mock: HTTP, DB/ORM, file I/O, external SDKs, Date.now(), Math.random(). Never mock internal pure functions, utility functions, type mappers, constants.
+3. Mock: external HTTP APIs, email/payment gateways, external SDKs, Date.now(), Math.random(). Never mock internal pure functions, utility functions, type mappers, constants, or your own DB (use a test DB — see `rules/300-testing.md`).
 4. Run targeted only: `jest [file].spec.ts --no-coverage` | `vitest run [file]` | `go test ./pkg/... -run TestFn` | `pytest [file] -x -q` | `./gradlew test --tests "*.Class"`
 
 ## Output
