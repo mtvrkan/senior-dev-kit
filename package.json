@@ -1,6 +1,6 @@
 {
   "name": "senior-dev-kit",
-  "version": "1.0.5",
+  "version": "2.0.0",
   "description": "Agent, skill and rule kit that gives Claude Code senior engineering team behavior.",
   "type": "module",
   "license": "MIT",
@@ -34,11 +34,12 @@
     "validate": "node --experimental-strip-types scripts/validate-skills.ts",
     "stale-check": "node --experimental-strip-types scripts/check-stale.ts",
     "link-check": "node --experimental-strip-types scripts/check-links.ts",
+    "consistency-check": "node --experimental-strip-types scripts/check-consistency.ts",
     "routing-eval": "node --experimental-strip-types scripts/routing-eval.ts",
     "deny-cost": "node --experimental-strip-types scripts/deny-cost.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint scripts/",
-    "check": "npm test && npm run validate && npm run stale-check && npm run link-check && npm run routing-eval && npm run typecheck && npm run lint"
+    "check": "npm test && npm run validate && npm run stale-check && npm run link-check && npm run consistency-check && npm run routing-eval && npm run typecheck && npm run lint"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -11,6 +11,8 @@ Claude Code'a kıdemli mühendislik takımı davranışı kazandıran agent, ski
 
 > Bu çeviri İngilizce README ile eş tutulur; bir çelişki durumunda [README.md](README.md) esastır. Bağlantılar İngilizce dokümanlara gider.
 
+> **Ölçülmüş, sadece iddia edilmemiş:** 143/143 test geçiyor · 0 kırık doküman linki · %97 (29/30) canlı yönlendirme doğruluğu · %0,52 deny-list yanlış-pozitif oranı. Tam döküm, komutlar ve yöntem aşağıda [Validation](README.md#validation) bölümünde (İngilizce README).
+
 ---
 
 ## Hızlı Başlangıç
@@ -215,17 +217,17 @@ Aşağıdaki hiçbir sayı hafızadan iddia edilmiyor — her biri yanındaki ko
 
 | Kontrol | Komut | Sonuç |
 | --- | --- | --- |
-| Unit + entegrasyon testleri | `npm test` | **122/122 geçiyor** (21 suite — frontmatter doğrulama, audit loglama dahil protected-path hook davranışı) |
+| Unit + entegrasyon testleri | `npm test` | **143/143 geçiyor** (23 suite — frontmatter doğrulama, Bash-bypass tespiti ve content-guard dahil protected-path hook davranışı, audit loglama) |
 | Skill/agent/command/preset frontmatter | `npm run validate` | 23 skill · 12 agent · 2 command · 49 preset — 0 hata; hand-off zinciri bütünlüğünü (`db-change` → `migration-review` vb.) ve guard-agent `permissionMode: plan` zorunluluğunu içerir |
 | Dahili doküman linkleri | `npm run link-check` | 188 markdown dosyası, 0 kırık link/anchor |
 | Bakım tablosu tazeliği | `npm run stale-check` | 5 bakım tablosunun tamamında 0 bayat/öksüz kayıt |
 | Type check / lint | `npm run typecheck` · `npm run lint` | temiz |
-| Yönlendirme doğruluğu (canlı) | `RUN_ROUTING_EVAL=1 npm run routing-eval` | önceki 33-prompt'luk sette son ölçüm **32/33 (%97)** — aşağıya bakın |
+| Yönlendirme doğruluğu (canlı) | `RUN_ROUTING_EVAL=1 npm run routing-eval` | güncel 30-prompt'luk sette **29/30 (%97)** (2026-07-16) — aşağıya bakın |
 | Deny listesi yanlış-pozitif maliyeti | `npm run deny-cost` | gerçek komutların **%0,52**'si — aşağıya bakın |
 
 Tüm setini tek seferde çalıştırmak için `npm run check` — CI'nin her push'ta koştuğu dizinin aynısı (`.github/workflows/repo-ci.yml`).
 
-Kitin *yönlendirme davranışı* da test altındadır: [`eval/golden-prompts.json`](eval/golden-prompts.json), 30 gerçekçi isteği (TR+EN karışık) beklenen agent'a sabitler. `npm run routing-eval` ücretsiz statik yarıyı her push'ta koşar; `RUN_ROUTING_EVAL=1 npm run routing-eval` modele her prompt'u gerçekten yönlendirtir ve %90 altı skorda başarısız olur (`.github/workflows/routing-eval.yml`). Ölçülmüş, varsayılmamış: ilk canlı koşu 28/33 (%85) ile `agents/ROUTING.md`'deki gerçek boşlukları ortaya çıkardı; kapatıldıktan sonra iki ardışık canlı koşu, o zamanki 33-prompt'luk sette 32/33 (%97) aldı. Set o zamandan beri 30 prompt'a indirildi ve ajan birleştirmeleri için 4 beklenti güncellendi — güncel sete karşı yeni bir canlı koşu henüz kaydedilmedi.
+Kitin *yönlendirme davranışı* da test altındadır: [`eval/golden-prompts.json`](eval/golden-prompts.json), 30 gerçekçi isteği (TR+EN karışık) beklenen agent'a sabitler. `npm run routing-eval` ücretsiz statik yarıyı her push'ta koşar; `RUN_ROUTING_EVAL=1 npm run routing-eval` modele her prompt'u gerçekten yönlendirtir ve %90 altı skorda başarısız olur (`.github/workflows/routing-eval.yml`). Ölçülmüş, varsayılmamış: ilk canlı koşu 28/33 (%85) ile `agents/ROUTING.md`'deki gerçek boşlukları ortaya çıkardı; kapatıldıktan sonra iki ardışık canlı koşu, o zamanki 33-prompt'luk sette 32/33 (%97) aldı. Set daha sonra 30 prompt'a indirildi ve 2.0 ajan birleştirmesi için 4 beklenti güncellendi; güncel sete karşı yeni bir canlı koşu 29/30 (%97) aldı — tek kaçırılan "login page 'Forgot Password' link doesn't work, fix it" prompt'unu `security-guard` yerine `ui-fixer`'a yönlendirdi (bir öncelik durumu: `agents/ROUTING.md`'ye göre guard-alanı ismi "fix" fiilinden önce gelmeli) — yine de %90 eşiğinin rahatça üzerinde.
 
 Deny listesinin kullanım maliyeti de tahmin değil, ölçümdür: `npm run deny-cost`, makinenizdeki Claude Code transcript geçmişindeki her Bash komutunu kitin deny kurallarına karşı yeniden oynatır ve nelerin engellenmiş olacağını raporlar — geliştirme makinesindeki sayılar için [SECURITY.md](SECURITY.md) "Measured cost" notuna bakın.
 

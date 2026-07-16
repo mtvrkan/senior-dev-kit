@@ -2,6 +2,22 @@
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 
+# Secrets — never commit (mirrors rules/000-security.md's PROTECTED FILES list)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.key
+*.p12
+id_rsa
+id_ed25519
+.ssh/
+*firebase-adminsdk*.json
+*serviceaccount*.json
+.secrets.baseline*
+
 # OS
 .DS_Store
 .DS_Store?

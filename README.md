@@ -9,6 +9,8 @@
 
 Agent, skill and rule kit that gives Claude Code senior engineering team behavior.
 
+> **Measured, not just claimed:** 143/143 tests passing · 0 broken doc links · 29/30 (97%) live routing accuracy · 0.52% deny-list false-positive rate. Full breakdown, commands, and methodology in [Validation](#validation) below.
+
 ---
 
 ## Quick Start
@@ -335,12 +337,12 @@ Nothing below is asserted from memory — every number is reproducible by runnin
 
 | Check | Command | Result |
 | --- | --- | --- |
-| Unit + integration tests | `npm test` | **122/122 passing** (21 suites — frontmatter validation, protected-path hook behavior including audit logging) |
+| Unit + integration tests | `npm test` | **143/143 passing** (23 suites — frontmatter validation, protected-path hook behavior including Bash-bypass detection, content-guard, and audit logging) |
 | Skill/agent/command/preset frontmatter | `npm run validate` | 23 skills · 12 agents · 2 commands · 49 presets — 0 errors; includes hand-off chain integrity (`db-change` → `migration-review` etc.) and guard-agent `permissionMode: plan` enforcement |
 | Internal doc links | `npm run link-check` | 188 markdown files, 0 broken links/anchors |
 | Maintenance-table freshness | `npm run stale-check` | 0 stale or orphaned entries across all 5 maintenance tables |
 | Type check / lint | `npm run typecheck` · `npm run lint` | clean |
-| Routing accuracy (live) | `RUN_ROUTING_EVAL=1 npm run routing-eval` | last measured **32/33 (97%)** on a prior 33-prompt set — see below |
+| Routing accuracy (live) | `RUN_ROUTING_EVAL=1 npm run routing-eval` | **29/30 (97%)** on the current 30-prompt set (2026-07-16) — see below |
 | Deny-list false-positive cost | `npm run deny-cost` | **0.52%** of real commands — see below |
 
 Run the whole set at once with `npm run check` — it's the same sequence CI runs on every push (`.github/workflows/repo-ci.yml`).
@@ -354,10 +356,12 @@ prompt and fails below a 90% score — triggered manually or weekly via
 `.github/workflows/routing-eval.yml` when an `ANTHROPIC_API_KEY` secret is set.
 Measured, not assumed: the first live run scored 28/33 (85%) and exposed real
 gaps in `agents/ROUTING.md`; after closing them, two consecutive live runs
-scored 32/33 (97%) on that 33-prompt set (see CHANGELOG for the full trace).
-The set has since been trimmed to 30 prompts and 4 expectations were updated for
-the agent consolidation — a fresh live run against the current set hasn't been
-recorded yet; re-run with `RUN_ROUTING_EVAL=1` before citing a new number.
+scored 32/33 (97%) on that 33-prompt set. The set was then trimmed to 30 prompts
+and 4 expectations updated for the 2.0 agent consolidation; a fresh live run
+against the current set scored 29/30 (97%) — the one miss routed "login page
+'Forgot Password' link doesn't work, fix it" to `ui-fixer` instead of
+`security-guard` (a precedence case: a guard-area noun should outrank a "fix"
+verb, per `agents/ROUTING.md`) — still comfortably above the 90% threshold.
 
 The deny list's usability cost is measurable rather than guessed: `npm run deny-cost`
 replays every Bash command from your own machine's Claude Code transcript history

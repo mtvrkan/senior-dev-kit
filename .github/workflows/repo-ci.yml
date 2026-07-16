@@ -50,7 +50,7 @@ jobs:
 
       - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -67,7 +67,7 @@ jobs:
 
       - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -84,7 +84,7 @@ jobs:
 
       - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -101,10 +101,10 @@ jobs:
 
       - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Run unit tests
-        run: node --experimental-strip-types --test scripts/validate-skills.test.ts
+        run: node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/hooks.test.ts
 
       - name: Run skill validator
         run: node --experimental-strip-types scripts/validate-skills.ts
@@ -117,7 +117,7 @@ jobs:
 
       - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Verify internal markdown links and anchors resolve
         run: node --experimental-strip-types scripts/check-links.ts
@@ -130,12 +130,25 @@ jobs:
 
       - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Flag presets and rules not reviewed in the last 365 days
         env:
           STALE_AFTER_DAYS: '365'
         run: node --experimental-strip-types scripts/check-stale.ts
+
+  check-consistency:
+    name: Check Cross-File Value Consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+
+      - name: Verify version fields, golden-prompt count, and CI node-version stay in sync
+        run: node --experimental-strip-types scripts/check-consistency.ts
 
   check-sha-pins:
     name: Check SHA Pins

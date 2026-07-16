@@ -123,6 +123,85 @@ Or manually follow [SETUP.md Step 6](SETUP.md#step-6--verify-installation) to co
 
 ---
 
+## Upgrading to 2.0 (from 1.x)
+
+2.0 is a consolidation release: no new capability was removed, but several
+1.x agents/skills/commands were merged into a broader sibling and the
+shell/PowerShell installer layer was replaced by the plugin marketplace +
+`SETUP.md`. If your project's `.claude/` was installed from 1.x, delete these
+before copying in the 2.0 files — leaving them behind doesn't break anything
+(they're just dead weight), but a stale `agents/migration-guard.md` sitting
+next to the new `db-guard.md` can confuse a fresh contributor into thinking
+both are still live routing targets.
+
+**Delete these files/folders if present in your project's `.claude/`:**
+
+```text
+agents/migration-guard.md          → merged into agents/db-guard.md
+agents/security-scanner.md         → merged into agents/security-guard.md
+agents/academic-writer.md          → out of scope, removed
+agents/writer.md                   → out of scope, removed
+agents/strategist.md               → out of scope, removed
+
+skills/api-versioning/             → merged into skills/api-design/
+skills/data-modeling/              → merged into skills/db-change/
+skills/dep-check/                  → merged into skills/security-scan/
+skills/plan-first/                 → merged into skills/feature-plan/
+skills/release-check/              → merged into skills/release-gate/
+skills/safe-review/                → merged into skills/code-review/
+skills/llm-integration/            → dropped (covered by rules/800-llm-safety.md)
+skills/monorepo-task/              → dropped (routing is native now)
+skills/smart-task/                 → dropped (routing is native now)
+skills/academic-write/             → out of scope, removed
+skills/article-write/              → out of scope, removed
+skills/strategy-plan/              → out of scope, removed
+
+commands/deep-research.md          → skills/deep-research auto-triggers now
+commands/dep-check.md              → skills/security-scan auto-triggers now
+commands/kit-doctor.md             → skills/kit-doctor still exists (invoke via /kit-doctor)
+commands/performance-check.md      → skills/performance-check auto-triggers now
+commands/plan-first.md             → skills/feature-plan auto-triggers now
+commands/release-gate.md           → skills/release-gate auto-triggers now
+commands/safe-review.md            → skills/code-review auto-triggers now
+commands/security-scan.md          → skills/security-scan auto-triggers now
+commands/smart-task.md             → dropped (routing is native now)
+commands/article-write.md          → out of scope, removed
+commands/strategy-plan.md          → out of scope, removed
+
+agent_docs/academic-writing-guide.md → out of scope, removed
+
+INSTALL.md                         → folded into README.md Option C
+VERIFY.md                          → folded into SETUP.md Step 6
+install.sh / install.ps1 / bin/    → replaced by the plugin marketplace / SETUP.md
+scripts/install.test.ts            → installer removed, test removed with it
+settings.json (repo root)          → was a duplicate of settings-template.json
+
+examples/django-postgres.md, dotnet-postgres.md, fastapi-sqlalchemy-postgres.md,
+java-spring-postgres.md, kotlin-android-firebase.md, laravel-mysql.md,
+nestjs-prisma-postgres.md, nuxt-drizzle-postgres.md, rails-postgres.md,
+rust-axum-postgres.md, swift-ios-supabase.md
+                                    → trimmed to one walkthrough per platform
+                                      class; the dropped stacks' guidance still
+                                      lives in their presets/*/CLAUDE.md
+```
+
+**If you installed via the plugin marketplace:** nothing to do manually — updating
+the plugin replaces the whole `agents/`/`skills/`/`commands/`/`hooks/` tree, so
+deleted files simply stop being present.
+
+**If you installed manually (Option C) or via the old installer:** run through the
+delete list above, then re-copy `agents/`, `skills/`, `commands/`, `rules/`, and
+`agent_docs/` per the "Safe update" section above.
+
+**`hooks/protected-paths.mjs` users:** the hook's `PreToolUse` matcher changed
+from `Edit|Write|NotebookEdit` to `Edit|Write|NotebookEdit|Bash` (it now also
+catches Bash commands that reach a protected path via a redirect, `sed -i`, a
+PowerShell cmdlet, or `cp`/`mv`/`git checkout --`). Update the `matcher` string
+in your `settings.json`'s `hooks.PreToolUse` entry, or re-copy `hooks/hooks.json`
+if you're on the plugin install path.
+
+---
+
 ## Changelog — what to check before upgrading
 
 Always read CHANGELOG.md before upgrading. Look for:

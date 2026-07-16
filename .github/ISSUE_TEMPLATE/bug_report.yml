@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in the kit misbehaves — installer, validation, routing, a skill, or docs.
+description: Something in the kit misbehaves — install, validation, routing, a skill, or docs.
 labels: [bug]
 body:
   - type: dropdown
@@ -38,11 +38,11 @@ body:
     id: version
     attributes:
       label: Kit version
-      placeholder: v1.0.1 (see CHANGELOG.md)
+      placeholder: v2.0.0 (see CHANGELOG.md)
     validations:
       required: true
   - type: input
     id: platform
     attributes:
       label: Platform
-      placeholder: Windows 11 / macOS 15 / Ubuntu 24.04 — and PowerShell or bash version if installer-related
+      placeholder: Windows 11 / macOS 15 / Ubuntu 24.04 — plus your shell (PowerShell/bash/zsh) if the issue is hook- or script-related

@@ -9,7 +9,7 @@ don't confuse them with this file, which is scoped to developing the kit itself.
 - Test: `npm test` (targeted: `node --experimental-strip-types --test scripts/<file>.test.ts`)
 - Validate frontmatter/routing: `npm run validate`
 - Full gate (run before considering any change done): `npm run check`
-  — runs test + validate + stale-check + link-check + routing-eval + typecheck + lint
+  — runs test + validate + stale-check + link-check + consistency-check + routing-eval + typecheck + lint
 - Type-check only: `npm run typecheck` | Lint only: `npm run lint`
 
 Never mark a task done without running `npm run check` (or the narrowest subset that covers

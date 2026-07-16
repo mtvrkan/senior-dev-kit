@@ -117,7 +117,7 @@ ALWAYS: use `${{ secrets.NAME }}` only in `env:` or `with:` blocks
 ```yaml
 # Node (npm)
 - uses: actions/setup-node@[SHA]
-  with: { node-version: '22', cache: 'npm' }
+  with: { node-version: '24', cache: 'npm' }
 
 # Python (pip)  
 - uses: actions/setup-python@[SHA]
