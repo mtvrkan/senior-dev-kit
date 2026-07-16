@@ -125,7 +125,7 @@ Or manually follow [SETUP.md Step 6](SETUP.md#step-6--verify-installation) to co
 
 ## Upgrading to 2.0 (from 1.x)
 
-2.0 is a consolidation release: no new capability was removed, but several
+2.0 is a consolidation release: no capability was removed, but several
 1.x agents/skills/commands were merged into a broader sibling and the
 shell/PowerShell installer layer was replaced by the plugin marketplace +
 `SETUP.md`. If your project's `.claude/` was installed from 1.x, delete these

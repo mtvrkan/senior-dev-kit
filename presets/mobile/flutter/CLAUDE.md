@@ -146,6 +146,8 @@ SizedBox(height: 7)
 
 Standard values: 4, 8, 12, 16, 20, 24, 32, 48 dp
 
+Note: 20dp follows Material Design's 4dp base grid (not the stricter 8dp web grid in `rules/100-web.md`, which governs `.tsx`/`.vue`/etc. only and doesn't apply to Dart) — a deliberate platform allowance, not a violation.
+
 ### Required states — all 4
 
 **Loading** (list/card content — shimmer skeleton, not a spinner):

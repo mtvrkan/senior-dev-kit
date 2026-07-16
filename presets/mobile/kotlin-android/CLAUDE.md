@@ -147,6 +147,8 @@ Modifier.padding(7.dp)    // not a 4x multiple
 
 Standard values: 4, 8, 12, 16, 20, 24, 32, 48, 64 dp
 
+Note: 20dp follows Material Design's 4dp base grid (not the stricter 8dp web grid in `rules/100-web.md`, which governs `.tsx`/`.vue`/etc. only and doesn't apply to Kotlin) — a deliberate platform allowance, not a violation.
+
 ### Required states — all 4
 
 **Loading:**

@@ -6,8 +6,8 @@
 
 ## HARD STOPS — escalate before any code  <!-- full passive-scan/OWASP/supply-chain detail in rules/000-security.md, always-loaded -->
 
-NEVER READ OR OUTPUT: `.env` `.env.*` `*.pem` `*.key` `*.p12` `serviceAccountKey.json`
-`*firebase-adminsdk*.json` `*serviceaccount*.json` `.ssh/` `secrets/` `*.lock` `node_modules/` `dist/` `.next/`
+NEVER READ OR OUTPUT: any file in rules/000-security.md's PROTECTED FILES list (also
+always-loaded) — secrets, keys, credentials, service-account JSON, SSH dirs, lockfiles, build output.
 
 STOP + ESCALATE on ANY touch of:
 auth | session | JWT | OAuth | payment | billing | DB schema | migration |

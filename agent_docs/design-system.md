@@ -257,7 +257,7 @@ className="
   active:scale-[0.97]                          /* active: slight compress — matches rules/100-web.md button-press scale */
   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  /* focus ring */
   disabled:pointer-events-none disabled:opacity-50  /* disabled */
-  transition-all duration-150                  /* smooth transitions */
+  transition-all duration-100                  /* matches rules/100-web.md button-press: scale(0.97) 100ms */
 "
 ```
 

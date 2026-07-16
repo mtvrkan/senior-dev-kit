@@ -182,6 +182,14 @@ describe('protected-paths hook', () => {
       ['Copy-Item -Path foo.txt -Destination .env', 'secrets'],
       ['cp foo.txt .env', 'secrets'],
       ['mv foo.txt db/migrations/001_init.sql', 'DB schema/migration'],
+      ['python3 -c "open(\'.env\', \'a\').write(\'SECRET=1\')"', 'secrets'],
+      ["python -c \"open('.env','w').write('x')\"", 'secrets'],
+      ['node -e "require(\'fs\').writeFileSync(\'.env\', \'SECRET=1\')"', 'secrets'],
+      ["ruby -e \"File.write('.env', 'x')\"", 'secrets'],
+      ["php -r \"file_put_contents('.env', 'x');\"", 'secrets'],
+      ['python3 -c "open(\'src/middleware.ts\', \'w\').write(\'x\')"', 'auth'],
+      ["python3 -c \"import pathlib; pathlib.Path('.env').write_text('x')\"", 'secrets'],
+      ['node -e "require(\'fs\').appendFileSync(\'.env\', \'x\')"', 'secrets'],
     ]
 
     for (const [command, category] of bashAskCases) {
@@ -201,6 +209,8 @@ describe('protected-paths hook', () => {
       'cat .env', // read-only — no write target
       'echo "hello" > /tmp/scratch.txt',
       'git checkout -- src/components/Button.tsx',
+      'python3 -c "print(1+1)"',
+      'node -e "console.log(1)"',
     ]
 
     for (const command of bashAllowCases) {

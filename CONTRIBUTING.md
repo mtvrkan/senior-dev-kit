@@ -116,7 +116,7 @@ Run `npm run validate` after adding — it checks frontmatter and body length.
 
 ## Adding a Rule
 
-Rules live in `rules/<NNN>-<name>.md` and are auto-loaded by Claude Code when a file matches the rule's `glob` pattern (set in the frontmatter `glob:` field, or always-on if omitted).
+Rules live in `rules/<NNN>-<name>.md` and are auto-loaded by Claude Code when a file matches the rule's `paths:` frontmatter field (a YAML list of globs — Claude Code's native key, not Cursor's `globs:`). Omit `paths:` for an always-on rule (only `000-security.md` and `001-conventions.md` do this).
 
 Follow the numbering convention:
 
@@ -168,11 +168,15 @@ If you add a new item, add a new row. If you remove an item, remove its row.
 ## Running Checks Locally
 
 ```bash
-npm test            # unit + integration tests
-npm run validate    # skill/agent/command frontmatter, routing cross-refs, settings.json, presets
-npm run stale-check # *-MAINTENANCE.md date freshness + untracked-item detection
-npm run link-check  # internal markdown links resolve to real files
-npm run check       # all four in sequence
+npm test               # unit + integration tests
+npm run validate       # skill/agent/command frontmatter, routing cross-refs, settings.json, presets
+npm run stale-check    # *-MAINTENANCE.md date freshness + untracked-item detection
+npm run link-check     # internal markdown links resolve to real files
+npm run consistency-check # version fields, golden-prompt counts, CI node-version drift
+npm run routing-eval   # static routing coverage (live scoring needs RUN_ROUTING_EVAL=1)
+npm run typecheck      # tsc --noEmit
+npm run lint           # eslint scripts/
+npm run check          # all eight in sequence
 ```
 
 All checks must pass before a PR can be merged.

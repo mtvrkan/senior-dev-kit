@@ -32,7 +32,14 @@
 // non-adversarial cases named above — it is not a shell parser. Command
 // substitution (`$(...)`), variable indirection (`f=.env; echo x>$f`),
 // base64/eval obfuscation, and chaining beyond a single redirect/cmdlet can
-// still slip past it. The content-guard is similarly narrow by design: only
+// still slip past it. The interpreter one-liner cases below (`python -c`,
+// `node -e`, `ruby -e`, `php -r`) are matched for a handful of common call
+// shapes (`open(...).write(...)`, `Path(...).write_text/write_bytes(...)`,
+// `writeFileSync`/`appendFileSync`, `File.write`, `file_put_contents`) — any
+// other write API in the same or another language (`os.write`, `csv.writer`,
+// a variable, a helper function, or a multi-statement script) still isn't
+// caught; this list grows only as concrete gaps are found, not exhaustively.
+// The content-guard is similarly narrow by design: only
 // two patterns, chosen for near-zero false positives, not full coverage of
 // rules/000-security.md's passive-scan checklist (that remains the model's
 // job — this hook is a deterministic backstop for a few concrete bypasses,
@@ -161,6 +168,16 @@ function extractBashWriteTargets(command) {
     const args = cpMv[1].trim().split(/\s+/).filter(a => !a.startsWith('-'))
     if (args.length >= 2) targets.add(stripQuotes(args[args.length - 1]))
   }
+
+  // Interpreter one-liners (`python -c`, `node -e`, `ruby -e`, `php -r`) can
+  // write a file without any redirect/cmdlet the patterns above look for.
+  // Covers the common single-call idioms, not arbitrary scripts — see the
+  // residual-gap note in the header for what this still doesn't catch.
+  addAllMatches(/open\(\s*["']([^"']+)["']\s*,\s*["'][^"']*["']\s*\)\.write/g) // Python: open('f','w').write(...)
+  addAllMatches(/Path\(\s*["']([^"']+)["']\s*\)\.write_(?:text|bytes)/g) // Python: pathlib.Path('f').write_text(...)
+  addAllMatches(/(?:writeFileSync|appendFileSync)\(\s*["']([^"']+)["']/g) // Node: fs.writeFileSync/appendFileSync('f', ...)
+  addAllMatches(/File\.write\(\s*["']([^"']+)["']/g) // Ruby: File.write('f', ...)
+  addAllMatches(/file_put_contents\(\s*["']([^"']+)["']/g) // PHP: file_put_contents('f', ...)
 
   return [...targets]
 }

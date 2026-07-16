@@ -1,6 +1,6 @@
 ---
 name: devops-guard
-description: CI/CD, Docker, Terraform, Kubernetes, and infrastructure change guardian. Always plans before executing. Requires explicit user approval for all destructive or production-affecting changes. Use for: Dockerfile, GitHub Actions, GitLab CI, Terraform, K8s manifests, Helm charts, docker-compose, deployment scripts.
+description: CI/CD, Docker, Terraform, Kubernetes, and infrastructure change guardian — plans first, requires explicit approval for destructive or production-affecting changes. Use for: Dockerfile, GitHub Actions, GitLab CI, Terraform, K8s manifests, Helm charts, docker-compose, deployment scripts.
 tools: Read, Grep, Glob, Bash
 model: opus
 permissionMode: plan

@@ -26,9 +26,17 @@ Integration tests > unit tests for code that touches DB, filesystem, or external
 shape (Kent C. Dodds), not the classic pyramid: most full-stack bugs live at integration
 boundaries (API↔DB wiring, client↔server contract, auth/routing) rather than in isolated
 business logic, so unit tests get the smallest share and E2E covers the critical user
-flows those boundary bugs actually break. The other rows stay pyramid-shaped because
-their bug surface is different — a CLI/library's correctness is almost entirely in its
-pure logic, so unit tests dominate there instead.
+flows those boundary bugs actually break.
+
+**Mobile's 30% E2E is also elevated above a classic pyramid, for a different reason:**
+device/OS fragmentation (screen sizes, OS versions, permission dialogs) and platform
+integration points (push notifications, deep links, biometric auth, background/foreground
+transitions) only surface on a real device or emulator — no unit or integration test
+exercises them, so E2E carries more of mobile's risk than a backend's would.
+
+REST API, CLI/library, and Microservice stay classic-pyramid-shaped because their bug
+surface is different — a CLI/library's correctness is almost entirely in its pure logic,
+so unit tests dominate there instead.
 
 ## MOCK POLICY — what to mock vs not
 
