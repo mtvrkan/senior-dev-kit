@@ -13,7 +13,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const SKILLS_DIR    = process.env.SKILLS_DIR   ?? join(__dirname, '..', 'skills')
 const AGENTS_DIR    = process.env.AGENTS_DIR   ?? join(__dirname, '..', 'agents')
-const SETTINGS_FILE = process.env.SETTINGS_FILE ?? join(__dirname, '..', 'settings.json')
+const SETTINGS_FILE = process.env.SETTINGS_FILE ?? join(__dirname, '..', 'settings-template.json')
 const COMMANDS_DIR  = process.env.COMMANDS_DIR ?? join(__dirname, '..', 'commands')
 const GLOBAL_CLAUDE_FILE = process.env.GLOBAL_CLAUDE_FILE ?? join(__dirname, '..', 'global-CLAUDE.md')
 
@@ -303,7 +303,7 @@ if (existsSync(ROUTING_FILE)) {
 
 // Validate agent frontmatter: required fields, valid model IDs, guard agent permissionMode
 const AGENT_REQUIRED = ['name', 'description', 'tools', 'model']
-const GUARD_AGENTS = new Set(['security-guard', 'db-guard', 'migration-guard', 'devops-guard'])
+const GUARD_AGENTS = new Set(['security-guard', 'db-guard', 'devops-guard'])
 
 if (existsSync(AGENTS_DIR)) {
   console.log('\nValidating agent frontmatter...\n')
@@ -475,15 +475,15 @@ if (!existsSync(GLOBAL_CLAUDE_FILE)) {
   console.log(`\n${routedAgents.size} routing targets checked — ${routingTargetErrors} missing agent file(s)`)
 }
 
-// settings.json must stay parseable (its deny list is a security baseline)
+// settings-template.json must stay parseable (its deny list is a security baseline)
 if (existsSync(SETTINGS_FILE)) {
-  console.log('\nValidating settings.json...\n')
+  console.log('\nValidating settings-template.json...\n')
   try {
     JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'))
-    console.log('  ✓ settings.json parses')
+    console.log('  ✓ settings-template.json parses')
   } catch (e) {
     const err = e as Error
-    console.error(`  ✗ settings.json — failed to parse: ${err.message}`)
+    console.error(`  ✗ settings-template.json — failed to parse: ${err.message}`)
     errors++
   }
 }

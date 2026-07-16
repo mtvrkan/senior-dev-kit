@@ -1145,7 +1145,7 @@ describe('validator output format contract', () => {
       /\d+ commands validated — \d+ error\(s\)/,
       /\d+ routing targets checked — \d+ missing agent file\(s\)/,
       /\d+ hand-off reference\(s\) checked — \d+ broken/,
-      /✓ settings\.json parses/,
+      /✓ settings-template\.json parses/,
       /\d+ presets checked — \d+ error\(s\)/,
       /Validation PASSED\./,
     ]
@@ -1249,13 +1249,13 @@ describe('validate-skills integration', () => {
     assert.ok(result.includes('ROUTING.md'), 'expected ROUTING.md check in output')
   })
 
-  test('validate-skills.ts checks settings.json parseability', () => {
+  test('validate-skills.ts checks settings-template.json parseability', () => {
     const result = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
       cwd: REPO_ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     })
-    assert.ok(result.includes('settings.json parses'), 'expected settings.json parse check in output')
+    assert.ok(result.includes('settings-template.json parses'), 'expected settings-template.json parse check in output')
   })
 
   test('validate-skills.ts exits 1 when a SKILL.md is missing a required field', () => {

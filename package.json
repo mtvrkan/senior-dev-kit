@@ -15,11 +15,7 @@
   "engines": {
     "node": ">=22.6.0"
   },
-  "bin": {
-    "senior-dev-kit": "bin/cli.mjs"
-  },
   "files": [
-    "bin/",
     "agents/",
     "agent_docs/",
     "commands/",
@@ -27,17 +23,14 @@
     "hooks/",
     "presets/",
     "rules/",
-    "scripts/wire-hook.mjs",
     "security/",
     "skills/",
-    "install.sh",
-    "install.ps1",
     "global-CLAUDE.md",
     "settings-template.json",
     "*.md"
   ],
   "scripts": {
-    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/install.test.ts scripts/hooks.test.ts",
+    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/hooks.test.ts",
     "validate": "node --experimental-strip-types scripts/validate-skills.ts",
     "stale-check": "node --experimental-strip-types scripts/check-stale.ts",
     "link-check": "node --experimental-strip-types scripts/check-links.ts",
