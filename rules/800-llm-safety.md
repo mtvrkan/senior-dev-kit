@@ -1,6 +1,12 @@
 ---
 description: "LLM/AI integration safety — prompt injection, output trust, cost controls"
-globs: "**/ai/**,**/llm/**,**/openai/**,**/anthropic/**,**/claude/**,**/agents/**"
+paths:
+  - "**/ai/**"
+  - "**/llm/**"
+  - "**/openai/**"
+  - "**/anthropic/**"
+  - "**/claude/**"
+  - "**/agents/**"
 ---
 
 ## HARD RULES — LLM integration

@@ -1,6 +1,11 @@
 ---
 description: "Mobile rules — iOS Swift, Android Kotlin/Compose, Flutter/Dart, React Native. Auto-loads for mobile source files."
-globs: "**/*.swift,**/*.kt,**/*.kts,**/lib/**/*.dart,**/test/**/*.dart,**/android/**,**/ios/**"
+paths:
+  - "**/*.{swift,kt,kts}"
+  - "**/lib/**/*.dart"
+  - "**/test/**/*.dart"
+  - "**/android/**"
+  - "**/ios/**"
 ---
 
 ## PLATFORM DETECTION → PATTERN

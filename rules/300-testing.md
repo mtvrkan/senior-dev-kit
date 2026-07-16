@@ -1,6 +1,13 @@
 ---
 description: "Testing rules — pyramid ratios, mock policy, naming conventions, stability, coverage. Auto-loads for test/spec files."
-globs: "**/*.test.*,**/*.spec.*,**/test/**,**/__tests__/**,**/tests/**,**/*_test.*,**/*_spec.*"
+paths:
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/test/**"
+  - "**/__tests__/**"
+  - "**/tests/**"
+  - "**/*_test.*"
+  - "**/*_spec.*"
 ---
 
 ## TEST PYRAMID RATIOS

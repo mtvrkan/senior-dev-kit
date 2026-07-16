@@ -62,7 +62,7 @@ skills/
 
 ### Naming rules
 
-- Folder name = kebab-case slug (e.g. `api-versioning`, `db-restore`)
+- Folder name = kebab-case slug (e.g. `api-design`, `db-restore`)
 - No spaces, no uppercase
 - One `SKILL.md` per folder
 
@@ -217,17 +217,20 @@ Use the next available number:
 - 800–899: AI/LLM safety
 - 900–999: Performance
 
-### Glob scoping
+### Path scoping
 
-Add a comment at the top of the file to document which globs should load it. Claude Code uses the frontmatter `globs` field in rules (if supported by your Claude Code version):
+Claude Code natively lazy-loads rules via the frontmatter `paths:` field (a YAML list of glob patterns). A path-scoped rule is injected only when Claude reads a file matching one of the patterns — not at session start:
 
 ```yaml
 ---
-globs: ["**/*.go", "**/cmd/**"]
+description: "Go service rules — what it covers, when it loads."
+paths:
+  - "**/*.go"
+  - "**/cmd/**"
 ---
 ```
 
-Without a globs field, the rule loads for every file. Use 000–099 range for always-active rules.
+Do NOT use Cursor's `globs:` or `alwaysApply:` keys — Claude Code doesn't recognize them, and a rule without a valid `paths:` field loads unconditionally in every session. Use the 000–099 range (no `paths:` field) only for rules that genuinely must always be active.
 
 ---
 

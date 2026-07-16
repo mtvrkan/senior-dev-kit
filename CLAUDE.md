@@ -22,8 +22,9 @@ the change) and fixing failures — don't report success on unverified changes.
   `COMMANDS-MAINTENANCE.md` — read the relevant one before adding/editing an
   agent/skill/rule/preset/command rather than guessing the expected shape.
 - Every preset ships `CLAUDE.md` (full) + `compact.md` (8-15 line summary); keep both in sync.
-- Rule files under `rules/` use `globs:` frontmatter for path-scoped loading and `alwaysApply:
-  true` for the two that always load — load each at most once per session (see
+- Rule files under `rules/` use `paths:` frontmatter (YAML list of globs — Claude Code's
+  native key; NOT Cursor's `globs:`) for lazy path-scoped loading. The two files without a
+  `paths:` field (000, 001) load unconditionally every session (see
   `global-CLAUDE.md` RULES REFERENCE).
 
 ## Effort strategy

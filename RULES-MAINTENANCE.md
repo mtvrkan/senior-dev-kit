@@ -1,7 +1,8 @@
 # Rules Maintenance Policy
 
-This document tracks review dates for the 11 path-scoped rules in this kit.
-Rules carry engineering standards loaded into every session; they must be reviewed when:
+This document tracks review dates for the 11 rules in this kit.
+Rules carry engineering standards — 000/001 load every session, the other nine lazy-load via
+`paths:` frontmatter when matching files are read. They must be reviewed when:
 
 - OWASP rankings, security standards, or tool recommendations change
 - A framework/platform major version shifts the conventions a rule encodes

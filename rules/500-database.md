@@ -1,6 +1,13 @@
 ---
 description: "Database rules — schema safety, migration protocol, N+1 prevention, RLS, zero-downtime patterns. Auto-loads for migration/schema/model files."
-globs: "**/migrations/**,**/*.prisma,**/schema.*,**/models/**,**/knexfile.*,**/drizzle.config.*,**/*migration*"
+paths:
+  - "**/migrations/**"
+  - "**/*.prisma"
+  - "**/schema.*"
+  - "**/models/**"
+  - "**/knexfile.*"
+  - "**/drizzle.config.*"
+  - "**/*migration*"
 ---
 
 ## HARD RULE — schema changes always escalate
@@ -9,7 +16,7 @@ ANY change to DB schema (add/remove/rename field, add/remove table, add/remove i
 `ESCALATE TO: db-guard — schema change detected`
 
 ANY migration file (create, modify, destructive) →
-`ESCALATE TO: migration-guard — migration file detected`
+`ESCALATE TO: db-guard — migration file detected (deployment-safety review)`
 
 NEVER implement schema changes without guard agent review.
 

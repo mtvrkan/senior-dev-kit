@@ -1,6 +1,16 @@
 ---
 description: "DevOps rules — Docker security, GitHub Actions SHA pinning, OIDC, SBOM, IaC safety. Auto-loads for Dockerfile/CI/IaC files."
-globs: "**/Dockerfile*,**/.github/**,**/*.tf,**/docker-compose*,**/kubernetes/**,**/*.k8s.*,**/helm/**,**/.gitlab-ci.yml,**/railway.toml,**/fly.toml"
+paths:
+  - "**/Dockerfile*"
+  - "**/.github/**"
+  - "**/*.tf"
+  - "**/docker-compose*"
+  - "**/kubernetes/**"
+  - "**/*.k8s.*"
+  - "**/helm/**"
+  - "**/.gitlab-ci.yml"
+  - "**/railway.toml"
+  - "**/fly.toml"
 ---
 
 ## HARD RULE — all CI/CD/IaC changes escalate

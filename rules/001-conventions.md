@@ -1,6 +1,5 @@
 ---
-description: "Core development conventions — architecture patterns, holistic consistency, modern tech preferences, always active"
-alwaysApply: true
+description: "Core development conventions — architecture patterns, holistic consistency, modern tech preferences. No paths field: loads unconditionally every session."
 ---
 
 ## CONVENTION DISCOVERY — before creating any new file

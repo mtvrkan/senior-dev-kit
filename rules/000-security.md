@@ -1,6 +1,5 @@
 ---
-description: "Core security rules — passive scan on every change, OWASP 2025, supply chain, pre-commit tooling"
-alwaysApply: true
+description: "Core security rules — passive scan on every change, OWASP 2025, supply chain, pre-commit tooling. No paths field: loads unconditionally every session."
 ---
 
 ## PASSIVE SCAN — every code change, zero overhead
