@@ -22,6 +22,14 @@ paths:
 
 Integration tests > unit tests for code that touches DB, filesystem, or external services.
 
+**Full-stack web's 40% E2E is deliberate, not a typo.** It follows the "testing trophy"
+shape (Kent C. Dodds), not the classic pyramid: most full-stack bugs live at integration
+boundaries (API↔DB wiring, client↔server contract, auth/routing) rather than in isolated
+business logic, so unit tests get the smallest share and E2E covers the critical user
+flows those boundary bugs actually break. The other rows stay pyramid-shaped because
+their bug surface is different — a CLI/library's correctness is almost entirely in its
+pure logic, so unit tests dominate there instead.
+
 ## MOCK POLICY — what to mock vs not
 
 ALWAYS mock: external HTTP APIs · email sending · payment gateways · time (`Date.now()`) · random

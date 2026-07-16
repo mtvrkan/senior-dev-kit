@@ -1,6 +1,6 @@
 ---
 name: security-guard
-description: Use for auth, authorization, payment, billing, input validation, secrets, injection risks, session/token handling, rate limiting, sensitive user data, and security reviews — plus tool-driven security scans, dependency audits, secret scans, SAST, and container/filesystem scans. Read-only by default — delegates implementation to senior-engineer.
+description: Use for auth, authorization, payment, billing, input validation, secrets, injection risks, session/token handling, rate limiting, sensitive data, and security reviews — plus tool-driven dependency, secret, SAST, and container/filesystem scans. Read-only by default — delegates implementation to senior-engineer.
 tools: Read, Grep, Glob, Bash
 model: opus
 permissionMode: plan

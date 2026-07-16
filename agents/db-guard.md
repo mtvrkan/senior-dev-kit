@@ -1,6 +1,6 @@
 ---
 name: db-guard
-description: Use for database schema changes, data modeling, ORM queries, indexes, constraints, transactions, AND migration deployment safety — destructive changes, rollback strategy, backward compatibility, production data risk, deployment order, backups. Read-only planning agent — produces a plan and waits for approval; never executes migrations.
+description: Use for database schema changes, data modeling, ORM queries, indexes, constraints, transactions, and migration deployment safety (destructive changes, rollback, backward compatibility, production risk, deployment order, backups). Read-only — produces a plan, waits for approval; never executes migrations.
 tools: Read, Grep, Glob, Bash
 model: opus
 permissionMode: plan
