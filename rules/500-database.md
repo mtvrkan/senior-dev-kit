@@ -137,14 +137,20 @@ Edge Functions auth: verify `req.headers.authorization` — never trust client-s
 ## FIREBASE / FIRESTORE
 
 NEVER trust client-provided user ID in Firestore rules or Cloud Functions.
-Always use `request.auth.uid` (not `request.resource.data.userId`).
+The correct field to check depends on the verb — there's no existing document yet on `create`, so
+that's the one case `request.resource.data` is actually correct; `update`/`delete` must check the
+existing `resource.data` instead, or a client can rewrite the ownership field in the same write that's
+supposed to be validated against it.
 Security rules must be reviewed by security-guard before deploy.
 
 ```text
-// WRONG:
-allow write: if request.resource.data.userId == request.auth.uid;
-// RIGHT: check ownership on existing document
-allow update: if resource.data.userId == request.auth.uid;
+// WRONG — update/delete checked against the incoming (attacker-controlled) data, not the existing doc:
+allow update: if request.resource.data.userId == request.auth.uid;
+
+// RIGHT:
+allow create: if request.resource.data.userId == request.auth.uid;  // no existing doc yet — check the incoming one
+allow update: if resource.data.userId == request.auth.uid;          // check the EXISTING doc, not the incoming write
+allow delete: if resource.data.userId == request.auth.uid;          // same — existing doc only
 ```
 
 ## CONNECTION + POOLING

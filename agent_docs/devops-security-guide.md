@@ -9,14 +9,14 @@ Reference for `devops-guard` — Dockerfile hardening, GitHub Actions security, 
 Multi-stage build template:
 
 ```dockerfile
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder /app/dist ./dist
@@ -39,7 +39,7 @@ Required checks:
 
 Platform base images:
 
-- Node / Bun: `node:22-alpine` or `oven/bun:1-alpine`
+- Node / Bun: `node:24-alpine` or `oven/bun:1-alpine`
 - Python: `python:3.12-slim`
 - Go: `gcr.io/distroless/static-debian12` (zero shell, minimal attack surface)
 - Java: `eclipse-temurin:21-jre-alpine`
@@ -49,7 +49,7 @@ Platform base images:
 
 ## GitHub Actions security
 
-SHA pinning (mandatory since August 2025):
+SHA pinning (GitHub added an opt-in org-level policy to require this in August 2025 — not a global default, pin explicitly regardless of org settings):
 
 ```yaml
 # WRONG — tag is mutable, can be hijacked

@@ -76,7 +76,7 @@ Loading/empty/error state detail (skeleton shapes, empty-state formula) is in `r
 
 ### shadcn/ui palette (if installed)
 
-`<DataTable>` (TanStack) | `<Form>` + react-hook-form + zod | `<Dialog>` | `<AlertDialog>` | `<Badge>` | `<Skeleton>` | `<Alert>` | `<DropdownMenu>` | `<Select>` | `<Tabs>` | `useToast()` — never `alert()`
+`<DataTable>` (TanStack) | `<Form>` + react-hook-form + zod | `<Dialog>` | `<AlertDialog>` | `<Badge>` | `<Skeleton>` | `<Alert>` | `<DropdownMenu>` | `<Select>` | `<Tabs>` | Sonner's `toast()` (replaced shadcn/ui's old `useToast` hook) — never `alert()`
 
 Colors: `text-foreground`, `text-muted-foreground`, `bg-card`, `text-primary`, `text-destructive` — never raw Tailwind colors like `text-gray-500`.
 Spacing: `space-y-4/6`, `gap-2/4/6`, `p-4/6` — never arbitrary values.

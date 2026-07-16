@@ -95,7 +95,7 @@ logger.info({
 | Code generation, reasoning, multi-step | Sonnet | Balance of cost + quality |
 | Architecture decisions, complex analysis, judgment | Opus | Max quality when cost is secondary |
 
-**Never use Opus for high-volume, per-request paths** — costs 15× Haiku.
+**Never use Opus for high-volume, per-request paths** — costs ~5× Haiku ($5/$25 vs $1/$5 per Mtok input/output).
 
 ## TOOL / FUNCTION CALLING SAFETY
 

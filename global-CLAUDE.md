@@ -165,7 +165,7 @@ frontmatter `paths:` globs is read; 000/001 have no `paths:` and load every sess
 manually Read a rule file to "load" it: injection is automatic, once per session. Topics:
 000-security (always) | 001-conventions (always, incl. modern tech preferences)
 100-web — design tokens, 8px grid, skeleton/empty/error states, motion, SEO, WCAG 2.2
-200-api — REST, OpenAPI 3.1, RFC 7807 errors, auth checklist, rate limiting
+200-api — REST, OpenAPI 3.2, RFC 9457 errors, auth checklist, rate limiting
 300-testing — pyramid ratios, mock policy, naming, targeted commands
 400-mobile — iOS/Android/Flutter/RN platform patterns, Keychain, a11y
 500-database — schema safety, migrations escalate, N+1, RLS

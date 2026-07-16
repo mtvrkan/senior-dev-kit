@@ -59,8 +59,11 @@ export const metadata: Metadata = {
 }
 
 // app/blog/[slug]/page.tsx — dynamic page
+// Next.js 16+: params/searchParams are Promises — must be awaited before use
+type Props = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const post = await getPost(params.slug)
+  const { slug } = await params
+  const post = await getPost(slug)
   return {
     title: post.title,  // template appends ' | Brand Name'
     description: post.excerpt,
@@ -91,7 +94,8 @@ Add structured data to help search engines and AI extract facts:
 ```tsx
 // app/blog/[slug]/page.tsx
 export default async function BlogPost({ params }: Props) {
-  const post = await getPost(params.slug)
+  const { slug } = await params
+  const post = await getPost(slug)
   
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -280,14 +284,15 @@ export default function robots(): MetadataRoute.Robots {
 ```tsx
 // For multilingual sites — tell search engines about language variants
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
   return {
     alternates: {
-      canonical: `https://example.com/en/${params.slug}`,
+      canonical: `https://example.com/en/${slug}`,
       languages: {
-        'en-US': `https://example.com/en/${params.slug}`,
-        'de-DE': `https://example.com/de/${params.slug}`,
-        'fr-FR': `https://example.com/fr/${params.slug}`,
-        'x-default': `https://example.com/en/${params.slug}`,
+        'en-US': `https://example.com/en/${slug}`,
+        'de-DE': `https://example.com/de/${slug}`,
+        'fr-FR': `https://example.com/fr/${slug}`,
+        'x-default': `https://example.com/en/${slug}`,
       },
     },
   }

@@ -17,7 +17,7 @@ skills:
 ## Reference docs (lazy-load when needed)
 
 `agent_docs/architecture.md` — module boundary rules, layered vs vertical-slice detection (for placing new files correctly)
-`agent_docs/api-design-patterns.md` — REST conventions, RFC 7807 error format (when building or changing an endpoint)
+`agent_docs/api-design-patterns.md` — REST conventions, RFC 9457 error format (when building or changing an endpoint)
 `agent_docs/error-handling-patterns.md` — Result<T,E> boundary pattern, exception handling conventions
 
 ---

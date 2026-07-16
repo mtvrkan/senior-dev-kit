@@ -26,14 +26,14 @@ Run silently. If any check fires: STOP → flag → propose fix → continue.
 | --- | --- | --- |
 | A01 | Broken Access Control | auth/permissions code changed |
 | A02 | Security Misconfiguration (↑) | any config file changed |
-| A03 | Software Supply Chain (NEW) | any dep added/updated |
+| A03 | Software Supply Chain Failures (NEW) | any dep added/updated |
 | A04 | Cryptographic Failures | password/token/encryption code |
 | A05 | Injection | DB query, shell call, template render |
-| A06 | Vulnerable Components | dep version changed |
-| A07 | Auth & Identification Failures | login/session/JWT logic |
-| A08 | Data Integrity Failures | serialization/deserialization, pipeline |
-| A09 | Security Logging Failures | error handling, logging code changed |
-| A10 | Mishandling Exceptional Conditions (NEW) | any try/catch changed |
+| A06 | Insecure Design | missing threat model, missing rate limit/business-logic validation on a new flow |
+| A07 | Authentication Failures | login/session/JWT logic |
+| A08 | Software or Data Integrity Failures | serialization/deserialization, pipeline |
+| A09 | Security Logging and Alerting Failures | error handling, logging code changed |
+| A10 | Mishandling of Exceptional Conditions (NEW) | any try/catch changed |
 
 ## LANGUAGE-SPECIFIC HOTSPOTS
 
@@ -50,7 +50,7 @@ Run silently. If any check fires: STOP → flag → propose fix → continue.
 
 ## SUPPLY CHAIN RULES (2025)
 
-- Pin ALL GitHub Actions to full commit SHA — never mutable tags (enforced since Aug 2025)
+- Pin ALL GitHub Actions to full commit SHA — never mutable tags (GitHub added an opt-in org-level policy to require this in Aug 2025 — not a global default, so pin explicitly regardless of org settings)
   `uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2`
 - Use OIDC for cloud auth (AWS/GCP/Azure) — never long-lived secrets in Actions secrets
 - `npm ci` in CI (never `npm install`) — `ci` already fails on a lockfile/manifest mismatch, no flag needed; `--frozen-lockfile` is a Yarn/pnpm flag, not npm's (npm warns "Unknown cli config" today and will hard-error in a future major version)
@@ -76,7 +76,7 @@ Run silently. If any check fires: STOP → flag → propose fix → continue.
 | php | `composer audit` |
 | ruby | `bundle audit check --update` |
 | dotnet | `dotnet list package --vulnerable` |
-| dart/flutter | `dart pub audit` |
+| dart/flutter | `osv-scanner -L pubspec.lock` (Dart has no built-in `pub audit` command) |
 
 Auto-trigger: any dep added or updated → run platform audit command.
 

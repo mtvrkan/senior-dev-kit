@@ -157,7 +157,7 @@ Root<User> root = cq.from(User.class);
 cq.where(cb.equal(root.get("email"), email));
 ```
 
-## Error response — RFC 7807
+## Error response — RFC 9457
 
 Use `ProblemDetail` (Spring 6+) for all error responses:
 

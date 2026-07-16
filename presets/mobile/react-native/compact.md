@@ -1,4 +1,4 @@
-- Architecture: Expo SDK 51+ with Expo Router v3 preferred; keep business logic in hooks/Zustand stores — never in screen components
+- Architecture: Expo SDK 57+ with Expo Router v6 preferred; keep business logic in hooks/Zustand stores — never in screen components
 - State: Zustand for global UI state; TanStack Query v5 for server state; `expo-secure-store` for sensitive data; MMKV for fast local storage
 - Navigation: Expo Router file-based routes; never mix with manual `NavigationContainer` if Expo Router is configured
 - Protected: `app.json`, `eas.json`, signing config, `android/`, `ios/` directories — do not modify unless explicitly requested

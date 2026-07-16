@@ -65,7 +65,7 @@ class DatabaseError extends AppError {
 }
 ```
 
-## RFC 7807 — PROBLEM+JSON FORMAT
+## RFC 9457 — PROBLEM+JSON FORMAT
 
 Standard error response format (use this for all REST APIs):
 

@@ -3,7 +3,7 @@
 ## Architecture
 
 - Follow existing architecture: Expo managed/bare, or CLI bare workflow.
-- **Modern default:** Expo SDK 51+ with Expo Router v3 (file-based routing).
+- **Modern default:** Expo SDK 57+ with Expo Router v6 (file-based routing).
 - Keep business logic out of screens: use hooks, Zustand stores, or service layers.
 - Do not modify `app.json`, `app.config.ts`, `eas.json`, signing config, or native directories (`android/`, `ios/`) unless explicitly requested.
 

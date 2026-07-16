@@ -255,7 +255,7 @@ Attempt 6+: exponential backoff up to 24h, then dead-letter queue
 ## OPENAPI 3.1 ADVANCED PATTERNS
 
 ```yaml
-# Discriminated union types (OpenAPI 3.1 with JSON Schema)
+# Discriminated union types (OpenAPI 3.2 with JSON Schema)
 PaymentMethod:
   oneOf:
     - $ref: '#/components/schemas/CardPayment'
@@ -266,7 +266,7 @@ PaymentMethod:
       card: '#/components/schemas/CardPayment'
       bank: '#/components/schemas/BankTransferPayment'
 
-# Webhook definitions (OpenAPI 3.1)
+# Webhook definitions (OpenAPI 3.2)
 webhooks:
   orderCreated:
     post:

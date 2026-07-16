@@ -17,7 +17,7 @@ Flag `PERF:` when a change likely violates these. Do not block — flag and cont
 | LCP (Largest Contentful Paint) | < 2.5s | Above-fold content or image change |
 | CLS (Cumulative Layout Shift) | < 0.1 | Layout, image, font, or dynamic insertion change |
 | INP (Interaction to Next Paint) | < 200ms | Event handler, form, or state update change |
-| FID fallback | < 100ms | Any JS blocking the main thread |
+| TBT (Total Blocking Time, lab proxy for INP) | < 200ms | Any JS blocking the main thread |
 
 `PERF: CLS risk — [image/component] above fold without explicit dimensions`
 `PERF: LCP risk — [image/component] above fold with deferred/lazy load`

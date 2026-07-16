@@ -69,7 +69,7 @@ Never build a raw flex/grid layout from scratch when a shell already exists.
 | Stats/KPI card | `<Card>` + `<CardHeader>` + `<CardTitle>` + large number |
 | Select/combobox | `<Select>` or `<Combobox>` — never a raw `<select>` |
 | Date picker | `<Calendar>` + `<Popover>` |
-| Toast/notification | `useToast()` hook — never alert() |
+| Toast/notification | `sonner`'s `toast()` (shadcn/ui replaced the old `useToast` hook with Sonner) — never alert() |
 
 ### Tailwind spacing — use these values only
 
@@ -120,7 +120,7 @@ Always include:
 - `<FormField>` for every input — never a raw `<input>`
 - `<FormMessage />` inside each `<FormItem>` for inline validation errors
 - Submit button shows a loading state while pending: `<Button disabled={isLoading}>{isLoading ? "Saving..." : "Save"}</Button>`
-- After submit: `toast({ title: "Success", description: "..." })` on success, `toast({ variant: "destructive", ... })` on error
+- After submit: `toast.success("Saved")` on success, `toast.error("...")` on error (Sonner)
 
 ### Page header standard
 
@@ -149,7 +149,7 @@ Always include:
 ## SEO / AEO (App Router)
 
 Full metadata example, JSON-LD types, CWV budget table, and checklist are in `rules/100-web.md`'s
-"SEO (Web projects — Next.js 15 patterns)" section — it's already Next.js-specific and loads for
+"SEO (Web projects — Next.js 16 patterns)" section — it's already Next.js-specific and loads for
 every `.tsx` file, same as this preset. Only the delta worth stating here:
 
 Never leave static metadata only in root layout — every route segment needs its own `generateMetadata`.

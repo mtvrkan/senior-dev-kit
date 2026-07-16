@@ -1,6 +1,8 @@
 # Design System Patterns — Lazy Reference
 
-## W3C DESIGN TOKENS SPEC v1.0 (October 2025)
+## DTCG DESIGN TOKENS SPEC (2025.10 release)
+
+Published by the Design Tokens Community Group (a W3C Community Group) — this is a Community Group Draft Report, not a formal W3C Recommendation/standard.
 
 Standard token format:
 
@@ -200,7 +202,7 @@ transition={{ duration: 0.15, ease: [0.4, 0, 1, 1] }}
 ## VIEW TRANSITIONS API — zero-KB page transitions
 
 ```tsx
-// Next.js 15+ / React 19
+// Next.js 16+ / React 19
 function navigate(url: string) {
   if (!document.startViewTransition) {
     router.push(url)

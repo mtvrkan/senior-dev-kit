@@ -15,7 +15,7 @@ paths:
 | `Package.swift` / `*.xcodeproj` | iOS/Swift | SwiftUI + Swift Concurrency |
 | `app/build.gradle` / `build.gradle.kts` | Android/Kotlin | Jetpack Compose + Coroutines |
 | `pubspec.yaml` | Flutter/Dart | Riverpod + flutter_test |
-| `app.json` / `expo.json` / `*.tsx` in `screens/` | React Native/Expo | Expo Router v3 |
+| `app.json` / `expo.json` / `*.tsx` in `screens/` | React Native/Expo | Expo Router v6 |
 
 ## UNIVERSAL MOBILE RULES
 
@@ -154,7 +154,7 @@ Commands:
 - `flutter test test/[file]_test.dart` — unit/widget tests
 - `flutter test integration_test/` — integration tests (needs device/emulator)
 - `flutter analyze` — static analysis
-- `dart pub audit` — CVE check (Dart 3.4+)
+- `osv-scanner -L pubspec.lock` — CVE check (Dart has no built-in `pub audit` command)
 
 Navigation: GoRouter for named routes. Never hard-coded `Navigator.push` in business logic.
 Animation: avoid `AnimationController` manually; use `AnimatedSwitcher` / `Hero` / `TweenAnimationBuilder`.
@@ -167,7 +167,7 @@ Shimmer loading: `shimmer` package — never `CircularProgressIndicator` for lis
 import { FlashList } from "@shopify/flash-list"
 <FlashList data={items} renderItem={({ item }) => <Item item={item} />} estimatedItemSize={72} />
 
-// Expo Router v3 navigation
+// Expo Router v6 navigation
 // app/(tabs)/index.tsx   → tab route
 // app/[id].tsx           → dynamic route
 // Never: hard-coded React Navigation stack inside Expo project
@@ -175,7 +175,7 @@ import { FlashList } from "@shopify/flash-list"
 
 Patterns:
 
-- Expo Router v3 for ALL navigation in Expo projects
+- Expo Router v6 for ALL navigation in Expo projects
 - FlashList over FlatList for long lists (>20 items)
 - `expo-secure-store` for secrets
 - `expo-image` over `<Image>` for performance

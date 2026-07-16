@@ -1,5 +1,5 @@
 - Architecture: controller → service → repository → DTO boundaries; use existing DI patterns; keep controllers/endpoints thin
-- Validation: validate all inputs (FluentValidation or DataAnnotations); return `ProblemDetails` RFC 7807 on errors — never raw exception
+- Validation: validate all inputs (FluentValidation or DataAnnotations); return `ProblemDetails` RFC 9457 on errors — never raw exception
 - Auth: check policies/roles + ownership for protected resources; never return EF entities when DTOs are expected
 - EF Core: async DB APIs always (`ToListAsync`, `FindAsync`); watch for N+1 (`Include`, `ThenInclude`); no unnecessary tracking
 - Transactions: `IDbContextTransaction` for multi-step writes; wrap in try/catch with rollback

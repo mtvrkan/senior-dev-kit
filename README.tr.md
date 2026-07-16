@@ -172,7 +172,7 @@ Skill'ler iki şekilde tetiklenir: çoğu, `description` alanı görevle eşleş
 | `000-security` | Her değişiklik — pasif güvenlik taraması, OWASP 2025 |
 | `001-conventions` | Her zaman — mimari tespiti, modern teknoloji tercihleri |
 | `100-web` | `*.tsx, *.jsx, *.vue, *.svelte` — tasarım token'ları, 8px grid, SEO, WCAG 2.2 |
-| `200-api` | `**/api/**, **/routes/**` — REST, OpenAPI 3.1, RFC 7807 |
+| `200-api` | `**/api/**, **/routes/**` — REST, OpenAPI 3.2, RFC 9457 |
 | `300-testing` | `*.test.*, *.spec.*` — test piramidi, mock politikası |
 | `400-mobile` | `*.swift, *.kt, **/lib/**/*.dart` — platform kalıpları |
 | `500-database` | `**/migrations/**, *.prisma` — şema güvenliği, N+1, RLS |

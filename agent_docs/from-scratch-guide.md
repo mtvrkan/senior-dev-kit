@@ -46,7 +46,7 @@ Do not proceed to Step 1 until this file is written.
 
 ## Step 1 — Tech stack by archetype
 
-**SaaS:** Next.js 15 App Router + shadcn/ui + Tailwind v4 + PostgreSQL + Prisma + Better Auth + Vitest + Playwright
+**SaaS:** Next.js 16 App Router + shadcn/ui + Tailwind v4 + PostgreSQL + Prisma + Better Auth + Vitest + Playwright
 
 **Marketing:** Astro 5 (content layer) or Next.js + Tailwind v4 + Contentlayer or Sanity + generateMetadata + JSON-LD + sitemap.ts
 

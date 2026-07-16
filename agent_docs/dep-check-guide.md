@@ -28,7 +28,7 @@ Reference for the `security-scan` skill's dependency-hygiene check — open-sour
 | AG Grid Enterprise | TanStack Table v8 (free, headless) | free, composable |
 | Syncfusion / Telerik / DevExtreme | shadcn/ui DataTable, Mantine, Ant Design | free, well-maintained |
 | `node-cron` | BullMQ scheduler | persistent, retryable |
-| `passport` (complex setup) | Better Auth, Lucia | modern, simpler, type-safe |
+| `passport` (complex setup) | Better Auth, Auth.js | modern, simpler, type-safe — not Lucia (deprecated Mar 2025) |
 | `class-transformer` + `class-validator` | Zod | simpler, type-safe, one package |
 | `jsonwebtoken` alone | Better Auth (handles session + refresh) | full auth solution |
 | `nodemailer` (complex setup) | Resend SDK | simpler API, better DX |
@@ -60,8 +60,8 @@ bundle outdated
 composer audit
 composer outdated
 
-# Dart / Flutter
-dart pub audit
+# Dart / Flutter (no built-in `pub audit` command)
+osv-scanner -L pubspec.lock
 dart pub outdated
 
 # Kotlin / Java (Gradle)

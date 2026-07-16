@@ -13,7 +13,7 @@ skills:
 
 ## Reference docs (lazy-load when needed)
 
-`agent_docs/error-handling-patterns.md` — error boundary patterns, Result<T,E> types, RFC 7807 format (when fixing error handling bugs)
+`agent_docs/error-handling-patterns.md` — error boundary patterns, Result<T,E> types, RFC 9457 format (when fixing error handling bugs)
 `agent_docs/testing-strategy.md` — how to write the regression test after fixing the root cause
 
 ---

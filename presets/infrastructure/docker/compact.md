@@ -1,5 +1,5 @@
 - Multi-stage builds: builder stage for compilation, minimal final stage — discard dev tools and build artifacts
-- Base image: pin to specific version tag (`node:22-alpine`) — never `latest` in production Dockerfiles
+- Base image: pin to specific version tag (`node:24-alpine`) — never `latest` in production Dockerfiles
 - Non-root user: `RUN adduser -S appuser && USER appuser` — never run as root in production containers
 - Secrets: use runtime env vars or Docker secrets — never hardcode credentials in Dockerfile or commit `.env` files
 - `.dockerignore`: exclude `node_modules`, `.git`, `*.env`, `dist`, `*.log` — never COPY source artifacts into final image

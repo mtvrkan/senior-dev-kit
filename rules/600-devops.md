@@ -24,14 +24,14 @@ devops-guard runs the checklist below and approves before implementation.
 
 ```dockerfile
 # PATTERN: multi-stage, non-root, pinned, health-checked
-FROM node:22-alpine AS builder          # ✓ Specific version tag
+FROM node:24-alpine AS builder          # ✓ Specific version tag
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production            # ✓ --ci not --install; production deps only
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine AS runner           # ✓ Multi-stage: discard build tools
+FROM node:24-alpine AS runner           # ✓ Multi-stage: discard build tools
 WORKDIR /app
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup  # ✓ Non-root user
 COPY --from=builder /app/dist ./dist
@@ -56,7 +56,7 @@ Checklist:
 
 Platform-specific base images:
 
-- Node/Bun: `node:22-alpine` or `oven/bun:1-alpine`
+- Node/Bun: `node:24-alpine` or `oven/bun:1-alpine`
 - Python: `python:3.12-slim`
 - Go: `gcr.io/distroless/static-debian12` (final stage, zero shell)
 - Java: `eclipse-temurin:21-jre-alpine`
@@ -64,7 +64,7 @@ Platform-specific base images:
 
 ## GITHUB ACTIONS SECURITY
 
-### Action pinning (MANDATORY since Aug 2025)
+### Action pinning (opt-in org policy since Aug 2025 — not a global default, always pin regardless)
 
 ALWAYS pin to full commit SHA — never mutable version tags:
 

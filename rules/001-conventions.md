@@ -79,11 +79,11 @@ OBS: [service] no metrics — add request count + latency
 | Build | Vite, Turbopack | Create React App (deprecated), Webpack (new) |
 | Testing JS | Vitest + Testing Library, Playwright | Jasmine, Karma, Mocha (new) |
 | ORM (TS) | Prisma, Drizzle | Sequelize, TypeORM (new) |
-| Auth | Better Auth, Lucia, Auth.js | Passport.js (new) |
+| Auth | Better Auth, Auth.js | Passport.js (new), Lucia (deprecated Mar 2025 — maintainer stopped shipping it as a library) |
 | Email | Resend, Nodemailer | — |
 | Analytics | PostHog (self-host), Plausible | Google Analytics |
 | RN lists | FlashList | FlatList (long lists) |
-| RN nav | Expo Router v3 | React Navigation alone (if Expo) |
+| RN nav | Expo Router v6 | React Navigation alone (if Expo) |
 | Android UI | Material 3 (Compose) | Material 2, XML layouts (new) |
 | iOS UI | SwiftUI | UIKit (new screens) |
 | Flutter state | Riverpod | Provider (new) |
