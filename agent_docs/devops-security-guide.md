@@ -12,15 +12,16 @@ Multi-stage build template:
 FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci                              # all deps — build tools (tsc/vite/webpack) live in devDependencies
 COPY . .
 RUN npm run build
 
 FROM node:24-alpine AS runner
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force  # production deps only in the final image (--omit=dev, not the deprecated --only=production)
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
 USER app
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
   CMD wget -qO- http://localhost:3000/health || exit 1

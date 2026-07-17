@@ -163,7 +163,7 @@ your-project/
     ├── skills/
     │   ├── bug-fix/SKILL.md
     │   ├── feature-build/SKILL.md
-    │   └── ... (23 skills)
+    │   └── ... (25 skills)
     └── agent_docs/
         ├── architecture.md
         └── ... (16 docs, lazy-loaded)

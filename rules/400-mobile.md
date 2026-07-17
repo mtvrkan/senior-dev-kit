@@ -6,6 +6,9 @@ paths:
   - "**/test/**/*.dart"
   - "**/android/**"
   - "**/ios/**"
+  - "**/*.native.{ts,tsx,js,jsx}"
+  - "**/app.config.{js,ts}"
+  - "**/metro.config.{js,cjs}"
 ---
 
 ## PLATFORM DETECTION → PATTERN
@@ -16,6 +19,12 @@ paths:
 | `app/build.gradle` / `build.gradle.kts` | Android/Kotlin | Jetpack Compose + Coroutines |
 | `pubspec.yaml` | Flutter/Dart | Riverpod + flutter_test |
 | `app.json` / `expo.json` / `*.tsx` in `screens/` | React Native/Expo | Expo Router v6 |
+
+**Known gap:** plain RN/Expo screen `.tsx`/`.jsx` files share their extension with web React —
+`paths:` can't disambiguate them from `100-web.md`'s glob without also matching every web
+`.tsx` file, so only the `.native.*`/`app.config`/`metro.config` variants above auto-load this
+rule. A plain-extension RN file relies on this rule being invoked explicitly (e.g. via the
+platform-detection table above), not path-based auto-load.
 
 ## UNIVERSAL MOBILE RULES
 
@@ -163,9 +172,10 @@ Shimmer loading: `shimmer` package — never `CircularProgressIndicator` for lis
 ## REACT NATIVE / EXPO
 
 ```typescript
-// FlashList for any list >20 items
+// FlashList for any list >20 items. FlashList v2 (New Architecture) auto-measures
+// rows — the v1 `estimatedItemSize` prop was removed; don't pass it.
 import { FlashList } from "@shopify/flash-list"
-<FlashList data={items} renderItem={({ item }) => <Item item={item} />} estimatedItemSize={72} />
+<FlashList data={items} renderItem={({ item }) => <Item item={item} />} />
 
 // Expo Router v6 navigation
 // app/(tabs)/index.tsx   → tab route

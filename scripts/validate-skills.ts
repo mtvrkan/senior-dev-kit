@@ -6,7 +6,7 @@
 import { readFileSync, readdirSync, existsSync } from 'fs'
 import { join, relative, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { parseFrontmatter, findDuplicateFrontmatterKeys, getBodyAfterFrontmatter, stripBom } from './lib/frontmatter.ts'
+import { parseFrontmatter, findDuplicateFrontmatterKeys, getBodyAfterFrontmatter, getFrontmatterList, stripBom } from './lib/frontmatter.ts'
 import { validatePresetClaudeMd, findPresetDirs, checkCompactMd } from './lib/presets.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -15,6 +15,7 @@ const SKILLS_DIR    = process.env.SKILLS_DIR   ?? join(__dirname, '..', 'skills'
 const AGENTS_DIR    = process.env.AGENTS_DIR   ?? join(__dirname, '..', 'agents')
 const SETTINGS_FILE = process.env.SETTINGS_FILE ?? join(__dirname, '..', 'settings-template.json')
 const COMMANDS_DIR  = process.env.COMMANDS_DIR ?? join(__dirname, '..', 'commands')
+const RULES_DIR      = process.env.RULES_DIR   ?? join(__dirname, '..', 'rules')
 const GLOBAL_CLAUDE_FILE = process.env.GLOBAL_CLAUDE_FILE ?? join(__dirname, '..', 'global-CLAUDE.md')
 
 const REQUIRED   = ['description', 'allowed-tools']
@@ -83,6 +84,22 @@ const VALID_TOOLS = new Set(['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash', 'A
 const AGENT_NAMES = existsSync(AGENTS_DIR)
   ? new Set(readdirSync(AGENTS_DIR).filter(f => f.endsWith('.md') && f !== 'ROUTING.md').map(f => f.replace(/\.md$/, '')))
   : new Set<string>()
+// A skill bound to an agent via `agent:` runs INSIDE that agent's tool grant — its own
+// `allowed-tools` is aspirational unless it's a subset of the agent's `tools:`. Two
+// skills (from-scratch, env-audit) independently drifted into requiring Edit/Write
+// while bound to a read-only planning/guard agent — textual reachability (checked
+// below) doesn't catch this because both were still "mentioned" everywhere they needed
+// to be; only a capability check catches a skill that's wired in but unrunnable as written.
+const AGENT_TOOLS: Map<string, Set<string>> = new Map()
+if (existsSync(AGENTS_DIR)) {
+  for (const file of readdirSync(AGENTS_DIR)) {
+    if (!file.endsWith('.md') || file === 'ROUTING.md') continue
+    const agentFm = parseFrontmatter(readFileSync(join(AGENTS_DIR, file), 'utf8'))
+    if (agentFm?.tools) {
+      AGENT_TOOLS.set(file.replace(/\.md$/, ''), new Set(agentFm.tools.split(',').map(t => t.trim()).filter(Boolean)))
+    }
+  }
+}
 
 function validateToolList(rel: string, source: string, value: string): void {
   for (const tool of value.split(',').map(t => t.trim()).filter(Boolean)) {
@@ -146,6 +163,18 @@ function validateSkill(filePath: string): void {
     console.error(`  ✗ ${rel} — 'agent:' references non-existent agent: '${fm.agent}' (must match a file in agents/)`)
     errors++
     ok = false
+  } else if (fm.agent && fm['allowed-tools'] && AGENT_TOOLS.has(fm.agent)) {
+    const agentTools = AGENT_TOOLS.get(fm.agent)!
+    const skillTools = fm['allowed-tools'].split(',').map(t => t.trim()).filter(Boolean)
+    const missing = skillTools.filter(t => !agentTools.has(t))
+    if (missing.length > 0) {
+      console.error(
+        `  ✗ ${rel} — requires tool(s) [${missing.join(', ')}] not granted to bound agent '${fm.agent}' ` +
+          `(agent tools: ${[...agentTools].join(', ')}) — reduce to a plan-then-handoff pattern or bind a different agent`
+      )
+      errors++
+      ok = false
+    }
   }
   if (fm.context && fm.context !== 'fork') {
     console.warn(`  ⚠ ${rel} — unrecognised 'context:' value '${fm.context}' (expected 'fork')`)
@@ -191,6 +220,10 @@ const validSkills = new Set(
     .filter(e => e.isDirectory())
     .map(e => e.name)
 )
+// Populated below wherever a skill turns out to be reachable (agent skills:
+// ref, ROUTING.md/global-CLAUDE.md/commands mention) — used by the
+// reverse-orphan check near the end of this file.
+const referencedSkillNames = new Set<string>()
 
 console.log('\nValidating skills...\n')
 walk(SKILLS_DIR)
@@ -239,6 +272,7 @@ if (existsSync(AGENTS_DIR)) {
         errors++
       } else {
         console.log(`  ✓ agents/${file} → ${skillName}`)
+        referencedSkillNames.add(skillName)
       }
     }
   }
@@ -301,9 +335,15 @@ if (existsSync(ROUTING_FILE)) {
   console.log(`\n${allAgents.length} agents checked against ROUTING.md — ${routingErrors} missing`)
 }
 
-// Validate agent frontmatter: required fields, valid model IDs, guard agent permissionMode
+// Validate agent frontmatter: required fields, valid model IDs, guard agent permissionMode.
+// Enforced by NAME PATTERN (any agents/*-guard.md), not a hardcoded list — a
+// hardcoded set (security-guard/db-guard/devops-guard) silently missed
+// performance-guard, which is read-only-by-convention (ROUTING.md) and already
+// ships permissionMode: plan, but wasn't validated, so a future edit could
+// flip it to `default` and still pass `npm run check`. Naming a new agent
+// `*-guard` now automatically opts it into this check.
 const AGENT_REQUIRED = ['name', 'description', 'tools', 'model']
-const GUARD_AGENTS = new Set(['security-guard', 'db-guard', 'devops-guard'])
+const isGuardAgent = (agentName: string): boolean => agentName.endsWith('-guard')
 
 if (existsSync(AGENTS_DIR)) {
   console.log('\nValidating agent frontmatter...\n')
@@ -348,7 +388,7 @@ if (existsSync(AGENTS_DIR)) {
       errors++
       agentOk = false
     }
-    if (GUARD_AGENTS.has(agentName) && fm.permissionMode !== 'plan') {
+    if (isGuardAgent(agentName) && fm.permissionMode !== 'plan') {
       console.error(`  ✗ agents/${file} — guard agent must have permissionMode: plan (found: '${fm.permissionMode ?? 'missing'}')`)
       agentFmErrors++
       errors++
@@ -409,9 +449,9 @@ if (existsSync(COMMANDS_DIR)) {
   console.log(`\n${cmdChecked} commands validated — ${cmdErrors} error(s)`)
 }
 
-// Cross-reference: every agent name that global-CLAUDE.md routes to (the AGENT
-// ROUTING table's Agent column and the "→ agent" natural-language signals)
-// must exist as agents/<name>.md — otherwise routing silently points nowhere.
+// Cross-reference: every agent name that global-CLAUDE.md's AGENT ROUTING
+// section routes to (via a "signal → agent" arrow) must exist as
+// agents/<name>.md — otherwise routing silently points nowhere.
 // A missing default global-CLAUDE.md is itself an error (the installer ships it);
 // a missing GLOBAL_CLAUDE_FILE override is deliberate test isolation and skips.
 if (!existsSync(GLOBAL_CLAUDE_FILE)) {
@@ -429,48 +469,55 @@ if (!existsSync(GLOBAL_CLAUDE_FILE)) {
   )
   const routedAgents = new Set<string>()
   const lines = globalContent.split(/\r?\n/)
-  // Table rows are parsed only inside the "## AGENT ROUTING" section (up to the
-  // next "## " heading or "---" rule). Rows that don't match the expected
-  // | signal | agent | haiku/sonnet/opus | tier | shape are flagged as malformed
-  // instead of silently skipped — a swapped column must not drop an agent from
-  // validation unnoticed.
+  // The AGENT ROUTING section is prose with "signal → agent" arrows (not a
+  // table). Scan every "→ token" inside the section (from the "## AGENT ROUTING"
+  // heading up to the next "## " heading or "---" rule). A token is treated as
+  // an agent reference when it either matches an existing agents/<name>.md OR
+  // has agent-name shape (contains a hyphen, e.g. db-guard). Bare prose words
+  // that merely follow an arrow ("→ act", "→ ask ONCE", "→ state assumption")
+  // are neither a known file nor hyphenated, so they're ignored. A hyphenated
+  // token with no matching file is a dangling routing reference → error.
+  // The optional backticks around the token (`` `?...`? ``) matter: the section
+  // also legitimately arrows to a *skill* sometimes (e.g. "→ `incident-response`
+  // skill"), and without tolerating backticks here the regex simply never
+  // matched that line at all — silently skipping it rather than validating it —
+  // because a literal backtick sits between the arrow's whitespace and the
+  // token's first letter. Matching through the backticks lets a token be
+  // classified correctly (known agent / known skill / dangling) instead of
+  // going unseen by coincidence of formatting.
   const sectionStart = lines.findIndex(l => /^##\s.*AGENT ROUTING/.test(l))
+  let routingTargetErrors = 0
   if (sectionStart !== -1) {
+    let sawArrow = false
     for (let i = sectionStart + 1; i < lines.length; i++) {
       if (/^##\s/.test(lines[i]) || lines[i].trim() === '---') break
-      const line = lines[i].trim()
-      if (!line.startsWith('|')) continue
-      if (/^\|[\s|:-]*\|$/.test(line)) continue // separator row
-      const cols = line.split('|').map(c => c.trim())
-      if (cols.length >= 5 && cols[3].toLowerCase() === 'model') continue // header row
-      if (cols.length >= 5 && /^(haiku|sonnet|opus)$/.test(cols[3]) && /^[a-z][a-z0-9-]*$/.test(cols[2])) {
-        routedAgents.add(cols[2])
-      } else {
-        console.error(`  ✗ global-CLAUDE.md — malformed AGENT ROUTING row (expected | signal | agent | haiku/sonnet/opus | tier |): '${line.slice(0, 80)}'`)
-        errors++
+      for (const m of lines[i].matchAll(/→\s*`?([a-z][a-z0-9-]*)`?/g)) {
+        const token = m[1]
+        sawArrow = true
+        if (agentFiles.has(token)) {
+          routedAgents.add(token)
+        } else if (validSkills.has(token)) {
+          // Deliberately a skill reference, not an agent — not a dangling target.
+        } else if (token.includes('-')) {
+          console.error(`  ✗ global-CLAUDE.md routes to non-existent agent: '${token}' (no agents/${token}.md)`)
+          routingTargetErrors++
+          errors++
+        }
+        // else: a bare non-agent word after an arrow (prose) — ignore
       }
     }
-  }
-  // Natural-language signal lines: "keyword/keyword → agent-name | ..." — the
-  // block starts at the NATURAL LANGUAGE SIGNALS marker and ends at a blank line.
-  // ([a-z0-9-]* so even a hypothetical single-letter agent name is captured.)
-  const nlStart = lines.findIndex(l => l.includes('NATURAL LANGUAGE SIGNALS'))
-  if (nlStart !== -1) {
-    for (let i = nlStart + 1; i < lines.length && lines[i].trim() !== ''; i++) {
-      for (const m of lines[i].matchAll(/→\s*([a-z][a-z0-9-]*)/g)) {
-        routedAgents.add(m[1])
-      }
-    }
-  }
-  let routingTargetErrors = 0
-  for (const name of [...routedAgents].sort()) {
-    if (agentFiles.has(name)) {
-      console.log(`  ✓ global-CLAUDE.md → ${name}`)
-    } else {
-      console.error(`  ✗ global-CLAUDE.md routes to non-existent agent: '${name}' (no agents/${name}.md)`)
-      routingTargetErrors++
+    // Guard against silent format drift: the section always routes to at least
+    // the escalation guards, so extracting zero valid targets means the parser
+    // no longer understands the section's shape — the exact failure mode where
+    // an earlier table-based parser silently "checked 0 targets" after the
+    // section was rewritten as prose.
+    if (sawArrow && routedAgents.size === 0) {
+      console.error('  ✗ global-CLAUDE.md — AGENT ROUTING section found but no valid routing targets extracted (parser may be stale relative to the section format)')
       errors++
     }
+  }
+  for (const name of [...routedAgents].sort()) {
+    console.log(`  ✓ global-CLAUDE.md → ${name}`)
   }
   console.log(`\n${routedAgents.size} routing targets checked — ${routingTargetErrors} missing agent file(s)`)
 }
@@ -514,6 +561,152 @@ if (existsSync(PRESETS_DIR)) {
     presetsChecked++
   }
   console.log(`\n${presetsChecked} presets checked — ${presetErrors} error(s)`)
+}
+
+// Reverse-orphan skill detection: a skill referenced by no agent's `skills:`
+// list, not mentioned in ROUTING.md, global-CLAUDE.md, or any commands/*.md,
+// and not explicitly marked manual-only would pass every check above yet be
+// unreachable in practice — this exact class ("orphan skill") was found by
+// hand in at least two separate past audit rounds (see CHANGELOG.md) before
+// there was a permanent check for it.
+// Reachability is inherently a whole-repo property (it cross-checks SKILLS_DIR
+// against AGENTS_DIR/ROUTING_FILE/GLOBAL_CLAUDE_FILE/COMMANDS_DIR together), so
+// unlike the per-file checks above it doesn't make sense to run against a
+// SKILLS_DIR swapped out in isolation for a narrow fixture test (every one of
+// this suite's single-skill temp fixtures would otherwise be "unreferenced" by
+// definition) — it runs against the real skills/ by default, or opts in
+// explicitly via ORPHAN_CHECK=1 for the dedicated tests that exercise it.
+if (existsSync(SKILLS_DIR) && (!process.env.SKILLS_DIR || process.env.ORPHAN_CHECK === '1')) {
+  console.log('\nChecking for orphaned skills (unreferenced anywhere)...\n')
+  let orphanSkillCount = 0
+  const routingText = existsSync(ROUTING_FILE) ? readFileSync(ROUTING_FILE, 'utf8') : ''
+  const globalClaudeText = existsSync(GLOBAL_CLAUDE_FILE) ? readFileSync(GLOBAL_CLAUDE_FILE, 'utf8') : ''
+  const commandsText = existsSync(COMMANDS_DIR)
+    ? readdirSync(COMMANDS_DIR).filter(f => f.endsWith('.md')).map(f => readFileSync(join(COMMANDS_DIR, f), 'utf8')).join('\n')
+    : ''
+
+  for (const skillName of [...validSkills].sort()) {
+    if (referencedSkillNames.has(skillName)) continue
+    const escaped = skillName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    // `(?!-)` after the word boundary rejects a match where the skill name is
+    // just the PREFIX of a longer hyphenated word — round-11 finding: bare
+    // `\bfrom-scratch\b` matched inside the unrelated doc filename
+    // `from-scratch-guide` (global-CLAUDE.md's lazy-load docs list), so the
+    // `from-scratch` skill passed this check for the wrong reason (an
+    // accidental substring, not a genuine invocation reference) while
+    // remaining absent from every agent's `skills:` list and ROUTING.md.
+    // `(?<!-)` before the word boundary closes the symmetric SUFFIX case the
+    // round-11 fix left open: `\b` alone also matches at a '-'→word-char
+    // transition, so a future skill whose name is the tail of an unrelated
+    // hyphenated word (e.g. a skill named `page` inside a mention of
+    // `new-page`) would otherwise pass this check the same way `from-scratch`
+    // once did.
+    const mentionRe = new RegExp(`(?<!-)\\b${escaped}\\b(?!-)`)
+    if (mentionRe.test(routingText) || mentionRe.test(globalClaudeText) || mentionRe.test(commandsText)) {
+      continue
+    }
+    const skillFile = join(SKILLS_DIR, skillName, 'SKILL.md')
+    if (existsSync(skillFile)) {
+      const skillFm = parseFrontmatter(readFileSync(skillFile, 'utf8'))
+      if (skillFm && skillFm['disable-model-invocation']?.trim() === 'true') {
+        continue // explicitly manual-only (slash-command-driven) — exempt, not an orphan
+      }
+    }
+    console.error(
+      `  ✗ ${skillName} — not referenced by any agent's 'skills:' list, ROUTING.md, global-CLAUDE.md, or commands/, ` +
+        `and not marked 'disable-model-invocation: true' (add a reference, mark it manual-only, or remove the skill)`
+    )
+    orphanSkillCount++
+    errors++
+  }
+  if (orphanSkillCount === 0) {
+    console.log(`  ✓ No orphaned skills — every skill in skills/ is reachable`)
+  }
+}
+
+// Validate rules/ frontmatter: the entire lazy-load mechanism hinges on a
+// well-formed `paths:` glob list, but until round 9 nothing validated it — a
+// `path:` typo (singular), an empty `paths:` block, or a missing `paths:` key
+// on a rule that isn't one of the two documented always-loaded files would
+// silently make that rule never load and still pass `npm run check`. Every
+// other artifact type (skills, agents, commands, presets) already had
+// frontmatter validation above; rules/ was the one gap.
+const ALWAYS_LOADED_RULE_NAMES = new Set(['000-security', '001-conventions'])
+
+if (existsSync(RULES_DIR)) {
+  console.log('\nValidating rules/ frontmatter...\n')
+  let ruleFmErrors = 0
+  let ruleFmChecked = 0
+  for (const file of readdirSync(RULES_DIR)) {
+    if (!file.endsWith('.md')) continue
+    const ruleName = file.replace(/\.md$/, '')
+    const content = readFileSync(join(RULES_DIR, file), 'utf8')
+    const fm = parseFrontmatter(content)
+    ruleFmChecked++
+    if (!fm) {
+      console.error(`  ✗ rules/${file} — missing frontmatter (--- block required)`)
+      ruleFmErrors++
+      errors++
+      continue
+    }
+    let ruleOk = true
+    if (!fm.description || fm.description.trim() === '') {
+      console.error(`  ✗ rules/${file} — missing required field: description`)
+      ruleFmErrors++
+      errors++
+      ruleOk = false
+    }
+
+    const fmBlockMatch = stripBom(content).match(/^---\r?\n([\s\S]*?)\r?\n---/)
+    const fmBlockText = fmBlockMatch ? fmBlockMatch[1] : ''
+    const hasPathsKey = /^paths:/m.test(fmBlockText)
+    const hasPathTypo = /^path:/m.test(fmBlockText)
+    const pathsList = getFrontmatterList(content, 'paths')
+
+    if (ALWAYS_LOADED_RULE_NAMES.has(ruleName)) {
+      if (hasPathsKey) {
+        console.error(`  ✗ rules/${file} — has 'paths:' frontmatter but is documented as always-loaded (no paths: scoping expected); remove 'paths:' or drop it from ALWAYS_LOADED_RULE_NAMES if it's meant to lazy-load now`)
+        ruleFmErrors++
+        errors++
+        ruleOk = false
+      }
+    } else if (hasPathTypo && !hasPathsKey) {
+      console.error(`  ✗ rules/${file} — found 'path:' (singular) instead of 'paths:' — this rule would never lazy-load`)
+      ruleFmErrors++
+      errors++
+      ruleOk = false
+    } else if (!hasPathsKey) {
+      console.error(`  ✗ rules/${file} — missing 'paths:' frontmatter (required for lazy-loaded rules; only ${[...ALWAYS_LOADED_RULE_NAMES].join(', ')} load unconditionally)`)
+      ruleFmErrors++
+      errors++
+      ruleOk = false
+    } else if (!pathsList || pathsList.length === 0) {
+      console.error(`  ✗ rules/${file} — 'paths:' is present but has no glob entries (must be a non-empty YAML list of quoted glob strings)`)
+      ruleFmErrors++
+      errors++
+      ruleOk = false
+    } else {
+      for (const glob of pathsList) {
+        if (!glob) {
+          console.error(`  ✗ rules/${file} — 'paths:' contains an empty glob entry`)
+          ruleFmErrors++
+          errors++
+          ruleOk = false
+          break
+        }
+      }
+    }
+
+    for (const dupeKey of findDuplicateFrontmatterKeys(content)) {
+      console.error(`  ✗ rules/${file} — duplicate frontmatter key: '${dupeKey}'`)
+      ruleFmErrors++
+      errors++
+      ruleOk = false
+    }
+
+    if (ruleOk) console.log(`  ✓ rules/${ruleName}`)
+  }
+  console.log(`\n${ruleFmChecked} rules frontmatter validated — ${ruleFmErrors} error(s)`)
 }
 
 if (errors > 0) {

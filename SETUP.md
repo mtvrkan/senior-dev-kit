@@ -16,7 +16,7 @@ KIT ≠ PROJECT. KIT is this folder, PROJECT is a separate project.
 Sets up in PROJECT:
 
 - 12 subagent files + `ROUTING.md` (13 files total) → `PROJECT/.claude/agents/`
-- 23 skill directories → `PROJECT/.claude/skills/`
+- 25 skill directories → `PROJECT/.claude/skills/`
 - 2 slash command files → `PROJECT/.claude/commands/`
 - Security rules → `PROJECT/.claude/settings.json`
 - Full stack rules → `PROJECT/.claude/stack-rules.md`
@@ -27,8 +27,6 @@ Global setup (`~/.claude/` — once, for all projects):
 - 11 path-scoped rules → `~/.claude/rules/`
 - 16 lazy-load agent docs → `~/.claude/agent_docs/`
 - Global CLAUDE.md → `~/.claude/CLAUDE.md`
-- Protected-paths hook → `~/.claude/hooks/`, wired into `~/.claude/settings.json` (the kit's
-  only harness-enforced guardrail — everything else here is prompt discipline)
 
 Project security templates (optional, for projects using CI/CD):
 
@@ -104,7 +102,7 @@ Select matching presets — check each row sequentially, multiple can match:
 
 | Condition | Preset |
 | --- | --- |
-| `bun.lockb` exists or `package.json` → `"packageManager": "bun@*"` | `runtime/bun` |
+| `bun.lock` (text, Bun 1.2+) or `bun.lockb` (legacy) exists, or `package.json` → `"packageManager": "bun@*"` | `runtime/bun` |
 | `deno.json` or `deno.jsonc` exists | `runtime/deno` |
 | `wrangler.toml` exists or `package.json` → `"wrangler"` | `runtime/cloudflare-workers` |
 
@@ -152,14 +150,14 @@ Also copy `KIT/agents/ROUTING.md` to `PROJECT/.claude/agents/ROUTING.md` — it 
 
 ### 2b — Copy skill directories
 
-Create `PROJECT/.claude/skills/` directory. Read the following 23 subdirectories from `KIT/skills/` and write to `PROJECT/.claude/skills/` (each subdirectory contains `SKILL.md`):
+Create `PROJECT/.claude/skills/` directory. Read the following 25 subdirectories from `KIT/skills/` and write to `PROJECT/.claude/skills/` (each subdirectory contains `SKILL.md`):
 
 ```text
 api-design, bug-fix,
 code-audit, code-review, codebase-overview, db-change, deep-research,
 docs-update, env-audit, feature-build, feature-plan, from-scratch,
-kit-doctor, migration-review, new-page,
-new-screen, performance-check, refactor-safe,
+incident-response, kit-doctor, migration-review, new-page,
+new-screen, performance-check, project-memory, refactor-safe,
 release-gate, security-review, security-scan,
 test-writer, ui-change
 ```
@@ -174,7 +172,7 @@ agents-guide.md, seo-check.md
 
 ### 2d — Copy settings.json
 
-Read `KIT/settings-template.json` (the canonical template — `KIT/settings.json` is the kit's own dev/CI config, not for copying into a consumer project).
+Read `KIT/settings-template.json` (the canonical template to copy into a consumer project — the kit's own dev config lives in `KIT/.claude/settings.json`, which is not for copying).
 If `PROJECT/.claude/settings.json` does not exist: write it.
 If it exists: merge field-by-field — keep the project's existing `permissions.allow` entries, but replace `permissions.deny` with the template's values (it encodes a security baseline that should not be weakened).
 
@@ -337,7 +335,7 @@ This step applies to all projects since it is done once.
 Check `~/.claude/CLAUDE.md` (macOS/Linux) or `%USERPROFILE%\.claude\CLAUDE.md` (Windows).
 
 - **If missing:** Read `KIT/global-CLAUDE.md` and write to that location.
-- **If exists and contains `Global Claude Senior Protocol v3`:** Current, skip.
+- **If exists and contains `Global Claude Senior Protocol`:** Current, skip.
 - **If exists but different content:** Ask user — "Should global CLAUDE.md be overwritten?"
 
 ### 5b — Path-scoped rules
@@ -368,7 +366,7 @@ These files are read by agents when needed — not loaded every session.
 
 ### 5d — Global settings.json
 
-Source file: `KIT/settings-template.json` (`KIT/settings.json` is the kit's own dev/CI config — do not copy it directly).
+Source file: `KIT/settings-template.json` (the canonical template — the kit's own dev config in `KIT/.claude/settings.json` is not for copying).
 If `~/.claude/settings.json` does not exist: write the template as-is.
 If it exists: read its content. If its `permissions.deny` list is missing or incomplete, append the template's deny entries (don't remove existing entries); leave `permissions.allow` and any other existing keys untouched.
 
@@ -378,36 +376,6 @@ Claude Code's model-resolution order. Setting it globally silently downgrades op
 agents (architect, db-guard, security-guard, devops-guard) to whatever cheaper
 model it names. For cost control on genuinely anonymous exploration calls, pass `model` explicitly
 per `Agent()` call instead.
-
-### 5e — Wire the protected-paths hook (deterministic enforcement)
-
-Create `~/.claude/hooks/` directory (if missing). Read `KIT/hooks/protected-paths.mjs` and write
-it there.
-
-This hook is the kit's only harness-enforced guardrail — edits into auth/payment/DB
-migrations/secrets/CI/IaC paths get intercepted regardless of what the model decides.
-Everything else in the kit (agent routing, hard stops, escalation) is prompt discipline the
-model follows voluntarily. Wire the hook into `~/.claude/settings.json` under `hooks.PreToolUse`:
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write|NotebookEdit",
-        "hooks": [
-          { "type": "command", "command": "node \"<absolute path to home>/.claude/hooks/protected-paths.mjs\"" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-Use the real absolute home-directory path — do not write the literal placeholder. Before adding
-this entry, check whether `hooks.PreToolUse` already has one whose `command` contains
-`protected-paths.mjs`; if so, leave it as-is instead of adding a duplicate. Merge into any
-existing `hooks` key rather than overwriting it — the same rule as 5d's `permissions.deny` merge.
 
 ---
 
@@ -436,7 +404,7 @@ Count files in each `PROJECT/.claude/` subdirectory:
 | Directory | Expected count | Notes |
 | --- | --- | --- |
 | `agents/` | 13 | 12 agents + `ROUTING.md` (routing reference, not an agent) |
-| `skills/` | 23 | `SKILL.md` files, one per subdirectory |
+| `skills/` | 25 | `SKILL.md` files, one per subdirectory |
 | `commands/` | 2 | `agents-guide.md`, `seo-check.md` |
 | `rules/` | 11 | `000-security.md` through `900-performance.md` |
 | `agent_docs/` (if copied) | 16 | see Step 2f list |
@@ -445,13 +413,16 @@ If any count is short, re-read the missing file(s) from `KIT/` and write them �
 
 ### 6c — CLAUDE.md quality
 
-Read `PROJECT/CLAUDE.md`. Does it contain:
+Read `PROJECT/CLAUDE.md`. Does it contain the sections Step 4's template actually produces:
 
-- [ ] "TOKEN TIER" table
-- [ ] "AGENT ROUTING" section
-- [ ] "BOOT SEQUENCE" section
-- [ ] "HARD STOPS" — escalation rules
-- [ ] "AUTO-TEST + VERIFICATION" section
+- [ ] "Context reading order" section
+- [ ] "Token budget" table
+- [ ] "Agent routing table" section
+- [ ] "Escalation" section
+- [ ] "Stack rules (summary)" section
+
+("TOKEN TIER" / "AGENT ROUTING" / "BOOT SEQUENCE" / "HARD STOPS" / "AUTO-TEST + VERIFICATION" are
+`~/.claude/CLAUDE.md` sections from Step 5a, not `PROJECT/CLAUDE.md` — check those under 6g instead.)
 
 ### 6d — stack-rules.md content
 
@@ -472,6 +443,8 @@ Should be read-only (Edit/Write **should NOT** be included) — `allowed-tools: 
 ### 6g — Global installation (if Step 5 was run)
 
 - `~/.claude/CLAUDE.md` exists and contains "Global Claude Senior Protocol"
+- `~/.claude/CLAUDE.md` contains "TOKEN TIER", "AGENT ROUTING", "BOOT SEQUENCE", "HARD STOPS", and
+  "AUTO-TEST + VERIFICATION" section headings
 - `~/.claude/rules/` — 11 files present
 - `~/.claude/agent_docs/` — 16 files present
 - `~/.claude/settings.json` — `CLAUDE_CODE_SUBAGENT_MODEL` env var **absent** (if present, it overrides every subagent's model, including named agents' own `model:` frontmatter, and should be removed)
@@ -485,11 +458,11 @@ If any global check fails: apply Step 5 again for the missing piece.
 Provide a brief summary containing:
 
 - Detected stack and selected presets
-- Installed file counts: `[12 agents, 23 skills, 2 commands, 11 rules, 16 agent_docs]`
+- Installed file counts: `[12 agents, 25 skills, 2 commands, 11 rules, 16 agent_docs]`
 - Step 6 verification results — [OK] / [FAIL] per check, with fixes applied for any [FAIL]
 - If monorepo: how many subproject CLAUDE.md created
 - If security templates installed: pre-commit enable command
-- Protected-paths hook: wired (or why not — missing `node`, or already present)
-- First use: open project in Claude Code, converse normally — routing is prompt discipline, not
-  harness-enforced (the protected-paths hook is the one exception)
+- First use: open project in Claude Code, converse normally — routing and protected-area
+  escalation are prompt discipline; the deny rules in `settings.json` are the only
+  harness-enforced backstop (Read-tool blocks + a narrow Bash/PowerShell read-verb list for top-tier secrets)
 - Slash command reminder: `/agents-guide`, `/seo-check`, plus any skill invoked directly by name (`/security-scan`, `/performance-check`, `/feature-plan`, ...)

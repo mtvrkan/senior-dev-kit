@@ -352,6 +352,33 @@ Add a row for your command in `COMMANDS-MAINTENANCE.md` with today's date as "La
 
 ---
 
+## Adding project-specific secret patterns
+
+`settings-template.json`'s `permissions.deny` list (copied to `.claude/settings.json` during
+setup — see [SECURITY.md](SECURITY.md)) only covers a fixed set of conventional secret
+filenames (`.env`, `*.pem`, `id_rsa*`, `*serviceaccount*.json`, and similar). It does **not**
+know about your project's own non-standard secret files — a custom-named credentials file
+(`app-secrets.toml`, `.mycorp-token`, `credentials.yaml`), a proprietary key format, or a
+config file that happens to hold real secrets under a name the kit has no way to anticipate.
+Add your own `Read`/`Bash`/`PowerShell` deny entries for those, the same shape as the kit's own:
+
+```json
+"Read(./**/app-secrets.toml)",
+"Bash(cat *app-secrets.toml)",
+"Bash(base64 *app-secrets.toml)",
+"PowerShell(Get-Content *app-secrets.toml)"
+```
+
+Add both a `Read(...)` rule (blocks the Read tool, and — per this repo's own verified
+behavior, see `SECURITY.md`'s "cross-tool interception" note — also blocks the recognized
+Bash file-read commands like `cat`/`head`/`tail`) and a matching `Bash(base64 ...)` +
+`PowerShell(Get-Content ...)` pair (the one read verb the `Read(...)` rule doesn't reach).
+Verify your additions actually fire with `npm run deny-cost` before relying on them — it
+replays your own transcript history against the current deny list and reports what would
+have matched, so you're checking real behavior, not the rule's shape.
+
+---
+
 ## Keeping custom extensions upgrade-safe
 
 When you upgrade the kit (new version released), your custom extensions in `agents/`, `skills/`, `commands/`, and `rules/` with names not in the kit will not be overwritten — the upgrade scripts only overwrite kit-managed files.

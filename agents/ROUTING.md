@@ -2,13 +2,15 @@
 
 Highest-priority signal wins. Read top-to-bottom; stop at the first match.
 
-**Precedence order (memorize this line):** guard-area noun (Steps 1 and 3) > stack trace (Step 2) > task-type verb (Step 4). A guard-area noun outranks every other signal whenever the request **changes that guarded surface** — "fix CSS in the login form" is security-guard territory, not ui-fixer. A request that only *references* a guarded area without touching its code (writing tests against it, documenting it, researching it) routes by task type instead. Ties between two guard areas are resolved by blast radius (see "Multiple guard signals"); ties between non-guard signals by the [Conflict resolution](#conflict-resolution--when-two-signals-match) table.
+**Precedence order (memorize this line):** live-incident signal (Step 0) > guard-area noun (Steps 1 and 3) > stack trace (Step 2) > task-type verb (Step 4). Step 0 outranks everything else because it doesn't pick an agent — it decides whether Steps 1-3 run as one coordinated, parallel dispatch instead of a single sequential match. A guard-area noun outranks every other remaining signal whenever the request **changes that guarded surface** — "fix CSS in the login form" is security-guard territory, not ui-fixer. A request that only *references* a guarded area without touching its code (writing tests against it, documenting it, researching it) routes by task type instead. Ties between two guard areas are resolved by blast radius (see "Multiple guard signals"); ties between non-guard signals by the [Conflict resolution](#conflict-resolution--when-two-signals-match) table.
 
 The same logic as a flowchart — the tables below are the source of truth, this is a reading aid:
 
 ```mermaid
 flowchart TD
-    Start([Request]) --> S1{"Step 1 — Hard stop:<br/>auth/payment/DB schema/<br/>CI-CD/secrets/infra?"}
+    Start([Request]) --> S0{"Step 0 — Live incident?<br/>prod down/P1/outage/5xx spike"}
+    S0 -->|Yes| Incident["incident-response skill —<br/>triage, then dispatch Steps 1-3<br/>in parallel, one timeline"]
+    S0 -->|No| S1{"Step 1 — Hard stop:<br/>auth/payment/DB schema/<br/>CI-CD/secrets/infra?"}
     S1 -->|Yes| Guard[Route to guard agent —<br/>plan only, no implementation]
     S1 -->|No| S2{"Step 2 — Stack trace<br/>or error present?"}
     S2 -->|Yes, touches guard area| Guard
@@ -24,15 +26,24 @@ flowchart TD
 
 ---
 
-## Step 1 — Hard stop check (always first)
+## Step 0 — Live incident check (before everything else)
 
-Does the request touch any of these?
+"Prod is down" / "P1" / "outage" / "5xx spike" / "users can't log in right now" — anything reporting
+a *live* incident rather than a routine bug, even one carrying a stack trace or an obvious guard-area
+noun — routes to the `incident-response` skill first, not straight to bug-hunter or a single guard.
+It has no `Agent` tool, so it triages severity/blast-radius and produces a dispatch plan for the
+same Step 1/3 guards below; the calling agent/orchestrator then actually invokes them (in parallel
+where safe) and keeps one timeline for the postmortem. This check runs *before* Step 1 because it
+doesn't compete with the hard-stop/guard-area/stack-trace signals below — it decides whether they
+run as one coordinated dispatch instead of picking among them.
 
-```text
-auth · session · JWT · OAuth · payment · billing
-DB schema · migration · CI/CD · Dockerfile · IaC · Terraform
-secrets · prod config · infrastructure
-```
+---
+
+## Step 1 — Hard stop check (always first, after Step 0)
+
+Does the request touch any of `global-CLAUDE.md`'s HARD STOPS nouns (auth, payment, DB schema,
+CI/CD, secrets, infrastructure — see that section, already loaded every session, for the exact
+list; not restated here so the two copies can't drift)?
 
 **YES →** Do NOT route to any implementation agent.
 Route directly to the appropriate guard (see Step 3) and produce a plan only.
@@ -46,6 +57,7 @@ Is a stack trace or error message present?
 ```text
 YES → bug-hunter (no clarification needed — read trace, fix, test)
       EXCEPTION: if trace touches auth/payment/DB schema → escalate to guard (Step 3)
+      EXCEPTION: if the report also carries live-incident language (see Step 0) → incident-response skill, not bug-hunter directly
 NO  → continue to Step 3
 ```
 
@@ -113,6 +125,7 @@ Normal feature, refactor, multi-file work           → senior-engineer (sonnet,
 Slow query / N+1 / bundle / render loop             → performance-guard (sonnet, Tier 2-3)
 Dep CVE / audit / outdated packages                 → security-guard (scan mode, Tier 1-2)
 Large feature / architecture / system design        → architect  (opus,   Tier 3)
+New project / greenfield / starting from scratch    → architect (opus, Tier 3) plans; senior-engineer runs `from-scratch`
 Research / fact-check / comparison                  → researcher (opus,   Tier 2-3)
 README / changelog / API docs                       → docs-writer (haiku, Tier 0-1)
 ```

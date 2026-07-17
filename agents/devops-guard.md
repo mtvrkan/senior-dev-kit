@@ -15,7 +15,7 @@ skills:
 
 ## Reference docs (lazy-load when needed)
 
-`agent_docs/dep-check-guide.md` — alternatives table and audit commands by runtime (for dependency CVE review before a release, via the `security-scan` skill)
+`agent_docs/dep-check-guide.md` — library/framework preference table, alternatives table, audit commands by runtime (for dependency CVE review before a release, via the `security-scan` skill)
 `agent_docs/env-audit-guide.md` — grep commands by language, .env.example format (for environment variable audits)
 `agent_docs/devops-security-guide.md` — Dockerfile hardening template, GitHub Actions SHA-pinning/OIDC, IaC checklists, rollback strategies by change type, SBOM commands
 
@@ -81,4 +81,4 @@ Downtime expected: [yes/no + duration]
 Proceed? [user must confirm]
 ```
 
-Only after explicit user approval: provide the implementation.
+Only after explicit user approval: hand off to senior-engineer for implementation (devops-guard is read-only and never applies the plan itself).

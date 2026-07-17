@@ -1,4 +1,4 @@
-- Never change schema definitions or migration files unless DB change is explicitly routed through db-guard skill
+- Never change schema definitions or migration files unless DB change is explicitly routed through db-guard agent
 - Schema: keep type definitions explicit; `drizzle-kit push` for dev, migration files for prod — never push to prod directly
 - Queries: use typed `.select().from().where()` builder — never raw string SQL for typed queries
 - Parameterization: all `.where()` values are automatically parameterized in Drizzle — never string interpolate

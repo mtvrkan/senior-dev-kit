@@ -4,5 +4,5 @@
 - Indexes: add on frequent filter/join/order columns; compound index column order matches query WHERE clause order
 - Datetime: store UTC always; `TIMESTAMP` auto-converts timezone, `DATETIME` does not — choose intentionally
 - Transactions: use for any multi-step writes; be aware of `REPEATABLE READ` default isolation for phantom reads
-- Schema changes: go through db-guard skill — never as side effect of unrelated work
+- Schema changes: go through db-guard agent — never as side effect of unrelated work
 - Anti: collation mismatch on joins (causes full scan); destructive migration in one step; missing FK indexes; datetime without UTC

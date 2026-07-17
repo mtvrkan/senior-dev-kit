@@ -3,7 +3,7 @@
 ## Schema
 
 - Keep schema definitions explicit and typed.
-- Do not change schema/migrations unless DB change is requested — route through the db-guard skill.
+- Do not change schema/migrations unless DB change is requested — route through the db-guard agent.
 - Prefer additive changes: a new nullable column is safe; `NOT NULL` on existing rows requires a migration step with backfill.
 - `drizzle-kit push` for dev only — use migration files for production, never push directly to prod.
 

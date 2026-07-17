@@ -186,19 +186,21 @@ rust-axum-postgres.md, swift-ios-supabase.md
 ```
 
 **If you installed via the plugin marketplace:** nothing to do manually — updating
-the plugin replaces the whole `agents/`/`skills/`/`commands/`/`hooks/` tree, so
-deleted files simply stop being present.
+the plugin replaces the whole `agents/`/`skills/`/`commands/` tree, so deleted
+files simply stop being present.
 
 **If you installed manually (Option C) or via the old installer:** run through the
 delete list above, then re-copy `agents/`, `skills/`, `commands/`, `rules/`, and
 `agent_docs/` per the "Safe update" section above.
 
-**`hooks/protected-paths.mjs` users:** the hook's `PreToolUse` matcher changed
-from `Edit|Write|NotebookEdit` to `Edit|Write|NotebookEdit|Bash` (it now also
-catches Bash commands that reach a protected path via a redirect, `sed -i`, a
-PowerShell cmdlet, or `cp`/`mv`/`git checkout --`). Update the `matcher` string
-in your `settings.json`'s `hooks.PreToolUse` entry, or re-copy `hooks/hooks.json`
-if you're on the plugin install path.
+**If you previously installed the `protected-paths` hook (any version before this
+one):** it has been removed from the kit — deterministic protected-path enforcement
+is now limited to `settings-template.json`'s Read-tool and Bash-read-verb deny
+rules (see `SECURITY.md`). Delete your local `~/.claude/hooks/protected-paths.mjs`
+and `~/.claude/hooks/lib/` (or the project-local `.claude/hooks/` equivalent), and
+remove the `protected-paths.mjs` entries from `hooks.PreToolUse`/`hooks.PostToolUse`
+in `settings.json` — a dangling hook command pointing at a deleted file will error
+on every matching tool call.
 
 ---
 

@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url'
 import { parseFrontmatter, findDuplicateFrontmatterKeys } from './lib/frontmatter.ts'
 import { validatePresetClaudeMd, findPresetDirs, checkCompactMd } from './lib/presets.ts'
 import { findBrokenLinks, extractAnchors, extractLinks, slugifyHeading } from './lib/links.ts'
+import { extractRoutedAgent, significantWords } from './routing-eval.ts'
 
 // Temp dirs are tracked and force-removed after the suite — the rmSync at the
 // end of a test never runs when an assertion throws, which would leak the dir.
@@ -955,6 +956,85 @@ describe('skill agent: cross-reference (context: fork)', () => {
   })
 })
 
+describe('skill/agent tool-capability binding (round-14 fix)', () => {
+  test('validate-skills.ts exits 1 when a skill requires a tool its bound agent lacks', () => {
+    const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+    const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+    writeFileSync(join(tmpAgents, 'readonly-agent.md'), [
+      '---',
+      'name: readonly-agent',
+      'description: A read-only agent',
+      'tools: Read, Grep, Glob, Bash',
+      'model: sonnet',
+      '---',
+    ].join('\n'))
+    const skillDir = join(tmpSkills, 'forked-skill')
+    mkdirSync(skillDir, { recursive: true })
+    writeFileSync(join(skillDir, 'SKILL.md'), [
+      '---',
+      'description: A forked skill that writes files',
+      'allowed-tools: Read, Grep, Glob, Bash, Write',
+      'context: fork',
+      'agent: readonly-agent',
+      '---',
+      'body',
+    ].join('\n'))
+    let threw = false
+    try {
+      execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, SKILLS_DIR: tmpSkills, AGENTS_DIR: tmpAgents },
+      })
+    } catch (err) {
+      threw = true
+      const e = err as { stderr?: string; stdout?: string }
+      const out = (e.stderr ?? '') + (e.stdout ?? '')
+      assert.ok(
+        out.includes("requires tool(s) [Write] not granted to bound agent 'readonly-agent'"),
+        `expected capability-mismatch flagged, got: ${out}`
+      )
+    }
+    rmSync(tmpSkills, { recursive: true })
+    rmSync(tmpAgents, { recursive: true })
+    assert.ok(threw, 'expected non-zero exit when a skill requires a tool its bound agent lacks')
+  })
+
+  test('validate-skills.ts passes when a skill\'s allowed-tools is a subset of its bound agent\'s tools', () => {
+    const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+    const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+    writeFileSync(join(tmpAgents, 'write-agent.md'), [
+      '---',
+      'name: write-agent',
+      'description: A write-capable agent',
+      'tools: Read, Grep, Glob, Bash, Edit, Write',
+      'model: sonnet',
+      '---',
+    ].join('\n'))
+    const skillDir = join(tmpSkills, 'forked-skill')
+    mkdirSync(skillDir, { recursive: true })
+    writeFileSync(join(skillDir, 'SKILL.md'), [
+      '---',
+      'description: A forked skill that writes files',
+      'allowed-tools: Read, Grep, Glob, Bash, Write',
+      'context: fork',
+      'agent: write-agent',
+      '---',
+      'body',
+    ].join('\n'))
+    const result = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, SKILLS_DIR: tmpSkills, AGENTS_DIR: tmpAgents, SETTINGS_FILE: join(tmpAgents, 'settings.json'), GLOBAL_CLAUDE_FILE: join(tmpAgents, 'global-CLAUDE.md') },
+    })
+    assert.ok(result.includes('Validation PASSED'), `expected PASSED for a subset tool grant, got: ${result}`)
+    rmSync(tmpSkills, { recursive: true })
+    rmSync(tmpAgents, { recursive: true })
+  })
+})
+
 describe('command frontmatter validation', () => {
   test('validate-skills.ts exits 1 when a command file has no frontmatter', () => {
     const tmpCommands = makeTempDir(join(tmpdir(), 'commands-'))
@@ -1022,7 +1102,11 @@ describe('command frontmatter validation', () => {
 })
 
 describe('global-CLAUDE.md routing target validation', () => {
-  test('validate-skills.ts exits 1 when routing points to a non-existent agent', () => {
+  // The AGENT ROUTING section is prose with "signal → agent" arrows. This
+  // fixture mirrors that real shape (NOT a table) so the test exercises the
+  // parser the shipped file actually hits — the earlier table-format fixture
+  // passed while the real prose section silently validated zero targets.
+  test('validate-skills.ts exits 1 when a routing arrow points to a non-existent agent', () => {
     const tmp = makeTempDir(join(tmpdir(), 'routing-'))
     const tmpAgents = join(tmp, 'agents')
     mkdirSync(tmpAgents, { recursive: true })
@@ -1037,19 +1121,15 @@ describe('global-CLAUDE.md routing target validation', () => {
     writeFileSync(join(tmpAgents, 'ROUTING.md'), 'bug-hunter — errors and crashes\n')
     const globalFile = join(tmp, 'global-CLAUDE.md')
     writeFileSync(globalFile, [
-      '## AGENT ROUTING — highest signal wins',
+      '## AGENT ROUTING',
       '',
-      '| Signal | Agent | Model | Tier |',
-      '|--------|-------|-------|------|',
-      '| error/crash | bug-hunter | sonnet | 0-2 |',
-      '| ghosts | ghost-agent | opus | 3 |',
-      // date and agent columns swapped — must be flagged as malformed, not skipped
-      '| swapped | 2026-06-30 | bug-hunter | 3 |',
+      'Escalation signals ALWAYS route to their guard:',
+      'DB schema/migration → bug-hunter', // real agent (present) — must be counted, not flagged
+      'auth / payment → ghost-guard', // dangling hyphenated reference — must be flagged
       '',
-      'NATURAL LANGUAGE SIGNALS (EN + TR):',
-      'fix/error → bug-hunter | haunt → phantom-agent (ESCALATE)',
+      'AMBIGUITY: >80% clear → act | 50-80% → state assumption | <50% → ask ONCE', // prose arrows — must NOT be flagged
       '',
-      'AMBIGUITY: >80% clear → act',
+      '---',
     ].join('\n'))
     let threw = false
     try {
@@ -1063,13 +1143,81 @@ describe('global-CLAUDE.md routing target validation', () => {
       threw = true
       const e = err as { stderr?: string; stdout?: string }
       const out = (e.stderr ?? '') + (e.stdout ?? '')
-      assert.ok(out.includes("'ghost-agent'"), `expected ghost-agent flagged (table row), got: ${out}`)
-      assert.ok(out.includes("'phantom-agent'"), `expected phantom-agent flagged (NL signal), got: ${out}`)
-      assert.ok(!out.includes("'act'"), `arrow targets outside the NL block must not be parsed, got: ${out}`)
-      assert.ok(out.includes('malformed AGENT ROUTING row'), `expected the swapped-column row flagged as malformed, got: ${out}`)
+      assert.ok(out.includes("'ghost-guard'"), `expected dangling hyphenated agent flagged, got: ${out}`)
+      assert.ok(!out.includes("'act'"), `prose arrow "→ act" must not be parsed as an agent, got: ${out}`)
+      assert.ok(!out.includes("'ask'"), `prose arrow "→ ask" must not be parsed as an agent, got: ${out}`)
+      assert.ok(!out.includes("'state'"), `prose arrow "→ state" must not be parsed as an agent, got: ${out}`)
     }
     rmSync(tmp, { recursive: true })
-    assert.ok(threw, 'expected non-zero exit when routing targets have no agent file')
+    assert.ok(threw, 'expected non-zero exit when a routing arrow has no agent file')
+  })
+
+  // A backticked token after the arrow (e.g. "→ `incident-response` skill")
+  // used to be invisible to this parser entirely — the regex required
+  // `[a-z]` immediately after the arrow's whitespace, and a backtick sits in
+  // between, so the match simply never started. That meant a backticked
+  // DANGLING agent reference (a typo, or a since-renamed agent) silently
+  // passed with no error, while a backticked SKILL reference happened to
+  // "work" only by accident (never being checked at all). Assert both: a
+  // backticked reference to a real skill is not flagged, and a backticked
+  // reference to a non-existent hyphenated name IS now flagged.
+  test('validate-skills.ts sees through backticks around a routing arrow target', () => {
+    const tmp = makeTempDir(join(tmpdir(), 'routing-backtick-'))
+    const tmpAgents = join(tmp, 'agents')
+    mkdirSync(tmpAgents, { recursive: true })
+    writeFileSync(join(tmpAgents, 'bug-hunter.md'), [
+      '---',
+      'name: bug-hunter',
+      'description: Bug hunting agent',
+      'tools: Read',
+      'model: claude-sonnet-5',
+      '---',
+    ].join('\n'))
+    writeFileSync(join(tmpAgents, 'ROUTING.md'), 'bug-hunter — errors and crashes\n')
+    const globalFile = join(tmp, 'global-CLAUDE.md')
+    writeFileSync(globalFile, [
+      '## AGENT ROUTING',
+      '',
+      'Escalation signals ALWAYS route to their guard:',
+      'DB schema/migration → bug-hunter',
+      'live-incident language → `incident-response` skill first', // real skill, backticked — must NOT be flagged
+      'auth / payment → `ghost-guard`', // dangling hyphenated reference, backticked — must be flagged
+      '',
+      '---',
+    ].join('\n'))
+    let threw = false
+    try {
+      execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, AGENTS_DIR: tmpAgents, GLOBAL_CLAUDE_FILE: globalFile },
+      })
+    } catch (err) {
+      threw = true
+      const e = err as { stderr?: string; stdout?: string }
+      const out = (e.stderr ?? '') + (e.stdout ?? '')
+      assert.ok(out.includes("'ghost-guard'"), `expected backticked dangling agent flagged, got: ${out}`)
+      assert.ok(!out.includes("'incident-response'"), `backticked reference to a real skill must not be flagged, got: ${out}`)
+    }
+    rmSync(tmp, { recursive: true })
+    assert.ok(threw, 'expected non-zero exit when a backticked routing arrow has no agent file')
+  })
+
+  // Dogfood guard against silent parser drift: run the validator against the
+  // REAL shipped global-CLAUDE.md + agents/ and assert it extracts a non-empty
+  // set of real guards. If the section format changes again and the parser
+  // stops understanding it, this fails instead of silently checking zero.
+  test('validate-skills.ts extracts real routing guards from the shipped global-CLAUDE.md', () => {
+    const out = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    for (const guard of ['db-guard', 'security-guard', 'devops-guard', 'architect']) {
+      assert.ok(out.includes(`global-CLAUDE.md → ${guard}`), `expected shipped global-CLAUDE.md to route to ${guard}, got: ${out}`)
+    }
+    assert.ok(!/0 routing targets checked/.test(out), `parser extracted zero targets from the real file — it has gone stale, got: ${out}`)
   })
 })
 
@@ -1124,6 +1272,53 @@ describe('guard agent permissionMode validation', () => {
     rmSync(tmpSkills, { recursive: true })
     rmSync(tmpAgents, { recursive: true })
     assert.ok(threw, 'expected non-zero exit when guard agent is missing permissionMode: plan')
+  })
+
+  // Round-9 fix: enforcement is by NAME PATTERN (endsWith('-guard')), not a
+  // hardcoded set of the original three guards — this proves a newly-named
+  // `*-guard` agent (not security-guard/db-guard/devops-guard) is caught too,
+  // the exact gap that let performance-guard ship with permissionMode: plan
+  // but unvalidated.
+  test('validate-skills.ts enforces permissionMode: plan on ANY *-guard agent, not just the original three', () => {
+    const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+    const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+
+    const skillDir = join(tmpSkills, 'some-skill')
+    mkdirSync(skillDir, { recursive: true })
+    writeFileSync(join(skillDir, 'SKILL.md'), ['---', 'description: A valid skill', 'allowed-tools: Read', '---'].join('\n'))
+
+    writeFileSync(join(tmpAgents, 'performance-guard.md'), [
+      '---',
+      'name: performance-guard',
+      'description: Performance guard agent',
+      'tools: Read',
+      'model: claude-opus-4-8',
+      '---',
+    ].join('\n'))
+
+    let threw = false
+    try {
+      execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          SKILLS_DIR: tmpSkills,
+          AGENTS_DIR: tmpAgents,
+          SETTINGS_FILE: join(tmpAgents, 'settings.json'),
+          GLOBAL_CLAUDE_FILE: join(tmpAgents, 'global-CLAUDE.md'),
+        },
+      })
+    } catch (err) {
+      threw = true
+      const e = err as { stderr?: string; stdout?: string }
+      const out = (e.stderr ?? '') + (e.stdout ?? '')
+      assert.ok(out.includes('performance-guard') && out.includes('permissionMode'), `expected performance-guard permissionMode error, got: ${out}`)
+    }
+    rmSync(tmpSkills, { recursive: true })
+    rmSync(tmpAgents, { recursive: true })
+    assert.ok(threw, 'expected non-zero exit when a non-hardcoded *-guard agent is missing permissionMode: plan')
   })
 })
 
@@ -1315,5 +1510,624 @@ describe('validate-skills integration', () => {
     }
     rmSync(tmpSkills, { recursive: true })
     assert.ok(threw, 'expected non-zero exit for SKILL.md with a duplicate frontmatter key')
+  })
+})
+
+describe('orphan skill detection (round-9 fix)', () => {
+  test('validate-skills.ts exits 1 for a skill referenced nowhere', () => {
+    const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+    const orphanDir = join(tmpSkills, 'totally-unreferenced-skill')
+    mkdirSync(orphanDir, { recursive: true })
+    writeFileSync(join(orphanDir, 'SKILL.md'), ['---', 'description: Never wired up anywhere', 'allowed-tools: Read', '---', 'body'].join('\n'))
+
+    let threw = false
+    try {
+      execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, SKILLS_DIR: tmpSkills, ORPHAN_CHECK: '1' },
+      })
+    } catch (err) {
+      threw = true
+      const e = err as { stderr?: string; stdout?: string }
+      const out = (e.stderr ?? '') + (e.stdout ?? '')
+      assert.ok(out.includes('totally-unreferenced-skill') && out.includes('not referenced'), `expected orphan-skill error, got: ${out}`)
+    }
+    rmSync(tmpSkills, { recursive: true })
+    assert.ok(threw, 'expected non-zero exit for an unreferenced skill')
+  })
+
+  test('validate-skills.ts does NOT flag a skill marked disable-model-invocation: true', () => {
+    const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+    const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+    const manualDir = join(tmpSkills, 'manual-only-skill')
+    mkdirSync(manualDir, { recursive: true })
+    writeFileSync(join(manualDir, 'SKILL.md'), [
+      '---',
+      'description: Manual-only, slash-command-driven',
+      'allowed-tools: Read',
+      'disable-model-invocation: true',
+      '---',
+      'body',
+    ].join('\n'))
+
+    const result = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        SKILLS_DIR: tmpSkills,
+        AGENTS_DIR: tmpAgents,
+        SETTINGS_FILE: join(tmpAgents, 'settings.json'),
+        GLOBAL_CLAUDE_FILE: join(tmpAgents, 'global-CLAUDE.md'),
+        ORPHAN_CHECK: '1',
+      },
+    })
+    rmSync(tmpSkills, { recursive: true })
+    rmSync(tmpAgents, { recursive: true })
+    assert.ok(result.includes('Validation PASSED'), `expected manual-only skill to pass, got: ${result}`)
+    assert.ok(!result.includes('not referenced'), `manual-only skill should not be flagged as orphaned, got: ${result}`)
+  })
+
+  test('validate-skills.ts does NOT flag a skill mentioned in global-CLAUDE.md', () => {
+    const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+    const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+    // Deliberately NOT inside tmpAgents — the agent-frontmatter validator
+    // treats every *.md file in AGENTS_DIR as an agent definition, so a
+    // global-CLAUDE.md fixture placed there would get (incorrectly) validated
+    // as one.
+    const tmpGlobalClaudeDir = makeTempDir(join(tmpdir(), 'global-claude-'))
+    const mentionedDir = join(tmpSkills, 'mentioned-in-global-claude')
+    mkdirSync(mentionedDir, { recursive: true })
+    writeFileSync(join(mentionedDir, 'SKILL.md'), ['---', 'description: Wired via global-CLAUDE.md prose only', 'allowed-tools: Read', '---', 'body'].join('\n'))
+    const tmpGlobalClaude = join(tmpGlobalClaudeDir, 'global-CLAUDE.md')
+    writeFileSync(tmpGlobalClaude, 'SKILL CHECK — for a matching task, use the `mentioned-in-global-claude` skill.\n\n## AGENT ROUTING\n\nEverything else: delegate by agent description.\n')
+
+    const result = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        SKILLS_DIR: tmpSkills,
+        AGENTS_DIR: tmpAgents,
+        SETTINGS_FILE: join(tmpAgents, 'settings.json'),
+        GLOBAL_CLAUDE_FILE: tmpGlobalClaude,
+        ORPHAN_CHECK: '1',
+      },
+    })
+    rmSync(tmpSkills, { recursive: true })
+    rmSync(tmpAgents, { recursive: true })
+    rmSync(tmpGlobalClaudeDir, { recursive: true })
+    assert.ok(result.includes('Validation PASSED'), `expected globally-mentioned skill to pass, got: ${result}`)
+  })
+
+  test('round-11: a "NAME-guide" doc filename does NOT satisfy the reference check for skill NAME', () => {
+    // The real bug this locks in: global-CLAUDE.md's lazy-load docs list once
+    // mentioned "from-scratch-guide", and a bare `\bfrom-scratch\b` regex
+    // matched inside that unrelated filename — the `from-scratch` skill
+    // passed the orphan check for the wrong reason (an accidental substring)
+    // while genuinely being absent from every agent's `skills:` list and
+    // ROUTING.md. `\bNAME\b(?!-)` must reject this and still flag the skill.
+    const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+    const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+    const tmpGlobalClaudeDir = makeTempDir(join(tmpdir(), 'global-claude-'))
+    const targetDir = join(tmpSkills, 'from-scratch')
+    mkdirSync(targetDir, { recursive: true })
+    writeFileSync(join(targetDir, 'SKILL.md'), ['---', 'description: Starting a new project from scratch', 'allowed-tools: Read', '---', 'body'].join('\n'))
+    const tmpGlobalClaude = join(tmpGlobalClaudeDir, 'global-CLAUDE.md')
+    writeFileSync(tmpGlobalClaude, 'Lazy-load docs: architecture | from-scratch-guide | new-page-guide\n\n## AGENT ROUTING\n\nEverything else: delegate by agent description.\n')
+
+    let threw = false
+    try {
+      execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          SKILLS_DIR: tmpSkills,
+          AGENTS_DIR: tmpAgents,
+          SETTINGS_FILE: join(tmpAgents, 'settings.json'),
+          GLOBAL_CLAUDE_FILE: tmpGlobalClaude,
+          ORPHAN_CHECK: '1',
+        },
+      })
+    } catch (err) {
+      threw = true
+      const e = err as { stderr?: string; stdout?: string }
+      const out = (e.stderr ?? '') + (e.stdout ?? '')
+      assert.ok(out.includes('from-scratch') && out.includes('not referenced'), `expected from-scratch to still be flagged as orphaned, got: ${out}`)
+    }
+    rmSync(tmpSkills, { recursive: true })
+    rmSync(tmpAgents, { recursive: true })
+    rmSync(tmpGlobalClaudeDir, { recursive: true })
+    assert.ok(threw, 'expected non-zero exit — a "-guide" suffix must not count as a genuine reference')
+  })
+
+  test('symmetric case: a skill name that is the SUFFIX of an unrelated hyphenated word does NOT satisfy the reference check', () => {
+    // The mirror image of the round-11 fix above: that fix added `(?!-)` to
+    // reject the skill name as a PREFIX of a longer word. `\b` alone still
+    // matches at a '-'→word-char transition, so without a matching `(?<!-)`
+    // lookbehind, a skill named `page` would pass this check merely because
+    // some unrelated mention of `new-page` exists — the same false-pass class,
+    // just on the other side of the hyphen.
+    const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+    const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+    const tmpGlobalClaudeDir = makeTempDir(join(tmpdir(), 'global-claude-'))
+    const tmpCommands = makeTempDir(join(tmpdir(), 'commands-')) // isolated + empty: real commands/*.md has unrelated bare "page" mentions (e.g. seo-check.md) that would mask this test
+    const targetDir = join(tmpSkills, 'page')
+    mkdirSync(targetDir, { recursive: true })
+    writeFileSync(join(targetDir, 'SKILL.md'), ['---', 'description: Unrelated to new-page', 'allowed-tools: Read', '---', 'body'].join('\n'))
+    const tmpGlobalClaude = join(tmpGlobalClaudeDir, 'global-CLAUDE.md')
+    writeFileSync(tmpGlobalClaude, 'Use the `new-page` skill for admin panel pages.\n\n## AGENT ROUTING\n\nEverything else: delegate by agent description.\n')
+
+    let threw = false
+    try {
+      execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          SKILLS_DIR: tmpSkills,
+          AGENTS_DIR: tmpAgents,
+          SETTINGS_FILE: join(tmpAgents, 'settings.json'),
+          GLOBAL_CLAUDE_FILE: tmpGlobalClaude,
+          COMMANDS_DIR: tmpCommands,
+          ORPHAN_CHECK: '1',
+        },
+      })
+    } catch (err) {
+      threw = true
+      const e = err as { stderr?: string; stdout?: string }
+      const out = (e.stderr ?? '') + (e.stdout ?? '')
+      assert.ok(out.includes('page') && out.includes('not referenced'), `expected 'page' to still be flagged as orphaned, got: ${out}`)
+    }
+    rmSync(tmpSkills, { recursive: true })
+    rmSync(tmpAgents, { recursive: true })
+    rmSync(tmpGlobalClaudeDir, { recursive: true })
+    rmSync(tmpCommands, { recursive: true })
+    assert.ok(threw, 'expected non-zero exit — being the suffix of an unrelated hyphenated word must not count as a genuine reference')
+  })
+})
+
+describe('rules/ frontmatter validation', () => {
+  // Round-13 fix: this validation existed (round 9) but shipped with zero
+  // fixture coverage — it only ever ran against the real rules/ directory,
+  // so a regression in the check itself (or a reintroduction of the bug class
+  // it catches) would only be caught by eyeballing `npm run validate`'s output.
+  function writeRule(dir: string, name: string, frontmatterLines: string[]): void {
+    writeFileSync(join(dir, `${name}.md`), ['---', ...frontmatterLines, '---', '', 'body'].join('\n'))
+  }
+
+  function runValidate(rulesDir: string): { code: number; out: string } {
+    const tmpSkills = makeTempDir(join(tmpdir(), 'skills-'))
+    const tmpAgents = makeTempDir(join(tmpdir(), 'agents-'))
+    const skillDir = join(tmpSkills, 'some-skill')
+    mkdirSync(skillDir, { recursive: true })
+    writeFileSync(join(skillDir, 'SKILL.md'), ['---', 'description: A valid skill', 'allowed-tools: Read', '---'].join('\n'))
+    try {
+      const out = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/validate-skills.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          SKILLS_DIR: tmpSkills,
+          AGENTS_DIR: tmpAgents,
+          SETTINGS_FILE: join(tmpAgents, 'settings.json'),
+          GLOBAL_CLAUDE_FILE: join(tmpAgents, 'global-CLAUDE.md'),
+          RULES_DIR: rulesDir,
+        },
+      })
+      return { code: 0, out }
+    } catch (err) {
+      const e = err as { status?: number; stderr?: string; stdout?: string }
+      return { code: e.status ?? 1, out: (e.stdout ?? '') + (e.stderr ?? '') }
+    } finally {
+      rmSync(tmpSkills, { recursive: true, force: true })
+      rmSync(tmpAgents, { recursive: true, force: true })
+    }
+  }
+
+  test('passes for a well-formed lazy-loaded rule and a well-formed always-loaded rule', () => {
+    const tmpRules = makeTempDir(join(tmpdir(), 'rules-'))
+    writeRule(tmpRules, '000-security', ['description: Security rules'])
+    writeRule(tmpRules, '100-web', ['description: Web rules', 'paths:', '  - "**/*.tsx"'])
+    const { code, out } = runValidate(tmpRules)
+    rmSync(tmpRules, { recursive: true, force: true })
+    assert.strictEqual(code, 0, `expected exit 0, got: ${out}`)
+    assert.match(out, /2 rules frontmatter validated — 0 error\(s\)/)
+  })
+
+  test('exits 1 when a lazy-loaded rule is missing paths: entirely', () => {
+    const tmpRules = makeTempDir(join(tmpdir(), 'rules-'))
+    writeRule(tmpRules, '100-web', ['description: Web rules'])
+    const { code, out } = runValidate(tmpRules)
+    rmSync(tmpRules, { recursive: true, force: true })
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes("100-web.md — missing 'paths:' frontmatter"), `got: ${out}`)
+  })
+
+  test('exits 1 when a rule has the singular path: typo instead of paths:', () => {
+    const tmpRules = makeTempDir(join(tmpdir(), 'rules-'))
+    writeRule(tmpRules, '100-web', ['description: Web rules', 'path: "**/*.tsx"'])
+    const { code, out } = runValidate(tmpRules)
+    rmSync(tmpRules, { recursive: true, force: true })
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes("100-web.md — found 'path:' (singular)"), `got: ${out}`)
+  })
+
+  test('exits 1 when paths: is present but has no glob entries', () => {
+    const tmpRules = makeTempDir(join(tmpdir(), 'rules-'))
+    writeFileSync(join(tmpRules, '100-web.md'), ['---', 'description: Web rules', 'paths:', '---', '', 'body'].join('\n'))
+    const { code, out } = runValidate(tmpRules)
+    rmSync(tmpRules, { recursive: true, force: true })
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes("100-web.md — 'paths:' is present but has no glob entries"), `got: ${out}`)
+  })
+
+  test('exits 1 when an always-loaded rule (000-security/001-conventions) wrongly carries paths:', () => {
+    const tmpRules = makeTempDir(join(tmpdir(), 'rules-'))
+    writeRule(tmpRules, '000-security', ['description: Security rules', 'paths:', '  - "**/*.ts"'])
+    const { code, out } = runValidate(tmpRules)
+    rmSync(tmpRules, { recursive: true, force: true })
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes("000-security.md — has 'paths:' frontmatter but is documented as always-loaded"), `got: ${out}`)
+  })
+
+  test('exits 1 when a rule is missing frontmatter entirely', () => {
+    const tmpRules = makeTempDir(join(tmpdir(), 'rules-'))
+    writeFileSync(join(tmpRules, '100-web.md'), 'no frontmatter here\n')
+    const { code, out } = runValidate(tmpRules)
+    rmSync(tmpRules, { recursive: true, force: true })
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('100-web.md — missing frontmatter'), `got: ${out}`)
+  })
+})
+
+describe('extractRoutedAgent (routing-eval live-scoring rule)', () => {
+  const agents = new Set(['bug-hunter', 'security-guard', 'db-guard', 'senior-engineer'])
+
+  test('returns the exact name when the answer is only an agent name', () => {
+    assert.strictEqual(extractRoutedAgent('bug-hunter', agents), 'bug-hunter')
+  })
+
+  test('extracts a single token-bounded agent from a chatty answer', () => {
+    assert.strictEqual(extractRoutedAgent('route this to bug-hunter please', agents), 'bug-hunter')
+  })
+
+  test('matches a hyphenated name as one token', () => {
+    assert.strictEqual(extractRoutedAgent('answer: senior-engineer', agents), 'senior-engineer')
+  })
+
+  test('returns null when the answer names more than one agent (ambiguous → miss)', () => {
+    assert.strictEqual(extractRoutedAgent('bug-hunter, not security-guard', agents), null)
+  })
+
+  test('does not match an agent name embedded in a larger word (guards against substring scoring)', () => {
+    // "db-guardian" must NOT score as "db-guard" — this is the exact bug an
+    // un-token-bounded substring match would introduce.
+    assert.strictEqual(extractRoutedAgent('use the db-guardian helper', agents), null)
+  })
+
+  test('returns null when no known agent appears', () => {
+    assert.strictEqual(extractRoutedAgent('not sure which one fits here', agents), null)
+  })
+})
+
+describe('significantWords (routing-eval expectedSkill drift lint)', () => {
+  test('lowercases and keeps only words of 4+ characters', () => {
+    const words = significantWords('Fix the API bug now')
+    assert.ok(words.has('now') === false, 'a 3-letter word must be excluded')
+    assert.ok([...words].every(w => w === w.toLowerCase()), 'every word must be lowercased')
+  })
+
+  test('drops stopwords even when 4+ characters', () => {
+    const words = significantWords('this need about their')
+    assert.strictEqual(words.size, 0)
+  })
+
+  test('keeps Turkish characters intact (no mangling to ASCII)', () => {
+    const words = significantWords('şemayı değiştir')
+    assert.ok(words.has('şemayı'), `expected 'şemayı' in ${[...words]}`)
+  })
+
+  test('two texts about the same topic share at least one significant word', () => {
+    const prompt = significantWords('bundle 2MB olmuş, neden bu kadar yavaş açılıyor site')
+    const skill = significantWords('Use for slow code, slow queries, bundle size, caching, N+1, render loops, memory, and latency issues.')
+    const overlap = [...prompt].some(w => skill.has(w))
+    assert.ok(overlap, 'expected "bundle" to overlap between the prompt and the skill description')
+  })
+})
+
+describe('check-consistency.ts drift detection', () => {
+  // Builds an isolated CONSISTENCY_ROOT fixture with every file the script reads,
+  // all values consistent by default; each test overrides exactly one to prove
+  // that drift is actually caught (and not merely that the clean repo passes).
+  function buildConsistencyFixture(
+    overrides: {
+      pkgVersion?: string
+      pluginVersion?: string
+      promptCount?: number
+      readmeClaim?: number
+      nodeVersions?: [string, string]
+      alwaysLoadedLines?: number
+      pkgTestScript?: string
+      ciTestCommand?: string
+    } = {}
+  ): string {
+    const root = makeTempDir(join(tmpdir(), 'consistency-'))
+    const pkgVersion = overrides.pkgVersion ?? '9.9.9'
+    const pluginVersion = overrides.pluginVersion ?? '9.9.9'
+    const promptCount = overrides.promptCount ?? 3
+    const readmeClaim = overrides.readmeClaim ?? promptCount
+    const [nodeA, nodeB] = overrides.nodeVersions ?? ['24', '24']
+    const alwaysLoadedLines = overrides.alwaysLoadedLines ?? 5
+    const pkgTestScript = overrides.pkgTestScript ?? 'node --experimental-strip-types --test scripts/validate-skills.test.ts'
+    const ciTestCommand = overrides.ciTestCommand ?? pkgTestScript
+
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ version: pkgVersion, scripts: { test: pkgTestScript } }))
+    mkdirSync(join(root, '.claude-plugin'), { recursive: true })
+    writeFileSync(join(root, '.claude-plugin', 'plugin.json'), JSON.stringify({ version: pluginVersion }))
+    mkdirSync(join(root, 'eval'), { recursive: true })
+    writeFileSync(
+      join(root, 'eval', 'golden-prompts.json'),
+      JSON.stringify({ prompts: Array.from({ length: promptCount }, (_, i) => ({ prompt: `p${i}`, expect: 'bug-hunter' })) })
+    )
+    writeFileSync(join(root, 'README.md'), `The eval pins ${readmeClaim} realistic requests.\n`)
+    writeFileSync(join(root, 'README.tr.md'), `Değerlendirme ${promptCount} gerçekçi isteği sabitler.\n`)
+    mkdirSync(join(root, '.github', 'workflows'), { recursive: true })
+    writeFileSync(
+      join(root, '.github', 'workflows', 'ci.yml'),
+      `steps:\n  - with:\n      node-version: '${nodeA}'\n  - name: Run unit tests\n    run: ${ciTestCommand}\n`
+    )
+    mkdirSync(join(root, 'security', 'workflows'), { recursive: true })
+    writeFileSync(join(root, 'security', 'workflows', 'audit.yml'), `steps:\n  - with:\n      node-version: '${nodeB}'\n`)
+    mkdirSync(join(root, 'rules'), { recursive: true })
+    const alwaysLoadedBody = Array.from({ length: alwaysLoadedLines }, (_, i) => `line ${i}`).join('\n')
+    writeFileSync(join(root, 'global-CLAUDE.md'), alwaysLoadedBody)
+    writeFileSync(join(root, 'rules', '000-security.md'), alwaysLoadedBody)
+    writeFileSync(join(root, 'rules', '001-conventions.md'), alwaysLoadedBody)
+    return root
+  }
+
+  function runConsistency(root: string): { code: number; out: string } {
+    try {
+      const stdout = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/check-consistency.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, CONSISTENCY_ROOT: root },
+      })
+      return { code: 0, out: stdout }
+    } catch (err) {
+      const e = err as { status?: number; stderr?: string; stdout?: string }
+      return { code: e.status ?? 1, out: (e.stdout ?? '') + (e.stderr ?? '') }
+    }
+  }
+
+  test('passes when all cross-file values are consistent', () => {
+    const { code, out } = runConsistency(buildConsistencyFixture())
+    assert.strictEqual(code, 0, `expected exit 0, got: ${out}`)
+    assert.match(out, /Version fields match \(9\.9\.9\)/)
+    assert.match(out, /Golden-prompt count claims match disk \(3\)/)
+  })
+
+  test('exits 1 when package.json and plugin.json versions differ', () => {
+    const { code, out } = runConsistency(buildConsistencyFixture({ pluginVersion: '9.9.8' }))
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('package.json version (9.9.9) != .claude-plugin/plugin.json version (9.9.8)'), `got: ${out}`)
+  })
+
+  test('exits 1 when a README overstates the golden-prompt count', () => {
+    const { code, out } = runConsistency(buildConsistencyFixture({ promptCount: 3, readmeClaim: 5 }))
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('README.md claims 5 golden prompts'), `got: ${out}`)
+  })
+
+  test('exits 1 when node-version differs across workflow files', () => {
+    const { code, out } = runConsistency(buildConsistencyFixture({ nodeVersions: ['24', '22'] }))
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('node-version differs across workflow files'), `got: ${out}`)
+  })
+
+  test('exits 1 when an always-loaded file exceeds the line budget', () => {
+    const { code, out } = runConsistency(buildConsistencyFixture({ alwaysLoadedLines: 300 }))
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('over the 250-line always-loaded budget'), `got: ${out}`)
+  })
+
+  test('exits 1 when the combined always-loaded budget is exceeded even though each file passes its own cap', () => {
+    // 200 lines/file passes the 250-line per-file cap individually, but 3 × 200 = 600
+    // exceeds the 500-line combined cap — this is exactly the blind spot a per-file-only
+    // check has by construction.
+    const { code, out } = runConsistency(buildConsistencyFixture({ alwaysLoadedLines: 200 }))
+    assert.strictEqual(code, 1)
+    assert.ok(!out.includes('over the 250-line always-loaded budget'), `should not trip the per-file cap, got: ${out}`)
+    assert.ok(out.includes('over the 500-line combined always-loaded budget'), `got: ${out}`)
+  })
+
+  test('exits 1 when the CI unit-test command diverges from package.json\'s test script', () => {
+    const { code, out } = runConsistency(
+      buildConsistencyFixture({
+        pkgTestScript: 'node --experimental-strip-types --test scripts/validate-skills.test.ts',
+        ciTestCommand: 'node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/hooks.test.ts',
+      })
+    )
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('"Run unit tests" step'), `got: ${out}`)
+    assert.ok(out.includes('!= package.json\'s "test" script'), `got: ${out}`)
+  })
+
+  // README's "(N suites — ...)" prose lives right next to the "N/N passing"
+  // claim check-consistency already covered, but is separate free text the
+  // pass-count regex never touched — found stale by hand (claimed 24 suites,
+  // actual 25) precisely because nothing checked it before this guard. Stubs
+  // pkgTestScript to a one-liner that prints a controlled TAP summary instead
+  // of actually running scripts/validate-skills.test.ts against the fixture
+  // root (which has no real tests to run) — check 6/7 only care about the
+  // "# pass N" / "# suites N" lines in stdout, not a real test run.
+  test('exits 1 when a README overstates the suite count', () => {
+    const root = buildConsistencyFixture({ pkgTestScript: `node -e "console.log('# pass 1'); console.log('# suites 1')"` })
+    writeFileSync(join(root, 'README.md'), 'The eval pins 3 realistic requests.\n**1/1 passing** (99 suites — some claim)\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('(99 suites'), `got: ${out}`)
+    assert.ok(out.includes('actually reports # suites 1'), `got: ${out}`)
+  })
+
+  // SECURITY.md's deny-rule count is typed by hand and nothing re-derived it
+  // from settings-template.json itself — same drift class as the suite/pass
+  // count claims above, for a different pair of files.
+  test('exits 1 when SECURITY.md overstates the deny-rule count', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(join(root, 'settings-template.json'), JSON.stringify({ permissions: { deny: ['Read(./**/.env)', 'Bash(rm -rf *)'] } }))
+    writeFileSync(join(root, 'SECURITY.md'), 'The kit ships **999 Read/Bash/PowerShell deny rules** for safety.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('SECURITY.md claims "**999 Read/Bash/PowerShell deny rules**"'), `got: ${out}`)
+    assert.ok(out.includes('actually has 2 deny rules'), `got: ${out}`)
+  })
+
+  test('passes when settings-template.json/SECURITY.md are absent from the fixture root', () => {
+    // Every other test in this describe block relies on this: CONSISTENCY_ROOT
+    // fixtures never create these two files, so check 7 must no-op rather than
+    // crash the whole script on a missing-file read.
+    const { code, out } = runConsistency(buildConsistencyFixture())
+    assert.strictEqual(code, 0, `expected exit 0, got: ${out}`)
+  })
+
+  // Same drift class as checks 6/7, for skills/ specifically — found stale by
+  // hand in SETUP.md's install-list intro, its verification table, and
+  // TROUBLESHOOTING.md's diagnostic heading (all said 23 while skills/ had
+  // grown to 25).
+  function buildSkillsFixture(
+    skillCount: number,
+    setupClaims: { intro: number; table: number },
+    troubleshootingClaim: number
+  ): string {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'skills'), { recursive: true })
+    for (let i = 0; i < skillCount; i++) mkdirSync(join(root, 'skills', `skill-${i}`), { recursive: true })
+    writeFileSync(
+      join(root, 'SETUP.md'),
+      `Read the following ${setupClaims.intro} subdirectories from \`KIT/skills/\` and write to \`PROJECT/.claude/skills/\`.\n\n| Directory | Expected count |\n| --- | --- |\n| \`skills/\` | ${setupClaims.table} |\n`
+    )
+    writeFileSync(join(root, 'TROUBLESHOOTING.md'), `### FAIL — skill count is less than ${troubleshootingClaim}\n`)
+    return root
+  }
+
+  test('passes when SETUP.md/TROUBLESHOOTING.md skill counts match skills/ on disk', () => {
+    const root = buildSkillsFixture(25, { intro: 25, table: 25 }, 25)
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 0, `expected exit 0, got: ${out}`)
+    assert.match(out, /skill-count claims match skills\/ \(25\)/)
+  })
+
+  test('exits 1 when SETUP.md\'s skill-copy intro understates the skill count', () => {
+    const root = buildSkillsFixture(25, { intro: 23, table: 25 }, 25)
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('skill-copy intro claims 23 subdirectories but skills/ actually has 25'), `got: ${out}`)
+  })
+
+  test('exits 1 when SETUP.md\'s verification table understates the skill count', () => {
+    const root = buildSkillsFixture(25, { intro: 25, table: 23 }, 25)
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('verification table claims skills/ has 23 files but it actually has 25'), `got: ${out}`)
+  })
+
+  test('exits 1 when TROUBLESHOOTING.md\'s skill-count threshold is stale', () => {
+    const root = buildSkillsFixture(25, { intro: 25, table: 25 }, 23)
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('"skill count is less than 23" should reference 25'), `got: ${out}`)
+  })
+
+  // Root-cause fix for a real slip: two separate audit-round summaries in
+  // CHANGELOG.md's [Unreleased] section both introduced themselves as "Fifth
+  // wave —". This guard closes that class so it can't silently recur.
+  test('exits 1 when the Unreleased section repeats a wave label', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(
+      join(root, 'CHANGELOG.md'),
+      [
+        '## [Unreleased]',
+        '',
+        'Second wave — first summary:',
+        '',
+        '- fix one',
+        '',
+        'Fifth wave — a summary:',
+        '',
+        '- fix two',
+        '',
+        'Fifth wave — a different summary reusing the same label:',
+        '',
+        '- fix three',
+        '',
+        '## [1.0.0] — 2026-01-01',
+        '',
+        'Fifth wave — an older release section may reuse ordinal words freely.',
+        '',
+      ].join('\n')
+    )
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('"Fifth wave" more than once'), `got: ${out}`)
+  })
+
+  test('passes when every wave label in Unreleased is unique', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(
+      join(root, 'CHANGELOG.md'),
+      ['## [Unreleased]', '', 'Second wave — a summary:', '', '- fix one', '', 'Third wave — another summary:', '', '- fix two', ''].join('\n')
+    )
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 0, `expected exit 0, got: ${out}`)
+    assert.match(out, /CHANGELOG\.md's \[Unreleased\] wave labels are unique\./)
+  })
+})
+
+describe('check-links markdown-file-count guard', () => {
+  // The READMEs advertise the markdown-file count as a reproducible number.
+  // check-links owns the real count (its own walk), so it guards the claim.
+  function buildLinksFixture(claimedCount: number, actualMdFiles: number): string {
+    const root = makeTempDir(join(tmpdir(), 'links-'))
+    writeFileSync(join(root, 'README.md'), `The repo has ${claimedCount} markdown files, 0 broken links.\n`)
+    for (let i = 1; i < actualMdFiles; i++) writeFileSync(join(root, `doc${i}.md`), '# doc\n') // README.md is the first
+    return root
+  }
+
+  function runLinks(root: string): { code: number; out: string } {
+    try {
+      const out = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/check-links.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, LINKS_ROOT: root },
+      })
+      return { code: 0, out }
+    } catch (err) {
+      const e = err as { status?: number; stderr?: string; stdout?: string }
+      return { code: e.status ?? 1, out: (e.stdout ?? '') + (e.stderr ?? '') }
+    }
+  }
+
+  test('passes when the README markdown-file count matches disk', () => {
+    const { code, out } = runLinks(buildLinksFixture(3, 3)) // README.md + doc1 + doc2
+    assert.strictEqual(code, 0, out)
+    assert.match(out, /README markdown-file count matches disk \(3\)/)
+  })
+
+  test('exits 1 when the README overstates the markdown-file count', () => {
+    const { code, out } = runLinks(buildLinksFixture(99, 3))
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('claims 99 markdown files'), `got: ${out}`)
   })
 })

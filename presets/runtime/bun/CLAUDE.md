@@ -10,7 +10,7 @@
 ## Package management
 
 - Always use `bun install`, `bun add`, `bun remove` — never `npm` or `yarn` in a Bun project.
-- Lock file: `bun.lockb` (binary) — always commit it.
+- Lock file: `bun.lock` (text JSONC, the default since Bun 1.2) — always commit it. Legacy projects may still carry the older binary `bun.lockb`; Bun reads either, and `bun install` on 1.2+ migrates to the text form. Detect a Bun project by `bun.lock` OR `bun.lockb`.
 - Workspaces: defined in `package.json` `workspaces` field; use `bun --filter` for scoped commands.
 
 ## Testing
@@ -113,4 +113,4 @@ const json = await res.json()
 - Using `jest.fn()` — use `mock()` from `bun:test`.
 - Using `node:fs` for file I/O when `Bun.file()` is simpler.
 - `bcrypt` — use `Bun.password` (Argon2id, built-in, faster).
-- Ignoring `bun.lockb` in `.gitignore` — always commit it.
+- Ignoring the Bun lockfile (`bun.lock`, or legacy `bun.lockb`) in `.gitignore` — always commit it.

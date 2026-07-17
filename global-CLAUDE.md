@@ -38,10 +38,12 @@ Tier 3+: use native plan mode (read-only) for the plan — edits begin only afte
 
 ## AGENT ROUTING
 
-Escalation signals ALWAYS route to their guard (mirrored by the protected-paths hook):
+Escalation signals ALWAYS route to their guard:
 DB schema/model/index/migration/destructive data → db-guard
 auth / payment / security → security-guard | CI-CD / Docker / IaC → devops-guard
 large feature / architecture → architect (plan-only)
+live-incident language (prod down, active outage, "users can't...") → `incident-response`
+skill first, not straight to bug-hunter or a single guard (see ROUTING.md Step 0).
 
 Everything else: delegate by agent description — each agent's frontmatter states its scope and
 model tier. Full decision tree, tier map, and EN+TR trigger phrases:
@@ -59,7 +61,7 @@ Tier 0 (1 file <10 lines, no protected area): SKIP — go straight to the edit, 
 Tier 1+: run once per session (skip missing, never guess):
 
 1. Manifest: package.json/pubspec.yaml/go.mod/Cargo.toml/pom.xml/composer.json/Gemfile/requirements.txt
-   PKG_MANAGER: bun.lockb=bun | pnpm-lock.yaml=pnpm | yarn.lock=yarn | package-lock.json=npm | uv.lock=uv | Pipfile.lock=pipenv
+   PKG_MANAGER: bun.lock/bun.lockb=bun | pnpm-lock.yaml=pnpm | yarn.lock=yarn | package-lock.json=npm | uv.lock=uv | Pipfile.lock=pipenv
    Runtime override: deno.json=Deno | pubspec.yaml=Flutter | *.csproj=.NET | Package.swift=Swift
 2. Config: tsconfig.json/vite.config.*/next.config.*/tailwind.config.* (Tailwind v4: @theme in CSS, no tailwind.config.js)
 3. CI/CD: .github/workflows/*.yml/Dockerfile/railway.toml/fly.toml → DEPLOY
@@ -95,22 +97,18 @@ Follow detected architecture (vertical-slice or layered) — never mix.
 CHALLENGE ASSUMPTIONS — do not affirm flawed reasoning. Accuracy over agreement.
 Say: "This approach has a problem: [X]" — not "Great idea! Here's how..."
 
-HOLISTIC CONSISTENCY — never leave a layer behind:
-DB field renamed → DTO → API type → UI type | Endpoint added → client + types + UI + docs
-Type renamed → all importers | Route added → nav/sidebar | Config key → .env.example
-
-FORWARD FLAGS (mark, never block):
-FWD: God service >300 lines — split recommended | FWD: DB in controller — coupling risk
-FWD: Hardcoded string — move to config/env | FWD: Missing index on FK — perf risk
-OBS: [service] no metrics — add request count + latency
-A11Y: [element] — [issue] → fix immediately
+HOLISTIC CONSISTENCY — never leave a layer behind: when one layer changes, update every
+dependent layer. Full change→propagation table + the FWD:/OBS: forward-flag list (mark, never
+block) live in 001-conventions.md (always loaded) — the single source of truth for both.
+A11Y: [element] — [issue] → fix immediately (accessibility is fixed on sight, not just flagged).
 
 CONTEXT DISCIPLINE:
 
 - The model cannot see its own token count or run /compact — after long read chains or several
   Agent() calls, say: "Session is getting large — consider /compact or a fresh session."
 - /compact summarizes and CONTINUES; /clear WIPES. Task unfinished + context full → /compact.
-  Before /clear: persist durable facts to memory/*.md + MEMORY.md so the next session reloads them.
+  Before /clear: persist durable facts to memory/*.md + MEMORY.md so the next session reloads them
+  (project-scoped facts specifically → `project-memory` skill, `.claude/PROJECT-MEMORY.md`).
 - Push read-heavy sweeps into subagents (own context window; only the summary returns). ONE topic
   per call; pass known project context (TEST_CMD, paths) in the prompt — subagents start blank.
   Keep subagent RETURN payloads short: a conclusion, not a transcript.
@@ -175,10 +173,12 @@ manually Read a rule file to "load" it: injection is automatic, once per session
 900-performance — CWV budgets, bundle limits, API latency, N+1
 
 Deterministic enforcement (independent of these instructions): `settings.json`'s
-`permissions.deny` blocks Read of the NEVER READ OR OUTPUT list above;
-`~/.claude/hooks/protected-paths.mjs` (PreToolUse) turns Edit/Write/NotebookEdit into the
-STOP + ESCALATE list into an explicit approval prompt naming the guard agent.
-Activation and opt-out steps: hooks/README.md.
+`permissions.deny` blocks the Read tool for the NEVER READ OR OUTPUT list above, plus a
+narrow Bash/PowerShell layer for the highest-value secret patterns — see
+`rules/000-security.md`'s PROTECTED FILES section for exactly what that layer covers.
+There is no deterministic interception of Edit/Write/NotebookEdit or of Bash/PowerShell
+*writes* into protected areas — escalation on the STOP + ESCALATE list above is prompt
+discipline, not harness-enforced.
 
 Lazy-load docs (all under agent_docs/, read on demand): architecture | design-system |
 testing-strategy | security-protocols | api-design-patterns | seo-patterns |

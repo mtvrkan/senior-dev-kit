@@ -11,7 +11,7 @@ Claude Code'a kıdemli mühendislik takımı davranışı kazandıran agent, ski
 
 > Bu çeviri İngilizce README ile eş tutulur; bir çelişki durumunda [README.md](README.md) esastır. Bağlantılar İngilizce dokümanlara gider.
 
-> **Ölçülmüş, sadece iddia edilmemiş:** 143/143 test geçiyor · 0 kırık doküman linki · %97 (29/30) canlı yönlendirme doğruluğu · %0,52 deny-list yanlış-pozitif oranı. Tam döküm, komutlar ve yöntem aşağıda [Validation](README.md#validation) bölümünde (İngilizce README).
+> **Ölçülmüş, sadece iddia edilmemiş:** 144/144 test geçiyor · 0 kırık doküman linki · %97 (29/30) canlı yönlendirme doğruluğu · %0,18 deny-list yanlış-pozitif oranı. Tam döküm, komutlar ve yöntem aşağıda [Validation](README.md#validation) bölümünde (İngilizce README).
 
 ---
 
@@ -24,7 +24,7 @@ Claude Code'a kıdemli mühendislik takımı davranışı kazandıran agent, ski
 | Durumunuz | Kullanın | Ne alırsınız |
 | --- | --- | --- |
 | Yepyeni proje — Claude kurup yapılandırsın | **Seçenek A** | Yalın, **üretilmiş 7 agent'lık proje takımı** (tam kit değil — alttaki nota bakın) |
-| Bu makinedeki her proje kiti kullansın | **Seçenek B** | Tam kit (12 agent, 23 skill, 2 komut, 11 rule) global `~/.claude/` içinde |
+| Bu makinedeki her proje kiti kullansın | **Seçenek B** | Tam kit (12 agent, 25 skill, 2 komut, 11 rule) global `~/.claude/` içinde |
 | Mevcut proje, kopyalamayı siz yapacaksınız | **Seçenek C** | Tam kit o projenin `.claude/`'sinde |
 | Mevcut proje, kopyalamayı Claude yapsın | **Seçenek D** | Tam kit `.claude/`'de, istenirse global kurulum da |
 
@@ -42,15 +42,15 @@ Claude stack'inizi tespit eder, doğru preset'leri seçer ve `.claude/`'yi otoma
 
 ### Seçenek B — Global `~/.claude/` kurulumu (tüm projelere uygulanır)
 
-**Plugin (en hızlısı — agent'lar, skill'ler, komutlar, hook):**
+**Plugin (en hızlısı — agent'lar, skill'ler, komutlar):**
 
 ```text
 /plugin marketplace add mtvrkan/senior-dev-kit
 /plugin install senior-dev-kit@senior-dev-kit
 ```
 
-Bu, agent'ları, skill'leri, komutları ve [korumalı-yol hook'unu](hooks/README.md) otomatik
-olarak kaydeder. `rules/`, `agent_docs/` veya `global-CLAUDE.md`'yi **kurmaz** — plugin formatı
+Bu, agent'ları, skill'leri ve komutları otomatik olarak kaydeder. `rules/`, `agent_docs/` veya
+`global-CLAUDE.md`'yi **kurmaz** — plugin formatı
 yol-kapsamlı rule'ları veya global bir CLAUDE.md'yi kapsamaz. Tam kit için (token
 verimliliğinin büyük kısmını sağlayan lazy-load rule katmanı) ayrıca şunu çalıştırın:
 
@@ -137,7 +137,7 @@ User: Docker CI pipeline'ına SBOM ekle
 | `/seo-check` | SEO, AEO, Core Web Vitals denetimi |
 
 **Skill kısayolları** (adıyla çağırın — her zaman kullanılabilir):
-`/security-review` · `/api-design` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · ve 23 skill'in tamamı
+`/security-review` · `/api-design` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · ve 25 skill'in tamamı
 
 > **Komutlar ve Skill'ler:** Komut dosyaları (`commands/*.md`) Claude Code'un eski slash-komut formatını kullanır — `$ARGUMENTS` yer tutuculu düz markdown, çağrıldığında bağlama okunur. Skill dosyaları (`skills/*/SKILL.md`) zengin frontmatter'lı (`model`, `effort`, `allowed-tools`, `when_to_use`) yeni SKILL.md sistemini kullanır. Skill'ler eşleşen bağlam algılandığında otomatik de tetiklenebilir; komutlar yalnızca açıkça çağrıldığında çalışır. Kit eskiden skill karşılığı olan her skill için ayrı bir komut sunuyordu (`/dep-check`, `/smart-task`, ...) — bunlar kaldırıldı, yetenekleri artık doğrudan aynı isimli skill'de yaşıyor (örn. `/security-scan` doğrudan `security-scan` skill'ini tetikler). Skill karşılığı olmayan yalnızca 2 komut kaldı.
 
@@ -153,7 +153,7 @@ Tam tablo için [README.md — Picking a Preset](README.md#picking-a-preset) bö
 
 ## Kitin içinde ne var
 
-### Skill'ler (23)
+### Skill'ler (25)
 
 Skill'ler iki şekilde tetiklenir: çoğu, `description` alanı görevle eşleştiğinde **otomatik çağrılır** (çoğu ayrıca agent'ların `skills:` alanına bağlıdır); bazıları ise **yalnızca manueldir** — `/skill-adi` ile çağrılır ve `disable-model-invocation: true` işaretlidir (`code-audit`, `deep-research`, `env-audit`, `kit-doctor`). Hiçbir agent'ın referans vermediği skill yetim değildir: doğrudan çağrılmak için vardır.
 
@@ -163,9 +163,9 @@ Skill'ler iki şekilde tetiklenir: çoğu, `description` alanı görevle eşleş
 
 **Kalite ve Güvenlik:** `code-review`, `security-review`, `security-scan`, `test-writer`, `performance-check`, `code-audit`
 
-**DevOps ve Ortam:** `release-gate`, `env-audit`, `kit-doctor`
+**DevOps ve Ortam:** `release-gate`, `env-audit`, `kit-doctor`, `incident-response`
 
-**İçerik ve Araştırma:** `docs-update`, `deep-research`, `codebase-overview`
+**İçerik ve Araştırma:** `docs-update`, `deep-research`, `codebase-overview`, `project-memory`
 
 ### Rule'lar (11) — otomatik yüklenir
 
@@ -191,10 +191,6 @@ Bu dokümanlar her oturuma önceden yüklenmez. `global-CLAUDE.md`'deki `Lazy-lo
 
 Stack tespiti → kopyalanan dosyalar → üretilen `stack-rules.md` → 3 gerçek kullanım akışı → görev başına maliyet tahminleri. Platform sınıfı başına bir temsili anlatım (web: `nextjs-prisma-postgres`, backend: `go-postgres`, mobil: `flutter-supabase`) — stack'e özel rehberlik `presets/` altındadır (her preset'in `CLAUDE.md`'si o stack'in esas kural dosyasıdır). Başlangıç için en iyisi: [`examples/with-vs-without-kit.md`](examples/with-vs-without-kit.md) — aynı üç isteğin kitli ve kitsiz nasıl ele alındığı.
 
-### Hooks (varsayılan olarak açık) — deterministik zorlama
-
-Kitin geri kalanı prompt disiplinidir; [`hooks/`](hooks/README.md) en kritik kuralı harness garantisine çevirir. `protected-paths` PreToolUse hook'u; secrets, auth, ödeme, migration veya CI/IaC yollarına yapılan her Edit/Write'ı yakalar ve incelemesi gereken guard agent'ın adını vererek açık izin sorusuna dönüştürür — model ne karar vermiş olursa olsun. Claude-driven kurulumlarda `SETUP.md` Step 5e bunu otomatik olarak `settings.json`'a bağlar; fazladan izin sorularını istemiyorsanız o adımı atlayabilirsiniz (elle etkinleştirmek için [hooks/README.md](hooks/README.md)). Plugin olarak kurulduğunda hook her durumda otomatik kaydolur.
-
 ---
 
 ## Rule önceliği
@@ -217,19 +213,19 @@ Aşağıdaki hiçbir sayı hafızadan iddia edilmiyor — her biri yanındaki ko
 
 | Kontrol | Komut | Sonuç |
 | --- | --- | --- |
-| Unit + entegrasyon testleri | `npm test` | **143/143 geçiyor** (23 suite — frontmatter doğrulama, Bash-bypass tespiti ve content-guard dahil protected-path hook davranışı, audit loglama) |
-| Skill/agent/command/preset frontmatter | `npm run validate` | 23 skill · 12 agent · 2 command · 49 preset — 0 hata; hand-off zinciri bütünlüğünü (`db-change` → `migration-review` vb.) ve guard-agent `permissionMode: plan` zorunluluğunu içerir |
-| Dahili doküman linkleri | `npm run link-check` | 188 markdown dosyası, 0 kırık link/anchor |
+| Unit + entegrasyon testleri | `npm test` | **144/144 geçiyor** (33 suite — skill/agent/rule frontmatter doğrulama, orphan-skill tespiti, guard-agent zorunluluğu, deny-rule eşleştirme) |
+| Skill/agent/command/preset frontmatter | `npm run validate` | 25 skill · 12 agent · 2 command · 49 preset — 0 hata; hand-off zinciri bütünlüğünü (`db-change` → `migration-review` vb.) ve guard-agent `permissionMode: plan` zorunluluğunu içerir |
+| Dahili doküman linkleri | `npm run link-check` | 190 markdown dosyası, 0 kırık link/anchor |
 | Bakım tablosu tazeliği | `npm run stale-check` | 5 bakım tablosunun tamamında 0 bayat/öksüz kayıt |
 | Type check / lint | `npm run typecheck` · `npm run lint` | temiz |
 | Yönlendirme doğruluğu (canlı) | `RUN_ROUTING_EVAL=1 npm run routing-eval` | güncel 30-prompt'luk sette **29/30 (%97)** (2026-07-16) — aşağıya bakın |
-| Deny listesi yanlış-pozitif maliyeti | `npm run deny-cost` | gerçek komutların **%0,52**'si — aşağıya bakın |
+| Deny listesi yanlış-pozitif maliyeti | `npm run deny-cost` | gerçek komutların **%0,18**'i — aşağıya bakın |
 
 Tüm setini tek seferde çalıştırmak için `npm run check` — CI'nin her push'ta koştuğu dizinin aynısı (`.github/workflows/repo-ci.yml`).
 
-Kitin *yönlendirme davranışı* da test altındadır: [`eval/golden-prompts.json`](eval/golden-prompts.json), 30 gerçekçi isteği (TR+EN karışık) beklenen agent'a sabitler. `npm run routing-eval` ücretsiz statik yarıyı her push'ta koşar; `RUN_ROUTING_EVAL=1 npm run routing-eval` modele her prompt'u gerçekten yönlendirtir ve %90 altı skorda başarısız olur (`.github/workflows/routing-eval.yml`). Ölçülmüş, varsayılmamış: ilk canlı koşu 28/33 (%85) ile `agents/ROUTING.md`'deki gerçek boşlukları ortaya çıkardı; kapatıldıktan sonra iki ardışık canlı koşu, o zamanki 33-prompt'luk sette 32/33 (%97) aldı. Set daha sonra 30 prompt'a indirildi ve 2.0 ajan birleştirmesi için 4 beklenti güncellendi; güncel sete karşı yeni bir canlı koşu 29/30 (%97) aldı — tek kaçırılan "login page 'Forgot Password' link doesn't work, fix it" prompt'unu `security-guard` yerine `ui-fixer`'a yönlendirdi (bir öncelik durumu: `agents/ROUTING.md`'ye göre guard-alanı ismi "fix" fiilinden önce gelmeli) — yine de %90 eşiğinin rahatça üzerinde.
+Kitin *yönlendirme davranışı* da test altındadır: [`eval/golden-prompts.json`](eval/golden-prompts.json), 30 gerçekçi isteği (TR+EN karışık) beklenen agent'a sabitler. `npm run routing-eval` ücretsiz statik yarıyı her push'ta koşar; `RUN_ROUTING_EVAL=1 npm run routing-eval` modele her prompt'u gerçekten yönlendirtir ve %90 altı skorda başarısız olur (`.github/workflows/routing-eval.yml`). Ölçülmüş, varsayılmamış: ilk canlı koşu 28/33 (%85) ile `agents/ROUTING.md`'deki gerçek boşlukları ortaya çıkardı; kapatıldıktan sonra iki ardışık canlı koşu, o zamanki 33-prompt'luk sette 32/33 (%97) aldı. Set daha sonra 30 prompt'a indirildi ve 2.0 ajan birleştirmesi için 4 beklenti güncellendi; güncel sete karşı yeni bir canlı koşu 29/30 (%97) aldı — tek kaçırılan "login page 'Forgot Password' link doesn't work, fix it" prompt'unu `security-guard` yerine `ui-fixer`'a yönlendirdi (bir öncelik durumu: `agents/ROUTING.md`'ye göre guard-alanı ismi "fix" fiilinden önce gelmeli) — yine de %90 eşiğinin rahatça üzerinde. Bazı golden prompt'lar isteğe bağlı bir `expectedSkill` de taşır — ücretsiz statik bir lint (API maliyeti yok), yalnızca bir prompt ile beklenen skill'in `description`/`when_to_use`'u sıfır ortak anlamlı kelime paylaşırsa başarısız olur; skill auto-invocation Anthropic'in kendi platform algoritmasıyla eşleştiği için (agent routing'in aksine, o kitin kendi router'ı) bu bilinçli olarak bir sapma lint'idir, davranışsal bir kanıt değil.
 
-Deny listesinin kullanım maliyeti de tahmin değil, ölçümdür: `npm run deny-cost`, makinenizdeki Claude Code transcript geçmişindeki her Bash komutunu kitin deny kurallarına karşı yeniden oynatır ve nelerin engellenmiş olacağını raporlar — geliştirme makinesindeki sayılar için [SECURITY.md](SECURITY.md) "Measured cost" notuna bakın.
+Deny listesinin kullanım maliyeti de tahmin değil, ölçümdür: `npm run deny-cost`, makinenizdeki Claude Code transcript geçmişindeki her Bash ve PowerShell komutunu kitin deny kurallarına karşı yeniden oynatır ve nelerin engellenmiş olacağını raporlar — geliştirme makinesindeki sayılar için [SECURITY.md](SECURITY.md) "Measured cost" notuna bakın.
 
 Yerelde ayrıca gizli-anahtar taraması, markdown lint ve shellcheck için pre-commit kurabilirsiniz:
 

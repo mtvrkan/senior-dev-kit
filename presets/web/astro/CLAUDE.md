@@ -11,7 +11,7 @@
 ## Performance
 
 - Avoid unnecessary `client:load` — prefer `client:idle` or `client:visible`.
-- Use `<Image />` from `astro:assets` for all images — do not use raw `<img>` tags without explicit reason.
+- Use `<Image />` from `astro:assets` for all images — do not use raw `<img>` tags without explicit reason (raw `<img>` loses both build-time optimization and the layout dimensions that prevent CLS).
 - Prefer static generation; use SSR only when dynamic data requires it.
 - Watch bundle size — each island adds JS weight.
 

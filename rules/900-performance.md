@@ -1,10 +1,12 @@
 ---
 description: "Performance budgets — CWV, bundle size, query latency, render"
 paths:
-  - "**/*.{ts,tsx,py,go,java,cs}"
+  - "**/*.{ts,tsx,js,jsx,mjs,py,go,java,cs,rb}"
 ---
 
-> Related: [`700-observability.md`](700-observability.md) auto-loads for almost the same glob set — that file covers what to log, this one covers latency/bundle budgets. They never contradict, so both apply in full (not a precedence conflict — see `001-conventions.md`'s Rule Precedence section). Keep tool/version recommendations in sync if you touch both.
+> Related: [`700-observability.md`](700-observability.md) co-loads on the same glob — logging vs. latency/bundle budgets, never contradictory (see `001-conventions.md` Rule Precedence). Keep tool/version recommendations in sync across both.
+
+> **Scope decision (round-9 audit, accepted — do not re-flag as an oversight):** same reasoning as `700-observability.md`'s scope-decision note — N+1/render-loop/bundle-budget issues can live in any backend or frontend file, not just conventionally-named directories, so this stays a bare extension match rather than directory-scoped. See that note for the two narrower alternatives evaluated and rejected.
 
 ## PERFORMANCE BUDGETS — hard limits
 

@@ -64,7 +64,7 @@ Run silently. If any check fires: STOP → flag → propose fix → continue.
 | --- | --- |
 | npm | `npm audit --audit-level=moderate` |
 | pnpm | `pnpm audit --audit-level=moderate` |
-| yarn | `yarn audit --level moderate` |
+| yarn | `yarn npm audit --severity moderate` (Yarn Berry; Classic v1: `yarn audit --level moderate`) |
 | bun | `bun audit` |
 | pip | `pip-audit` |
 | poetry | `poetry run pip-audit` |
@@ -99,3 +99,17 @@ Recommended stack for .pre-commit-config.yaml:
 `serviceAccountKey.json` · `*firebase-adminsdk*.json` · `*serviceaccount*.json`
 `secrets/` · `config/credentials.json` · `config/secrets.json` · `.secrets.baseline*`
 `*.lock` · `node_modules/` · `dist/` · `.next/`
+
+Enforcement is deliberately not 1:1 across this list. The secrets subset (`.env`, `*.pem`,
+`*.key`, SSH keys, service-account JSON) is enforced at the Read tool (`permissions.deny`,
+which — verified once, on Windows, not re-verified on other platforms — already intercepts
+`cat`/`head`/`tail`/`sed` reads made through the Bash tool) plus two additions for what
+Read-deny doesn't reach: `Bash(base64 ...)` (a read verb Read-deny doesn't recognize) and
+`PowerShell(Get-Content ...)` per pattern (PowerShell is a distinct tool from Bash, so a
+Bash-scoped rule never sees a PowerShell-tool call; `Get-Content`'s aliases `cat`/`type`/`gc`
+are *assumed*, not yet independently verified, to canonicalize to the same rule — see
+SECURITY.md's Assumption note). Lockfiles and the build-output/token-hygiene subset
+(`node_modules/`, `dist/`, `.next/`, a generic `*.lock`) are Read-tool only. No subset has
+Bash/PowerShell *write* protection, and reads via verbs outside the above (`less`, `awk`,
+`python -c "open(...)"`, etc.) aren't gated — treat the list above as prompt discipline
+first, the deny rules as a partial backstop, not a guarantee.

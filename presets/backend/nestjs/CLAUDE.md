@@ -203,7 +203,7 @@ Run: `jest users.service.spec.ts --no-coverage`
 
 ## Verification
 
-- `nest lint` or `eslint src/`
+- `eslint src/` (the Nest CLI has no `lint` subcommand)
 - `tsc --noEmit`
 - `jest [file].spec.ts --no-coverage` (targeted)
 - `jest --no-coverage` (full suite, only before PR)

@@ -12,7 +12,7 @@
 - Prefer additive migrations.
 - Avoid destructive changes without explicit approval.
 - Consider table locks and migration cost for large tables — for ALTER on multi-million-row tables, use `pt-online-schema-change` or `gh-ost` instead of a blocking `ALTER TABLE`.
-- Plan rollback for production changes. Schema changes go through the db-guard skill, never as a side effect of unrelated work.
+- Plan rollback for production changes. Schema changes go through the db-guard agent, never as a side effect of unrelated work.
 
 ## Queries / performance
 

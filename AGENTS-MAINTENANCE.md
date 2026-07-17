@@ -60,7 +60,7 @@ tokens), which a single agent body never reaches on its own.
 For each agent:
 
 - [ ] Verify `skills:` frontmatter references still point to existing `skills/` directories
-- [ ] Verify guard agents (`security-guard`, `db-guard`, `devops-guard`) still set `permissionMode: plan`
+- [ ] Verify every `*-guard` agent (currently `security-guard`, `db-guard`, `devops-guard`, `performance-guard`) still sets `permissionMode: plan` — enforced by name pattern in `scripts/validate-skills.ts` (`isGuardAgent`), so a newly added `*-guard` agent is covered automatically
 - [ ] Verify the agent is still mentioned in `agents/ROUTING.md` with an accurate signal
 - [ ] Update `Last Reviewed` date in this table
 

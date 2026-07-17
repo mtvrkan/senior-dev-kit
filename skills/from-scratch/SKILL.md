@@ -1,9 +1,11 @@
 ---
 name: from-scratch
 description: Use when starting a new project from scratch. Establishes contracts, design system, and architecture skeleton before any feature code. Enforces phase gates to prevent incoherence and bugs.
-allowed-tools: Read, Grep, Glob, Bash, Edit, Write, WebFetch
+allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use when user says "new project", "start from scratch", "build X from zero", or when no existing codebase is present.
 argument-hint: "[project name] [archetype] [tech stack]"
+context: fork
+agent: senior-engineer
 ---
 
 # from-scratch

@@ -6,7 +6,7 @@
 - Colors: reference from project's `colors.ts` / theme context — never hardcode hex values inline
 - Typography: reference from project's `typography.ts` scale — never `fontSize: 17` inline
 - Spacing: 4pt grid only — `spacing.sm(8)`, `spacing.base(16)`, `spacing.lg(24)` — never `padding: 7`
-- Lists: `<FlashList>` for >20 items (never `FlatList` for long lists); `estimatedItemSize` required
+- Lists: `<FlashList>` for >20 items (never `FlatList` for long lists); v2 auto-measures rows (no `estimatedItemSize` — removed in v2)
 - Forms: react-hook-form + Zod; submit button shows `<ActivityIndicator>` while `isSubmitting`; success → toast, not `Alert.alert`
 - Verification: `npx expo export` → `eslint` → `jest` targeted tests
 - Anti: business logic in screens; `AsyncStorage` for new code; `FlatList` for long lists; hardcoded colors/spacing; missing 4 states

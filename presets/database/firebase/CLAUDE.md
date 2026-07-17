@@ -13,7 +13,7 @@
 - Do not rely only on client-side checks.
 - Validate ownership and roles in rules/functions.
 - Always use `request.auth.uid` in rules — never trust `request.resource.data.userId` (client-controlled, spoofable).
-- Security rule changes go through the security-guard skill — a rule error can silently block all access.
+- Security rule changes go through the security-guard agent — a rule error can silently block all access.
 
 ## Performance
 

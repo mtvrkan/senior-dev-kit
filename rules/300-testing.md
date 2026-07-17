@@ -8,6 +8,7 @@ paths:
   - "**/tests/**"
   - "**/*_test.*"
   - "**/*_spec.*"
+  - "**/test_*.py"
 ---
 
 ## TEST PYRAMID RATIOS
@@ -41,10 +42,15 @@ so unit tests dominate there instead.
 ## MOCK POLICY — what to mock vs not
 
 ALWAYS mock: external HTTP APIs · email sending · payment gateways · time (`Date.now()`) · random
-NEVER mock: your own DB (use test DB) · your own internal services (integration test them)
+NEVER mock: the live DB connection/driver in an INTEGRATION test (use a real test DB) · your own internal services in an integration test (integration test them)
 SOMETIMES mock: filesystem (prefer temp dirs) · queues (mock for unit, real for integration)
 
-Rationale: mocking your DB hides schema/query bugs that only surface in prod.
+Rationale: mocking the DB connection in an integration test hides schema/query bugs that only
+surface in prod — that test exists specifically to catch those. This does NOT forbid mocking a
+repository/interface at the service-layer boundary in a UNIT test (see the AAA example below,
+`mockUserRepo`) — that's mocking a dependency, not the DB itself; the repository's own tests
+still hit a real test DB. If a suite has zero tests hitting a real DB, the mock policy is being
+violated even though individual unit tests look correct in isolation.
 
 ## TEST NAMING CONVENTIONS
 
@@ -63,6 +69,9 @@ Never: `it('works')` · `it('test1')` · `it('should work correctly')`
 ## AAA PATTERN — mandatory structure
 
 ```typescript
+// Unit test for the service layer — mocks the repository INTERFACE (a
+// dependency boundary), not the DB itself. UserRepo's own test suite still
+// runs against a real test DB per the mock policy above.
 // Arrange — set up data and dependencies
 const user = { id: '1', email: 'test@example.com' }
 mockUserRepo.findById.mockResolvedValue(user)

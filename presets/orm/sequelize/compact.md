@@ -1,4 +1,4 @@
-- Never change model definitions or migrations unless DB change is explicitly routed through db-guard skill
+- Never change model definitions or migrations unless DB change is explicitly routed through db-guard agent
 - Migrations: keep model and migration files in sync; prefer additive; never alter DB schema as side effect of unrelated work
 - Queries: use `Model.findAll({ where: { column: value } })` — never string interpolation; use `sequelize.literal()` only with parameterized replacement
 - Associations: define `belongsTo`, `hasMany` etc. explicitly; use `include: [{ model: X }]` for eager loading — never lazy in loops

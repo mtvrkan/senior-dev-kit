@@ -126,7 +126,10 @@ For each preset:
 - [ ] Check if any referenced APIs, CLI commands, or config keys have changed
 - [ ] Verify test/lint/build commands still work with the current toolchain
 - [ ] Check if security recommendations are still current (CVEs, deprecated crypto, etc.)
+- [ ] Diff `CLAUDE.md` against `compact.md` — if `CLAUDE.md` gained new user-facing guidance (not just wording/typo edits) since the last review, fold the delta into `compact.md` too. No automated check does this (see note below) — it needs a human read.
 - [ ] Update `Last Reviewed` date in this table
+
+> **Why compact.md sync isn't automated:** two heuristics (CLAUDE.md-heading-keyword overlap with compact.md's text, and git last-commit-timestamp comparison) were tried and rejected — both produced false positives on presets independently verified as well-synced, because judging whether an edit was "meaningful enough to need a compact.md update" requires reading the diff, not measuring it. `scripts/lib/presets.ts`'s `checkCompactMd` still enforces compact.md's existence and minimum length; content sync is a manual quarterly-review step instead.
 
 ---
 

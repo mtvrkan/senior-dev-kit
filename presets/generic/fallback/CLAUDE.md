@@ -6,11 +6,14 @@
 
 ## Token Tier — decide before anything else
 
+Output budgets below match global-CLAUDE.md's TOKEN TIER table exactly — that file is the
+single source of truth for output line caps; this preset must not redefine its own numbers.
+
 | Tier | Condition | Plan | Output |
 | --- | --- | --- | --- |
-| 0 Trivial | 1 file, <10 lines, no protected area | none | 3 lines |
-| 1 Low | 1-2 files, isolated | none | 4 lines |
-| 2 Medium | 3-5 files, behavior/API/state | 3-line inline | 5 lines |
+| 0 Trivial | 1 file, <10 lines, no protected area | none | 1 line |
+| 1 Low | 1-2 files, isolated | none | 2 lines |
+| 2 Medium | 3-5 files, behavior/API/state | 3-line inline | 4 lines |
 | 3 High | protected area, multi-system | full plan doc | 6 lines |
 | 4 Critical | destructive/billing/prod | risk analysis | explicit approval |
 

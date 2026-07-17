@@ -2,7 +2,7 @@
 
 ## Schema
 
-- Do not edit `schema.prisma` unless DB change is requested — route through the db-guard skill.
+- Do not edit `schema.prisma` unless DB change is requested — route through the db-guard agent (which runs the db-change skill).
 - Prefer additive schema changes: a new nullable column or new model is safe; a `NOT NULL` column on an existing table requires a default or a backfill migration step.
 - Keep relation names and cascading behavior intentional.
 - Watch optional vs required field changes.

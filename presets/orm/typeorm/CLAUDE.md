@@ -4,7 +4,7 @@
 
 ## Entities / migrations
 
-- Do not edit entities/migrations unless DB change is requested — route through the db-guard skill.
+- Do not edit entities/migrations unless DB change is requested — route through the db-guard agent.
 - Keep decorators and relations intentional: `@Column`, `@OneToMany`, `@ManyToOne` must match the DB schema exactly, or drift causes runtime errors.
 - Prefer explicit migration files over unsafe sync in production — `synchronize: true` is development-only and must never be enabled in production.
 

@@ -216,7 +216,7 @@ toast.show('Successfully saved', { type: 'success' })
 
 | Need | Package |
 | --- | --- |
-| Navigation | `expo-router` v3+ (file-based) or `@react-navigation/native` v6+ |
+| Navigation | `expo-router` v6 (file-based) or `@react-navigation/native` v6+ |
 | State | `zustand` (lightweight, no boilerplate) |
 | Server state | `@tanstack/react-query` v5 |
 | Forms | `react-hook-form` + `zod` |

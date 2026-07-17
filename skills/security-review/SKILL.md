@@ -23,5 +23,5 @@ Check in this order:
 8. File operations: upload type/size validation, path traversal prevention?
 
 Output: SEVERITY (critical/high/medium/low) | FILE:LINE | vulnerability description | recommended fix
-ESCALATE: security-guard if the fix requires an auth/payment architecture change, otherwise none.
+ESCALATE: flag to user for approval before any auth/payment architecture change; hand implementation to senior-engineer once approved, otherwise none.
 Never print actual secret values. Complements `security-scan` (automated dep/secret/SAST/container tooling) — this is the manual logic review; both may fire on the same change.

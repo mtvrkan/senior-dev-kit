@@ -7,7 +7,9 @@
     {
       "name": "senior-dev-kit",
       "source": "./",
-      "description": "Senior engineering team behavior for Claude Code: 12 routed agents, 23 skills, 2 commands, tiered risk gates, guard agents for auth/DB/CI, and a deterministic protected-path hook."
+      "description": "Senior engineering team behavior for Claude Code: 12 routed agents, 25 skills, 2 commands, tiered risk gates, and guard agents for auth/DB/CI.",
+      "displayName": "Senior Dev Kit",
+      "category": "development"
     }
   ]
 }

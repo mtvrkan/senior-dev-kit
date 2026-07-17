@@ -9,7 +9,7 @@
 
 Agent, skill and rule kit that gives Claude Code senior engineering team behavior.
 
-> **Measured, not just claimed:** 143/143 tests passing · 0 broken doc links · 29/30 (97%) live routing accuracy · 0.52% deny-list false-positive rate. Full breakdown, commands, and methodology in [Validation](#validation) below.
+> **Measured, not just claimed:** 144/144 tests passing · 0 broken doc links · 29/30 (97%) live routing accuracy · 0.18% deny-list false-positive rate. Full breakdown, commands, and methodology in [Validation](#validation) below.
 
 ---
 
@@ -22,7 +22,7 @@ First decide the scope — **all projects on this machine** (global `~/.claude/`
 | Your situation | Use | What you get |
 | --- | --- | --- |
 | Brand-new project — Claude should plan and build it | **Option A** | A lean, **generated 7-agent project team** (not the full kit — see note below) |
-| Every project on this machine should get the kit | **Option B** | Full kit (12 agents, 23 skills, 2 commands, 11 rules) in global `~/.claude/` |
+| Every project on this machine should get the kit | **Option B** | Full kit (12 agents, 25 skills, 2 commands, 11 rules) in global `~/.claude/` |
 | One existing project, you do the copying | **Option C** | Full kit in that project's `.claude/` |
 | One existing project, Claude does the copying | **Option D** | Full kit in `.claude/`, optionally global too |
 
@@ -40,17 +40,17 @@ Claude detects your stack, picks the right presets, and generates `.claude/` aut
 
 ### Option B — Install to global `~/.claude/` (applies to all projects)
 
-**Plugin (fastest — agents, skills, commands, hook):**
+**Plugin (fastest — agents, skills, commands):**
 
 ```text
 /plugin marketplace add mtvrkan/senior-dev-kit
 /plugin install senior-dev-kit@senior-dev-kit
 ```
 
-This registers the agents, skills, commands, and the [protected-path hook](hooks/README.md)
-automatically. It does **not** install `rules/`, `agent_docs/`, or `global-CLAUDE.md` — the
-plugin format doesn't cover path-scoped rules or a global CLAUDE.md. For the full kit (the
-lazy-loaded rules layer that gives most of the token-efficiency benefit), also run:
+This registers the agents, skills, and commands automatically. It does **not** install
+`rules/`, `agent_docs/`, or `global-CLAUDE.md` — the plugin format doesn't cover path-scoped
+rules or a global CLAUDE.md. For the full kit (the lazy-loaded rules layer that gives most of
+the token-efficiency benefit), also run:
 
 ```text
 Read SETUP.md and apply Step 5 (global setup) only. Work autonomously.
@@ -136,7 +136,7 @@ User: add SBOM to Docker CI pipeline
 | `/seo-check` | SEO, AEO, Core Web Vitals audit |
 
 **Skill shortcuts** (invoke by name — always available):
-`/security-review` · `/api-design` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · and all 23 skills
+`/security-review` · `/api-design` · `/migration-review` · `/env-audit` · `/bug-fix` · `/feature-build` · and all 25 skills
 
 > **Commands vs Skills:** Command files (`commands/*.md`) use the older Claude Code slash-command format — plain markdown with a `$ARGUMENTS` placeholder, read into context on invocation. Skill files (`skills/*/SKILL.md`) use the newer SKILL.md system with rich frontmatter (`model`, `effort`, `allowed-tools`, `when_to_use`) that Claude Code resolves before the skill runs. Skills can also fire automatically when Claude Code detects a matching context; commands only fire when explicitly invoked. The kit used to ship 11 commands, one per skill counterpart (`/dep-check`, `/smart-task`, ...) — those were removed and their capability now lives entirely in the same-named skill (e.g. `/security-scan` invokes the `security-scan` skill directly). Only the 2 commands with no skill counterpart remain.
 
@@ -212,14 +212,16 @@ Put the most specific preset's content into `.claude/stack-rules.md` and inline 
 
 ## What's included
 
-### Skills (23)
+### Skills (25)
 
-Skills fire two ways: most are **auto-invoked** when their `description`
-matches the task (many are also wired into agents via the agent's `skills:`
-field), while some are **manual-only** — invoked as `/skill-name` and marked
-`disable-model-invocation: true` (`code-audit`, `deep-research`, `env-audit`,
-`kit-doctor`). A skill not referenced by any agent is intentional, not
-orphaned: it is invoked directly.
+Skills fire two ways: most are **auto-invoked** when their `description` matches the task,
+while four are **manual-only** — invoked as `/skill-name` and marked `disable-model-invocation:
+true` (`code-audit`, `deep-research`, `env-audit`, `kit-doctor`). Manual-only is orthogonal to
+agent-wiring: `code-audit` (via `reviewer`), `deep-research` (via `researcher`), and `env-audit`
+(via `devops-guard`) are still listed in an agent's `skills:` field, so that agent can invoke
+them deliberately even though auto-invocation is off. Among these four manual-only skills, only
+`kit-doctor` is referenced by no agent — it's the sole skill invoked purely by direct
+`/kit-doctor`, and that's intentional, not orphaned.
 
 **Application:**
 `feature-build`, `feature-plan`, `bug-fix`, `refactor-safe`, `ui-change`, `new-page`, `new-screen`, `from-scratch`
@@ -231,10 +233,10 @@ orphaned: it is invoked directly.
 `code-review`, `security-review`, `security-scan`, `test-writer`, `performance-check`, `code-audit`
 
 **DevOps and Environment:**
-`release-gate`, `env-audit`, `kit-doctor`
+`release-gate`, `env-audit`, `kit-doctor`, `incident-response`
 
 **Content and Research:**
-`docs-update`, `deep-research`, `codebase-overview`
+`docs-update`, `deep-research`, `codebase-overview`, `project-memory`
 
 ### Rules (11) — auto-loaded
 
@@ -301,18 +303,6 @@ Each preset ships as `CLAUDE.md` (full detail) + `compact.md` (token-optimized s
 
 `security/Dockerfile.template` — multi-stage, non-root, health-check Dockerfile template (Node, Python, Go variants)
 
-### Hooks (on by default) — deterministic enforcement
-
-Everything above is prompt discipline; [`hooks/`](hooks/README.md) turns the most
-important rule into a harness guarantee. The `protected-paths` PreToolUse hook
-intercepts any Edit/Write into secrets, auth, payment, migration, or CI/IaC paths
-and downgrades it to an explicit permission prompt naming the guard agent that
-should review the change first — regardless of what the model decided.
-`SETUP.md` Step 5e wires it into `settings.json` automatically for Claude-driven
-installs; skip that step if you don't want the extra permission prompts (see
-[hooks/README.md](hooks/README.md) to enable it by hand later). Installed as a
-plugin, the hook registers automatically either way.
-
 ---
 
 ## Rule Precedence
@@ -337,13 +327,13 @@ Nothing below is asserted from memory — every number is reproducible by runnin
 
 | Check | Command | Result |
 | --- | --- | --- |
-| Unit + integration tests | `npm test` | **143/143 passing** (23 suites — frontmatter validation, protected-path hook behavior including Bash-bypass detection, content-guard, and audit logging) |
-| Skill/agent/command/preset frontmatter | `npm run validate` | 23 skills · 12 agents · 2 commands · 49 presets — 0 errors; includes hand-off chain integrity (`db-change` → `migration-review` etc.) and guard-agent `permissionMode: plan` enforcement |
-| Internal doc links | `npm run link-check` | 188 markdown files, 0 broken links/anchors |
+| Unit + integration tests | `npm test` | **144/144 passing** (33 suites — skill/agent/rule frontmatter validation, orphan-skill detection, guard-agent enforcement, deny-rule matching) |
+| Skill/agent/command/preset frontmatter | `npm run validate` | 25 skills · 12 agents · 2 commands · 49 presets — 0 errors; includes hand-off chain integrity (`db-change` → `migration-review` etc.) and guard-agent `permissionMode: plan` enforcement |
+| Internal doc links | `npm run link-check` | 190 markdown files, 0 broken links/anchors |
 | Maintenance-table freshness | `npm run stale-check` | 0 stale or orphaned entries across all 5 maintenance tables |
 | Type check / lint | `npm run typecheck` · `npm run lint` | clean |
 | Routing accuracy (live) | `RUN_ROUTING_EVAL=1 npm run routing-eval` | **29/30 (97%)** on the current 30-prompt set (2026-07-16) — see below |
-| Deny-list false-positive cost | `npm run deny-cost` | **0.52%** of real commands — see below |
+| Deny-list false-positive cost | `npm run deny-cost` | **0.18%** of real commands — see below |
 
 Run the whole set at once with `npm run check` — it's the same sequence CI runs on every push (`.github/workflows/repo-ci.yml`).
 
@@ -354,6 +344,12 @@ free static half on every push (all expected agents exist, every agent covered);
 `RUN_ROUTING_EVAL=1 npm run routing-eval` asks the model to actually route each
 prompt and fails below a 90% score — triggered manually or weekly via
 `.github/workflows/routing-eval.yml` when an `ANTHROPIC_API_KEY` secret is set.
+A subset of golden prompts also carries an optional `expectedSkill` — a free static
+lint (no API cost) failing only if a prompt and its expected skill's `description`/
+`when_to_use` share zero significant words, catching total description drift on the
+one thing the kit actually controls about skill auto-invocation (skills/*, unlike
+agent routing, are matched by Anthropic's own platform algorithm, not a kit-owned
+router — so this is deliberately a drift lint, not a behavioral proof).
 Measured, not assumed: the first live run scored 28/33 (85%) and exposed real
 gaps in `agents/ROUTING.md`; after closing them, two consecutive live runs
 scored 32/33 (97%) on that 33-prompt set. The set was then trimmed to 30 prompts
@@ -364,10 +360,10 @@ against the current set scored 29/30 (97%) — the one miss routed "login page
 verb, per `agents/ROUTING.md`) — still comfortably above the 90% threshold.
 
 The deny list's usability cost is measurable rather than guessed: `npm run deny-cost`
-replays every Bash command from your own machine's Claude Code transcript history
-against the kit's deny rules and reports what would have been blocked — see the
+replays every Bash and PowerShell command from your own machine's Claude Code transcript
+history against the kit's deny rules and reports what would have been blocked — see the
 "Measured cost" note in [SECURITY.md](SECURITY.md) for the numbers from the
-development machine (0.52% of 3,646 real commands).
+development machine (0.18% of 10,666 real commands).
 
 This is the kit's own dev tooling — it lints and validates this repository, not your project. To also run secret scanning, markdown lint, and shellcheck locally, install pre-commit:
 
@@ -400,7 +396,6 @@ senior-dev-kit/
 │   ├── routing-eval.ts      ← Golden-prompt routing evaluation (static + live)
 │   └── deny-cost.ts         ← Replays your transcript history against the deny rules
 ├── eval/                    ← golden-prompts.json — routing behavior test set
-├── hooks/                   ← Deterministic enforcement hooks (protected-paths, on by default) + plugin wiring
 ├── .claude-plugin/          ← Claude Code plugin + marketplace manifests
 ├── agents/                  ← 12 agent definitions (architect, security-guard, bug-hunter…) + ROUTING.md (decision tree, not an agent)
 ├── presets/                 ← 49 stack-specific rule sets (98 files: CLAUDE.md + compact.md each)
@@ -415,7 +410,7 @@ senior-dev-kit/
 │   ├── messaging/
 │   ├── ai/
 │   └── generic/
-├── skills/                  ← 23 skill definitions (SKILL.md each)
+├── skills/                  ← 25 skill definitions (SKILL.md each)
 ├── commands/                ← 2 slash command definitions
 ├── rules/                   ← 11 path-scoped rule files
 ├── agent_docs/              ← 16 lazy-load deep reference docs

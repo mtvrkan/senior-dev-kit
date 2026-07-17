@@ -12,7 +12,7 @@
 repos:
   # General hygiene
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b  # frozen: v5.0.0
     hooks:
       - id: no-commit-to-branch
         args: [--branch, main, --branch, master]
@@ -28,13 +28,13 @@ repos:
 
   # Secret scanning — full git history on first run
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.26.0
+    rev: 78eebaca9d8940b8c511a6e67349168f6477943a  # frozen: v8.26.0
     hooks:
       - id: gitleaks
 
   # Markdown lint — matches CI config in .markdownlint.json
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.17.2
+    rev: d174eb7a8f35e05d4065c82d375ad84aa0b32352  # frozen: v0.17.2
     hooks:
       - id: markdownlint-cli2
         args: ["--config", ".markdownlint.json"]
@@ -42,7 +42,7 @@ repos:
 
   # Shell script lint (any *.sh added to the repo — none ship today)
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+    rev: a23f6b85d0fdd5bb9d564e2579e678033debbdff  # frozen: v0.10.0.1
     hooks:
       - id: shellcheck
         files: \.sh$

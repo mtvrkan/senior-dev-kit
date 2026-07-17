@@ -32,6 +32,22 @@ export function getBodyAfterFrontmatter(content: string): string {
   return match ? stripped.slice(match[0].length) : ''
 }
 
+// Returns the values of a block-style YAML list frontmatter key (e.g. `paths:`
+// followed by indented `- "glob"` lines), or null if the key isn't present in
+// that form. Quotes around each item are stripped. The flat parseFrontmatter()
+// above deliberately skips list items, so callers that need the actual glob
+// values (not just "the key exists") go through this instead.
+export function getFrontmatterList(content: string, key: string): string[] | null {
+  const match = stripBom(content).match(/^---\r?\n([\s\S]*?)\r?\n---/)
+  if (!match) return null
+  const re = new RegExp(`^${key}:\\r?\\n((?:\\s{2,}-\\s+\\S.*\\r?\\n?)+)`, 'm')
+  const blockMatch = match[1].match(re)
+  if (!blockMatch) return null
+  return (blockMatch[1].match(/^\s+-\s+.+$/gm) || []).map(line =>
+    line.replace(/^\s+-\s+/, '').trim().replace(/^['"]|['"]$/g, '')
+  )
+}
+
 // Returns any top-level frontmatter keys that appear more than once — a copy/paste
 // mistake the flat key→value parse above would otherwise silently resolve by last-write-wins.
 export function findDuplicateFrontmatterKeys(content: string): string[] {

@@ -20,7 +20,6 @@
     "agent_docs/",
     "commands/",
     "examples/",
-    "hooks/",
     "presets/",
     "rules/",
     "security/",
@@ -30,7 +29,7 @@
     "*.md"
   ],
   "scripts": {
-    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/hooks.test.ts",
+    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/deny-cost.test.ts",
     "validate": "node --experimental-strip-types scripts/validate-skills.ts",
     "stale-check": "node --experimental-strip-types scripts/check-stale.ts",
     "link-check": "node --experimental-strip-types scripts/check-links.ts",

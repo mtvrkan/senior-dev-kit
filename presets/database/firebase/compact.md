@@ -5,5 +5,5 @@
 - Writes: `batch()` for multi-document atomicity (no rollback); `transaction()` for read-then-write consistency
 - Reads: always `.limit(N)` on collection reads; paginate via cursor (`startAfter(lastDoc)`) — never unbounded reads
 - Offline: `enableIndexedDbPersistence()` for web; handle offline → reconnect state explicitly
-- Security rule changes: go through security-guard skill — rule errors silently block all access
+- Security rule changes: go through security-guard agent — rule errors silently block all access
 - Anti: public writes without strict rules; service account key in client code; unbounded collection reads; enforcing limits only on client

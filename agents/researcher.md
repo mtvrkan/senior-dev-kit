@@ -38,6 +38,7 @@ Rules:
 
 ## Output format
 
+```text
 RESEARCH QUESTION: [one sentence]
 SOURCES CONSULTED: [list with URLs]
 KEY FINDINGS:
@@ -47,3 +48,4 @@ KEY FINDINGS:
 CONTRADICTIONS / UNCERTAINTY: [if any]
 SUMMARY: [3-5 sentences]
 CONFIDENCE: high | medium | low [with reason]
+```

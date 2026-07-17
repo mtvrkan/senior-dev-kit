@@ -31,8 +31,8 @@ the change) and fixing failures — don't report success on unverified changes.
 
 Default effort follows the account setting. For work in this repo specifically: keep effort
 low for mechanical edits (typo fixes, single-line doc corrections, changelog entries); use
-`/effort xhigh` for routing-table changes, hook logic (`hooks/protected-paths.mjs`), or
-anything touching `scripts/lib/` that other validators depend on.
+`/effort xhigh` for routing-table changes or anything touching `scripts/lib/` that other
+validators depend on.
 
 ## Context budget (this dev's environment only)
 

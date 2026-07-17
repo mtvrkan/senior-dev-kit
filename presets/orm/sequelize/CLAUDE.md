@@ -6,7 +6,7 @@
 
 - Keep model definitions and migrations in sync.
 - Prefer additive migrations: a new nullable column is safe; `NOT NULL` requires a default value or a multi-step migration with backfill.
-- Do not alter DB schema for unrelated tasks — route through the db-guard skill.
+- Do not alter DB schema for unrelated tasks — route through the db-guard agent.
 - Be explicit with associations: define `belongsTo`, `hasMany`, etc. explicitly; use `include: [{ model: X }]` for eager loading, never lazy-load inside a loop.
 
 ## Queries

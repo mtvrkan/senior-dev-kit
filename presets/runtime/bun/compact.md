@@ -6,5 +6,5 @@
 - Elysia: `t.Object()` schema on all route inputs (runtime validation) · `.onError()` at app/group level
 - Hono: `zValidator("json", z.object(...))` for input validation
 - Hot reload: `bun --hot src/index.ts` (stateful) · TypeScript runs natively, no compile step
-- Commit `bun.lockb` — binary lockfile, always version-controlled
+- Commit the Bun lockfile: `bun.lock` (text, default since Bun 1.2) or legacy `bun.lockb` — always version-controlled
 - Anti: mixing npm/yarn · `jest.fn()` · `node:fs` for simple reads · string-interpolated SQLite queries

@@ -104,7 +104,7 @@ jobs:
           node-version: '24'
 
       - name: Run unit tests
-        run: node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/hooks.test.ts
+        run: node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/deny-cost.test.ts
 
       - name: Run skill validator
         run: node --experimental-strip-types scripts/validate-skills.ts
@@ -149,6 +149,41 @@ jobs:
 
       - name: Verify version fields, golden-prompt count, and CI node-version stay in sync
         run: node --experimental-strip-types scripts/check-consistency.ts
+
+  dep-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+
+  secret-scan:
+    name: Secret Scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Download and verify gitleaks
+        run: |
+          set -euo pipefail
+          curl -sfLO https://github.com/gitleaks/gitleaks/releases/download/v8.26.0/gitleaks_8.26.0_linux_x64.tar.gz
+          echo "32faa8a77f6ce4b483921072ea89f78a794ad1d96471f2ad6e01ad3b0ebafa00  gitleaks_8.26.0_linux_x64.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks_8.26.0_linux_x64.tar.gz gitleaks
+
+      - name: Run gitleaks
+        run: ./gitleaks detect --source . --redact --no-banner
 
   check-sha-pins:
     name: Check SHA Pins

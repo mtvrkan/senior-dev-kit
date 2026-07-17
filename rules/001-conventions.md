@@ -64,47 +64,10 @@ OBS: [service] no metrics — add request count + latency
 
 ## MODERN TECHNOLOGY PREFERENCES
 
-### Prefer → Avoid
-
-| Category | Prefer | Avoid |
-| --- | --- | --- |
-| CSS | Tailwind v3/v4, CSS Modules | Bootstrap, raw CSS for new projects |
-| React UI | shadcn/ui, Radix UI, Headless UI | MUI v4, Ant Design 4.x |
-| Vue UI | Naive UI, Nuxt UI, shadcn-vue | Vuetify 2, Element UI |
-| React state | Zustand + TanStack Query + Jotai | Redux+saga (new), MobX |
-| Forms | React Hook Form + Zod | Formik, class-validator alone |
-| Tables | TanStack Table v8 | Custom HTML table |
-| Date | date-fns, Temporal API | moment.js |
-| HTTP client | Native `fetch` with typed wrapper | jQuery.ajax, XMLHttpRequest |
-| Build | Vite, Turbopack | Create React App (deprecated), Webpack (new) |
-| Testing JS | Vitest + Testing Library, Playwright | Jasmine, Karma, Mocha (new) |
-| ORM (TS) | Prisma, Drizzle | Sequelize, TypeORM (new) |
-| Auth | Better Auth, Auth.js | Passport.js (new), Lucia (deprecated Mar 2025 — maintainer stopped shipping it as a library) |
-| Email | Resend, Nodemailer | — |
-| Analytics | PostHog (self-host), Plausible | Google Analytics |
-| RN lists | FlashList | FlatList (long lists) |
-| RN nav | Expo Router v6 | React Navigation alone (if Expo) |
-| Android UI | Material 3 (Compose) | Material 2, XML layouts (new) |
-| iOS UI | SwiftUI | UIKit (new screens) |
-| Flutter state | Riverpod | Provider (new) |
-| Python HTTP | httpx, aiohttp | requests (async projects) |
-| Python API | FastAPI | Flask (new async) |
-| Python typing | Pydantic v2 | marshmallow (new) |
-| Go HTTP | stdlib net/http, chi, Echo | Gorilla Mux (new) |
-| Go ORM | sqlc, ent | GORM (if sqlc fits) |
-| PHP | Laravel 11+, Livewire | raw PHP (new), CodeIgniter |
-| Ruby | Rails 7+, Hotwire | Sinatra (large projects) |
-| Animation | CSS transitions, Framer Motion (React), View Transitions API | GSAP (complex only) |
-| Page transitions | View Transitions API (native, zero KB) | Framer Motion AnimatePresence |
-
-### Paid dependency rule
-
-If recommending a paid lib/service (Clerk, Auth0, AG Grid Enterprise, etc.):
-
-1. STOP — do not proceed with paid option.
-2. Find free alternative from table above.
-3. If no free alternative: ask user — "X requires paid plan. Free alternative Y covers [features]. Use Y, or do you have X license?"
-4. NEVER silently add paid dependency to package.json/Gemfile/composer.json.
+Category-by-category Prefer → Avoid table (CSS, UI kits, state, ORM, auth, etc.) and the paid-
+dependency rule (never silently add a paid lib — find a free alternative or ask) live in
+`agent_docs/dep-check-guide.md` (already in global-CLAUDE.md's lazy-load index) — load it before
+recommending or adding any library, framework, or paid service.
 
 ### Modern patterns — always
 
@@ -143,10 +106,10 @@ When two rules conflict, the highest rule in this list wins:
 
 | File being edited | Primary rule |
 | --- | --- |
-| `*.tsx` / `*.jsx` / `*.vue` / `*.svelte` | 100-web.md |
-| `**/api/**` / `**/routes/**` / `**/controllers/**` | 200-api.md |
-| `*.test.*` / `*.spec.*` | 300-testing.md |
-| `*.swift` / `*.kt` / `**/lib/**/*.dart` | 400-mobile.md |
+| `*.tsx` / `*.jsx` / `*.vue` / `*.svelte` / `*.astro` / `*.html` | 100-web.md |
+| `**/api/**` / `**/routes/**` / `**/controllers/**` / `**/handlers/**` / `**/endpoints/**` | 200-api.md |
+| `*.test.*` / `*.spec.*` / `**/test/**` / `**/tests/**` / `**/__tests__/**` / `test_*.py` | 300-testing.md |
+| `*.swift` / `*.kt` / `*.kts` / `**/lib/**/*.dart` / `**/test/**/*.dart` | 400-mobile.md |
 | `**/migrations/**` / `*.prisma` / `**/models/**` | 500-database.md |
 | `Dockerfile*` / `.github/**` / `*.tf` | 600-devops.md |
 | `**/*.ts` / `**/*.py` / `**/*.go` / `**/*.java` | 700-observability.md |
@@ -154,4 +117,4 @@ When two rules conflict, the highest rule in this list wins:
 | `**/*.ts` / `**/*.tsx` / `**/*.py` / `**/*.go` / `**/*.cs` | 900-performance.md |
 | Everything else | 001-conventions.md |
 
-`700-observability.md` and `900-performance.md` intentionally auto-load together for almost the same file types — this is not a precedence conflict; both apply simultaneously (700 governs what to log, 900 governs latency/bundle budgets). The "highest wins" rule above only resolves cases where two rules give contradictory instructions for the same file; these two never contradict, so apply both in full.
+`700-observability.md` and `900-performance.md` intentionally auto-load together for the same file types — this is not a precedence conflict; both apply simultaneously (700 governs what to log, 900 governs latency/bundle budgets). The "highest wins" rule above only resolves cases where two rules give contradictory instructions for the same file; these two never contradict, so apply both in full.

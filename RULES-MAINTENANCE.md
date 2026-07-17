@@ -2,7 +2,14 @@
 
 This document tracks review dates for the 11 rules in this kit.
 Rules carry engineering standards — 000/001 load every session, the other nine lazy-load via
-`paths:` frontmatter when matching files are read. They must be reviewed when:
+`paths:` frontmatter when matching files are read. Seven of those nine scope to a narrow file
+class (`.tsx`/`.vue`, `**/api/**`, `**/migrations/**`, ...) so a token-saving benefit actually
+applies. `700-observability` and `900-performance` are the exception: their shared glob
+(`**/*.{ts,tsx,js,jsx,mjs,py,go,java,cs,rb}`) matches virtually any source file in a mainstream
+stack, so in practice they're near-always-on for code work rather than precisely scoped — this
+was tried narrower in an earlier round and reverted after it produced false negatives (missed
+files that genuinely needed the observability/performance guidance), so the breadth is an
+accepted correctness-over-tokens tradeoff, not an oversight. They must be reviewed when:
 
 - OWASP rankings, security standards, or tool recommendations change
 - A framework/platform major version shifts the conventions a rule encodes
@@ -24,9 +31,9 @@ Rules carry engineering standards — 000/001 load every session, the other nine
 | `400-mobile` | iOS/Android/Flutter/RN platform patterns | 2026-06-30 |
 | `500-database` | Schema safety, N+1 prevention, RLS | 2026-06-30 |
 | `600-devops` | Dockerfile, GitHub Actions, IaC security | 2026-06-30 |
-| `700-observability` | Logging levels, metrics, tracing | 2026-07-02 |
+| `700-observability` | Logging levels, metrics, tracing | 2026-07-17 |
 | `800-llm-safety` | Prompt injection, cost controls, AI safety | 2026-06-30 |
-| `900-performance` | CWV budgets, N+1, bundle limits | 2026-07-02 |
+| `900-performance` | CWV budgets, N+1, bundle limits | 2026-07-17 |
 
 ---
 

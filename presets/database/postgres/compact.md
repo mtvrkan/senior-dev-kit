@@ -3,7 +3,7 @@
 - Live tables: `CREATE INDEX CONCURRENTLY` (never bare `CREATE INDEX`); new constraints via `ADD CONSTRAINT ... NOT VALID` + `VALIDATE CONSTRAINT` — avoids blocking writes
 - Indexes: add based on real query patterns (`WHERE`, `ORDER BY`, `JOIN`); every FK column needs an index
 - Concurrency: `SELECT ... FOR UPDATE` or advisory locks for counters/quotas/inventory; transactions for multi-step writes
-- Schema changes: go through db-guard skill — never create migrations as side effect of unrelated work
+- Schema changes: go through db-guard agent — never create migrations as side effect of unrelated work
 - RLS (if Supabase): every table needs RLS policy; never disable to "fix a bug"
 - Logging: never log connection strings, query results with PII, or raw exception details in responses
 - Anti: indexes without query justification; DROP without backup; unbounded queries without LIMIT; FK without index

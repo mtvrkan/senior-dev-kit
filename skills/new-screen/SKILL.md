@@ -12,9 +12,10 @@ New mobile screen from scratch. Follow this protocol — do not skip steps. See 
 
 1. Detect platform: build.gradle(.kts) → Kotlin/Compose | pubspec.yaml → Flutter | .xcodeproj/.swift → Swift/SwiftUI.
 2. Find a similar existing screen and read it fully — extract navigation/routing pattern, state management, component structure.
-3. Plan all 4 states (loading | empty | error | populated), output plan before coding. Wait for "go" if 3+ components, form, or auth/payment data.
-4. Build in order: UiState/state class → ViewModel/Controller → screen skeleton → loading → error → empty → populated → forms/dialogs/sheets → previews.
-5. Colors/typography from theme/semantic tokens only — never hardcoded. Spacing: 4dp/8pt grid only. Feedback: Snackbar/SnackBar/.alert — never Toast/alert().
+3. Plan all 4 states (loading | empty | error | populated), output plan before coding. Wait for "go" if 3+ components or a form.
+4. STOP + ESCALATE to security-guard if the screen handles auth or payment data — this is a hard stop, not a "wait for go and proceed" case.
+5. Build in order: UiState/state class → ViewModel/Controller → screen skeleton → loading → error → empty → populated → forms/dialogs/sheets → previews.
+6. Colors/typography from theme/semantic tokens only — never hardcoded. Spacing: 4dp/8pt grid only. Feedback: Snackbar/SnackBar/.alert — never Toast/alert().
 
 ## Output
 

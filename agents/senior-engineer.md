@@ -12,6 +12,9 @@ skills:
   - refactor-safe
   - test-writer
   - codebase-overview
+  - api-design
+  - from-scratch
+  - project-memory
 ---
 
 ## Reference docs (lazy-load when needed)
@@ -19,6 +22,7 @@ skills:
 `agent_docs/architecture.md` — module boundary rules, layered vs vertical-slice detection (for placing new files correctly)
 `agent_docs/api-design-patterns.md` — REST conventions, RFC 9457 error format (when building or changing an endpoint)
 `agent_docs/error-handling-patterns.md` — Result<T,E> boundary pattern, exception handling conventions
+`agent_docs/dep-check-guide.md` — library/framework Prefer→Avoid table, paid-dependency rule (before recommending or adding any dependency)
 
 ---
 

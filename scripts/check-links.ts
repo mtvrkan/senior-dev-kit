@@ -43,10 +43,33 @@ for (const file of files) {
   }
 }
 
-if (totalBroken > 0) {
-  console.error(`\n✗ ${totalBroken} broken internal link(s) found.`)
+// The READMEs advertise the markdown-file count as a "measured, reproducible"
+// number — assert it still matches what this walk actually found, so the claim
+// can't silently drift (it read "188" while the repo had 189 until this guard
+// was added). This walk IS the source of truth, so there's no second traversal
+// to keep in sync.
+let countDrift = 0
+for (const readme of ['README.md', 'README.tr.md']) {
+  let text: string
+  try {
+    text = readFileSync(join(ROOT, readme), 'utf8')
+  } catch {
+    continue // README not present (e.g. a fixture root) — nothing to check
+  }
+  for (const m of text.matchAll(/(\d+) markdown (?:files|dosyası)/g)) {
+    if (Number(m[1]) !== files.length) {
+      console.error(`  ✗ ${readme} claims ${m[1]} markdown files, this walk found ${files.length}`)
+      countDrift++
+    }
+  }
+}
+
+if (totalBroken > 0 || countDrift > 0) {
+  if (totalBroken > 0) console.error(`\n✗ ${totalBroken} broken internal link(s) found.`)
+  if (countDrift > 0) console.error(`\n✗ ${countDrift} markdown-file-count claim(s) out of sync with disk.`)
   process.exit(1)
 }
 
 console.log('✓ No broken internal markdown links found.')
+console.log(`✓ README markdown-file count matches disk (${files.length}).`)
 process.exit(0)

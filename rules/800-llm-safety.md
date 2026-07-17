@@ -6,7 +6,7 @@ paths:
   - "**/openai/**"
   - "**/anthropic/**"
   - "**/claude/**"
-  - "**/agents/**"
+  - "**/agents/**/*.{ts,tsx,js,jsx,py,go}"
 ---
 
 ## HARD RULES — LLM integration
@@ -95,7 +95,7 @@ logger.info({
 | Code generation, reasoning, multi-step | Sonnet | Balance of cost + quality |
 | Architecture decisions, complex analysis, judgment | Opus | Max quality when cost is secondary |
 
-**Never use Opus for high-volume, per-request paths** — costs ~5× Haiku ($5/$25 vs $1/$5 per Mtok input/output).
+**Never use Opus for high-volume, per-request paths** — costs ~5× Haiku ($5/$25 vs $1/$5 per Mtok input/output as of this writing; verify current pricing before relying on these figures, they drift).
 
 ## TOOL / FUNCTION CALLING SAFETY
 

@@ -91,7 +91,7 @@ Open an issue or contact the API team.
 
 ```yaml
 # openapi.yaml — maintain separate spec per version
-openapi: 3.1.0
+openapi: 3.2.0
 info:
   version: 2.0.0
   title: API v2

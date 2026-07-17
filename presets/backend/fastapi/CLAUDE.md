@@ -39,6 +39,8 @@ async def get_user(
 ## Request / response schemas — Pydantic v2
 
 ```python
+from typing import Literal
+
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 class CreateUserRequest(BaseModel):

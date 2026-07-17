@@ -27,15 +27,16 @@ devops-guard runs the checklist below and approves before implementation.
 FROM node:24-alpine AS builder          # ✓ Specific version tag
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production            # ✓ --ci not --install; production deps only
+RUN npm ci                              # ✓ ALL deps — build tools (tsc/vite/webpack) live in devDependencies
 COPY . .
 RUN npm run build
 
-FROM node:24-alpine AS runner           # ✓ Multi-stage: discard build tools
+FROM node:24-alpine AS runner           # ✓ Multi-stage: discard build tools + devDependencies
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force  # ✓ production deps only in the final image (--omit=dev, not the deprecated --only=production)
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup  # ✓ Non-root user
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
 USER appuser                            # ✓ Run as non-root
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \     # ✓ Health check
   CMD wget -qO- http://localhost:3000/health || exit 1

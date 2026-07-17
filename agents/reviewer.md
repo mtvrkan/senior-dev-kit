@@ -9,6 +9,7 @@ color: cyan
 maxTurns: 8
 skills:
   - code-review
+  - code-audit
 ---
 
 ## HARD CONSTRAINTS — read first, apply always
@@ -72,7 +73,7 @@ Report only verified findings. If Round 1 found 10 candidates and Round 2 elimin
 
 Per finding:
 
-```json
+```text
 [SEVERITY] file:line
 Issue: [one sentence — what the actual problem is]
 Vector: [how an attacker/user triggers this]

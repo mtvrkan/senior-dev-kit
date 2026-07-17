@@ -29,6 +29,20 @@ export function validatePresetClaudeMd(claudePath: string, relPath: string): Pre
 
 const COMPACT_MIN_LINES = 7
 
+// NOTE on content-drift detection (round-9 finding, investigated and rejected
+// twice — see PRESET-MAINTENANCE.md's "compact.md sync" note): neither a
+// CLAUDE.md-heading-keyword-vs-compact.md-text overlap check nor a git
+// last-commit-timestamp comparison survived testing against the real 49
+// presets without unacceptable false-positive rates (the keyword check
+// flagged nextjs-saas, an independently spot-checked well-synced pair, at
+// 10% overlap because compact.md legitimately paraphrases into dense bullets
+// rather than restating headings; the timestamp check flagged ~1 in 4
+// presets purely because SOME commit touched CLAUDE.md's wording without a
+// compact.md change being warranted). Judging whether a CLAUDE.md edit was
+// "meaningful enough to need a compact.md update" requires reading the diff,
+// not measuring it — left to the quarterly human review checklist instead of
+// a noisy automated check that would itself become next round's false-alarm
+// finding.
 export function checkCompactMd(claudePath: string, relPath: string): PresetResult {
   const compactPath = join(dirname(claudePath), 'compact.md')
   if (!existsSync(compactPath)) {

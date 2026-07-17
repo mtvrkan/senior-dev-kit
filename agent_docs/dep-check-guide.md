@@ -1,6 +1,53 @@
 # Dependency Check Guide
 
-Reference for the `security-scan` skill's dependency-hygiene check — open-source alternatives table and dependency philosophy.
+Reference for the `security-scan` skill's dependency-hygiene check (open-source alternatives
+table, dependency philosophy) AND for general library/framework/tooling choice at any point in
+the session (new file, `feature-build`, adding a package) — load whenever recommending or adding
+a dependency, not only during a security-scan pass.
+
+---
+
+## Category preferences — Prefer → Avoid
+
+| Category | Prefer | Avoid |
+| --- | --- | --- |
+| CSS | Tailwind v3/v4, CSS Modules | Bootstrap, raw CSS for new projects |
+| React UI | shadcn/ui, Radix UI, Headless UI | MUI v4, Ant Design 4.x |
+| Vue UI | Naive UI, Nuxt UI, shadcn-vue | Vuetify 2, Element UI |
+| React state | Zustand + TanStack Query + Jotai | Redux+saga (new), MobX |
+| Forms | React Hook Form + Zod | Formik, class-validator alone |
+| Tables | TanStack Table v8 | Custom HTML table |
+| Date | date-fns, Temporal API | moment.js |
+| HTTP client | Native `fetch` with typed wrapper | jQuery.ajax, XMLHttpRequest |
+| Build | Vite, Turbopack | Create React App (deprecated), Webpack (new) |
+| Testing JS | Vitest + Testing Library, Playwright | Jasmine, Karma, Mocha (new) |
+| ORM (TS) | Prisma, Drizzle | Sequelize, TypeORM (new) |
+| Auth | Better Auth, Auth.js | Passport.js (new), Lucia (deprecated Mar 2025 — maintainer stopped shipping it as a library) |
+| Email | Resend, Nodemailer | — |
+| Analytics | PostHog (self-host), Plausible | Google Analytics |
+| RN lists | FlashList | FlatList (long lists) |
+| RN nav | Expo Router v6 | React Navigation alone (if Expo) |
+| Android UI | Material 3 (Compose) | Material 2, XML layouts (new) |
+| iOS UI | SwiftUI | UIKit (new screens) |
+| Flutter state | Riverpod | Provider (new) |
+| Python HTTP | httpx, aiohttp | requests (async projects) |
+| Python API | FastAPI | Flask (new async) |
+| Python typing | Pydantic v2 | marshmallow (new) |
+| Go HTTP | stdlib net/http, chi, Echo | Gorilla Mux (new) |
+| Go ORM | sqlc, ent | GORM (if sqlc fits) |
+| PHP | Laravel 11+, Livewire | raw PHP (new), CodeIgniter |
+| Ruby | Rails 7+, Hotwire | Sinatra (large projects) |
+| Animation | CSS transitions, Framer Motion (React), View Transitions API | GSAP (complex only) |
+| Page transitions | View Transitions API (native, zero KB) | Framer Motion AnimatePresence |
+
+### Paid dependency rule
+
+If recommending a paid lib/service (Clerk, Auth0, AG Grid Enterprise, etc.):
+
+1. STOP — do not proceed with paid option.
+2. Find free alternative from the table above (or the "Open-source preferred alternatives" table below).
+3. If no free alternative: ask user — "X requires paid plan. Free alternative Y covers [features]. Use Y, or do you have X license?"
+4. NEVER silently add paid dependency to package.json/Gemfile/composer.json.
 
 ---
 
@@ -40,39 +87,20 @@ Reference for the `security-scan` skill's dependency-hygiene check — open-sour
 
 ## Audit commands by runtime
 
+Canonical audit commands: `rules/000-security.md` § DEPENDENCY AUDIT COMMANDS. Kept in
+exactly one place — this file used to carry a second, hand-synced copy of the same table,
+which is how the two silently drift the next time a package manager changes its CLI.
+
+For the `*outdated`/bundle-size checks this guide adds on top of the audit command itself,
+see below.
+
 ```bash
-# JS / TS
-npm audit --audit-level=high
 npm outdated
-pnpm audit --audit-level=high
-yarn npm audit --level high
-bun audit
-
-# Python
-pip-audit
 pip list --outdated
-
-# Ruby
-bundle audit check --update
 bundle outdated
-
-# PHP
-composer audit
 composer outdated
-
-# Dart / Flutter (no built-in `pub audit` command)
-osv-scanner -L pubspec.lock
 dart pub outdated
-
-# Kotlin / Java (Gradle)
-./gradlew dependencyCheckAnalyze
-
-# Rust
-cargo audit
 cargo outdated
-
-# Go
-govulncheck ./...
 ```
 
 ---

@@ -1,4 +1,4 @@
-- Never edit entities/migrations unless DB change is explicitly routed through db-guard skill
+- Never edit entities/migrations unless DB change is explicitly routed through db-guard agent
 - Migrations: always use explicit migration files; `synchronize: true` is development-only — never enable in production
 - Queries: use `Repository` methods or `QueryBuilder` — always parameterized (`WHERE column = :value`, not string concat)
 - N+1: use `leftJoinAndSelect` or `relations` option in `find()` — never access `.relation` property inside a loop without eager load

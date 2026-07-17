@@ -28,7 +28,7 @@ Presets selected: `backend/go-api` · `database/postgres`
 │   ├── 300-testing.md           ← **/*_test.go
 │   ├── 500-database.md          ← **/migrations/**, **/queries/**
 │   └── 700-observability.md     ← **/*.go
-├── skills/                      ← all 23 skills
+├── skills/                      ← all 25 skills
 ├── agents/                      ← all 12 agents
 └── agent_docs/                  ← all 16 reference docs
 ```

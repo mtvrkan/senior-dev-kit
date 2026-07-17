@@ -2,7 +2,9 @@
 
 > **Purpose:** When Claude Code reads this file, it first scans the project with minimal tokens, detects the technologies used (or intended), then **generates a project-specific `.claude/` setup itself** (CLAUDE.md, settings, agents, skills, rules). After that, every phase stays faithful to that setup, delegating to multiple subagents and operating like a professional software company — with **planning as a hard gate** and **security designed in from the first line**, all under strict TDD.
 >
-> **How this relates to the rest of the kit:** This bootstrap deliberately generates a **lean 7-agent roster** (architect, security-reviewer, implementer, test-author, reviewer, debugger, researcher) sized for a brand-new project — it does **not** install the kit's 12 prebuilt agents, 23 skills, or 2 commands. The generated team is a from-scratch template tailored to your stack; the prebuilt kit is a broader, maintained catalogue. If you later want the full kit in the same project, run the installer (README.md Options B/C/D) on top — the two coexist, and the installer backs up anything it would overwrite.
+> **How this relates to the rest of the kit:** This bootstrap deliberately generates a **lean 7-agent roster** (architect, security-reviewer, implementer, test-author, reviewer, debugger, researcher) sized for a brand-new project — it does **not** install the kit's 12 prebuilt agents, 25 skills, or 2 commands. The generated team is a from-scratch template tailored to your stack; the prebuilt kit is a broader, maintained catalogue. If you later want the full kit in the same project, run the installer (README.md Options B/C/D) on top — the two coexist, and the installer backs up anything it would overwrite.
+>
+> **Every "hook" mentioned below (1.2, 1.6, 2, and the `settings.json` template in 1.5) is generated INTO the new project you're bootstrapping** — it is not a feature of the senior-dev-kit repo itself, which ships no runtime hook (see `SECURITY.md`). Don't read these as claims about this kit's own enforcement.
 
 ---
 
@@ -303,7 +305,7 @@ A task is done only when **all** of these hold:
 5. Reviewer approved (no critical notes left).
 6. Relevant docs updated.
 
-These gates are enforced deterministically by the `Stop`/`SubagentStop`/`PreToolUse`/`PostToolUse` hooks in `settings.json` — not left to model judgment.
+These gates are enforced deterministically by the `Stop`/`SubagentStop`/`PostToolUse` hooks in `settings.json` — not left to model judgment. The `PreToolUse` Bash exfil-scan in 1.5 is different: it's pattern-matching over free-form shell text, which is adversarial and open-ended, not a closed-form gate like "did the test command exit 0." Treat it as defense-in-depth on top of `settings.json`'s `permissions.deny` (native, harness-enforced glob matching on the tool call itself — not bypassable by shell syntax the hook's regex didn't anticipate), not a replacement for it: enumerate what you can as `deny` rules first, and let the hook catch what a fixed rule list can't express.
 
 ---
 

@@ -1,4 +1,4 @@
-- Never edit `schema.prisma` unless DB change is explicitly routed through db-guard skill
+- Never edit `schema.prisma` unless DB change is explicitly routed through the db-guard agent
 - Migrations: `prisma migrate dev` (dev) / `prisma migrate deploy` (prod) — never `db push` in production
 - Queries: use `select`/`include` to fetch only needed fields — never implicit full-object loads
 - N+1: use `include: { relation: true }` or separate batched query — never `.relation` access inside a loop

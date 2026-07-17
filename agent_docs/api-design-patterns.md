@@ -252,7 +252,7 @@ Attempt 5: 30 minutes
 Attempt 6+: exponential backoff up to 24h, then dead-letter queue
 ```
 
-## OPENAPI 3.1 ADVANCED PATTERNS
+## OPENAPI 3.2 ADVANCED PATTERNS
 
 ```yaml
 # Discriminated union types (OpenAPI 3.2 with JSON Schema)

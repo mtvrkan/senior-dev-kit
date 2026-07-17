@@ -8,7 +8,7 @@ Common setup problems and their fixes.
 
 ### `/plugin install` doesn't register the agents/skills
 
-Confirm the marketplace was added first (`/plugin marketplace add mtvrkan/senior-dev-kit`) and that `/plugin install senior-dev-kit@senior-dev-kit` completed without error. Remember the plugin only covers `agents/`, `skills/`, `commands/`, and the protected-path hook — it does not install `rules/`, `agent_docs/`, or `global-CLAUDE.md`. For those, run `SETUP.md` Step 5 (see [README.md Option B](README.md#option-b--install-to-global-claude-applies-to-all-projects)).
+Confirm the marketplace was added first (`/plugin marketplace add mtvrkan/senior-dev-kit`) and that `/plugin install senior-dev-kit@senior-dev-kit` completed without error. Remember the plugin only covers `agents/`, `skills/`, and `commands/` — it does not install `rules/`, `agent_docs/`, or `global-CLAUDE.md`. For those, run `SETUP.md` Step 5 (see [README.md Option B](README.md#option-b--install-to-global-claude-applies-to-all-projects)).
 
 ---
 
@@ -54,7 +54,7 @@ Then re-run SETUP.md Step 6.
 
 ---
 
-### FAIL — skill count is less than 23
+### FAIL — skill count is less than 25
 
 You may have an older installation. Re-copy the skills folder:
 
