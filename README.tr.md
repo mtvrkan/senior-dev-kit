@@ -10,7 +10,7 @@
 Claude Code'a kıdemli mühendislik takımı davranışı kazandıran agent, skill ve rule kiti.
 
 > Bu çeviri İngilizce README ile eş tutulur; bir çelişki durumunda [README.md](README.md) esastır. Bağlantılar İngilizce dokümanlara gider.
-
+>
 > **Ölçülmüş, sadece iddia edilmemiş:** 144/144 test geçiyor · 0 kırık doküman linki · %97 (29/30) canlı yönlendirme doğruluğu · %0,18 deny-list yanlış-pozitif oranı. Tam döküm, komutlar ve yöntem aşağıda [Validation](README.md#validation) bölümünde (İngilizce README).
 
 ---

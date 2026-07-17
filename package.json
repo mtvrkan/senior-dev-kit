@@ -38,12 +38,14 @@
     "deny-cost": "node --experimental-strip-types scripts/deny-cost.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint scripts/",
-    "check": "npm test && npm run validate && npm run stale-check && npm run link-check && npm run consistency-check && npm run routing-eval && npm run typecheck && npm run lint"
+    "markdown-lint": "markdownlint-cli2 \"**/*.md\" \"!node_modules\" --config .markdownlint.json",
+    "check": "npm test && npm run validate && npm run stale-check && npm run link-check && npm run consistency-check && npm run routing-eval && npm run typecheck && npm run lint && npm run markdown-lint"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
     "eslint": "^10.6.0",
+    "markdownlint-cli2": "^0.23.1",
     "typescript": "^5.8.0",
     "typescript-eslint": "^8.62.1"
   }

@@ -108,6 +108,7 @@ Always include:
 - Row actions via `<DropdownMenu>` in the last column
 - Loading state: skeleton rows (same number as expected data rows, e.g. 5)
 - Empty state: icon + headline + description + CTA button — all 4 required (per `rules/100-web.md`), e.g.:
+
   ```tsx
   <div className="flex flex-col items-center gap-2 py-12 text-center">
     <InboxIcon className="h-10 w-10 text-muted-foreground" />
@@ -116,6 +117,7 @@ Always include:
     <Button size="sm" onClick={onCreate}>Add your first record</Button>
   </div>
   ```
+
 - Pagination if list can exceed 20 rows
 - Search/filter input above the table if the data warrants it
 

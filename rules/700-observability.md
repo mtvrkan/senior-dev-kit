@@ -5,7 +5,7 @@ paths:
 ---
 
 > Related: [`900-performance.md`](900-performance.md) co-loads on the same glob — logging vs. latency/bundle budgets, never contradictory (see `001-conventions.md` Rule Precedence). Keep tool/version recommendations in sync across both.
-
+>
 > **Scope decision (round-9 audit, accepted — do not re-flag as an oversight):** this rule's `paths:` glob is deliberately a bare extension match, not directory-scoped like `200-api.md`'s `**/api/**` — logging/observability hygiene applies to ANY backend/frontend file, not just route handlers, so directory-scoping it (`**/services/**`, `**/api/**`, …) would silently stop flagging a logging issue in a file that happens to live outside those conventional folders (a very common case: small projects with source at the repo root, Go's `cmd`/`internal`/`pkg` layout, .NET's per-project top-level folders). Two narrower alternatives were evaluated and rejected for the same reason: directory-scoping trades a real, measured token cost for an unverifiable correctness regression (missed triggers) that this environment has no way to measure against real usage. If the trigger frequency needs to come down, the tool-side fix is trimming `EXT`-style breadth in a way that's provably still exhaustive for the kit's supported stacks — not guessing at directory names.
 
 ## LOGGING RULES — zero console.log in production
