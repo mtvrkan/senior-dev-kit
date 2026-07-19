@@ -1,0 +1,57 @@
+# Pre-commit hooks for the senior-dev-kit repo itself.
+# Install: pip install pre-commit && pre-commit install
+# Run all: pre-commit run --all-files
+# Update pins: pre-commit autoupdate --freeze
+#
+# These hooks keep the kit's own source clean.
+# For the recommended pre-commit stack in consumer projects, see rules/600-devops.md § PRE-COMMIT HOOKS.
+
+repos:
+  # General hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b  # frozen: v5.0.0
+    hooks:
+      - id: no-commit-to-branch
+        args: [--branch, main, --branch, master]
+      - id: check-merge-conflict
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext, md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+        files: \.(yml|yaml)$
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: [--maxkb, 500]
+
+  # Secret scanning — full git history on first run
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 78eebaca9d8940b8c511a6e67349168f6477943a  # frozen: v8.26.0
+    hooks:
+      - id: gitleaks
+
+  # Markdown lint — matches CI config in .markdownlint.json
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: d174eb7a8f35e05d4065c82d375ad84aa0b32352  # frozen: v0.17.2
+    hooks:
+      - id: markdownlint-cli2
+        args: ["--config", ".markdownlint.json"]
+        types: [markdown]
+
+  # Shell script lint (any *.sh added to the repo — none ship today)
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: a23f6b85d0fdd5bb9d564e2579e678033debbdff  # frozen: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        files: \.sh$
+        args: [--severity=warning]
+
+  # Skill frontmatter validation (local — requires node >=22.6)
+  - repo: local
+    hooks:
+      - id: validate-skills
+        name: Validate skill frontmatter
+        language: node
+        entry: node --experimental-strip-types scripts/validate-skills.ts
+        pass_filenames: false
+        always_run: true
+        additional_dependencies: []

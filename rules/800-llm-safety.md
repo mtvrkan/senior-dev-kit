@@ -1,0 +1,139 @@
+---
+description: "LLM/AI integration safety — prompt injection, output trust, cost controls"
+paths:
+  - "**/ai/**"
+  - "**/llm/**"
+  - "**/openai/**"
+  - "**/anthropic/**"
+  - "**/claude/**"
+  - "**/agents/**/*.{ts,tsx,js,jsx,py,go}"
+---
+
+## HARD RULES — LLM integration
+
+NEVER trust LLM output as safe input to: SQL queries · shell commands · eval() · innerHTML · file paths
+NEVER put secrets, API keys, or raw PII into LLM prompts (use redacted placeholders)
+NEVER render raw LLM output as HTML without sanitization (DOMPurify or equivalent)
+ALWAYS set max_tokens — unbounded generation burns budget and enables prompt leakage
+ALWAYS set a per-user or per-session cost budget — LLM calls are unbounded by default
+
+## PROMPT INJECTION PREVENTION
+
+```typescript
+// WRONG — user content injected into system context:
+const systemPrompt = `You are a helpful assistant. User's name: ${req.body.name}`
+
+// RIGHT — keep user content in user turn, never in system:
+const messages = [
+  { role: 'system', content: STATIC_SYSTEM_PROMPT },
+  { role: 'user', content: `My name is ${sanitize(req.body.name)}. Help me with...` }
+]
+```
+
+**Indirect prompt injection — when LLM reads external content (web, docs, emails):**
+
+```typescript
+// Flag user-provided URLs before fetching for LLM context:
+// SSRF + prompt injection double risk
+// Validate URL against allowlist OR run in sandboxed fetch with no internal network access
+```
+
+**Passive check — fires on any LLM integration change:**
+
+- User input flows directly into `system` role → flag injection risk
+- External content (file, URL, email) piped to LLM without sanitization → flag
+- LLM output used as code string (`eval`, `exec`, `Function(output)()`) → STOP
+
+## OUTPUT VALIDATION
+
+LLM output is untrusted input — validate before use:
+
+```typescript
+// For structured output: always parse and validate schema
+const parsed = outputSchema.safeParse(JSON.parse(llmResponse))
+if (!parsed.success) { /* fallback or retry */ }
+
+// For text displayed to users: sanitize HTML
+import DOMPurify from 'dompurify'
+element.innerHTML = DOMPurify.sanitize(llmOutput)
+
+// For text used in queries/commands: NEVER do this — redesign
+```
+
+## COST CONTROLS — required on every LLM call path
+
+```typescript
+// REQUIRED: always set limits
+const response = await anthropic.messages.create({
+  model: 'claude-sonnet-5',
+  max_tokens: 1024,          // always set — no default, no open-ended
+  messages,
+})
+
+// REQUIRED: per-user budget tracking
+const userUsage = await getMonthlyUsage(userId)
+if (userUsage.tokens > USER_MONTHLY_LIMIT) throw new QuotaExceededError()
+
+// REQUIRED: log cost on every call
+logger.info({
+  action: 'llm.call',
+  model: response.model,
+  inputTokens: response.usage.input_tokens,
+  outputTokens: response.usage.output_tokens,
+  userId,
+  feature,
+})
+```
+
+**OBS flag:** Any LLM call path with no cost logging → `OBS: [feature] LLM call has no cost tracking — add token usage logging`
+
+## MODEL SELECTION RULES
+
+| Use case | Model | Why |
+| --- | --- | --- |
+| Simple classification, extraction, summarization | Haiku | 75% cheaper, sufficient quality |
+| Code generation, reasoning, multi-step | Sonnet | Balance of cost + quality |
+| Architecture decisions, complex analysis, judgment | Opus | Max quality when cost is secondary |
+
+**Never use Opus for high-volume, per-request paths** — costs ~15× Haiku ($15/$75 vs $1/$5 per Mtok input/output as of this writing; verify current pricing before relying on these figures, they drift).
+
+## TOOL / FUNCTION CALLING SAFETY
+
+When exposing tools to an LLM agent:
+
+- Each tool must validate its own inputs (never trust LLM-provided args directly)
+- Tools that mutate state: require explicit user confirmation before executing
+- Tools with side effects (email, payment, delete): log every call with args + caller identity
+- Never give LLM tools access to: raw DB queries · shell execution · file system writes outside sandbox
+
+```typescript
+// WRONG — LLM controls arbitrary SQL:
+tools: [{ name: 'query_db', description: 'Run a SQL query', params: { sql: 'string' } }]
+
+// RIGHT — LLM controls intent, tool controls execution:
+tools: [{ name: 'get_orders', description: 'Get orders for a user', params: { userId: 'string', status: 'enum' } }]
+// Implementation uses parameterized query, never raw SQL from LLM
+```
+
+## AGENTIC / MULTI-STEP FLOWS
+
+For agents that run multiple LLM calls in a loop:
+
+- Set a maximum step count (e.g., `maxTurns: 10`) — prevent infinite loops
+- Log every step: model, tokens, action taken, tool calls
+- For destructive tool calls: pause and get human-in-the-loop confirmation
+- On error: fail the entire flow cleanly, don't retry silently in a loop
+
+## PII IN PROMPTS
+
+```typescript
+// WRONG — raw PII in prompt:
+const prompt = `User email: ${user.email}, phone: ${user.phone}. Help them reset their password.`
+
+// RIGHT — use opaque identifiers:
+const prompt = `User ID: ${user.id}. Help them reset their password.`
+// Resolve PII only at the point of action (sending the email), never in the prompt
+```
+
+Never put in prompts: email · phone · SSN · DOB · credit card · full name + address together
+Safe to use: user ID · account tier · feature flags · anonymized preferences

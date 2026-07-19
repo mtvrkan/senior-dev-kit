@@ -1,0 +1,30 @@
+{
+  "name": "senior-dev-kit",
+  "version": "2.0.0",
+  "description": "Agent, skill and rule kit that gives Claude Code senior engineering team behavior. Personal-use only — not published to npm.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/deny-cost.test.ts scripts/run-checks.test.ts",
+    "validate": "node --experimental-strip-types scripts/validate-skills.ts",
+    "link-check": "node --experimental-strip-types scripts/check-links.ts",
+    "consistency-check": "node --experimental-strip-types scripts/check-consistency.ts",
+    "routing-eval": "node --experimental-strip-types scripts/routing-eval.ts",
+    "deny-cost": "node --experimental-strip-types scripts/deny-cost.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint scripts/",
+    "markdown-lint": "markdownlint-cli2 \"**/*.md\" \"!node_modules\" --config .markdownlint.json",
+    "check": "node --experimental-strip-types scripts/run-checks.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.0.0",
+    "eslint": "^10.6.0",
+    "markdownlint-cli2": "^0.23.1",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.62.1"
+  }
+}

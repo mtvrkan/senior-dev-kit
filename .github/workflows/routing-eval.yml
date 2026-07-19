@@ -1,0 +1,48 @@
+name: Routing Eval (live)
+
+# Live routing evaluation — asks the model to route every golden prompt in
+# eval/golden-prompts.json using agents/ROUTING.md and scores the answers.
+# Costs API tokens, so it never runs automatically: trigger it manually from
+# the Actions tab (workflow_dispatch), or on a weekly schedule if the
+# ANTHROPIC_API_KEY secret is configured. The free static half of the eval
+# runs on every push via repo-ci.yml.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'  # Mondays 06:00 UTC — weekly routing regression check
+
+permissions:
+  contents: read
+
+jobs:
+  live-eval:
+    name: Live routing score
+    runs-on: ubuntu-latest
+    # Repos without the ANTHROPIC_API_KEY secret (e.g. forks) skip inside the
+    # run step instead of failing — see the guard below.
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run live routing evaluation
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RUN_ROUTING_EVAL: '1'
+        run: |
+          set -euo pipefail
+          if [ -z "${ANTHROPIC_API_KEY}" ]; then
+            echo "ANTHROPIC_API_KEY secret not configured — skipping live eval."
+            exit 0
+          fi
+          npm run routing-eval

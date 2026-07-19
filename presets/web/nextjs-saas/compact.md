@@ -1,0 +1,12 @@
+- Server Components default; `use client` only for browser state/events/DOM APIs
+- Enforce subscription, permission, quota, ownership rules server-side — never UI-only
+- Validate all server-side inputs · never leak stack traces/tokens/DB errors/secrets to the client
+- Keep server-only code out of client components; avoid unnecessary `use client`
+- Anti: full page as Client Component, business limits in UI only, new packages for small UI
+- NEW PAGE: find similar page first → use existing shell/layout → build in order: shell → header → loading skeleton → data → populated → empty state → error state
+- Components: DataTable (TanStack), Form+zod+react-hook-form, Dialog/AlertDialog, Badge, Skeleton, Alert, DropdownMenu, Sonner's toast() — never raw table or alert()
+- Spacing: space-y-4/6, gap-2/4/6, p-4/6 — never arbitrary values
+- Colors: semantic tokens only (text-foreground, text-muted-foreground, bg-card, text-primary, text-destructive) — never raw Tailwind colors
+- Typography: page title `text-2xl font-bold tracking-tight`, description `text-sm text-muted-foreground`
+- SEO: every route segment needs its own `generateMetadata()` — never static metadata only in root layout (full metadata/JSON-LD specs live in `rules/100-web.md`; CWV budgets in `rules/900-performance.md`)
+- AEO: H1 + first paragraph directly answers the primary query · use `<ul>`/`<ol>` for facts

@@ -1,0 +1,32 @@
+{
+  "$comment": "Golden routing prompts — each entry states a realistic user request and the agent that agents/ROUTING.md + global-CLAUDE.md should route it to. Static checks (npm run routing-eval) verify structural integrity and agent coverage on every CI run; the live evaluation (RUN_ROUTING_EVAL=1, needs the claude CLI and API credits) actually asks the model to route each prompt and scores the answers. TR+EN mixed prompts are intentional — the kit advertises bilingual routing signals.",
+  "pass_threshold": 0.9,
+  "prompts": [
+    { "prompt": "login page 'Forgot Password' link doesn't work, fix it", "expect": "security-guard", "note": "login + password-reset flow is a Step 3 guard-area noun, which outranks the 'fix' verb — same precedence rule as 'fix CSS in the login form' below. bug-hunter coverage comes from the stack-trace and failing-test prompts" },
+    { "prompt": "TypeError: Cannot read properties of undefined (reading 'map') at UserList.tsx:42 — stack trace attached", "expect": "bug-hunter" },
+    { "prompt": "testler patlıyor, CI'da 3 test fail oluyor, düzelt", "expect": "bug-hunter" },
+    { "prompt": "make the submit button rounded and add a hover animation", "expect": "ui-fixer", "expectedSkill": "ui-change" },
+    { "prompt": "modal çok çirkin duruyor, daha modern bir tasarım yap", "expect": "ui-fixer", "expectedSkill": "ui-change" },
+    { "prompt": "fix the padding on the pricing cards, they look cramped on mobile", "expect": "ui-fixer" },
+    { "prompt": "add a user profile settings page with avatar upload", "expect": "senior-engineer" },
+    { "prompt": "CSV export özelliği ekle rapor sayfasına", "expect": "senior-engineer" },
+    { "prompt": "refactor the notification service into smaller modules without changing behavior", "expect": "senior-engineer", "expectedSkill": "refactor-safe" },
+    { "prompt": "design the API contract for our new webhooks feature with versioning strategy", "expect": "senior-engineer" },
+    { "prompt": "we need to redesign the whole checkout flow architecture across web and mobile", "expect": "senior-engineer", "expectedSkill": "feature-plan", "note": "architect agent removed (round-26 simplification) — architecture-scale scope plans via feature-plan in native plan mode, senior-engineer implements" },
+    { "prompt": "mikroservislere geçmeli miyiz? mevcut monolitin mimarisini değerlendir", "expect": "senior-engineer", "note": "plans via feature-plan in native plan mode since the architect agent was removed" },
+    { "prompt": "add an index to the orders table and a new status column", "expect": "db-guard" },
+    { "prompt": "users tablosuna soft-delete kolonu ekleyelim, şemayı değiştir", "expect": "db-guard" },
+    { "prompt": "write a migration to backfill the new column and drop the old one", "expect": "db-guard", "expectedSkill": "migration-review", "note": "migration deployment-safety absorbed into db-guard (v2.0 consolidation)" },
+    { "prompt": "production'da şu tablodaki eski kayıtları toplu silmemiz lazım", "expect": "db-guard", "expectedSkill": "migration-review", "note": "destructive data work routes to db-guard since migration-guard merged into it" },
+    { "prompt": "the JWT refresh token flow is broken, users get logged out randomly", "expect": "security-guard" },
+    { "prompt": "Stripe ödeme entegrasyonuna taksit desteği ekle", "expect": "security-guard" },
+    { "prompt": "fix CSS in the login form", "expect": "security-guard", "note": "guard-area noun outranks task-type verb — ROUTING.md precedence line" },
+    { "prompt": "run a security scan and dependency audit on the repo", "expect": "security-guard", "expectedSkill": "security-scan", "note": "tool-driven scans absorbed into security-guard since security-scanner merged into it (v2.0 consolidation)" },
+    { "prompt": "bağımlılıklarda bilinen CVE var mı, tara", "expect": "security-guard", "note": "dep audit routes to security-guard since security-scanner merged into it" },
+    { "prompt": "the dashboard takes 8 seconds to load, probably an N+1 query", "expect": "performance-guard" },
+    { "prompt": "bundle 2MB olmuş, neden bu kadar yavaş açılıyor site", "expect": "performance-guard", "expectedSkill": "performance-check" },
+    { "prompt": "add a Trivy scan step to our Docker build pipeline", "expect": "devops-guard" },
+    { "prompt": "deploy pipeline'a staging environment ekle", "expect": "devops-guard" },
+    { "prompt": "write integration tests for the payment webhook handler", "expect": "senior-engineer", "expectedSkill": "test-writer", "note": "test-engineer agent removed (round-26 simplification) — test work runs as the test-writer skill under senior-engineer" }
+  ]
+}

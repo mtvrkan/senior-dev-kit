@@ -1,0 +1,9 @@
+- Controllers: route handling only — zero business logic; Services: all domain logic + exceptions
+- Global ValidationPipe: `whitelist: true, forbidNonWhitelisted: true, transform: true` — never skip
+- DTO: class-validator decorators on all request bodies; never `@Body() body: any`
+- Guards: JwtAuthGuard on protected routes; ownership check in service, never trust client IDs
+- Exceptions: throw typed NestJS exceptions (NotFoundException, ForbiddenException, ConflictException) — never plain Error
+- Config: ConfigService.getOrThrow('KEY') — never process.env directly in services
+- Transactions: DataSource.transaction() or prisma.$transaction() for multi-step writes
+- Security: helmet() + ThrottlerGuard on auth endpoints + explicit CORS origin list · never log passwords/tokens/full request bodies
+- Anti: business logic in controllers · bypassing DTO validation · process.env in services · changing global module wiring · returning raw DB errors to client

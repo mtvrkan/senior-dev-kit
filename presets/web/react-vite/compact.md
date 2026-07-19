@@ -1,0 +1,8 @@
+- Step 0: read package.json → detect UI lib (shadcn/Radix/MUI/Mantine/Bootstrap/none) before choosing components
+- Pre-code: find similar page → find layout shell → identify data source (TanStack Query/SWR/fetch) → list lib components → plan 4 states
+- State: match existing library (React Query / SWR / fetch for server data) — never rewrite state architecture for a local feature; no global state for local UI
+- Forms: React Hook Form + Zod if installed — match project; submit `disabled` + loading indicator while pending
+- All async UI must handle: Loading (skeleton matching shape, not spinner), Empty (icon+message+CTA), Error (message+retry)
+- Verification: `eslint` → `tsc --noEmit` → `vitest run` → `vite build` (routing changes only)
+- Anti: global state/Redux for local modal; large rewrites for small changes; arbitrary Tailwind values (p-[13px]); missing async states
+- Anti: `text-gray-500` instead of semantic token; raw `<div onClick>` instead of `<button>`; hardcoded hex colors
