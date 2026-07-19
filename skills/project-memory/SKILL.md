@@ -3,7 +3,7 @@ name: project-memory
 description: Use to persist durable project-level facts (decisions, gotchas, non-obvious conventions) to a project memory file so future sessions don't rediscover them. No code changes.
 allowed-tools: Read, Write, Edit, Glob
 when_to_use: Use automatically before /clear when unresolved context matters, after a confirmed architecture decision, or on "remember this." Invoke /project-memory to review the file directly.
-model: haiku
+model: sonnet
 effort: low
 argument-hint: "[what to remember, or omit to review/update existing entries]"
 ---

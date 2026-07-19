@@ -99,11 +99,11 @@ User: "review this migration file" (migration exists, no schema-design question)
 No guard area matched. What kind of task is it?
 
 ```text
-CSS / button / modal / copy / animation / layout    → ui-fixer   (haiku,  Tier 0-1)
+CSS / button / modal / copy / animation / layout    → ui-fixer   (sonnet, Tier 0-1)
 Bug / error in specific file, no guard area         → bug-hunter (sonnet, Tier 0-2)
 Add test / update spec / regression coverage        → senior-engineer, `test-writer` skill (Tier 1-2)
 Review a diff / PR / recent change                  → main loop, `code-review` skill (Tier 1-2)
-New page / screen / component — pure UI             → ui-fixer   (haiku,  Tier 1-2)
+New page / screen / component — pure UI             → ui-fixer   (sonnet, Tier 1-2)
 New page needing backend (upload, API, DB)          → senior-engineer (sonnet, Tier 2)
 API contract / endpoint design / versioning         → senior-engineer (sonnet, Tier 2-3)
 Normal feature, refactor, multi-file work           → senior-engineer (sonnet, Tier 2)
