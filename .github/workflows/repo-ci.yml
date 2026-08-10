@@ -215,8 +215,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Through the npm script, not a second copy of the command: the same step
+      # runs inside `npm run check`, and two spellings of an audit threshold is
+      # how a gate and its CI job start disagreeing.
       - name: Run npm audit
-        run: npm audit --audit-level=moderate
+        run: npm run audit
 
   secret-scan:
     name: Secret Scan (gitleaks)

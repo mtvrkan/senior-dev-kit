@@ -8,7 +8,12 @@ import { spawnSync } from 'child_process'
 import { fileURLToPath } from 'url'
 import { realpathSync } from 'fs'
 
-export const CHECK_STEPS = ['test', 'validate', 'link-check', 'consistency-check', 'routing-eval', 'check-plugin', 'typecheck', 'lint', 'markdown-lint']
+// 'audit' is last on purpose: it is the only step that needs the network, so an
+// offline contributor still gets every other result before it fails. It is in
+// the gate at all because the dep-audit CI job was red for three transitive
+// advisories with nothing local reporting it — a CI job with no local
+// counterpart is a check you find out about after pushing.
+export const CHECK_STEPS = ['test', 'validate', 'link-check', 'consistency-check', 'routing-eval', 'check-plugin', 'typecheck', 'lint', 'markdown-lint', 'audit']
 
 export interface StepResult {
   step: string

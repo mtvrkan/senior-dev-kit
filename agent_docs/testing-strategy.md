@@ -55,8 +55,9 @@ Good candidates: parsers, serializers, sort/search algorithms, mathematical oper
 Run mutation testing to measure test quality (not just coverage):
 
 ```bash
-# JavaScript/TypeScript
-npx stryker run
+# JavaScript/TypeScript — the bare `stryker` package is the pre-1.0 name, deprecated
+# since 2019 and still published; `npx stryker run` fetches that instead of Stryker.
+npx @stryker-mutator/core run
 
 # Python
 mutmut run

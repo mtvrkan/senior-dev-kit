@@ -40,11 +40,12 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint scripts/",
     "markdown-lint": "markdownlint-cli2 \"**/*.md\" \"!node_modules\" --config .markdownlint.json",
+    "audit": "npm audit --audit-level=moderate",
     "check": "node --experimental-strip-types scripts/run-checks.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^22.0.0",
+    "@types/node": "^24.13.3",
     "eslint": "^10.6.0",
     "markdownlint-cli2": "^0.23.1",
     "typescript": "^5.8.0",

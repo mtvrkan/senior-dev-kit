@@ -2522,6 +2522,40 @@ describe('check-consistency.ts drift detection', () => {
     assert.ok(out.includes('no longer contains the sentence stating the skill/agent body caps'), `got: ${out}`)
   })
 
+  // --- the gate's step list, restated in prose (check 12b) ------------------
+  // Adding the `audit` step meant editing package.json, run-checks.ts,
+  // CONTRIBUTING.md and CLAUDE.md. Three of those four are enforced; this pins
+  // the two prose copies to the array that actually runs.
+  test('exits 1 when a document lists gate steps that run-checks.ts does not run', () => {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'scripts'), { recursive: true })
+    writeFileSync(join(root, 'scripts', 'run-checks.ts'), 'export const CHECK_STEPS = []\n')
+    writeFileSync(join(root, 'CONTRIBUTING.md'), 'This runs, in order: `test` → `lint`.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('CONTRIBUTING.md lists the gate steps as [test, lint]'), `got: ${out}`)
+  })
+
+  // --- .gitignore mirrors PROTECTED FILES (check 17) ------------------------
+  // `.gitignore` asserted in a comment that it mirrored the security rule's
+  // list; four secret patterns were missing, including `secrets/` and the
+  // camelCase `serviceAccountKey.json` that `*serviceaccount*.json` does not
+  // cover on a case-sensitive filesystem.
+  test('exits 1 when .gitignore misses a secret pattern the security rule protects', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(
+      join(root, 'rules', '000-security.md'),
+      '## PROTECTED FILES — never read\n\n`.env` · `secrets/`\n\nSee the kit repo\'s `SECURITY.md` for detail.\n'
+    )
+    writeFileSync(join(root, '.gitignore'), '# secrets\n.env\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('no entry for `secrets/`'), `got: ${out}`)
+    // The closing prose paragraph backticks a filename too; reading it as a
+    // pattern demanded a .gitignore entry for the repo's own policy document.
+    assert.ok(!out.includes('no entry for `SECURITY.md`'), `prose must not be parsed as a pattern: ${out}`)
+  })
+
   // README's component counts appear twice: the count table (check 8, added
   // round 17) and this summary sentence — a second syntactic form the
   // table-row regex never matched, found live in a round-18 audit. The fixture

@@ -1,6 +1,8 @@
 // Lint config for the kit's own tooling under scripts/ — the rest of the repo
-// is markdown/shell/PowerShell and is covered by markdownlint, ShellCheck and
-// PSScriptAnalyzer in CI.
+// is Markdown and YAML, covered by the markdown-lint and yaml-lint CI jobs.
+// (An earlier version of this comment credited ShellCheck and PSScriptAnalyzer
+// "in CI": ShellCheck runs in .pre-commit-config.yaml, not CI, PSScriptAnalyzer
+// runs nowhere, and the repo ships no .sh or .ps1 files for either to lint.)
 import eslint from '@eslint/js'
 import tseslint from 'typescript-eslint'
 

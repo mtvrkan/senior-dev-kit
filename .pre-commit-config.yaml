@@ -29,14 +29,6 @@ repos:
     hooks:
       - id: gitleaks
 
-  # Markdown lint — matches CI config in .markdownlint.json
-  - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: d174eb7a8f35e05d4065c82d375ad84aa0b32352  # frozen: v0.17.2
-    hooks:
-      - id: markdownlint-cli2
-        args: ["--config", ".markdownlint.json"]
-        types: [markdown]
-
   # Shell script lint (any *.sh added to the repo — none ship today)
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: a23f6b85d0fdd5bb9d564e2579e678033debbdff  # frozen: v0.10.0.1
@@ -45,13 +37,23 @@ repos:
         files: \.sh$
         args: [--severity=warning]
 
-  # Skill frontmatter validation (local — requires node >=22.6)
+  # Local hooks run the repo's own npm scripts on purpose. A mirrored
+  # markdownlint-cli2 hook pinned its own frozen rev here (v0.17.2) while
+  # package.json installed ^0.23.1 — two linters, one config, and a pre-commit
+  # pass that meant nothing about whether CI would agree. Going through
+  # `npm run` makes the version single-sourced by construction.
+  # Requires the repo's Node floor (package.json engines.node) and `npm ci`.
   - repo: local
     hooks:
+      - id: markdown-lint
+        name: Markdown lint (npm run markdown-lint)
+        language: system
+        entry: npm run markdown-lint
+        pass_filenames: false
+        files: \.md$
       - id: validate-skills
         name: Validate skill frontmatter
-        language: node
-        entry: node --experimental-strip-types scripts/validate-skills.ts
+        language: system
+        entry: npm run validate
         pass_filenames: false
         always_run: true
-        additional_dependencies: []

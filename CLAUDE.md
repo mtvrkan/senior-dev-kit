@@ -14,7 +14,7 @@ itself.
 - Validate frontmatter/routing: `npm run validate`
 - Full gate (run before considering any change done): `npm run check`
   — runs test, validate, link-check, consistency-check, routing-eval, check-plugin,
-  typecheck, lint, markdown-lint
+  typecheck, lint, markdown-lint, audit
 - Type-check only: `npm run typecheck` | Lint only: `npm run lint`
 - Installer dry run: `node scripts/install.mjs --dry-run`
 

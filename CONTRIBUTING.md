@@ -16,9 +16,9 @@ npm run check
 ```
 
 This runs, in order: `test` → `validate` → `link-check` → `consistency-check` →
-`routing-eval` → `check-plugin` → `typecheck` → `lint` → `markdown-lint`. Every step runs even
-if an earlier one fails, so you get the full report in one pass. A pull request is not ready
-until this is green.
+`routing-eval` → `check-plugin` → `typecheck` → `lint` → `markdown-lint` → `audit`. Every step
+runs even if an earlier one fails, so you get the full report in one pass. A pull request is not
+ready until this is green. Only the last step needs the network.
 
 Narrower commands while iterating:
 

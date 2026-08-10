@@ -14,8 +14,12 @@
 id_rsa
 id_ed25519
 .ssh/
+serviceAccountKey.json
 *firebase-adminsdk*.json
 *serviceaccount*.json
+secrets/
+config/credentials.json
+config/secrets.json
 .secrets.baseline*
 
 # OS

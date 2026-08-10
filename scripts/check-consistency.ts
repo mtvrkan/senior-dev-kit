@@ -672,6 +672,29 @@ if (existsSync(join(ROOT, 'scripts', 'run-checks.ts')) && existsSync(join(ROOT, 
       `package.json has script(s) not covered by scripts/run-checks.ts's CHECK_STEPS and not in its documented exclusion list: ${missingFromGate.join(', ')} — add to CHECK_STEPS or to the exclusion list with a reason`
     )
   }
+
+  // 12b. The gate's step list is also spelled out in prose, twice: CONTRIBUTING
+  // tells a contributor what will run, and CLAUDE.md tells the assistant. Both
+  // were hand-typed. Adding the `audit` step meant editing three places, which
+  // is the moment this drift is introduced, not the moment it is noticed.
+  const proseLists: { file: string; re: RegExp }[] = [
+    { file: 'CONTRIBUTING.md', re: /This runs, in order: ([^.]+)\./ },
+    { file: 'CLAUDE.md', re: /— runs ([a-z-]+(?:,\s*[a-z-]+)+)/ },
+  ]
+  for (const { file, re } of proseLists) {
+    if (!existsSync(join(ROOT, file))) continue
+    const m = read(file).match(re)
+    if (!m) {
+      errors.push(`${file} no longer states the gate's step order where check 12b reads it — restore the sentence or drop the pattern deliberately`)
+      continue
+    }
+    const listed = [...m[1].matchAll(/[a-z][a-z-]*/g)].map(x => x[0]).filter(s => s !== 'and')
+    if (listed.join(' ') !== CHECK_STEPS.join(' ')) {
+      errors.push(
+        `${file} lists the gate steps as [${listed.join(', ')}] but run-checks.ts runs [${CHECK_STEPS.join(', ')}]`
+      )
+    }
+  }
 }
 
 // --- 13. Kit-internal path references in agents/skills/commands resolve -----
@@ -978,6 +1001,51 @@ if (existsSync(join(ROOT, 'CONTRIBUTING.md')) && existsSync(join(ROOT, 'scripts/
   }
 }
 
+// --- 17. .gitignore really does mirror the PROTECTED FILES list -------------
+// `.gitignore` says in a comment that it "mirrors rules/000-security.md's
+// PROTECTED FILES list". It did not: `serviceAccountKey.json`, `secrets/`,
+// `config/credentials.json` and `config/secrets.json` were absent, and
+// `*serviceaccount*.json` does not cover the camelCase filename on a
+// case-sensitive filesystem. A hand-copied mirror with a comment asserting it
+// is a mirror is the same class as every count claim these checks already
+// derive — except the failure mode here is a credential file that `git add -A`
+// happily stages in a repo whose CI runs gitleaks.
+const PROTECTED_NOT_SECRETS = new Set(['*.lock', 'node_modules/', 'dist/', '.next/'])
+if (existsSync(join(ROOT, 'rules/000-security.md')) && existsSync(join(ROOT, '.gitignore'))) {
+  const section = read('rules/000-security.md').match(/## PROTECTED FILES[^\n]*\n([\s\S]*?)(?:\n## |$)/)
+  if (!section) {
+    errors.push('rules/000-security.md has no "## PROTECTED FILES" section — check 17 is comparing nothing')
+  } else {
+    // Only the ` · `-separated pattern lines, not the prose paragraph that
+    // closes the section — that paragraph backticks `SECURITY.md`, and reading
+    // it as a pattern demanded a .gitignore entry for the repo's own policy doc.
+    const patternLine = /^(?:`[^`\n]+`)(?:\s*·\s*`[^`\n]+`)*$/
+    const patterns = section[1]
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => patternLine.test(l))
+      .flatMap(l => [...l.matchAll(/`([^`\n]+)`/g)].map(m => m[1].trim()))
+      .filter(p => !PROTECTED_NOT_SECRETS.has(p))
+    if (patterns.length === 0) {
+      errors.push('check 17 parsed 0 patterns out of the PROTECTED FILES section — the list format changed')
+    }
+    const ignored = new Set(
+      read('.gitignore')
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l !== '' && !l.startsWith('#'))
+    )
+    for (const pattern of patterns) {
+      if (!ignored.has(pattern)) {
+        errors.push(
+          `.gitignore claims to mirror rules/000-security.md's PROTECTED FILES but has no entry for \`${pattern}\` — ` +
+            `that file would be staged by \`git add -A\``
+        )
+      }
+    }
+  }
+}
+
 if (errors.length > 0) {
   console.error(`\n✗ ${errors.length} consistency drift issue(s) found:\n`)
   for (const e of errors) console.error(`  ✗ ${e}`)
@@ -1017,6 +1085,9 @@ if (installerNodeFloor !== undefined) {
 }
 if (existsSync(join(ROOT, 'CONTRIBUTING.md')) && existsSync(join(ROOT, 'scripts/lib/presets.ts'))) {
   console.log(`✓ Budget numbers quoted in prose (skill/agent body, compact.md range, always-loaded) match the constants that enforce them.`)
+}
+if (existsSync(join(ROOT, 'rules/000-security.md')) && existsSync(join(ROOT, '.gitignore'))) {
+  console.log(`✓ .gitignore covers every secret pattern in rules/000-security.md's PROTECTED FILES list.`)
 }
 if (executableClaimCount > 0) {
   console.log(`✓ Every documented command, installer flag and slash command resolves (${executableClaimCount} checked across ${REPO_DOC_GLOBS.length} document(s) plus the SessionStart hook).`)

@@ -146,6 +146,35 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 - `check-plugin.ts` now refuses a version that has no `CHANGELOG.md` heading, since bumping the
   plugin version is what ships an update to every installed user. [2026-08-09]
 
+### Fixed (second review pass, 2026-08-10)
+
+- Three high-severity advisories (`brace-expansion` ×2, `js-yaml` via `markdownlint-cli2`) were
+  live in the dependency tree, so the `dep-audit` CI job was red. Resolved, and the root cause
+  closed: `npm audit --audit-level=moderate` is now the `audit` npm script, the last step of
+  `npm run check`, and what the CI job invokes — a CI job with no local counterpart is a check
+  you find out about after pushing. [2026-08-10]
+- `.gitignore` said in a comment that it mirrored `rules/000-security.md`'s PROTECTED FILES list
+  and did not: `serviceAccountKey.json`, `secrets/`, `config/credentials.json` and
+  `config/secrets.json` had no entry, and `*serviceaccount*.json` does not match the camelCase
+  filename on a case-sensitive filesystem. Added, and check 17 now derives the requirement from
+  the rule file. [2026-08-10]
+- `agent_docs/testing-strategy.md` gave `npx stryker run` for mutation testing. The bare
+  `stryker` package is the pre-1.0 name, deprecated since 2019 and still published at 0.35.1, so
+  that command silently fetches a package nine majors behind. Now
+  `npx @stryker-mutator/core run`. [2026-08-10]
+- `.pre-commit-config.yaml` pinned its own `markdownlint-cli2` (v0.17.2) while `package.json`
+  installed ^0.23.1 — two linters over one config, so a clean pre-commit said nothing about CI.
+  Both Markdown lint and skill validation now go through the repo's own npm scripts. [2026-08-10]
+- `eslint.config.js` credited ShellCheck and PSScriptAnalyzer with covering the rest of the repo
+  "in CI". ShellCheck runs in pre-commit, PSScriptAnalyzer runs nowhere, and the repo ships no
+  `.sh` or `.ps1` files for either. [2026-08-10]
+- `@types/node` was pinned to ^22 while `engines.node`, `.node-version` and every CI job are on
+  24. [2026-08-10]
+- `check-consistency.ts` check 12b — the gate's step order is restated in prose in
+  `CONTRIBUTING.md` and `CLAUDE.md`; both are now compared against `CHECK_STEPS`. Adding the
+  `audit` step required editing four files, which is exactly when this drift is introduced.
+  [2026-08-10]
+
 ## [2.1.0] — 2026-07-19
 
 Baseline release: 7 agents, 24 skills, 11 rules, 3 commands, 9 presets, and 398 deny rules,
