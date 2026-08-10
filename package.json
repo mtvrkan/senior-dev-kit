@@ -1,6 +1,6 @@
 {
   "name": "senior-dev-kit",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Agents, skills, rules and guardrails that make Claude Code behave like a senior engineering team. Installed as a Claude Code plugin or into ~/.claude.",
   "type": "module",
   "private": true,
@@ -41,6 +41,7 @@
     "lint": "eslint scripts/",
     "markdown-lint": "markdownlint-cli2 \"**/*.md\" \"!node_modules\" --config .markdownlint.json",
     "audit": "npm audit --audit-level=moderate",
+    "check-release": "node --experimental-strip-types scripts/check-release.ts",
     "check": "node --experimental-strip-types scripts/run-checks.ts"
   },
   "devDependencies": {

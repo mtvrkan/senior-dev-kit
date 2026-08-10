@@ -658,7 +658,11 @@ if (existsSync(join(ROOT, 'scripts', 'run-checks.ts')) && existsSync(join(ROOT, 
   // by deny-cost.test.ts inside 'test'; 'setup' is the end-user installer, which
   // writes to ~/.claude and must never run as part of a validation gate — its
   // logic is covered by install.test.mjs, also inside 'test'.
-  const EXCLUDED_FROM_GATE = ['check', 'deny-cost', 'setup']
+  // 'check-release' is excluded for a different reason than the other three: it
+  // needs the network and asserts a property of the *published* repository
+  // rather than of this working tree, so a fork or an offline contributor would
+  // fail it through no fault of their own. It is a pre-announcement step.
+  const EXCLUDED_FROM_GATE = ['check', 'deny-cost', 'setup', 'check-release']
   const pkgScripts = Object.keys(JSON.parse(read('package.json')).scripts ?? {})
   const missingFromPkg = CHECK_STEPS.filter(step => !pkgScripts.includes(step))
   if (missingFromPkg.length > 0) {

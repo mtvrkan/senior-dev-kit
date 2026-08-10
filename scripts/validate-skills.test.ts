@@ -2247,6 +2247,54 @@ describe('significantWords (routing-eval expectedSkill drift lint)', () => {
   })
 })
 
+describe('check-plugin.ts manifest guards', () => {
+  // Found by installing the plugin into a throwaway CLAUDE_CONFIG_DIR: 2.2.0
+  // declared "hooks": "./hooks/hooks.json" in plugin.json, Claude Code already
+  // loads that path automatically, and the duplicate made the loader reject the
+  // ENTIRE plugin — every agent, skill and command with it. `claude plugin
+  // validate` did not catch it; it validates the marketplace manifest.
+  function pluginFixture(manifest: Record<string, unknown>): string {
+    const root = makeTempDir(join(tmpdir(), 'plugin-'))
+    mkdirSync(join(root, '.claude-plugin'), { recursive: true })
+    mkdirSync(join(root, 'hooks'), { recursive: true })
+    writeFileSync(join(root, 'hooks', 'hooks.json'), JSON.stringify({ hooks: { SessionStart: [{ hooks: [] }] } }))
+    writeFileSync(join(root, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'x', ...manifest }))
+    writeFileSync(
+      join(root, '.claude-plugin', 'marketplace.json'),
+      JSON.stringify({ name: 'm', owner: { name: 'o' }, plugins: [{ name: 'x', source: './' }] })
+    )
+    return root
+  }
+
+  function runCheckPlugin(root: string): { code: number; out: string } {
+    try {
+      const stdout = execFileSync(process.execPath, [...NODE_FLAGS, 'scripts/check-plugin.ts'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, PLUGIN_ROOT: root },
+      })
+      return { code: 0, out: stdout }
+    } catch (err) {
+      const e = err as { status?: number; stderr?: string; stdout?: string }
+      return { code: e.status ?? 1, out: (e.stdout ?? '') + (e.stderr ?? '') }
+    }
+  }
+
+  test('exits 1 when plugin.json re-declares the auto-loaded hooks file', () => {
+    const { code, out } = runCheckPlugin(pluginFixture({ hooks: './hooks/hooks.json' }))
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('makes the whole plugin fail to load'), `got: ${out}`)
+  })
+
+  test('accepts a hooks file outside the standard path', () => {
+    const root = pluginFixture({ hooks: './hooks/extra.json' })
+    writeFileSync(join(root, 'hooks', 'extra.json'), JSON.stringify({ hooks: { SessionStart: [{ hooks: [] }] } }))
+    const { out } = runCheckPlugin(root)
+    assert.ok(!out.includes('makes the whole plugin fail to load'), `got: ${out}`)
+  })
+})
+
 describe('check-consistency.ts drift detection', () => {
   // Builds an isolated CONSISTENCY_ROOT fixture with every file the script reads,
   // all values consistent by default; each test overrides exactly one to prove

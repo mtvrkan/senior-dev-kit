@@ -4,6 +4,43 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] — 2026-08-10
+
+### Fixed
+
+- **The plugin did not load at all.** `.claude-plugin/plugin.json` declared
+  `"hooks": "./hooks/hooks.json"`, but Claude Code loads that path automatically, so the loader
+  saw the same file twice and rejected the whole plugin — every agent, skill and command with
+  it — with `Duplicate hooks file detected … failed to load`. The `hooks` field is for hook
+  files *outside* the standard path; `agents` is the field that legitimately replaces a default
+  scan. Removed, and verified by installing the plugin into a throwaway `CLAUDE_CONFIG_DIR`:
+  status goes from `✘ failed to load` to `✔ enabled`. `check-plugin.ts` now fails on the
+  duplicate declaration, with a regression test for both the broken and the legitimate shape.
+  [2026-08-10]
+
+  This is why the release is 2.2.1 rather than an amended 2.2.0: the plugin `version` string is
+  what pins updates, so a build that cannot load must be superseded by a new one, not replaced
+  in place.
+
+### Added
+
+- `npm run check-release` — verifies the install path the documentation promises actually works
+  for a stranger: the repository resolves anonymously and is public, the Discussions link in the
+  issue-template config is not a dead end, and the marketplace manifest is reachable at its
+  published raw URL with a version matching `package.json`. Deliberately outside `npm run check`
+  (it needs the network and asserts a property of the published repository, not of the working
+  tree), and registered in check 12's documented exclusion list. It currently fails: the
+  repository answers 404 to an anonymous request, so every documented install command — the
+  `/plugin marketplace add` line, the clone URL, the disclosure policy's links — is inoperative
+  for anyone but the owner. [2026-08-10]
+
+### Verified
+
+- The `installer-compat` CI job's shell steps and the installer itself were executed on a real
+  Node 18.20.8 (Linux container), not just asserted: dry run, install, file and deny-list
+  checks, uninstall, second-run idempotency, and the refusal to write over an unmarked protocol
+  copy — all pass on the documented floor. [2026-08-10]
+
 ## [2.2.0] — 2026-08-09
 
 ### Added

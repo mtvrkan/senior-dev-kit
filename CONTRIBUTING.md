@@ -30,6 +30,7 @@ Narrower commands while iterating:
 | `npm run consistency-check` | Hand-written claims (counts, budgets, versions) match disk |
 | `npm run check-plugin` | Plugin and marketplace manifests match the components on disk |
 | `npm run deny-cost` | Replays your own Claude Code transcripts against the deny list |
+| `npm run check-release` | Network. Verifies the published install path resolves for a stranger — run before announcing a release, not in the gate |
 
 ## What the validators enforce
 

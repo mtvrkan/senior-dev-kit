@@ -144,6 +144,28 @@ if (plugin) {
     }
   }
 
+  // --- 2b. the standard hooks file must NOT be declared --------------------
+  // Claude Code loads `hooks/hooks.json` automatically. Declaring it in the
+  // manifest as well makes the loader see the same file twice and reject the
+  // ENTIRE plugin: "Duplicate hooks file detected … failed to load". Not the
+  // hook — the plugin, including every agent, skill and command. This shipped
+  // in 2.2.0 and neither `claude plugin validate` (which checks the marketplace
+  // manifest) nor any check here caught it; it was found by installing the
+  // plugin into a throwaway CLAUDE_CONFIG_DIR and reading the status line.
+  // Unlike `agents`, which legitimately REPLACES the default scan, the `hooks`
+  // field is additive — it is only for hook files outside the standard path.
+  const STANDARD_HOOKS_FILE = 'hooks/hooks.json'
+  const declaredHooks = typeof plugin.hooks === 'string' ? [plugin.hooks] : Array.isArray(plugin.hooks) ? plugin.hooks : []
+  for (const p of declaredHooks) {
+    if (typeof p === 'string' && p.replace(/^\.\//, '') === STANDARD_HOOKS_FILE) {
+      errors.push(
+        `.claude-plugin/plugin.json declares "hooks": "${p}", but Claude Code loads ${STANDARD_HOOKS_FILE} ` +
+          `automatically — declaring it again is a duplicate and makes the whole plugin fail to load. ` +
+          `Remove the field; use it only for hook files outside the standard path.`
+      )
+    }
+  }
+
   // --- 3. hooks resolve ----------------------------------------------------
   const hooksPath = typeof plugin.hooks === 'string' ? plugin.hooks : null
   if (hooksPath && existsSync(join(ROOT, hooksPath))) {
