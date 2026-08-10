@@ -104,7 +104,7 @@ jobs:
           node-version: '24'
 
       - name: Run unit tests
-        run: node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/deny-cost.test.ts scripts/run-checks.test.ts
+        run: node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/deny-cost.test.ts scripts/run-checks.test.ts scripts/install.test.mjs scripts/session-context.test.mjs
 
       - name: Run skill validator
         run: node --experimental-strip-types scripts/validate-skills.ts
@@ -134,6 +134,72 @@ jobs:
 
       - name: Verify version fields, golden-prompt count, and CI node-version stay in sync
         run: node --experimental-strip-types scripts/check-consistency.ts
+
+  check-plugin:
+    name: Validate Plugin + Marketplace Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+
+      - name: Verify manifests match the components on disk
+        run: node --experimental-strip-types scripts/check-plugin.ts
+
+  installer-compat:
+    name: Installer Runs on the Documented Node Floor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      # Deliberately NOT the Node 24 every other job pins. The installer is the
+      # first thing a new user runs, on whatever Node they already have, while
+      # the TypeScript validators need 24 — two different floors, and the lower
+      # one was a README claim with nothing behind it until this job existed.
+      # check-consistency.ts ties this pin, both READMEs, and install-core.mjs's
+      # header note to package.json's seniorDevKit.installerNodeFloor.
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '18'
+
+      - name: Assert this job pins the documented installer floor
+        run: |
+          set -euo pipefail
+          floor=$(node -p "require('./package.json').seniorDevKit.installerNodeFloor")
+          actual=$(node -p "process.versions.node.split('.')[0]")
+          if [ "$floor" != "$actual" ]; then
+            echo "This job runs Node ${actual} but the documented installer floor is ${floor}." >&2
+            exit 1
+          fi
+
+      # No `npm ci`: the README promises "no dependencies to install", so the
+      # installer is exercised here exactly as a user gets it — a bare clone.
+      - name: Install into a scratch target, verify, then uninstall
+        run: |
+          set -euo pipefail
+          target="${RUNNER_TEMP}/kit-target"
+          node scripts/install.mjs --target "$target" --dry-run
+          node scripts/install.mjs --target "$target" --yes
+          test -f "$target/rules/000-security.md"
+          test -f "$target/agents/security-guard.md"
+          test -f "$target/skills/bug-fix/SKILL.md"
+          grep -q "BEGIN senior-dev-kit" "$target/CLAUDE.md"
+          grep -q '"deny"' "$target/settings.json"
+          node scripts/install.mjs --target "$target" --uninstall --yes
+          test ! -f "$target/rules/000-security.md"
+          test ! -f "$target/agents/security-guard.md"
+
+      # A second run over a populated target is the upgrade path, and the one
+      # place a "nothing to do" bug or a runaway backup would show up.
+      - name: Reinstall is idempotent
+        run: |
+          set -euo pipefail
+          target="${RUNNER_TEMP}/kit-idempotent"
+          node scripts/install.mjs --target "$target" --yes
+          node scripts/install.mjs --target "$target" --yes | tee second-run.txt
+          grep -q "Already up to date" second-run.txt
 
   dep-audit:
     name: Dependency Audit

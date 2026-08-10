@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-marketplace.json",
+  "name": "senior-dev-kit",
+  "description": "Senior Dev Kit — a senior engineering team for Claude Code.",
+  "owner": {
+    "name": "Mehmet Türkan",
+    "url": "https://github.com/mtvrkan"
+  },
+  "plugins": [
+    {
+      "name": "senior-dev-kit",
+      "source": "./",
+      "displayName": "Senior Dev Kit",
+      "description": "Guard agents, auto-triggered skills and path-scoped rules that make Claude Code behave like a senior engineering team.",
+      "version": "2.2.0",
+      "category": "workflow",
+      "tags": [
+        "agents",
+        "skills",
+        "code-review",
+        "security",
+        "database",
+        "devops",
+        "performance"
+      ],
+      "license": "MIT",
+      "homepage": "https://github.com/mtvrkan/senior-dev-kit#readme",
+      "repository": "https://github.com/mtvrkan/senior-dev-kit"
+    }
+  ]
+}

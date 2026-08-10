@@ -95,7 +95,11 @@ logger.info({
 | Code generation, reasoning, multi-step | Sonnet | Balance of cost + quality |
 | Architecture decisions, complex analysis, judgment | Opus | Max quality when cost is secondary |
 
-**Never use Opus for high-volume, per-request paths** — costs ~15× Haiku ($15/$75 vs $1/$5 per Mtok input/output as of this writing; verify current pricing before relying on these figures, they drift).
+**Size the tier to the request volume, and re-check the prices before you rely on them.** Per Mtok
+in/out as of 2026-08: `claude-haiku-4-5` $1/$5 · `claude-sonnet-5` $3/$15 · `claude-opus-5` $5/$25.
+Opus is roughly 5× Haiku, not the ~15× that older guidance (including an earlier revision of this
+file) assumed — that figure came from a prior Opus generation and has been wrong since. Treat every
+number here the same way: verify against current pricing rather than trusting a rule file.
 
 ## TOOL / FUNCTION CALLING SAFETY
 

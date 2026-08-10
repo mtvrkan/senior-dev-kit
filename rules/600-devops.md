@@ -222,7 +222,8 @@ Upload SBOM as GitHub Actions artifact. Attach to release.
 Every prod deploy plan must include:
 
 - How to detect failure (health check, error rate)
-- How to rollback (previous image tag, `terraform apply -target`, DB rollback plan)
+- How to rollback (previous image tag; for Terraform, revert the config commit and re-apply — state
+  moves forward only, there is no rollback command; DB rollback plan)
 - Time to rollback (<5 min for stateless, defined timeline for stateful)
 - Who approves rollback decision
 

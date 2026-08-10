@@ -13,7 +13,7 @@ argument-hint: "[scope: global | project | both (default: both)]"
 
 Diagnose the installation. Read-only — propose fixes, never apply them unasked.
 
-1. LOCATE: does `~/.claude/` exist? does the project `.claude/` exist? Report which scope(s) are installed.
+1. LOCATE: is the kit installed as a plugin (`claude plugin list`), copied into `~/.claude/`, or both? Does the project `.claude/` exist? Report every scope found — and if the plugin is present but `~/.claude/rules/` is not, say that path-scoped rules are inactive and `/kit-setup` fixes it.
 2. COUNT: files in rules/ skills/ commands/ agents/ agent_docs/ vs the shipped counts stated in the kit README — flag shortfalls (truncated copy) and extras (user additions, not errors).
 3. SETTINGS: `settings.json` parses as JSON? `permissions.deny` present and ≥190 rules (see `SECURITY.md` for the exact current count — this floor is a coarse truncation check, not a substitute for it)?
 4. VERSION: `CLAUDE.md` / `.claude/stack-rules.md` present? compare installed content markers against the kit's current `package.json` version.

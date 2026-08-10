@@ -19,18 +19,23 @@ Run STRIDE for: new API endpoints · auth changes · file upload features · pay
 
 Category names/ranks/triggers are in `rules/000-security.md` (always loaded) — this is the mitigation detail that doesn't fit there:
 
-| # | Key mitigations |
-| --- | --- |
-| A01 | RBAC + ABAC at service layer, not UI only. Check `userId === resource.userId` on every read/write. |
-| A02 | TLS everywhere. Argon2id for passwords. AES-256-GCM for data at rest. Never MD5/SHA1 for security. |
-| A03 | SHA-pin GitHub Actions (see `rules/600-devops.md`). Audit `npm audit` / `pip-audit`. SBOM on release. Lockfile integrity. |
-| A04 | Threat model new features. Fail secure by default. Defense in depth. |
-| A05 | Security headers (CSP, HSTS, X-Frame-Options). Disable debug in prod. No default credentials. |
-| A06 | CVE scan in CI. Dependabot auto-PRs. Keep major versions current. |
-| A07 | MFA for admin. Account lockout after N failures. Secure session invalidation. |
-| A08 | HMAC for webhooks. Signed releases. Don't deserialize untrusted data. |
-| A09 | Log auth events, privilege changes, failed access. Redact PII in logs. |
-| A10 | Handle all error states explicitly. Never silently swallow exceptions. |
+The category name is repeated in each row on purpose: the 2025 edition reordered the list, and
+a bare `A0n` here silently meant something else than the same `A0n` in `000-security.md` until
+the 2026-08 audit caught it (A02/A04/A05/A06 were still carrying their OWASP 2021 meanings, and
+Injection had no mitigation row at all).
+
+| # | Category | Key mitigations |
+| --- | --- | --- |
+| A01 | Broken Access Control | RBAC + ABAC at service layer, not UI only. Check `userId === resource.userId` on every read/write. |
+| A02 | Security Misconfiguration | Security headers (CSP, HSTS, X-Frame-Options). Disable debug in prod. No default credentials. Least-privilege cloud IAM. |
+| A03 | Software Supply Chain Failures | SHA-pin GitHub Actions (see `rules/600-devops.md`). `npm audit` / `pip-audit` in CI. SBOM on release. Lockfile integrity. Dependabot auto-PRs. |
+| A04 | Cryptographic Failures | TLS everywhere. Argon2id for passwords. AES-256-GCM for data at rest. Never MD5/SHA1 for security. |
+| A05 | Injection | Parameterized queries only — never string interpolation. Allowlist-validate before any shell call. Sanitize with DOMPurify before `dangerouslySetInnerHTML`. See the SQL and XSS sections below. |
+| A06 | Insecure Design | Threat model new features (STRIDE, above). Fail secure by default. Rate-limit and business-rule-validate every new flow. Defense in depth. |
+| A07 | Authentication Failures | MFA for admin. Account lockout after N failures. Secure session invalidation. Short access-token expiry. |
+| A08 | Software or Data Integrity Failures | HMAC for webhooks. Signed releases. Don't deserialize untrusted data. |
+| A09 | Security Logging and Alerting Failures | Log auth events, privilege changes, failed access. Redact PII in logs. Alert on anomalies, not just record them. |
+| A10 | Mishandling of Exceptional Conditions | Handle all error states explicitly. Never silently swallow exceptions. Fail closed, not open. |
 
 ## AUTHENTICATION PATTERNS
 

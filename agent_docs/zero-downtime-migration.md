@@ -11,9 +11,18 @@ Step 1 — Expand: add new column/table, NULLABLE, no NOT NULL yet.
 Step 2 — Write-both: deploy code that writes to OLD and NEW simultaneously.
   Deploy: backward compatible — old code still reads old column, new code writes both.
 
-Step 3 — Backfill: batch-update existing rows in chunks.
-  Run:   UPDATE table SET new_col = derived_value WHERE new_col IS NULL LIMIT 1000;
-  Never: UPDATE table SET new_col = X  (no LIMIT — locks the entire table)
+Step 3 — Backfill: batch-update existing rows in chunks, looping until 0 rows are affected.
+  Never: UPDATE t SET new_col = X;   (unbounded — one transaction locks every row)
+
+  PostgreSQL — UPDATE has no LIMIT clause; bound it with a subquery:
+    UPDATE t SET new_col = <expr>
+    WHERE id IN (SELECT id FROM t WHERE new_col IS NULL ORDER BY id LIMIT 1000);
+
+  MySQL / MariaDB — UPDATE ... LIMIT is supported directly:
+    UPDATE t SET new_col = <expr> WHERE new_col IS NULL LIMIT 1000;
+
+  Commit between batches. A single long transaction holds its locks to the end,
+  which is the thing this whole pattern exists to avoid.
 
 Step 4 — Add constraint: make NOT NULL / add FK / add UNIQUE.
   Deploy: safe now that every row has a value.

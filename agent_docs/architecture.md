@@ -44,13 +44,15 @@ src/
 
 ## MODULE BOUNDARY RULES
 
-Barrel files (`index.ts` re-exporting everything) → **anti-pattern**. Reasons:
+A barrel that re-exports **everything** (`export * from …`) is the anti-pattern. Reasons:
 
 1. Breaks tree-shaking (bundler can't eliminate unused exports)
 2. Creates circular dependency risk
 3. Makes refactoring harder (can't rename without updating barrel)
 
-Instead: import from the source file directly or use explicit named exports from a thin public API file.
+The rule this expands on is `rules/001-conventions.md`'s: a barrel is allowed at a **module
+root** and nowhere else, and it must list the module's public API explicitly rather than
+star-export its internals. Anything deeper in the tree: import from the source file directly.
 
 ```typescript
 // WRONG: barrel
@@ -185,11 +187,12 @@ packages/
 // packages/ui → packages/shared ✓ (package using shared types)
 ```
 
-### Turborepo pipeline
+### Turborepo tasks
 
 ```json
 {
-  "pipeline": {
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
     "build": { "dependsOn": ["^build"], "outputs": [".next/**", "dist/**"] },
     "test": { "dependsOn": [], "cache": true },
     "lint": { "dependsOn": [], "cache": true },
@@ -197,6 +200,10 @@ packages/
   }
 }
 ```
+
+The key is `tasks`, not `pipeline` — Turborepo 2.0 renamed it, and v2 refuses to run a
+`turbo.json` that still uses the old name. If you are reading a repo on Turborepo 1.x, expect
+`pipeline` there and leave it alone rather than "fixing" it into a broken config.
 
 ## MICROSERVICE DECISION CHECKLIST
 

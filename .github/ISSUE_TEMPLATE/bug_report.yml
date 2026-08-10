@@ -1,0 +1,66 @@
+---
+name: Bug report
+description: Something in the kit behaves differently than documented.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Before filing: run `npm run check` and paste the failing step below if
+        it reproduces there. Never paste secrets, tokens, or `.env` contents.
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: How is the kit installed?
+      options:
+        - Claude Code plugin (/plugin install)
+        - scripts/install.mjs into ~/.claude
+        - Manual copy into ~/.claude
+        - Per-project preset only
+        - Not installed — working on the repo itself
+    validations:
+      required: true
+
+  - type: input
+    id: claude-version
+    attributes:
+      label: Claude Code version
+      description: Output of `claude --version`.
+      placeholder: "2.1.230"
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: OS and shell
+      placeholder: "Windows 11 / PowerShell 5.1, or macOS 15 / zsh"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: Quote the file and line that documents the expected behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Install with …
+        2. Ask Claude to …
+        3. Observe …
+    validations:
+      required: true

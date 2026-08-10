@@ -209,17 +209,19 @@ const inter = Inter({ subsets: ['latin'] })  // inlines font CSS, zero layout sh
 ### INP optimization
 
 ```typescript
-// Break up long tasks into smaller chunks
+// WRONG: one long task, blocks the main thread for its whole duration
 function heavyProcessing(items: Item[]) {
-  // WRONG: blocks main thread
   return items.map(expensiveOperation)
-  
-  // RIGHT: yield to browser between chunks
-  const chunks = chunk(items, 50)
-  for (const chunk of chunks) {
-    await scheduler.yield()  // yield to browser (Chrome 115+)
-    processChunk(chunk)
+}
+
+// RIGHT: yield to the browser between chunks so input stays responsive
+async function heavyProcessing(items: Item[]) {
+  const results: Result[] = []
+  for (const batch of chunk(items, 50)) {
+    await scheduler.yield()  // Chrome 129+; feature-detect or fall back to setTimeout(0)
+    results.push(...batch.map(expensiveOperation))
   }
+  return results
 }
 
 // Or use Web Workers for CPU-intensive work

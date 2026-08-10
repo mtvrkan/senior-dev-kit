@@ -253,21 +253,23 @@ client = TestClient(app)
 response = client.post('/users', json=user_data)
 assert response.status_code == 201
 
-// Go — httptest
+// Go — httptest (double quotes: '/users' is a rune literal in Go and will not compile)
 w := httptest.NewRecorder()
-r := httptest.NewRequest(http.MethodPost, '/users', body)
+r := httptest.NewRequest(http.MethodPost, "/users", body)
 handler.ServeHTTP(w, r)
 assert.Equal(t, 201, w.Code)
 ```
 
 ## VISUAL REGRESSION TESTING
 
-```bash
-# Playwright — screenshot comparison
+```typescript
+// Playwright — screenshot comparison
 await expect(page).toHaveScreenshot('user-list.png', { maxDiffPixelRatio: 0.02 })
+```
 
-# Update baseline:
-playwright test --update-snapshots
+```bash
+# Update baseline
+npx playwright test --update-snapshots
 ```
 
 When to use: design system components · critical UI views · PDF/chart generation.

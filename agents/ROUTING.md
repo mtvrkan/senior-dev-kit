@@ -172,7 +172,8 @@ Most guard-style agents are bound 1:1 (or 1:few) to a same-purpose skill — the
 handles the request (persona, tools, escalation), the skill is *how* (the procedure it
 follows). Only the skills with no agent row below run **exclusively** in the main loop:
 `code-review`, `deep-research`, `docs-update`, `feature-plan` (native plan mode),
-`incident-response`, `kit-doctor`. Flow skills that DO have a row (`bug-fix`, `api-design`,
+`incident-response`, `kit-doctor`, `kit-setup` (the last two are installation tooling, invoked
+by slash command only — they never auto-trigger). Flow skills that DO have a row (`bug-fix`, `api-design`,
 `db-change`, `ui-change`, `new-page`, `new-screen`, …) are dual-mode: invoked directly they
 run in the main loop; when their bound agent is dispatched, the agent follows them as its
 procedure.

@@ -15,5 +15,19 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'error',
       'no-console': 'off',
     },
+  },
+  {
+    // The installer is plain ESM JavaScript, not TypeScript, so that a new user
+    // can run `node scripts/install.mjs` on whatever Node they already have
+    // instead of needing this repo's Node 24 floor. It still gets linted — it
+    // writes to the user's ~/.claude, which is the least forgiving code here.
+    files: ['scripts/**/*.mjs'],
+    extends: [eslint.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: 'module',
+      globals: { console: 'readonly', process: 'readonly', structuredClone: 'readonly' },
+    },
+    rules: { 'no-console': 'off' },
   }
 )

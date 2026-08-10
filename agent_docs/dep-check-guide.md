@@ -136,13 +136,17 @@ cargo outdated
 ## Bundle size check (JS/TS only)
 
 ```bash
-# Check a package before adding
-npx bundlephobia [package]@[version]
+# Size of a package before adding it — npm built-in, no extra install
+npm view [package]@[version] dist.unpackedSize
+# Gzipped cost in a real bundle: https://bundlephobia.com/package/[package]
 
-# Analyze existing bundle
-next build && npx @next/bundle-analyzer
-# or
-npx vite-bundle-visualizer
+# Analyze an existing bundle
+ANALYZE=true next build          # Next.js — next.config must be wrapped in withBundleAnalyzer
+npx vite-bundle-visualizer       # Vite
 ```
+
+`bundlephobia` and `@next/bundle-analyzer` are **not** runnable with `npx`: the first publishes
+no `bin`, and the second is a config wrapper, not a CLI. Both were recommended that way here
+until the 2026-08 audit checked them against the registry.
 
 Flag if single dependency adds >30KB gzip to initial bundle.

@@ -34,10 +34,13 @@ Flag `PERF:` when a change likely violates these. Do not block — flag and cont
 | CSS bundle (gzip) | < 50 KB |
 
 ```bash
-# Check bundle after adding a dependency
-npx bundlephobia <package>@<version>
-# or
-next build && next analyze   # (if @next/bundle-analyzer is installed)
+# Size of a package before adding it — npm built-in, no extra install
+npm view <package>@<version> dist.unpackedSize
+# Gzipped cost in a real bundle: https://bundlephobia.com/package/<package>
+
+# Analyze an existing bundle
+ANALYZE=true next build          # Next.js: needs next.config wrapped in withBundleAnalyzer
+npx vite-bundle-visualizer       # Vite
 ```
 
 `PERF: bundle risk — [package] adds [N]KB gzip to initial bundle`

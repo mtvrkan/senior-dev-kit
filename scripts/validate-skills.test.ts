@@ -2395,34 +2395,175 @@ describe('check-consistency.ts drift detection', () => {
     assert.ok(out.includes('actually has 2 deny rules'), `got: ${out}`)
   })
 
-  // README's component counts appear twice: the İçerik table (check 8, added
-  // round 17) and this intro-paragraph sentence — a second syntactic form the
+  // --- installer Node floor (check 2c) ------------------------------------
+  // "Requires Node.js 18+" was the one load-bearing claim in this repo with
+  // nothing behind it: every CI job ran Node 24, engines.node said >=24, and the
+  // floor lived as prose in two READMEs plus a source comment. These two tests
+  // pin both halves of the fix — the restatements must agree with the single
+  // declared value, and the CI job that turns it from a claim into a fact must
+  // not be deletable in silence.
+  function declareInstallerFloor(root: string, floor: string): void {
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+    pkg.seniorDevKit = { installerNodeFloor: floor }
+    writeFileSync(join(root, 'package.json'), JSON.stringify(pkg))
+  }
+
+  test('exits 1 when a README states a Node floor other than the declared one', () => {
+    const root = buildConsistencyFixture()
+    declareInstallerFloor(root, '18')
+    writeFileSync(join(root, 'README.md'), 'The eval pins 3 realistic requests.\nRequires **Node.js 20+**.\n')
+    // Give it a real proof job so only the README mismatch can fire.
+    writeFileSync(
+      join(root, '.github', 'workflows', 'installer.yml'),
+      `steps:\n  - with:\n      node-version: '18'\n  - run: node scripts/install.mjs --dry-run\n`
+    )
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('claims "Node.js 20+"'), `got: ${out}`)
+  })
+
+  test('exits 1 when no CI job exercises the declared installer floor', () => {
+    const root = buildConsistencyFixture()
+    declareInstallerFloor(root, '18')
+    writeFileSync(join(root, 'README.md'), 'The eval pins 3 realistic requests.\nRequires **Node.js 18+**.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('no CI job pins node-version "18"'), `got: ${out}`)
+  })
+
+  // --- executable claims (check 15) ----------------------------------------
+  // Checks 1-14 all guard numbers; these guard the other half of what the docs
+  // assert — the commands, flags and slash commands a reader is told to type.
+  test('exits 1 when a doc points at an npm script that does not exist', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(join(root, 'README.md'), 'The eval pins 3 realistic requests.\nRun `npm run publish-kit` to ship.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('`npm run publish-kit`'), `got: ${out}`)
+  })
+
+  test('exits 1 when a doc passes an installer flag the parser rejects', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(join(root, 'README.md'), 'The eval pins 3 realistic requests.\nRun `node scripts/install.mjs --dryrun`.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('passes `--dryrun` to scripts/install.mjs'), `got: ${out}`)
+  })
+
+  test('exits 1 when a doc names an installer component that does not exist', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(join(root, 'README.md'), 'The eval pins 3 realistic requests.\n`node scripts/install.mjs --only rules,presets`\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('presets is not an installer component'), `got: ${out}`)
+  })
+
+  test('exits 1 when a doc references a slash command that is not installed', () => {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'skills', 'bug-fix'), { recursive: true })
+    writeFileSync(join(root, 'skills', 'bug-fix', 'SKILL.md'), '---\nname: bug-fix\n---\n')
+    mkdirSync(join(root, 'commands'), { recursive: true })
+    writeFileSync(join(root, 'commands', 'seo-check.md'), '# seo-check\n')
+    writeFileSync(join(root, 'README.md'), 'The eval pins 3 realistic requests.\nRun `/kit-doktor` to diagnose.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('references `/kit-doktor`'), `got: ${out}`)
+  })
+
+  test('accepts a slash command that resolves to a skill or a command file', () => {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'skills', 'bug-fix'), { recursive: true })
+    writeFileSync(join(root, 'skills', 'bug-fix', 'SKILL.md'), '---\nname: bug-fix\n---\n')
+    mkdirSync(join(root, 'commands'), { recursive: true })
+    writeFileSync(join(root, 'commands', 'seo-check.md'), '# seo-check\n')
+    // `/compact` is a Claude Code built-in: resolves to nothing here, legitimately.
+    writeFileSync(join(root, 'README.md'), 'The eval pins 3 realistic requests.\n`/bug-fix`, `/seo-check` and `/compact`.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 0, `expected exit 0, got: ${out}`)
+  })
+
+  // README's component counts appear twice: the count table (check 8, added
+  // round 17) and this summary sentence — a second syntactic form the
   // table-row regex never matched, found live in a round-18 audit. The fixture
   // root's `rules/` dir has exactly 2 files (000-security.md, 001-conventions.md
   // from buildConsistencyFixture), so "2 rule" is the one claim expected to
   // match; every other component has no dir in the fixture (actual 0), so
   // claiming a non-zero count for one of those isolates a single failure.
-  test('exits 1 when README\'s intro prose overstates a component count', () => {
+  test('exits 1 when a README\'s summary sentence overstates a component count', () => {
     const root = buildConsistencyFixture()
     writeFileSync(join(root, 'README.md'), 'Kırpılmıştır: 5 agent, 0 skill, 2 rule, 0 komut, 0 preset (test).\n')
     const { code, out } = runConsistency(root)
     assert.strictEqual(code, 1)
-    assert.ok(out.includes("README.md's intro prose claims Agent = 5, but disk has 0"), `got: ${out}`)
+    assert.ok(out.includes("README.md's summary sentence claims Agent = 5, but disk has 0"), `got: ${out}`)
   })
 
-  // Round-29 fixes for check 8's İçerik-table row regex: the old single-space
+  // Same claim, English spelling. The kit ships README.md in English with
+  // README.tr.md as its translation, so the two sentence forms ("5 agents,"
+  // vs "5 agent,") both have to be recognised — a check that only understood
+  // the Turkish form would silently stop guarding the canonical README the
+  // moment it was translated.
+  test('exits 1 on an English summary sentence overstating a component count', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(join(root, 'README.md'), 'In short: 5 agents, 0 skills, 2 rules, 0 commands, 0 presets.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes("README.md's summary sentence claims Agent = 5, but disk has 0"), `got: ${out}`)
+  })
+
+  // The translation is a second copy of every number, and a copy nothing
+  // checks is a copy that rots. Asserting the error names README.tr.md
+  // specifically pins that the check iterates both files rather than only the
+  // canonical one.
+  test('exits 1 when the Turkish README drifts even though the English one is correct', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(join(root, 'README.md'), 'In short: 0 agents, 0 skills, 2 rules, 0 commands, 0 presets.\n')
+    writeFileSync(join(root, 'README.tr.md'), 'Kısaca: 9 agent, 0 skill, 2 rule, 0 komut, 0 preset.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes("README.tr.md's summary sentence claims Agent = 9, but disk has 0"), `got: ${out}`)
+    assert.ok(!out.includes("README.md's summary sentence"), `the correct English file must not be flagged, got: ${out}`)
+  })
+
+  // Round-29 fixes for check 8's count-table row regex: the old single-space
   // pattern matched 0 rows the moment an editor column-aligned the table, and
   // with 0 matches the check compared nothing — silently disabled, the exact
   // class checks 4/10/11 already fail loudly on.
-  test('exits 1 on İçerik-table drift even when the table is column-aligned (round-29 fix)', () => {
+  test('exits 1 on count-table drift even when the table is column-aligned (round-29 fix)', () => {
     const root = buildConsistencyFixture()
     writeFileSync(
       join(root, 'README.md'),
-      'The eval pins 3 realistic requests.\n\n| | Sayı | Notlar |\n| --- | --- | --- |\n| Agent      | 5   | padded columns |\n'
+      'The eval pins 3 realistic requests.\n\nKısaca: 0 agent, 0 skill, 2 rule, 0 komut, 0 preset.\n\n| | Sayı | Notlar |\n| --- | --- | --- |\n| Agent      | 5   | padded columns |\n'
     )
     const { code, out } = runConsistency(root)
     assert.strictEqual(code, 1)
-    assert.ok(out.includes("README.md's İçerik table claims Agent = 5, but disk has 0"), `got: ${out}`)
+    assert.ok(out.includes("README.md's count table claims Agent = 5, but disk has 0"), `got: ${out}`)
+  })
+
+  // The English table labels its command row "Command" and its header "Count";
+  // both spellings have to reach the same disk-derived number.
+  test('exits 1 on English count-table drift (Command/Count labels)', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(
+      join(root, 'README.md'),
+      'The eval pins 3 realistic requests.\n\nIn short: 0 agents, 0 skills, 2 rules, 0 commands, 0 presets.\n\n| | Count | Notes |\n| --- | --- | --- |\n| Command | 4 | drifted |\n'
+    )
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes("README.md's count table claims Command = 4, but disk has 0"), `got: ${out}`)
+  })
+
+  // Deleting the summary sentence would leave the table as the only guarded
+  // copy — the check has to notice its own second input disappearing rather
+  // than quietly halving its coverage.
+  test('exits 1 when a count table has no summary sentence to cross-check', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(
+      join(root, 'README.md'),
+      'The eval pins 3 realistic requests.\n\n| | Count | Notes |\n| --- | --- | --- |\n| Rule | 2 | correct |\n'
+    )
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('no summary sentence'), `got: ${out}`)
   })
 
   test('exits 1 when the İçerik header exists but no count row parses (regex drift guard, round-29)', () => {
@@ -2434,6 +2575,122 @@ describe('check-consistency.ts drift detection', () => {
     const { code, out } = runConsistency(root)
     assert.strictEqual(code, 1)
     assert.ok(out.includes('parsed 0 count rows'), `expected the silently-disabled guard to fire, got: ${out}`)
+  })
+
+  // Check 9's section regex had no end-of-string terminator, and the
+  // Lazy-load list is the last paragraph in the real global-CLAUDE.md — so the
+  // match failed and the whole agent_docs cross-check skipped in silence.
+  // Found in the 2026-08 pre-release audit. These two tests pin that it is
+  // live: one that the comparison actually happens, one that a regex drift
+  // fails loudly instead of going quiet again.
+  test('detects a Lazy-load docs list that names a nonexistent agent_docs file', () => {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'agent_docs'), { recursive: true })
+    writeFileSync(join(root, 'agent_docs', 'architecture.md'), '# arch\n')
+    // No trailing blank line: the list is the last thing in the file, exactly
+    // as in the shipped global-CLAUDE.md.
+    writeFileSync(join(root, 'global-CLAUDE.md'), 'Lazy-load docs (read on demand): architecture | ghost-doc')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('names doc(s) not in agent_docs/: ghost-doc'), `got: ${out}`)
+  })
+
+  test('fails loudly if the Lazy-load docs section stops parsing', () => {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'agent_docs'), { recursive: true })
+    writeFileSync(join(root, 'agent_docs', 'architecture.md'), '# arch\n')
+    // Heading present, but no colon anywhere after it for the regex to anchor on.
+    writeFileSync(join(root, 'global-CLAUDE.md'), 'Lazy-load docs are listed elsewhere now')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('silently disabled'), `got: ${out}`)
+  })
+
+  // Check 13. Agents and skills point at deep docs with backticked paths, not
+  // Markdown links, so check-links.ts never saw them — a typo shipped silently
+  // and only surfaced as a failed lookup on a user's machine.
+  test('detects a dangling agent_docs reference in an agent body', () => {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'agents'), { recursive: true })
+    writeFileSync(join(root, 'agents', 'bug-hunter.md'), 'See `agent_docs/error-handling.md` for detail.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('references `agent_docs/error-handling.md`, which does not exist'), `got: ${out}`)
+  })
+
+  test('ignores a path mentioned in prose rather than backticks', () => {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'agents'), { recursive: true })
+    writeFileSync(join(root, 'agents', 'bug-hunter.md'), 'Deep detail lives under agent_docs/whatever.md somewhere.\n')
+    const { code } = runConsistency(root)
+    assert.strictEqual(code, 0)
+  })
+
+  // A `~/.claude/agent_docs/…` path resolves for a copy install and is dead
+  // for a plugin install, where the kit lives in the plugin cache. This is the
+  // exact form that had to be removed from two commands and an agent when the
+  // plugin was added; nothing stopped it coming back.
+  test('detects a hardcoded ~/.claude path that breaks plugin installs', () => {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'commands'), { recursive: true })
+    writeFileSync(join(root, 'commands', 'guide.md'), 'Read `~/.claude/agents/ROUTING.md` and summarize.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('dead in a plugin install'), `got: ${out}`)
+  })
+
+  test('allows ~/.claude/rules/ — an install target, not a content reference', () => {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'skills', 'kit-setup'), { recursive: true })
+    writeFileSync(join(root, 'skills', 'kit-setup', 'SKILL.md'), 'This writes to `~/.claude/rules/`.\n')
+    const { code } = runConsistency(root)
+    assert.strictEqual(code, 0)
+  })
+
+  // Check 13b. Always-loaded prose promises "N stacks" of build commands; the
+  // table it points at is edited independently and the number was hand-typed.
+  test('detects a stack count that no longer matches stack-commands.md', () => {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'agent_docs'), { recursive: true })
+    writeFileSync(
+      join(root, 'agent_docs', 'stack-commands.md'),
+      '| Stack | Test |\n| --- | --- |\n| Go | go test |\n| Rust | cargo test |\n'
+    )
+    writeFileSync(join(root, 'global-CLAUDE.md'), 'Exact commands (18 stacks, targeted flags): read stack-commands.md')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('claims "18 stacks" but agent_docs/stack-commands.md has 2 rows'), `got: ${out}`)
+  })
+
+  // Check 14. The slug appears in ~19 hand-typed places. A stale one after a
+  // rename sends every new user's `/plugin marketplace add` to a 404, and
+  // nothing on this side would notice.
+  test('detects a GitHub link pointing at a different repo than package.json', () => {
+    const root = buildConsistencyFixture()
+    // Patch, don't replace: the fixture's package.json test script has to keep
+    // matching the CI workflow it also generated, or check 4 fires instead.
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+    pkg.repository = { type: 'git', url: 'git+https://github.com/owner/kit.git' }
+    writeFileSync(join(root, 'package.json'), JSON.stringify(pkg))
+    writeFileSync(join(root, 'README.md'), 'Install: `/plugin marketplace add https://github.com/oldowner/kit`\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('links to github.com/oldowner/kit'), `got: ${out}`)
+  })
+
+  test('does not flag third-party GitHub links as repo-slug drift', () => {
+    const root = buildConsistencyFixture()
+    // Patch, don't replace: the fixture's package.json test script has to keep
+    // matching the CI workflow it also generated, or check 4 fires instead.
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+    pkg.repository = { type: 'git', url: 'git+https://github.com/owner/kit.git' }
+    writeFileSync(join(root, 'package.json'), JSON.stringify(pkg))
+    // A link to Anthropic's docs or a pinned action is not this repo's slug and
+    // must survive — the check would be useless if it forced every outbound
+    // link to be rewritten.
+    writeFileSync(join(root, 'README.md'), 'See https://github.com/anthropics/claude-code and github.com/owner/kit\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 0, out)
   })
 
   test('passes when settings-template.json/SECURITY.md are absent from the fixture root', () => {

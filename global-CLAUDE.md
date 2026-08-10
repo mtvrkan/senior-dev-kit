@@ -1,5 +1,6 @@
-<!-- SCOPE: global — installed to ~/.claude/CLAUDE.md (see README.md)
-     Purpose: applies to ALL Claude Code sessions across every project
+<!-- SCOPE: global — applies to ALL Claude Code sessions across every project.
+     Delivered either as a managed block in ~/.claude/CLAUDE.md (scripts/install.mjs)
+     or via the plugin's SessionStart hook (scripts/session-context.mjs). See README.md.
      Per-project file: presets/generic/fallback/CLAUDE.md → PROJECT/CLAUDE.md -->
 
 # Global Claude Senior Protocol v4.0
@@ -45,7 +46,7 @@ live-incident language (prod down, outage, "users can't...") → `incident-respo
 
 Everything else: delegate by agent description — each agent's frontmatter states its scope and
 model tier. Full decision tree, tier map, and EN+TR trigger phrases:
-`~/.claude/agents/ROUTING.md` (read on demand, not preloaded).
+`agents/ROUTING.md` under KIT ROOT (read on demand, not preloaded).
 
 AMBIGUITY: >80% clear → act | 50-80% → state assumption + act | <50% → ask ONCE specifically
 Stack trace present → bug-hunter, no clarification needed.
@@ -69,7 +70,7 @@ Tier 1+: run once per session (skip missing, never guess):
 
 Build: TEST_CMD | LINT_CMD | BUILD_CMD | PKG_MANAGER | ARCH | CONVENTIONS. Mark UNKNOWN if undetectable.
 Exact per-stack test/lint/build/type-check commands (18 stacks, targeted-test flags):
-read `~/.claude/agent_docs/stack-commands.md` the first time a command is actually needed.
+read `agent_docs/stack-commands.md` the first time a command is actually needed.
 
 Protected patterns (Tier 3 always): middleware.ts|auth.ts|app/api/ (Next.js) |
 AuthModule|Guards (NestJS) | settings.py|urls.py (Django) | SecurityConfig (Spring) |
@@ -168,6 +169,11 @@ manually Read a rule file to "load" it: injection is automatic, once per session
 
 Deterministic enforcement detail (what's harness-blocked vs. prompt discipline only):
 `rules/000-security.md`'s PROTECTED FILES section (also always-loaded).
+
+KIT ROOT — every kit-internal path below (`agent_docs/…`, `agents/ROUTING.md`, `rules/…`) is
+relative to where this kit is installed, never to the project being worked on: `~/.claude/` for a
+copy install, or the plugin directory for a plugin install (its SessionStart hook prints the
+absolute path). If a kit path won't resolve, resolve it under KIT ROOT before giving up.
 
 Lazy-load docs (all under agent_docs/, read on demand): architecture | design-system |
 testing-strategy | security-protocols | api-design-patterns | seo-patterns |

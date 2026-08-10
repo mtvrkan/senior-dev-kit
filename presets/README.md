@@ -15,14 +15,17 @@ presets/<category>/<name>/
 └── compact.md   ← 7-15 line summary — for composing multiple stacks
 ```
 
-Kept stacks: `web/nextjs-saas`, `web/react-vite`, `backend/node-express`,
+Shipped stacks: `web/nextjs-saas`, `web/react-vite`, `backend/node-express`,
 `backend/nestjs`, `backend/fastapi`, `orm/prisma`, `database/postgres`,
 `infrastructure/docker`, `generic/fallback`.
 
-Actively-used stacks with no dedicated preset yet (add one on the first real
-project, not speculatively — use `generic/fallback` until then): Unity/C#,
-Vue/Vite, Flutter, React Native, Kotlin, Swift, Java, PHP, MongoDB,
-Firebase/Supabase, Nginx/Coolify.
+**Why the list is short.** A preset is only worth shipping once someone has run
+a real project against it — an unverified preset is a file that drifts and
+gives Claude confidently wrong conventions. If your stack isn't listed, use
+`generic/fallback`, and open a PR with a preset once you've used it in anger.
+Stacks contributors have asked about but that have no verified preset yet:
+Vue/Vite, Flutter, React Native, Kotlin, Swift, Java, PHP, Unity/C#, MongoDB,
+Firebase/Supabase, Django, Go.
 
 ## The `generic/` category
 

@@ -4,8 +4,8 @@ description: List all installed Senior Dev Kit skills and when each one auto-tri
 
 # /skills-guide
 
-Read every `SKILL.md` under `~/.claude/skills/*/` (or `skills/*/SKILL.md` in the kit repo if
-that path doesn't exist) and summarize for the user: each skill's name, its `description`,
+Read every `skills/*/SKILL.md` under KIT ROOT (`~/.claude/` for a copy install, the plugin
+directory for a plugin install) and summarize for the user: each skill's name, its `description`,
 and its `when_to_use` auto-trigger condition.
 
 Keep the summary to one table (skill | auto-triggers when), grouped loosely by purpose (bug /

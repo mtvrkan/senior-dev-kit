@@ -42,48 +42,22 @@ app.use('/api/v1', (req, res, next) => {
 
 ## Migration guide template
 
-Create `docs/api-migration-v[N]-to-v[N+1].md`:
+Create `docs/api-migration-v[N]-to-v[N+1].md` with the following sections. Shown as an outline
+rather than a copy-paste block because the template itself contains fenced JSON examples, and
+nesting those inside an outer fence produces the mangled `` ```text `` markers this file carried
+until the 2026-08 audit.
 
-```markdown
-# API Migration: v[N] → v[N+1]
-
-## Summary of breaking changes
-
-| Endpoint | Type | Before | After |
-|----------|------|--------|-------|
-| GET /api/v1/users/:id | Field renamed | `name` | `firstName` + `lastName` |
-
-## Detailed changes
-
-### GET /users/:id
-
-**Before (v[N]):**
-```json
-{ "name": "John Doe" }
-```text
-
-**After (v[N+1]):**
-
-```json
-{ "firstName": "John", "lastName": "Doe" }
-```text
-
-**How to migrate:**
-Replace all usages of `user.name` with `` `${user.firstName} ${user.lastName}` ``
-
-## Timeline
-
-| Date | Event |
-|------|-------|
-| [today] | v[N+1] available |
-| [+2 weeks] | Deprecation headers added to v[N] |
-| [+6 months] | v[N] sunset (removed) |
-
-## Questions?
-
-Open an issue or contact the API team.
-
-```
+- **`# API Migration: v[N] → v[N+1]`**
+- **`## Summary of breaking changes`** — one table: `Endpoint | Type | Before | After`.
+  Example row: `GET /api/v1/users/:id | Field renamed | name | firstName + lastName`
+- **`## Detailed changes`** — one `### METHOD /path` subsection per changed endpoint, each with
+  a **Before (v[N])** and an **After (v[N+1])** JSON block:
+  `{ "name": "John Doe" }` → `{ "firstName": "John", "lastName": "Doe" }`
+- **`**How to migrate:**`** — the literal find-and-replace a consumer performs, e.g. replace
+  `user.name` with `` `${user.firstName} ${user.lastName}` ``
+- **`## Timeline`** — table of `Date | Event`: v[N+1] available (today), deprecation headers on
+  v[N] (+2 weeks), v[N] sunset (+6 months)
+- **`## Questions?`** — where to open an issue or reach the API team
 
 ---
 

@@ -1,6 +1,9 @@
 # senior-dev-kit — repo CLAUDE.md
 
-This is a personal Claude Code config repo (not a public distribution — see README.md).
+This is a **publicly distributed** Claude Code config kit (MIT, installable as a plugin —
+see README.md and CONTRIBUTING.md). Every change ships to strangers: assume no shared context,
+no ability to ask the maintainer, and a machine that is not this one.
+
 `global-CLAUDE.md` and `presets/*/CLAUDE.md` are templates installed *into* `~/.claude/` or a
 project's `.claude/` — don't confuse them with this file, which is scoped to editing the kit
 itself.
@@ -10,8 +13,10 @@ itself.
 - Test: `npm test` (targeted: `node --experimental-strip-types --test scripts/<file>.test.ts`)
 - Validate frontmatter/routing: `npm run validate`
 - Full gate (run before considering any change done): `npm run check`
-  — runs test + validate + link-check + consistency-check + routing-eval + typecheck + lint + markdown-lint
+  — runs test, validate, link-check, consistency-check, routing-eval, check-plugin,
+  typecheck, lint, markdown-lint
 - Type-check only: `npm run typecheck` | Lint only: `npm run lint`
+- Installer dry run: `node scripts/install.mjs --dry-run`
 
 Never mark a task done without running `npm run check` (or the narrowest subset that covers
 the change) and fixing failures — don't report success on unverified changes.
@@ -24,8 +29,15 @@ the change) and fixing failures — don't report success on unverified changes.
   native key; NOT Cursor's `globs:`) for lazy path-scoped loading. The two files without a
   `paths:` field (000, 001) load unconditionally every session (see
   `global-CLAUDE.md` RULES REFERENCE).
-- Kept presets are limited to actively-used stacks (see `presets/README.md`) — don't add a new
-  preset speculatively; add one when actually starting a project on that stack.
+- Kept presets are limited to stacks someone actually ships on (see `presets/README.md`) —
+  don't add a new preset speculatively; add one when a real project needs it.
+- `README.md` (English) is canonical; `README.tr.md` is its translation. Change one and the
+  other drifts — `scripts/check-consistency.ts` compares the count claims in both, but not the
+  prose. Update both in the same commit.
+- Anything installable has two delivery paths and both must keep working: the plugin
+  (`.claude-plugin/`, resolves bundled docs via `${CLAUDE_PLUGIN_ROOT}`) and
+  `scripts/install.mjs` (copies into `~/.claude/`). A path reference that only resolves under
+  one of them is a bug — `npm run check-plugin` catches the common shapes.
 - **Accepted tradeoff (round-18 audit, do not re-flag):** `scripts/**/*.ts` has no automated
   line-budget guard, unlike agent bodies (150 lines), skill bodies (20 lines), and the
   always-loaded files — `global-CLAUDE.md` + `rules/000-security.md` + `rules/001-conventions.md`,

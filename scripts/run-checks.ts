@@ -8,7 +8,7 @@ import { spawnSync } from 'child_process'
 import { fileURLToPath } from 'url'
 import { realpathSync } from 'fs'
 
-export const CHECK_STEPS = ['test', 'validate', 'link-check', 'consistency-check', 'routing-eval', 'typecheck', 'lint', 'markdown-lint']
+export const CHECK_STEPS = ['test', 'validate', 'link-check', 'consistency-check', 'routing-eval', 'check-plugin', 'typecheck', 'lint', 'markdown-lint']
 
 export interface StepResult {
   step: string

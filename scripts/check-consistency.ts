@@ -17,6 +17,7 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'
 import { findPresetDirs } from './lib/presets.ts'
+import { parseArgs, resolveComponents } from './lib/install-core.mjs'
 import { CHECK_STEPS } from './run-checks.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -25,10 +26,16 @@ const read = (p: string) => readFileSync(join(ROOT, p), 'utf8')
 
 const errors: string[] = []
 
+// Every count claim below is made twice — once in the canonical English
+// README.md and once in its Turkish translation README.tr.md. Checking only
+// one of them would let the other rot into a document that confidently states
+// numbers the repo hasn't had for months, which is worse than no translation.
+const READMES = ['README.md', 'README.tr.md'].filter(f => existsSync(join(ROOT, f)))
+
 // --- 1. golden-prompts.json count === README's stated prompt count ---
 const goldenPrompts = JSON.parse(read('eval/golden-prompts.json')).prompts
 const actualPromptCount = goldenPrompts.length
-for (const readme of ['README.md']) {
+for (const readme of READMES) {
   const text = read(readme)
   const claims = [...text.matchAll(/pins (\d+) realistic requests/g), ...text.matchAll(/(\d+) gerçekçi isteği/g)]
   for (const m of claims) {
@@ -54,10 +61,19 @@ const workflowFiles: string[] = []
 // of no-opping like checks 6-11's documented fixture behavior.
 if (existsSync(join(ROOT, '.github/workflows'))) findYamlFiles('.github/workflows', workflowFiles)
 
+// The installer has its own, lower Node floor (see check 2c): it runs on a new
+// user's Node, not on the Node 24 the TypeScript validators need. That floor is
+// pinned by exactly one CI job, so it is excluded here rather than counted as
+// drift — otherwise adding the job that PROVES the README's claim would fail
+// the check that guards it.
+const pkgJsonForNode = existsSync(join(ROOT, 'package.json')) ? JSON.parse(read('package.json')) : {}
+const installerNodeFloor: string | undefined = pkgJsonForNode.seniorDevKit?.installerNodeFloor
 const nodeVersionsByFile = new Map<string, Set<string>>()
 for (const file of workflowFiles) {
   const text = read(file)
-  const versions = new Set([...text.matchAll(/node-version:\s*['"]?(\d+)/g)].map(m => m[1]))
+  const versions = new Set(
+    [...text.matchAll(/node-version:\s*['"]?(\d+)/g)].map(m => m[1]).filter(v => v !== installerNodeFloor)
+  )
   if (versions.size > 0) nodeVersionsByFile.set(file, versions)
 }
 const allVersions = new Set([...nodeVersionsByFile.values()].flatMap(s => [...s]))
@@ -84,6 +100,81 @@ if (allVersions.size === 1 && existsSync(join(ROOT, 'package.json'))) {
     const floorMatch = engineNode.match(/(\d+)/)
     if (!floorMatch || floorMatch[1] !== ciVersion) {
       errors.push(`package.json engines.node is "${engineNode}" but CI workflows pin node-version "${ciVersion}" — align the engines floor with CI`)
+    }
+  }
+}
+
+// --- 2c. The installer's Node floor is one value, claimed once, proven in CI ---
+// "Requires Node.js 18+" was the one load-bearing claim in this repo with
+// nothing behind it: CI only ever ran Node 24, `engines.node` said >=24, and
+// the floor existed as prose in two READMEs and a comment. A user on Node 18
+// following the README was running an untested path. The floor is now declared
+// once in package.json; this check binds every restatement of it to that value
+// and refuses to let the CI job that proves it disappear.
+if (installerNodeFloor !== undefined) {
+  if (!/^\d+$/.test(installerNodeFloor)) {
+    errors.push(`package.json seniorDevKit.installerNodeFloor is "${installerNodeFloor}" — expected a bare major version like "18"`)
+  }
+  // A floor equal to the CI version would make the exemption in check 2 strip
+  // every node-version in the repo, silently disabling that check instead of
+  // narrowing it.
+  const ciVersions = new Set([...nodeVersionsByFile.values()].flatMap(s => [...s]))
+  if (ciVersions.size === 0 && workflowFiles.length > 0) {
+    errors.push(
+      `every node-version in .github/workflows equals seniorDevKit.installerNodeFloor "${installerNodeFloor}", ` +
+        `which leaves check 2 with nothing to compare — drop the floor declaration or raise the toolchain pin`
+    )
+  }
+
+  // The job that turns the claim into a fact. Named by what it does, not by its
+  // job id, so renaming the job is fine and deleting it is not.
+  const proofJob = workflowFiles.find(f => {
+    const text = read(f)
+    return text.includes('scripts/install.mjs') && new RegExp(`node-version:\\s*['"]?${installerNodeFloor}\\b`).test(text)
+  })
+  if (workflowFiles.length > 0 && !proofJob) {
+    errors.push(
+      `no CI job pins node-version "${installerNodeFloor}" and runs scripts/install.mjs — ` +
+        `the documented installer floor would go back to being an untested claim`
+    )
+  }
+
+  // Both READMEs state it in prose ("Node.js 18+" / "Node.js 18+ gerekir").
+  for (const readme of READMES) {
+    const claims = [...read(readme).matchAll(/Node\.js\s+(\d+)\+/g)].map(m => m[1])
+    if (claims.length === 0) {
+      errors.push(`${readme} states no "Node.js N+" requirement for the installer`)
+    }
+    for (const claimed of claims) {
+      if (claimed !== installerNodeFloor) {
+        errors.push(`${readme} claims "Node.js ${claimed}+" but seniorDevKit.installerNodeFloor is "${installerNodeFloor}"`)
+      }
+    }
+  }
+
+  // …and so does the module that has to keep honouring it. Its header explains
+  // why the installer is plain JavaScript; the reason is the floor.
+  const installCorePath = 'scripts/lib/install-core.mjs'
+  if (existsSync(join(ROOT, installCorePath))) {
+    const header = read(installCorePath).slice(0, 2000)
+    if (!new RegExp(`\\(${installerNodeFloor}\\+\\)`).test(header)) {
+      errors.push(
+        `${installCorePath}'s header does not mention the "(${installerNodeFloor}+)" floor — ` +
+          `it is the file that explains why the installer avoids newer syntax`
+      )
+    }
+  }
+
+  // CONTRIBUTING states the contributor toolchain floor, which is engines.node,
+  // not this one. Two different numbers a page apart is exactly how the wrong
+  // one gets copied.
+  if (existsSync(join(ROOT, 'CONTRIBUTING.md'))) {
+    const engineFloor = String(pkgJsonForNode.engines?.node ?? '').match(/(\d+)/)?.[1]
+    const stated = [...read('CONTRIBUTING.md').matchAll(/Node\.js\s+(\d+)\+/g)].map(m => m[1])
+    for (const claimed of stated) {
+      if (engineFloor && claimed !== engineFloor) {
+        errors.push(`CONTRIBUTING.md claims "Node.js ${claimed}+" but package.json engines.node is "${pkgJsonForNode.engines?.node}"`)
+      }
     }
   }
 }
@@ -161,7 +252,7 @@ const claimPattern = /(\d+)\/(\d+)\s+(?:tests?\s+)?(?:passing|geçiyor)/gi
 // Both halves of "N/M passing" are claims — round-31 found the denominator was
 // never compared, so "1/999 passing" sailed through as long as the numerator
 // matched. Carry both and check both below.
-const testCountClaims = ['README.md'].flatMap(readme =>
+const testCountClaims = READMES.flatMap(readme =>
   [...read(readme).matchAll(claimPattern)].map(m => ({ readme, text: m[0], claimed: Number(m[1]), claimedTotal: Number(m[2]) }))
 )
 // Suite-count claim lives in the same parenthetical as the pass-count claim
@@ -170,7 +261,7 @@ const testCountClaims = ['README.md'].flatMap(readme =>
 // because nothing checked it: this guard exists specifically to close that
 // blind spot, not as a hypothetical.
 const suiteClaimPattern = /\((\d+)\s+suites?\b/gi
-const suiteCountClaims = ['README.md'].flatMap(readme =>
+const suiteCountClaims = READMES.flatMap(readme =>
   [...read(readme).matchAll(suiteClaimPattern)].map(m => ({ readme, text: m[0], claimed: Number(m[1]) }))
 )
 let actualPassCount: number | null = null
@@ -250,69 +341,84 @@ if (existsSync(join(ROOT, '.claude/settings.json')) && existsSync(join(ROOT, 'se
   }
 }
 
-// --- 8. README's "İçerik" count table === actual counts on disk ---
+// --- 8. Each README's component count table === actual counts on disk ---
 // Found by a round-17 audit agent: check 5/6 re-derive README's test-count and
 // SECURITY.md's deny-count claims from disk, but nothing re-derived this table
-// (Agent/Skill/Rule/Komut/Preset/agent_docs) — it was hand-typed and only
+// (Agent/Skill/Rule/Command/Preset/agent_docs) — it was hand-typed and only
 // correct because prior rounds happened to hand-verify it, not because
-// anything would fail if it drifted.
-let readmeCountClaims: { label: string; claimed: number; actual: number }[] = []
-if (existsSync(join(ROOT, 'README.md'))) {
-  const dirCount = (dir: string, filter: (name: string) => boolean) =>
-    existsSync(join(ROOT, dir)) ? readdirSync(join(ROOT, dir), { withFileTypes: true }).filter(e => filter(e.name)).length : 0
-  const actualCounts: Record<string, number> = {
-    Agent: dirCount('agents', n => n.endsWith('.md') && n !== 'ROUTING.md' && n !== 'README.md'),
-    Skill: existsSync(join(ROOT, 'skills'))
-      ? readdirSync(join(ROOT, 'skills'), { withFileTypes: true }).filter(e => e.isDirectory()).length
-      : 0,
-    Rule: dirCount('rules', n => n.endsWith('.md')),
-    Komut: dirCount('commands', n => n.endsWith('.md')),
-    Preset: existsSync(join(ROOT, 'presets')) ? findPresetDirs(join(ROOT, 'presets')).length : 0,
-    agent_docs: dirCount('agent_docs', n => n.endsWith('.md')),
-  }
+// anything would fail if it drifted. Runs over the English README and its
+// Turkish translation, which use different row labels ("Command"/"Komut") and
+// a different header word ("Count"/"Sayı") for the same numbers.
+const dirCount = (dir: string, filter: (name: string) => boolean) =>
+  existsSync(join(ROOT, dir)) ? readdirSync(join(ROOT, dir), { withFileTypes: true }).filter(e => filter(e.name)).length : 0
+const actualCounts: Record<string, number> = {
+  Agent: dirCount('agents', n => n.endsWith('.md') && n !== 'ROUTING.md' && n !== 'README.md'),
+  Skill: existsSync(join(ROOT, 'skills'))
+    ? readdirSync(join(ROOT, 'skills'), { withFileTypes: true }).filter(e => e.isDirectory()).length
+    : 0,
+  Rule: dirCount('rules', n => n.endsWith('.md')),
+  Command: dirCount('commands', n => n.endsWith('.md')),
+  Preset: existsSync(join(ROOT, 'presets')) ? findPresetDirs(join(ROOT, 'presets')).length : 0,
+  agent_docs: dirCount('agent_docs', n => n.endsWith('.md')),
+}
+// The Turkish table labels its command row "Komut"; both spellings count the
+// same directory, so normalize before comparing rather than duplicating the
+// actual-count map per language.
+const LABEL_ALIASES: Record<string, string> = { Komut: 'Command' }
+let readmeCountClaims: { readme: string; label: string; claimed: number; actual: number }[] = []
+for (const readme of READMES) {
+  const readmeText = read(readme)
   // Whitespace-tolerant on purpose (round-29 fix): the old single-space pattern
   // (`^\| (Agent|…) \| (\d+) \|`) matched 0 rows the moment an editor's
-  // format-table realigned the İçerik columns — and with 0 matches the loop
+  // format-table realigned the columns — and with 0 matches the loop
   // below compared nothing, silently disabling this check (the exact class
   // checks 4/10/11 already guard against loudly).
-  const rowPattern = /^\|\s*(Agent|Skill|Rule|Komut|Preset|agent_docs)\s*\|\s*(\d+)\s*\|/gm
-  const readmeText = read('README.md')
-  readmeCountClaims = [...readmeText.matchAll(rowPattern)].map(m => ({
-    label: m[1],
-    claimed: Number(m[2]),
-    actual: actualCounts[m[1]],
-  }))
+  const rowPattern = /^\|\s*(Agent|Skill|Rule|Command|Komut|Preset|agent_docs)\s*\|\s*(\d+)\s*\|/gm
+  const claims = [...readmeText.matchAll(rowPattern)].map(m => {
+    const label = LABEL_ALIASES[m[1]] ?? m[1]
+    return { readme, label, claimed: Number(m[2]), actual: actualCounts[label] }
+  })
+  readmeCountClaims = [...readmeCountClaims, ...claims]
   // Guard-the-guard (same shape as check 4's "silently disabled" error): the
-  // İçerik table's header row is the anchor — if it exists but no data row
-  // parsed, the regex has drifted from the table format, not the table from disk.
-  if (/^\|\s*\|\s*Sayı\s*\|/m.test(readmeText) && readmeCountClaims.length === 0) {
+  // table's header row is the anchor — if it exists but no data row parsed,
+  // the regex has drifted from the table format, not the table from disk.
+  const hasHeader = /^\|\s*\|\s*(Sayı|Count)\s*\|/m.test(readmeText)
+  if (hasHeader && claims.length === 0) {
     errors.push(
-      `check-consistency.ts's İçerik-table check found the table header in README.md but parsed 0 count rows — rowPattern no longer matches the table format, so this check is silently disabled instead of comparing anything`
+      `check-consistency.ts's count-table check found the table header in ${readme} but parsed 0 count rows — rowPattern no longer matches the table format, so this check is silently disabled instead of comparing anything`
     )
   }
-  for (const { label, claimed, actual } of readmeCountClaims) {
+  for (const { label, claimed, actual } of claims) {
     if (claimed !== actual) {
-      errors.push(`README.md's İçerik table claims ${label} = ${claimed}, but disk has ${actual}`)
+      errors.push(`${readme}'s count table claims ${label} = ${claimed}, but disk has ${actual}`)
     }
   }
   // The same 5 numbers also appear as a second, unrelated syntactic form: the
-  // intro paragraph's prose sentence ("12 agent, 25 skill, 11 rule, 2 komut,
-  // 12 preset"). Found live in a round-18 audit: the table-row regex above
-  // only ever matched the İçerik table, so this sentence could drift right
-  // past check 8 with the table still correct — the guard closed one syntax,
-  // not the underlying claim.
-  const proseMatch = read('README.md').match(/(\d+) agent, (\d+) skill, (\d+) rule, (\d+) komut, (\d+) preset/)
+  // summary sentence ("7 agents, 25 skills, 11 rules, 3 commands, 9 presets").
+  // Found live in a round-18 audit: the table-row regex above only ever
+  // matched the table, so this sentence could drift right past check 8 with
+  // the table still correct — the guard closed one syntax, not the underlying
+  // claim. The `s`-less alternative is the Turkish spelling; the two patterns
+  // are mutually exclusive by construction (`agent,` vs `agents,`).
+  const proseMatch =
+    readmeText.match(/(\d+) agents, (\d+) skills, (\d+) rules, (\d+) commands, (\d+) presets/) ??
+    readmeText.match(/(\d+) agent, (\d+) skill, (\d+) rule, (\d+) komut, (\d+) preset/)
+  if (hasHeader && !proseMatch) {
+    errors.push(
+      `${readme} has a component count table but no summary sentence for check-consistency.ts to cross-check it against — restore the "N agents, N skills, …" line or this second syntax goes unguarded`
+    )
+  }
   if (proseMatch) {
     const proseClaims: [string, number][] = [
       ['Agent', Number(proseMatch[1])],
       ['Skill', Number(proseMatch[2])],
       ['Rule', Number(proseMatch[3])],
-      ['Komut', Number(proseMatch[4])],
+      ['Command', Number(proseMatch[4])],
       ['Preset', Number(proseMatch[5])],
     ]
     for (const [label, claimed] of proseClaims) {
       if (claimed !== actualCounts[label]) {
-        errors.push(`README.md's intro prose claims ${label} = ${claimed}, but disk has ${actualCounts[label]}`)
+        errors.push(`${readme}'s summary sentence claims ${label} = ${claimed}, but disk has ${actualCounts[label]}`)
       }
     }
   }
@@ -326,7 +432,22 @@ if (existsSync(join(ROOT, 'README.md'))) {
 let lazyDocsListChecked = false
 if (existsSync(join(ROOT, 'global-CLAUDE.md')) && existsSync(join(ROOT, 'agent_docs'))) {
   const globalClaude = read('global-CLAUDE.md')
-  const sectionMatch = globalClaude.match(/Lazy-load docs[\s\S]*?:([\s\S]*?)(?:\n\n|\n---|\n##)/)
+  // `|$` is load-bearing, not defensive padding. Without it this check was
+  // dead: the Lazy-load list is the last paragraph in global-CLAUDE.md, so
+  // there is no trailing `\n\n`, `\n---` or `\n##` to close the section, the
+  // match failed, and the whole check skipped in silence — for however long
+  // that list has been last in the file. Found in the 2026-08 pre-release
+  // audit by noticing its ✓ line missing from a passing run, which is exactly
+  // the "silently disabled" failure the guard below now makes impossible.
+  const sectionMatch = globalClaude.match(/Lazy-load docs[\s\S]*?:([\s\S]*?)(?:\n\n|\n---|\n##|$)/)
+  // Guard-the-guard, same shape as checks 4/8/11: the heading is the anchor.
+  // If it is present but the section did not parse, the regex has drifted from
+  // the prose and this check is off, not passing.
+  if (!sectionMatch && globalClaude.includes('Lazy-load docs')) {
+    errors.push(
+      `check-consistency.ts found "Lazy-load docs" in global-CLAUDE.md but could not parse the list after it — the section regex has drifted, so the agent_docs cross-check is silently disabled instead of comparing anything`
+    )
+  }
   if (sectionMatch) {
     lazyDocsListChecked = true
     const namedDocs = new Set(
@@ -533,7 +654,11 @@ if (existsSync(join(ROOT, 'rules/900-performance.md'))) {
 // a scripts/ dir) so fixture roots with a deliberately minimal package.json
 // aren't penalized for "missing" scripts they never intended to have.
 if (existsSync(join(ROOT, 'scripts', 'run-checks.ts')) && existsSync(join(ROOT, 'package.json'))) {
-  const EXCLUDED_FROM_GATE = ['check', 'deny-cost']
+  // 'check' is the gate itself; 'deny-cost' is a reporting CLI already exercised
+  // by deny-cost.test.ts inside 'test'; 'setup' is the end-user installer, which
+  // writes to ~/.claude and must never run as part of a validation gate — its
+  // logic is covered by install.test.mjs, also inside 'test'.
+  const EXCLUDED_FROM_GATE = ['check', 'deny-cost', 'setup']
   const pkgScripts = Object.keys(JSON.parse(read('package.json')).scripts ?? {})
   const missingFromPkg = CHECK_STEPS.filter(step => !pkgScripts.includes(step))
   if (missingFromPkg.length > 0) {
@@ -546,6 +671,236 @@ if (existsSync(join(ROOT, 'scripts', 'run-checks.ts')) && existsSync(join(ROOT, 
     errors.push(
       `package.json has script(s) not covered by scripts/run-checks.ts's CHECK_STEPS and not in its documented exclusion list: ${missingFromGate.join(', ')} — add to CHECK_STEPS or to the exclusion list with a reason`
     )
+  }
+}
+
+// --- 13. Kit-internal path references in agents/skills/commands resolve -----
+// Two failure modes, one scan, neither previously guarded:
+//
+//   (a) A dangling reference. Agents and skills point at deep documentation
+//       with plain backticked paths (`agent_docs/error-handling-patterns.md`),
+//       not Markdown links — so check-links.ts, which only resolves real
+//       [text](path) syntax, has never seen them. Check 9 pins the *set* of
+//       agent_docs files against global-CLAUDE.md's list, which catches a
+//       rename, but a typo in one of the ~30 references in agent bodies would
+//       ship silently and only surface as Claude failing to find a file
+//       mid-task, on a user's machine.
+//
+//   (b) A path that only resolves in one install mode. `~/.claude/agent_docs/…`
+//       is correct for a copy install and dead for a plugin install, where the
+//       kit lives in the plugin cache. global-CLAUDE.md's KIT ROOT rule exists
+//       precisely so these are written install-mode-agnostically; nothing
+//       stopped the absolute form from creeping back in.
+const KIT_REF_DIRS = ['agents', 'skills', 'commands']
+let kitRefsChecked = 0
+function collectMarkdown(dir: string, out: string[]): void {
+  if (!existsSync(join(ROOT, dir))) return
+  for (const entry of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
+    const rel = `${dir}/${entry.name}`
+    if (entry.isDirectory()) collectMarkdown(rel, out)
+    else if (entry.name.endsWith('.md')) out.push(rel)
+  }
+}
+const kitRefFiles: string[] = []
+for (const dir of KIT_REF_DIRS) collectMarkdown(dir, kitRefFiles)
+for (const file of kitRefFiles) {
+  const text = read(file)
+  // Only inside backticks: prose like "the agent_docs/ directory" and this
+  // very comment's wording must not be mistaken for a file reference.
+  for (const m of text.matchAll(/`(agent_docs\/[a-z0-9-]+\.md|rules\/\d{3}-[a-z-]+\.md)`/g)) {
+    kitRefsChecked++
+    if (!existsSync(join(ROOT, m[1]))) {
+      errors.push(`${file} references \`${m[1]}\`, which does not exist on disk`)
+    }
+  }
+  // `rules` is deliberately absent from this list. `~/.claude/rules/` is the
+  // one kit directory whose absolute path is legitimately load-bearing: it is
+  // the settings location Claude Code auto-loads path-scoped rules from, and
+  // the reason kit-setup exists at all. kit-doctor and kit-setup both have to
+  // name it as an install *target*, which is the opposite of the dead
+  // *content* reference this check is looking for, and the two are not
+  // distinguishable syntactically. Rules are never meant to be read by path
+  // anyway (global-CLAUDE.md: "Never manually Read a rule file"), so a stale
+  // rules path costs a wrong sentence, not a failed lookup.
+  for (const m of text.matchAll(/~\/\.claude\/(agent_docs|agents|skills|commands)\//g)) {
+    errors.push(
+      `${file} hardcodes "${m[0]}" — that path is dead in a plugin install. Write it relative to KIT ROOT ` +
+        `(see global-CLAUDE.md's KIT ROOT rule) so both install modes resolve it.`
+    )
+  }
+}
+
+// --- 13b. global-CLAUDE.md's stack count === rows in stack-commands.md ------
+// Always-loaded prose promises "18 stacks" of exact build commands. The table
+// it points at is edited independently, and the number is hand-typed — the
+// same class as checks 8/9. Cheap to derive: count the table's data rows.
+let stackRowCount: number | null = null
+if (existsSync(join(ROOT, 'global-CLAUDE.md')) && existsSync(join(ROOT, 'agent_docs/stack-commands.md'))) {
+  const claim = read('global-CLAUDE.md').match(/\((\d+) stacks/)
+  if (claim) {
+    const table = read('agent_docs/stack-commands.md')
+    // Data rows only: a leading `|`, and not the header or the `| --- |` divider.
+    stackRowCount = table
+      .split('\n')
+      .filter(l => /^\|/.test(l) && !/^\|\s*-{3}/.test(l) && !/^\|\s*Stack\s*\|/.test(l)).length
+    if (Number(claim[1]) !== stackRowCount) {
+      errors.push(
+        `global-CLAUDE.md claims "${claim[1]} stacks" but agent_docs/stack-commands.md has ${stackRowCount} rows`
+      )
+    }
+  }
+}
+
+// --- 14. Every github.com/<owner>/<repo> reference names the same repo ------
+// The slug is hand-typed in ~19 places across two manifests, two READMEs,
+// package.json, SECURITY.md, the CHANGELOG and two issue templates — the same
+// "hand-copied value, no single source of truth" class checks 8/9/11b/12
+// already close for counts, doc lists, budgets and gate steps. Getting one
+// wrong is not cosmetic here: the README's `/plugin marketplace add <slug>`
+// line and the marketplace entry's source are how a stranger installs the kit,
+// and a stale slug after a rename or transfer sends them to a 404 with no
+// signal on this side. package.json's repository.url is treated as canonical
+// because npm, GitHub's UI and Dependabot all already read it.
+let repoSlug: string | null = null
+let slugRefCount = 0
+if (existsSync(join(ROOT, 'package.json'))) {
+  const repoUrl: string = JSON.parse(read('package.json')).repository?.url ?? ''
+  const canonical = repoUrl.match(/github\.com[/:]([\w.-]+\/[\w.-]+?)(?:\.git)?$/)
+  if (canonical) {
+    repoSlug = canonical[1]
+    const slugFiles = [
+      'README.md', 'README.tr.md', 'SECURITY.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
+      'CODE_OF_CONDUCT.md', 'package.json', '.claude-plugin/plugin.json',
+      '.claude-plugin/marketplace.json', '.github/ISSUE_TEMPLATE/config.yml',
+    ].filter(f => existsSync(join(ROOT, f)))
+    for (const file of slugFiles) {
+      // Greedy `[\w.-]+` twice, then trim, rather than a lookahead listing the
+      // characters a URL may end on: the lookahead form silently matched
+      // nothing when a link was closed by a backtick, which is how the kit's
+      // own install command is written. A check that skips the one line it
+      // most needs to guard is worse than no check.
+      const [canonOwner, canonName] = repoSlug.split('/')
+      for (const m of read(file).matchAll(/github\.com\/([\w.-]+\/[\w.-]+)/g)) {
+        const slug = m[1].replace(/\.git$/, '').replace(/\.+$/, '')
+        const [owner, name] = slug.split('/')
+        // A link is "about this repo" when it shares either half of the slug.
+        // That catches both rename shapes — the owner changed (transfer) or the
+        // repo name changed — while leaving genuine third-party links alone
+        // (Anthropic docs, pinned actions, tool homepages share neither half).
+        // Owner-or-name rather than exact-prefix: requiring the owner to match
+        // would make the check blind to exactly the transfer it exists to catch.
+        if (owner !== canonOwner && name !== canonName) continue
+        slugRefCount++
+        if (slug !== repoSlug) {
+          errors.push(
+            `${file} links to github.com/${slug} but package.json's repository.url says this repo is ${repoSlug} — one of them is stale`
+          )
+        }
+      }
+    }
+  } else if (repoUrl) {
+    errors.push(`package.json repository.url ("${repoUrl}") is not a parseable github.com URL — the slug cross-check is disabled`)
+  }
+}
+
+// --- 15. Everything the docs tell a user to TYPE actually exists ------------
+// Checks 1-14 all guard numbers. The other half of what these documents assert
+// is executable — `npm run <script>`, `node scripts/install.mjs --<flag>`,
+// `/slash-command` — and none of it was verified by anything. Renaming a script,
+// a flag or a skill leaves the docs confidently instructing a stranger to run a
+// command that errors out, which is a worse first five minutes than a wrong
+// count. Scoped by glob to the documents that describe THIS repo: preset and
+// rule files also contain `npm run …`, but those describe the user's project.
+// Excluded for the same structural reason `presets/*/CLAUDE.md` never enters
+// this list: it is a template dropped into someone else's empty repo, so its
+// `npm run …` lines and its `/team-bootstrap` reference describe the project it
+// generates, not this one.
+const TEMPLATE_DOCS = new Set(['PROJECT-BOOTSTRAP.md'])
+const REPO_DOC_GLOBS: string[] = [
+  ...readdirSync(ROOT).filter(f => f.endsWith('.md') && !TEMPLATE_DOCS.has(f)),
+  ...(existsSync(join(ROOT, 'presets/README.md')) ? ['presets/README.md'] : []),
+  ...(existsSync(join(ROOT, 'skills'))
+    ? readdirSync(join(ROOT, 'skills'))
+        .filter(d => d.startsWith('kit-') && existsSync(join(ROOT, 'skills', d, 'SKILL.md')))
+        .map(d => `skills/${d}/SKILL.md`)
+    : []),
+  ...(existsSync(join(ROOT, 'commands'))
+    ? readdirSync(join(ROOT, 'commands')).filter(f => f.endsWith('.md')).map(f => `commands/${f}`)
+    : []),
+]
+
+let executableClaimCount = 0
+if (existsSync(join(ROOT, 'package.json'))) {
+  const pkgScripts: Record<string, string> = JSON.parse(read('package.json')).scripts ?? {}
+  for (const file of REPO_DOC_GLOBS) {
+    for (const m of read(file).matchAll(/npm run ([a-z][\w-]*)/g)) {
+      executableClaimCount++
+      if (!(m[1] in pkgScripts)) {
+        errors.push(`${file} tells the reader to run \`npm run ${m[1]}\`, which is not a script in package.json`)
+      }
+    }
+  }
+}
+
+// Installer flags and --only components, checked against the parser itself
+// rather than a second list — the failure this closes is a renamed flag whose
+// old name survives in four documents and one skill.
+const installerDocs = REPO_DOC_GLOBS.filter(f => read(f).includes('install.mjs'))
+for (const file of installerDocs) {
+  for (const line of read(file).split('\n')) {
+    if (!line.includes('install.mjs')) continue
+    for (const flag of line.match(/--[a-z][a-z-]*/g) ?? []) {
+      executableClaimCount++
+      if (parseArgs([flag]).unknown.length > 0) {
+        errors.push(`${file} passes \`${flag}\` to scripts/install.mjs, which the installer rejects as unknown`)
+      }
+    }
+    const only = line.match(/--only[= ]([a-z][\w,-]*)/)
+    if (only) {
+      const { invalid } = resolveComponents(only[1].split(',').filter(Boolean))
+      if (invalid.length > 0) {
+        errors.push(`${file} passes \`--only ${only[1]}\` but ${invalid.join(', ')} is not an installer component`)
+      }
+    }
+  }
+}
+// The reverse direction: a flag the parser accepts but `--help` never mentions
+// is undiscoverable, which is how `--target` shipped unmentioned for a release.
+if (existsSync(join(ROOT, 'scripts/install.mjs')) && existsSync(join(ROOT, 'scripts/lib/install-core.mjs'))) {
+  const usageText = read('scripts/install.mjs').match(/function usage\(\)[\s\S]*?\n}/)?.[0] ?? ''
+  const parserFlags = (read('scripts/lib/install-core.mjs').match(/arg === '(--[a-z-]+)'/g) ?? []).map(m =>
+    m.replace(/^arg === '/, '').replace(/'$/, '')
+  )
+  for (const flag of new Set(parserFlags)) {
+    if (!usageText.includes(flag)) {
+      errors.push(`scripts/install.mjs accepts \`${flag}\` but its --help output never mentions it`)
+    }
+  }
+}
+
+// Slash commands named in the docs must resolve to a skill or a command file.
+// Claude Code's own built-ins are listed explicitly: they are the only names
+// that legitimately resolve to nothing in this repo, and spelling them out is
+// what keeps the check from degenerating into "ignore anything unrecognised".
+const CLAUDE_CODE_BUILTIN_COMMANDS = new Set([
+  'plugin', 'reload-plugins', 'compact', 'clear', 'config', 'effort', 'mcp', 'agents', 'help',
+  'init', 'review', 'model', 'memory', 'doctor', 'permissions', 'context', 'cost',
+])
+if (existsSync(join(ROOT, 'skills')) && existsSync(join(ROOT, 'commands'))) {
+  const installable = new Set([
+    ...readdirSync(join(ROOT, 'skills'), { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name),
+    ...readdirSync(join(ROOT, 'commands')).filter(f => f.endsWith('.md')).map(f => f.replace(/\.md$/, '')),
+  ])
+  for (const file of REPO_DOC_GLOBS) {
+    // Backticked only: prose like "and/or" or a path fragment is not a command.
+    for (const m of read(file).matchAll(/`\/([a-z][a-z0-9-]*)`/g)) {
+      const name = m[1]
+      if (CLAUDE_CODE_BUILTIN_COMMANDS.has(name)) continue
+      executableClaimCount++
+      if (!installable.has(name)) {
+        errors.push(`${file} references \`/${name}\`, which is neither a skill in skills/ nor a file in commands/`)
+      }
+    }
   }
 }
 
@@ -566,7 +921,9 @@ if (denyCountClaims.length > 0) console.log(`✓ SECURITY.md deny-rule count cla
 if (existsSync(join(ROOT, '.claude/settings.json')) && existsSync(join(ROOT, 'settings-template.json'))) {
   console.log(`✓ .claude/settings.json's deny list has no gaps vs settings-template.json (drift: ${denyDriftCount}).`)
 }
-if (readmeCountClaims.length > 0) console.log(`✓ README İçerik table matches disk counts (${readmeCountClaims.length} rows checked).`)
+if (readmeCountClaims.length > 0) {
+  console.log(`✓ README count tables match disk (${readmeCountClaims.length} rows across ${READMES.length} file(s)).`)
+}
 // Gated on the section regex having actually matched, not just the files existing —
 // otherwise a fixture root (or a renamed heading) printed ✓ with zero comparisons made.
 if (lazyDocsListChecked) {
@@ -581,4 +938,17 @@ if (existsSync(join(ROOT, 'rules/900-performance.md'))) {
 if (existsSync(join(ROOT, 'scripts', 'run-checks.ts'))) {
   console.log(`✓ run-checks.ts's CHECK_STEPS covers every gate-worthy package.json script (${CHECK_STEPS.length} steps).`)
 }
+if (installerNodeFloor !== undefined) {
+  console.log(`✓ Installer Node floor "${installerNodeFloor}" stated once, claimed consistently, and exercised by a CI job.`)
+}
+if (executableClaimCount > 0) {
+  console.log(`✓ Every documented command, installer flag and slash command resolves (${executableClaimCount} checked across ${REPO_DOC_GLOBS.length} file(s)).`)
+}
+if (kitRefFiles.length > 0) {
+  console.log(
+    `✓ ${kitRefsChecked} kit-internal path reference(s) across ${kitRefFiles.length} agent/skill/command file(s) resolve and are install-mode agnostic.`
+  )
+}
+if (stackRowCount !== null) console.log(`✓ global-CLAUDE.md's stack count matches stack-commands.md (${stackRowCount}).`)
+if (repoSlug) console.log(`✓ ${slugRefCount} GitHub link(s) all point at ${repoSlug} (package.json canonical).`)
 process.exit(0)

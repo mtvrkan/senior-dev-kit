@@ -13,7 +13,7 @@ This guide holds only what 600 doesn't: the rollback-strategy table by change ty
 | --- | --- | --- |
 | Container deploy | Roll back to previous image tag | <2 min |
 | K8s deployment | `kubectl rollout undo deployment/[name]` | <1 min |
-| Terraform | `terraform apply -target=[resource] -var restore=true` | varies |
+| Terraform | Revert the config commit, then `terraform plan` → review → `terraform apply`. There is no rollback command: state moves forward only, so the previous config re-applied *is* the rollback. | varies |
 | DB migration | Reverse migration script (expand/contract pattern) | plan before deploy |
 | GitHub Actions | Revert workflow file commit | immediate |
 

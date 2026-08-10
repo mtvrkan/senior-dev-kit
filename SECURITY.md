@@ -1,15 +1,38 @@
 # Security Policy
 
-This is a personal, single-maintainer configuration kit — not published or distributed to
-other users (see `README.md`). There is no external contributor intake, no GitHub Releases,
-and no public vulnerability-disclosure process; issues are just fixed directly on `main`.
+## Reporting a vulnerability
+
+Report privately through
+[GitHub Security Advisories](https://github.com/mtvrkan/senior-dev-kit/security/advisories/new).
+Do not open a public issue for a vulnerability.
+
+Expect an acknowledgement within 7 days and a fix or a written decision within 30 days for
+anything confirmed. This is a single-maintainer project with no SLA and no bug bounty — the
+timeline is a good-faith target, not a contract. Only the latest commit on `main` is
+supported; there are no backported security releases.
+
+Anything that lets a request through the deny list or past a guard agent that this document
+claims is blocked counts as a vulnerability. Anything this document already lists under
+**Not covered** does not — those are known, documented limits.
 
 ## Scope
 
-This kit consists of Markdown configuration files and Node.js validation scripts. There is no installer script — install happens by copying files into `~/.claude/` or a project's `.claude/` (see `README.md`). The main attack surfaces are:
+This kit consists of Markdown configuration files and Node.js validation scripts. Installation
+copies files into `~/.claude/` or a project's `.claude/`, either through
+`scripts/install.mjs` or through the Claude Code plugin (see `README.md`). The main attack
+surfaces are:
 
 - **`settings-template.json` deny rules** — rules that are too permissive could allow unintended tool calls inside Claude Code. There is no PreToolUse/PostToolUse hook in this kit — protected-path handling (auth/payment/DB migration/CI/IaC/secrets) is prompt discipline (`global-CLAUDE.md` HARD STOPS + guard-agent routing) backed only by the Read-tool deny rules and the narrow Bash/PowerShell read-verb denies described below. Bash/PowerShell *writes* into any protected path, and reads via verbs outside the enumerated list, are not deterministically blocked.
 - **`global-CLAUDE.md` / agent definitions** — prompt injection via malicious content in routed tasks
+- **Code this kit executes on your machine.** Two scripts run outside the model's control, and
+  both are plain, dependency-free JavaScript so they can be read end to end before you trust
+  them. `scripts/install.mjs` runs only when you invoke it, and writes only to the target
+  settings directory. `scripts/session-context.mjs` is a `SessionStart` hook that the **plugin**
+  install registers, so it runs at the start of every session, unsandboxed, at the same trust
+  level as any other Claude Code hook — it reads two files and writes JSON to stdout, and never
+  writes to disk or reaches the network. There is no `PreToolUse`/`PostToolUse` hook: nothing in
+  this kit intercepts a tool call. If you install via `scripts/install.mjs` instead of the
+  plugin, no hook is registered at all.
 
 Out of scope:
 
@@ -46,7 +69,17 @@ The kit enforces several defence-in-depth measures:
    **Nesting note:** every project-relative Read deny pattern is `./**/…` (not `./…`), so a secret nested inside a monorepo subpackage (`apps/web/.env`, `packages/api/secrets/`) is denied the same as one at the repo root — a single `*` in these glob patterns does not cross a `/`, so a bare `./*.pem`-style pattern would silently miss anything not at the top level.
 
    **Measured cost:** `npm run deny-cost` replays your own machine's Claude Code transcript history against the Bash and PowerShell deny rules and reports what it would have blocked — counting distinct denied commands, not rule matches, so a command that happens to match two rules isn't double-counted — so friction is a number rather than a guess. On the development machine (10,753 real commands across 239 transcripts) the list would have denied 20 commands (0.19%), from 6 rules: `curl * | node*` / `curl * | python*` catching API responses piped into local one-liners, `npx --yes *` catching Playwright/scaffolding installs, `git push * --delete *` catching an intentional remote-branch cleanup, `rm -rf /*` catching absolute-path deletes (on Git Bash every absolute path starts with `/c/…`, so this rule denies **all** absolute-path recursive deletes on Windows — an accepted trade-off: relative-path deletes still work and the rule keeps blocking root wipes), and `PowerShell(Remove-Item -Recurse -Force *)` catching a genuine recursive delete issued through the PowerShell tool — this rule didn't exist until this round (the prior `Bash(Remove-Item -Recurse -Force *)` rule was dead: `Remove-Item` isn't a Git Bash command, so it could never fire against a real PowerShell-tool call; moving it to the `PowerShell(...)` namespace is what makes this historical match visible at all). The inline-interpreter rules (`eval`, `sh -c`, `bash -c`, `zsh -c`) and every secret-file-read rule (`Bash(base64 ...)`, `PowerShell(Get-Content ...)`) matched zero historical commands. Run the script yourself before adopting the list, and tune any rule whose matches are legitimate for your workflow.
-2. **Guard agents with `permissionMode: plan`** — `security-guard`, `db-guard`, and `devops-guard` produce a written plan and pause for explicit user approval before any implementation.
+2. **Read-only guard agents** — `security-guard`, `db-guard`, `devops-guard`, and
+   `performance-guard` produce a written plan and pause for explicit user approval before any
+   implementation. What actually enforces this is their **tool grant**: each is declared with
+   `tools: Read, Grep, Glob, Bash` and no `Edit` or `Write`, so the harness cannot hand them a
+   file-writing tool regardless of what the prompt asks for. Their `permissionMode: plan`
+   frontmatter adds plan-mode UI on top of that, and it is **ignored when the kit is installed
+   as a plugin** — Claude Code strips `permissionMode`, `hooks`, and `mcpServers` from
+   plugin-shipped agents for security reasons. Treat the tool grant as the guarantee and
+   `permissionMode` as a convenience that is present only in `~/.claude` installs. Note that
+   `Bash` is still granted for read-only investigation (`git log`, `grep`, test runs), so a
+   guard's write-prevention is as strong as the deny rules in item 1, not stronger.
 3. **OWASP 2025 passive scan** — every code change is silently scanned for injection, IDOR, mass assignment, ReDoS, SSRF, and supply chain issues.
 4. **SHA-pinned GitHub Actions** — all Actions in this repo are pinned to a full commit SHA, not mutable version tags.
 5. **Secret file protection** — `global-CLAUDE.md` hard-stops any read of `.env`, `*.pem`, `*.key`, SSH keys, and service account files.

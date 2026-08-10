@@ -91,7 +91,36 @@ Primary hue: [HSL base] | Neutral: slate/gray/zinc | Success/Warning/Destructive
 
 ---
 
-## Step 3 — globals.css FIRST (before any component)
+## Step 3 — Scaffold the project
+
+Run the framework's own initializer **before** writing any file into the project directory.
+`create-next-app` and friends refuse to run in a directory that already contains conflicting
+files, so writing `globals.css` or `layout.tsx` first (as earlier revisions of this guide had
+it) breaks the scaffold outright.
+
+```bash
+# Next.js + shadcn/ui — pass every option; in a non-interactive agent session an
+# unanswered prompt hangs the turn.
+npx create-next-app@latest [name] --typescript --tailwind --app --src-dir --eslint --import-alias "@/*"
+
+# Astro
+npm create astro@latest [name]
+
+# FastAPI
+mkdir [name] && cd [name] && python -m venv venv && pip install fastapi uvicorn pydantic
+
+# Go
+mkdir [name] && cd [name] && go mod init [module-path]
+```
+
+**Path note for every step below:** with `--src-dir` (used above), the App Router lives under
+`src/app/`, so `app/globals.css` means `src/app/globals.css` and `app/layout.tsx` means
+`src/app/layout.tsx`. Drop `--src-dir` and the paths are as written. Pick one and stay
+consistent — mixing the two is the most common source of "module not found" on a fresh project.
+
+---
+
+## Step 4 — globals.css FIRST (before any component)
 
 Next.js: `app/globals.css` | Vite+React: `src/styles/globals.css` | Nuxt: `assets/css/globals.css`
 
@@ -137,7 +166,7 @@ Next.js: `app/globals.css` | Vite+React: `src/styles/globals.css` | Nuxt: `asset
 
 ---
 
-## Step 4 — types/index.ts
+## Step 5 — types/index.ts
 
 ```typescript
 // TypeScript projects: src/types/index.ts or types/index.ts
@@ -148,7 +177,7 @@ export type User = { id: string; email: string; role: 'admin' | 'member'; create
 
 ---
 
-## Step 5 — Layout shell (web projects, build in order)
+## Step 6 — Layout shell (web projects, build in order)
 
 1. `app/layout.tsx` — root layout with ThemeProvider, font setup, global CSS import
 2. `components/layout/AppShell.tsx` — sidebar + topbar + main area wrapper
@@ -164,29 +193,11 @@ Every route in PROJECT-CONTRACTS.md must appear in the sidebar. No orphan pages.
 
 ---
 
-## Step 6 — Scaffold initialization
-
-```bash
-# Next.js + shadcn/ui
-npx create-next-app@latest [name] --typescript --tailwind --app --src-dir
-
-# Astro
-npm create astro@latest [name]
-
-# FastAPI
-mkdir [name] && cd [name] && python -m venv venv && pip install fastapi uvicorn pydantic
-
-# Go
-mkdir [name] && cd [name] && go mod init [module-path]
-```
-
----
-
 ## Step 7 — First feature page
 
 Build ONE complete page from PROJECT-CONTRACTS.md:
 
-- Uses shared layout from Step 5
+- Uses shared layout from Step 6
 - Uses semantic tokens from globals.css only (no hardcoded values)
 - Uses types from types/index.ts
 - Has all 4 states: loading skeleton + populated + empty + error
