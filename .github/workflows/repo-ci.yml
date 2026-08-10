@@ -1,0 +1,320 @@
+---
+name: Repo CI
+
+"on":
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Run markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@05f32210e84442804257b2a6f20b273450ec8265  # v16.0.0
+        with:
+          globs: |
+            **/*.md
+            !node_modules
+          config: .markdownlint.json
+
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Run yamllint
+        uses: ibiqlik/action-yamllint@2576378a8e339169678f9939646ee3ee325e845c  # v3.1.1
+        with:
+          file_or_dir: .github/
+          config_data: |
+            extends: default
+            rules:
+              line-length:
+                max: 200
+              truthy:
+                allowed-values: ['true', 'false']
+
+  typecheck:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript type check
+        run: npm run typecheck
+
+  eslint:
+    name: ESLint (scripts/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint on scripts/
+        run: npm run lint
+
+  routing-eval-static:
+    name: Routing Eval (static)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate golden prompts against agents on disk
+        run: npm run routing-eval
+
+  validate-skills:
+    name: Validate Skill Frontmatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run skill validator
+        run: node --experimental-strip-types scripts/validate-skills.ts
+
+  check-links:
+    name: Check Internal Markdown Links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+
+      - name: Verify internal markdown links and anchors resolve
+        run: node --experimental-strip-types scripts/check-links.ts
+
+  check-consistency:
+    name: Check Cross-File Value Consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+
+      - name: Verify version fields, golden-prompt count, and CI node-version stay in sync
+        run: node --experimental-strip-types scripts/check-consistency.ts
+
+  docs-check:
+    name: Generated Reference Matches Frontmatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+
+      - name: Verify docs/reference.md is regenerated from the component frontmatter
+        run: node --experimental-strip-types scripts/gen-docs.ts --check
+
+  check-plugin:
+    name: Validate Plugin + Marketplace Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+
+      - name: Verify manifests match the components on disk
+        run: node --experimental-strip-types scripts/check-plugin.ts
+
+  installer-compat:
+    name: Installer Runs on the Documented Node Floor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      # Deliberately NOT the Node 24 every other job pins. The installer is the
+      # first thing a new user runs, on whatever Node they already have, while
+      # the TypeScript validators need 24 — two different floors, and the lower
+      # one was a README claim with nothing behind it until this job existed.
+      # check-consistency.ts ties this pin, both READMEs, and install-core.mjs's
+      # header note to package.json's seniorDevKit.installerNodeFloor.
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '18'
+
+      - name: Assert this job pins the documented installer floor
+        run: |
+          set -euo pipefail
+          floor=$(node -p "require('./package.json').seniorDevKit.installerNodeFloor")
+          actual=$(node -p "process.versions.node.split('.')[0]")
+          if [ "$floor" != "$actual" ]; then
+            echo "This job runs Node ${actual} but the documented installer floor is ${floor}." >&2
+            exit 1
+          fi
+
+      # No `npm ci`: the README promises "no dependencies to install", so the
+      # installer is exercised here exactly as a user gets it — a bare clone.
+      - name: Install into a scratch target, verify, then uninstall
+        run: |
+          set -euo pipefail
+          target="${RUNNER_TEMP}/kit-target"
+          node scripts/install.mjs --target "$target" --dry-run
+          node scripts/install.mjs --target "$target" --yes
+          test -f "$target/rules/000-security.md"
+          test -f "$target/agents/security-guard.md"
+          test -f "$target/skills/bug-fix/SKILL.md"
+          grep -q "BEGIN senior-dev-kit" "$target/CLAUDE.md"
+          grep -q '"deny"' "$target/settings.json"
+          node scripts/install.mjs --target "$target" --uninstall --yes
+          test ! -f "$target/rules/000-security.md"
+          test ! -f "$target/agents/security-guard.md"
+
+      # A second run over a populated target is the upgrade path, and the one
+      # place a "nothing to do" bug or a runaway backup would show up.
+      - name: Reinstall is idempotent
+        run: |
+          set -euo pipefail
+          target="${RUNNER_TEMP}/kit-idempotent"
+          node scripts/install.mjs --target "$target" --yes
+          node scripts/install.mjs --target "$target" --yes | tee second-run.txt
+          grep -q "Already up to date" second-run.txt
+
+  dep-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Through the npm script, not a second copy of the command: the same step
+      # runs inside `npm run check`, and two spellings of an audit threshold is
+      # how a gate and its CI job start disagreeing.
+      - name: Run npm audit
+        run: npm run audit
+
+  secret-scan:
+    name: Secret Scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Download and verify gitleaks
+        run: |
+          set -euo pipefail
+          curl -sfLO https://github.com/gitleaks/gitleaks/releases/download/v8.26.0/gitleaks_8.26.0_linux_x64.tar.gz
+          echo "32faa8a77f6ce4b483921072ea89f78a794ad1d96471f2ad6e01ad3b0ebafa00  gitleaks_8.26.0_linux_x64.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks_8.26.0_linux_x64.tar.gz gitleaks
+
+      - name: Run gitleaks
+        run: ./gitleaks detect --source . --redact --no-banner
+
+  check-sha-pins:
+    name: Check SHA Pins
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Detect unpinned actions
+        run: |
+          set -euo pipefail
+          found=0
+          scanned=0
+          while IFS= read -r -d '' file; do
+            scanned=$((scanned + 1))
+            if grep -E "uses: .+@(v[0-9]+(\.[0-9]+){0,2}|latest|main|master)([[:space:]]|#|$)" "$file" > /dev/null 2>&1; then
+              echo "UNPINNED ACTION in $file:"
+              grep -nE "uses: .+@(v[0-9]+(\.[0-9]+){0,2}|latest|main|master)([[:space:]]|#|$)" "$file"
+              found=1
+            fi
+          done < <(find .github/workflows \( -name "*.yml" -o -name "*.yaml" \) -print0)
+          # Guard against a vacuous pass: if the find paths moved and nothing was
+          # scanned, fail loudly instead of reporting "All actions are SHA-pinned."
+          if [ "$scanned" -eq 0 ]; then
+            echo "No workflow files found to scan — check the find paths above." >&2
+            exit 1
+          fi
+          if [ "$found" -eq 1 ]; then
+            echo ""
+            echo "Pin all actions to a full commit SHA (not mutable tags)."
+            exit 1
+          fi
+          echo "All actions are SHA-pinned (${scanned} workflow files scanned)."
+
+      # A pin that LOOKS like a SHA but doesn't exist upstream (typo, hand-edited,
+      # hallucinated) passes the format check above yet kills every run with
+      # "Unable to resolve action" — verify each one actually resolves.
+      - name: Verify pinned SHAs resolve upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          bad=0
+          checked=0
+          while IFS= read -r action; do
+            repo=$(echo "$action" | cut -d@ -f1 | cut -d/ -f1-2)
+            sha=$(echo "$action" | cut -d@ -f2)
+            checked=$((checked + 1))
+            code=$(curl -s -o /dev/null -w "%{http_code}" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              "https://api.github.com/repos/${repo}/commits/${sha}")
+            if [ "$code" != "200" ]; then
+              echo "UNRESOLVABLE PIN (HTTP ${code}): ${action}"
+              bad=1
+            fi
+          done < <(grep -rhoE "uses: [^ ]+@[a-f0-9]{40}" .github/workflows | sed 's/uses: //' | sort -u)
+          if [ "$checked" -eq 0 ]; then
+            echo "No pinned actions found to verify — check the grep above." >&2
+            exit 1
+          fi
+          if [ "$bad" -eq 1 ]; then
+            echo ""
+            echo "Fix by resolving the intended version tag to its real commit SHA:"
+            echo "  curl -s https://api.github.com/repos/<owner>/<repo>/commits/<tag> | jq -r .sha"
+            exit 1
+          fi
+          echo "All ${checked} pinned SHAs resolve upstream."

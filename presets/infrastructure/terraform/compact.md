@@ -1,0 +1,11 @@
+- Tier 3 (devops-guard) on every change, Tier 4 when the plan contains a destroy — the plan output IS the review artifact
+- Remote backend with locking from day one (S3+DynamoDB, GCS, HCP) — local state means two concurrent applies corrupt it silently
+- STATE CONTAINS SECRETS IN PLAINTEXT (every provider-returned password/key): encrypt the bucket, restrict reads, never commit `*.tfstate`
+- Separate state per environment — one state spanning dev and prod lets a dev mistake plan a prod destroy
+- Pin everything: `required_version`, provider constraints, module `ref` on a tag/commit not a branch · commit the lock file
+- Variables get `type` + `description` + `validation`; no defaults for environment names or account ids · `sensitive = true` hides CLI output only, state is still plaintext · secrets from a secret manager, never a committed `.tfvars`
+- `for_each` over `count` — `count` is index-addressed, so removing a middle element re-creates everything after it · `moved` blocks to restructure without destroy/create
+- `lifecycle { prevent_destroy = true }` on databases, data buckets, anything whose replacement is an incident
+- `terraform plan -out=tf.plan` then `apply tf.plan` — applying without a saved plan re-plans at apply time, so you approve one thing and apply another · grep the plan JSON for `delete`/`replace` and stop for explicit approval
+- CI: OIDC federation (no long-lived keys), `plan` on PRs with output posted, `apply` gated on the default branch, `tflint` + `tfsec`/`trivy config` + `checkov`, scheduled drift detection
+- Anti: hand-edited state or `state rm` to make an error disappear (orphans real resources) · `local-exec` with a shell string built from a variable · `-auto-approve` outside a gated pipeline

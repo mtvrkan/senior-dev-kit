@@ -1,0 +1,11 @@
+- File routing `pages/`, layouts `layouts/`, server routes `server/api/` · auto-imports on (no hand-written imports for composables/components/Vue APIs) · `<script setup lang="ts">` always, never Options API
+- Three required states in every template: `pending` skeleton, `error` with `@retry="refresh"`, empty
+- Fetching: `useFetch`/`useAsyncData` for page data (SSR, deduped, hydrated) · `$fetch` ONLY in event handlers · `$fetch` in `setup` double-fires and breaks hydration — the most common Nuxt bug
+- Always give `useAsyncData` a stable `key`
+- Secrets: `runtimeConfig.public.*` ships to the browser — everything else stays in `server/` · a private config value read in a component is a leaked secret
+- Server routes throw `createError({ statusCode })`, never return a raw driver error
+- State: `useState('key', init)` for SSR-safe shared state — a module-level `ref` leaks BETWEEN REQUESTS on the server (cross-user data bug) · Pinia for actions + multiple consumers · `toRefs`, never destructure a `reactive`
+- Perf: `<NuxtImg>` with explicit `width`/`height` (CLS < 0.1) · `Lazy` prefix / `defineAsyncComponent` below the fold · stable `:key` on `v-for`, never `v-if` + `v-for` on one element
+- SEO: `useSeoMeta`/`useHead` on every public page — title, description, canonical, OG
+- Verify: `npx vitest run [file]` · `npx nuxt typecheck` · `npx eslint .` · `npx nuxt build` (catches SSR-only failures dev hides)
+- Anti: `window`/`document` during SSR without `import.meta.client`/`onMounted` · `v-html` with user input (XSS)

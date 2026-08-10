@@ -1,0 +1,11 @@
+- Every manifest change is Tier 3 (devops-guard): production change, no compile step between you and the cluster — plan first and name the target environment
+- Images by digest (`@sha256:...`), never `:latest` or any mutable tag
+- Resource requests are mandatory (no requests = the scheduler guesses and your pod is evicted first) · set memory limits · a CPU limit equal to the request throttles and looks like an application latency bug
+- Liveness ≠ readiness: liveness restarts a hung process, readiness gates traffic · pointing liveness at a dependency check turns a blip into a restart storm · `startupProbe` for slow boots
+- `securityContext`: `runAsNonRoot`, `readOnlyRootFilesystem`, `allowPrivilegeEscalation: false`, `capabilities: drop [ALL]`, `seccompProfile: RuntimeDefault`
+- A `Secret` is base64, NOT encryption — use External Secrets / Sealed Secrets / CSI driver · never commit a rendered Secret, never credentials in a ConfigMap or env literal · prefer file mounts (env vars leak into crash dumps and `describe`)
+- Default-deny `NetworkPolicy` per namespace or one compromised pod reaches every database · namespace per env with `ResourceQuota` · dedicated ServiceAccount, `automountServiceAccountToken: false` unless the pod calls the API server
+- Rollout: `maxUnavailable: 0` + `maxSurge: 1`, and the app must tolerate two versions at once (same expand-then-contract rule as a DB migration) · `terminationGracePeriodSeconds` > longest request + `preStop` sleep or you drop requests every deploy
+- `replicas: 3` (or ≥2 with a PodDisruptionBudget) or a node drain is an outage · state the `kubectl rollout undo` plan before applying
+- Verify: `kubectl apply --dry-run=server` · `kubeconform -strict` · `kubectl diff -f` · `trivy config` · `kubectl rollout status`
+- Anti: `kubectl edit`/`patch` against a git-managed cluster — the next apply silently reverts it

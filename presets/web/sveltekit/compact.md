@@ -1,0 +1,11 @@
+- Routes in `src/routes/`; the filename is the contract: `+page.svelte` · `+page.ts` (universal) · `+page.server.ts` (server-only load + actions) · `+server.ts` (endpoints) · `+error.svelte`
+- DB, secrets and private APIs go in `+page.server.ts`/`+server.ts` — a universal `+page.ts` ALSO runs in the browser · server-only modules live in `src/lib/server/` (importing one client-side is a build error — rely on it)
+- Svelte 5 runes: `$state`/`$derived`/`$props`/`$effect` — never `export let`, never `$:` · `$effect` is for side effects, `$derived` for values (deriving in an effect causes extra renders and stale reads)
+- Forms use actions + `use:enhance`, not a hand-rolled `fetch` POST — that's how you keep progressive enhancement · validate with a schema and `fail(400, { errors })`
+- `load` does auth AND ownership: `if (user.orgId !== locals.user.orgId) error(403)` — an auth check alone is an IDOR
+- `error(status, msg)` / `redirect(status, url)` — never a returned error object the template can forget · SvelteKit 2 dropped the `throw`, both throw internally
+- Env: `$env/static/private` is server-only, `PUBLIC_*` ships to the browser — there is no third option for a secret · cookies `httpOnly`+`secure`+`sameSite`
+- Three states always: `{#await}` or streamed promise for pending, `+error.svelte` boundary, explicit empty branch
+- Perf: `prerender = true` for static pages, `csr = false` where no JS is needed · return promises from `load` to stream · images with explicit dimensions (CLS < 0.1)
+- Verify: `npx vitest run [file]` · `npx svelte-check` · `npx eslint .` · `npx vite build` (catches server/client boundary violations)
+- Anti: `{@html}` with user content · `onMount` fetching what `load` should provide (waterfall, no SSR)

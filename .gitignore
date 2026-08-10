@@ -1,0 +1,71 @@
+# Claude Code session artifacts — never distribute
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Secrets — never commit (mirrors rules/000-security.md's PROTECTED FILES list)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.key
+*.p12
+id_rsa
+id_ed25519
+.ssh/
+serviceAccountKey.json
+*firebase-adminsdk*.json
+*serviceaccount*.json
+secrets/
+config/credentials.json
+config/secrets.json
+.secrets.baseline*
+*.tfstate
+*.tfstate.backup
+kubeconfig
+*.kubeconfig
+
+# OS
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE / editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.project
+.classpath
+.settings/
+
+# Node (if scripts/ deps ever added)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if scripts ever added)
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
+.cache/
+
+# Ad-hoc review/analysis artifacts — never distribute
+CODE_*_REPORT.txt
+CODE_*_FINDINGS.txt
+CODE_BLOCKS_MANIFEST.csv
+code_blocks_report.txt
+focused_codeblocks.txt

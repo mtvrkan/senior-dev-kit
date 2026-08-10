@@ -1,0 +1,10 @@
+- Handlers thin: extract → service → `impl IntoResponse` · business logic in HTTP-free modules · deps via `State<AppState>` (Arc inside), never a global `static`
+- One error enum per boundary with `thiserror` + `IntoResponse`; handlers return `Result<T, AppError>` and use `?`
+- Log the internal error, return a generic message — `sqlx::Error` text leaks column names
+- `unwrap()`/`expect()`/`panic!` only in `main`, tests, and commented impossible invariants — on a request path they are a remote DoS
+- tokio: NEVER block a worker (`std::fs`, `thread::sleep`, sync HTTP) → `spawn_blocking` · `try_join!` for independent awaits · never hold a `std::sync::Mutex` guard across `.await`
+- sqlx `query_as!` with `$1` bindings (compile-time checked) · NEVER `format!` into SQL · `pool.begin()` transactions commit explicitly or roll back silently
+- Every `unsafe` block carries a `// SAFETY:` comment naming the invariant, or it doesn't merge
+- `tracing::info!(user_id = %id, "user.created")` — structured fields, not format strings · JSON subscriber in prod · no tokens in logs
+- Verify: `cargo test [name]` · `cargo clippy -- -D warnings` · `cargo fmt --check` · `cargo deny check advisories`
+- Anti: request-path `unwrap` · `.clone()` to silence the borrow checker · `String`/`Vec<T>` where `&str`/`&[T]` fits · blocking in async · `#[allow(dead_code)]` hiding an unfinished refactor

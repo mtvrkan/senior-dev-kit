@@ -1,0 +1,55 @@
+---
+name: New agent, skill, rule, or preset
+description: Propose a component the kit does not have yet.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Presets are added when someone actually starts a project on that stack,
+        not speculatively — see `presets/README.md`. The same bias applies to
+        agents and skills: a component nobody triggers is a component that
+        drifts.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Component type
+      options:
+        - Agent
+        - Skill
+        - Rule
+        - Preset
+        - Command
+    validations:
+      required: true
+
+  - type: textarea
+    id: trigger
+    attributes:
+      label: What request should trigger it?
+      description: >-
+        Write two or three real prompts a user would type. These become golden
+        prompts in `eval/golden-prompts.json`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: overlap
+    attributes:
+      label: Why does an existing component not cover this?
+      description: >-
+        Name the closest existing agent or skill and say what it gets wrong.
+        See `agents/ROUTING.md` for the full decision tree.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: budget
+    attributes:
+      label: Context budget
+      options:
+        - label: >-
+            This does not require adding lines to `global-CLAUDE.md`,
+            `rules/000-security.md`, or `rules/001-conventions.md` (the
+            always-loaded files, capped at 500 lines combined).
