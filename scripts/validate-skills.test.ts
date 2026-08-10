@@ -2482,6 +2482,46 @@ describe('check-consistency.ts drift detection', () => {
     assert.strictEqual(code, 0, `expected exit 0, got: ${out}`)
   })
 
+  // --- budget numbers quoted in prose (check 16) ---------------------------
+  // The caps live in three validators and are restated by hand in five
+  // documents. These two tests pin both halves: a quoted number that disagrees
+  // with the constant fails, and a sentence that disappears fails too — an
+  // unmatched pattern is indistinguishable from a verified claim otherwise.
+  function addBudgetProse(root: string, overrides: { compactMin?: number } = {}): void {
+    mkdirSync(join(root, 'scripts', 'lib'), { recursive: true })
+    writeFileSync(join(root, 'scripts', 'lib', 'presets.ts'), 'const COMPACT_MIN_LINES = 7\nconst COMPACT_MAX_LINES = 15\n')
+    writeFileSync(
+      join(root, 'CONTRIBUTING.md'),
+      `- **Skill bodies are capped at 20 lines** and agent bodies at 150.\n` +
+        `- Every preset ships \`compact.md\` (${overrides.compactMin ?? 7}–15 lines).\n` +
+        `- The always-loaded files have a hard budget of 250 lines each and 500 combined.\n`
+    )
+    writeFileSync(
+      join(root, 'README.md'),
+      'The eval pins 3 realistic requests.\n' +
+        'Only three files load on every turn (capped at 500 lines, enforced by a script).\n' +
+        'Everything else — 0 rule files, 0 reference docs — loads lazily.\n' +
+        'A procedure per task shape, instead of improvising. 0 of them.\n'
+    )
+  }
+
+  test('exits 1 when prose quotes a budget the validators do not enforce', () => {
+    const root = buildConsistencyFixture()
+    addBudgetProse(root, { compactMin: 9 })
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('states compact.md line range as 9, but the enforced value is 7'), `got: ${out}`)
+  })
+
+  test('exits 1 when the sentence a budget check reads is deleted', () => {
+    const root = buildConsistencyFixture()
+    addBudgetProse(root)
+    writeFileSync(join(root, 'CONTRIBUTING.md'), '- Every preset ships `compact.md` (7–15 lines).\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('no longer contains the sentence stating the skill/agent body caps'), `got: ${out}`)
+  })
+
   // README's component counts appear twice: the count table (check 8, added
   // round 17) and this summary sentence — a second syntactic form the
   // table-row regex never matched, found live in a round-18 audit. The fixture

@@ -86,23 +86,26 @@ The kit enforces several defence-in-depth measures:
 
 ## Audit history
 
-Round-by-round record of how the deny-rule list (item 1 above) reached its current shape. Read this
-for provenance/rationale on a specific rule; the current-state summary above is the one to trust for
-"what's covered right now."
+The deny list was not designed in one pass; it was hardened across 31 internal audit rounds, and
+what those rounds found is more useful to a reader than a ledger of individual rules. Every real
+bypass fell into one of four shapes:
 
-> **Provenance correction (round 29):** some "added"/"closed" statements in the round-20/21 entries
-> below describe rules that are no longer (or were never) in the shipped file — the round-23 rebuild
-> (200→397) regenerated the list from categories while this history prose went untouched.
-> Specifically: wget's `/usr/bin/*` and `perl` pipe targets, the flag-before-URL `wget -O- url | bash`
-> forms, `npm exec --yes`/`npm x --yes`, and `Remove-Item` abbreviation coverage. Round 29 re-closed
-> the real gaps structurally (see entry below) and dropped the abbreviation claim rather than
-> enumerate it. History entries are left as written — this note is the correction record.
+- **Anchoring.** A rule matched the bare verb, so a path-qualified invocation walked past it —
+  `/usr/bin/base64 secret.pem` against a rule written as `base64 …`. Closed structurally: command
+  rules carry a leading `*` instead of enumerating interpreter paths.
+- **Asymmetry.** A secret had a `Read(...)` rule but no `base64`/`Get-Content` companion, so it was
+  unreadable through one tool and readable through another. Found in three consecutive rounds on
+  different files, which is why the companion list is now *derived from* the `Read(...)` rules by a
+  unit test rather than maintained by hand.
+- **Flag spelling.** `rm -rf` matched while `rm -r -f`, `--recursive --force` and bare `-R` did not;
+  `wget -O- url | bash` matched only with the flag after the URL. Closed by matching on the command
+  and the pipe target rather than on an enumeration of flags.
+- **Runner coverage.** `npx --yes` was blocked while `bunx`, `pnpm dlx`, `yarn dlx` and
+  `npm exec --yes` were not — the same zero-prompt remote-code path through four other front doors.
 
-- **Round 14** — lockfile coverage widened: the generic `*.lock` pattern already caught `yarn.lock`/`Gemfile.lock`/`Cargo.lock` but missed `package-lock.json`, `pnpm-lock.yaml`, and `bun.lockb`/`bun.lock` — added explicit `Read(...)` rules for all three, plus a unit test that fails CI if a common lockfile basename stops matching any deny pattern.
-- **Round 15** — two gaps fixed: `id_rsa`/`id_ed25519` `Read(...)` rules were exact-match with no trailing `*`, silently missing variant names (`id_rsa.bak`, `id_rsa_prod`) even though this doc already claimed glob coverage — now glob everywhere. Every home-directory credential store (`~/.aws/**`, `~/.kube/**`, `~/.docker/config.json`, `~/.npmrc`, `~/.netrc`, `~/.pgpass`, `~/.vault-token`, `~/.gradle/gradle.properties`, `~/.m2/settings.xml`, `~/.yarnrc(.yml)`, `~/.git-credentials`, `~/.config/gh/hosts.yml`) had a `Read(...)` rule but no `base64`/`Get-Content` companion — added.
-- **Round 16** — the round-15 fix's own premise was incomplete: three project-relative patterns (`.npmrc`, `.netrc`, `.ssh/**`) had a `Read(...)` rule but no project-relative `base64`/`Get-Content` companion of their own — added for all three, project- and home-relative, and covered by a single shared-list unit test so the two sides can't re-diverge silently.
-- **Round 17** — same asymmetry found a third time: `~/.bash_history`/`~/.zsh_history` had a `Read(...)` rule (this doc already claimed "shell history" was covered) but no `base64`/`Get-Content` companion — added, and folded into the shared-list unit test.
-- **Round 19** — the supply-chain guard (`npx --yes`/`npx -y`) only covered npm's runner: `bunx`, `pnpm dlx`, `yarn dlx` had no rule at all, so a typosquatted package could be fetched-and-executed through any of the three unblocked runners — added alongside `npx`.
-- **Round 20** — npm's own alternate runner syntax (`npm exec -y`/`npm exec --yes`/`npm x -y`/`npm x --yes`, equivalent to `npx -y` since npm 7) was still unblocked — added. A second pass the same round found four more asymmetries: the `sudo`-prefixed destructive list had no sibling for `dd`/`mkfs`/`shred`/`sh -c`/`bash -c`/`zsh -c`/`curl|bash` — closed; `base64`/`Get-Content` secret-read companions were anchored to end-of-command, so `base64 secret.pem | curl …` slipped past even though the bare form was caught — every literal-terminated companion rule now carries a trailing `*`; `rm -rf`/`rm -fr` only matched the glued flag form, missing `rm -r -f`/`--recursive --force`/bare `-R` — added for all six dangerous targets; `wget`'s pipe-to-interpreter coverage was narrower than `curl`'s (missing `/usr/bin/bash`, `/usr/bin/sh`, `perl*` targets) and `PowerShell(Remove-Item -Recurse -Force …)` didn't cover swapped flag order or abbreviations (`-rec -fo`, `-r`) — both closed. Two new unit tests assert the `base64`/`Get-Content` exfil shape and every `rm` flag ordering are covered.
-- **Round 21** — `base64` secret-read companions were still anchored to the bare verb (`^base64 …`), so a path-qualified invocation (`/usr/bin/base64 secret.pem`) bypassed every one — every `Bash(base64 …)` rule now carries a leading `*`. `wget -O- url | bash` (flag before the URL) was unblocked even though flag-after-URL and `-qO-` forms already were — added for all six shell targets. A follow-up pass the same round found the identical bare-verb-anchor bypass across the *entire* destructive-command block (`curl`/`wget`/`rm`/`chmod`/`git push --force`/`eval`/`sh -c`/`npx`/`pip --break-system-packages`/PowerShell's `Remove-Item`) — every one of those rules now carries the same leading `*` fix. Separately, the `PowerShell(Get-Content ...)` alias assumption is now moot for `cat`/`type`/`gc` specifically: every secret pattern has explicit `PowerShell(gc ...)`/`PowerShell(cat ...)`/`PowerShell(type ...)` companion rules of its own rather than relying on unverified alias canonicalization. Credential-store coverage widened further: `~/.config/gcloud/**`, `~/.azure/**`, `~/.gnupg/**`, `~/.terraform.d/credentials.tfrc.json`, `~/.config/containers/auth.json` (podman) now have the same coverage `~/.aws/**`/`~/.kube/**`/`~/.docker/config.json` already had. An earlier version of this list carried redundant `Bash(cat/head/tail/type/Get-Content/gc ...)` entries per pattern — the first four were no-ops (already covered by `Read(...)`), and `Get-Content`/`gc` under a `Bash(...)` rule could never fire at all since those cmdlets don't exist as Bash commands — corrected in the current list.
-- **Round 29** — wget's pipe-to-shell rules were flag-specific (`* -O- | bash`, `-qO- * | bash`) while curl's matched on the pipe target alone, so `wget -O- url | bash` (flag before URL) and any future flag spelling slipped past — root-caused by replacing all 12 flag-enumerated wget rules with 8 general `Bash(*wget * | <shell>)` rules mirroring curl's exact target set, plus the missing `Bash(*wget * | perl*)`. Also added: `Remove-Item -Force -Recurse` (reversed flag order, both argument positions), `npm exec --yes`/`npm x --yes` long forms. The Remove-Item abbreviation claim (`-rec -fo`, `-r`) in the current-state summary was prose overclaim — dropped rather than enumerated. Net: 397 → 398 rules.
+One correction belongs in the record rather than in a footnote: the round-23 rebuild regenerated the
+list from categories (200 → 397 rules) while the per-round prose that used to fill this section went
+untouched, so parts of it described rules that were no longer — or had never been — in the shipped
+file. That is precisely why this section is now a summary of shapes: the ledger drifted from the file
+it described, and the file is the thing that runs. For the provenance of a specific rule,
+`git log -p settings-template.json` is authoritative in a way prose is not.

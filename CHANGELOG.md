@@ -38,6 +38,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 - Skills, agents, and commands reference bundled documentation through
   `${CLAUDE_PLUGIN_ROOT}` so the paths resolve under a plugin install as well as a
   `~/.claude` install. [2026-08-09]
+- `SECURITY.md`'s audit history is now a summary of the four bypass shapes 31 rounds actually
+  found (anchoring, `Read`/`base64` asymmetry, flag spelling, runner coverage) instead of a
+  round-by-round ledger that carried its own notice saying parts of it described rules never
+  present in the shipped file. Per-rule provenance is `git log -p settings-template.json`, which
+  cannot drift from the file it describes. [2026-08-10]
 
 ### Fixed
 
@@ -122,7 +127,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
   (with Claude Code's built-ins listed explicitly). Checks 1-14 all guarded numbers; nothing
   guarded the commands a reader is told to type. It found two dead references on its first run.
   The reverse direction is covered too: a flag the parser accepts but `--help` never prints is
-  an error. [2026-08-10]
+  an error. It also reads `scripts/session-context.mjs`, the one place a renamed skill would break
+  silently in code rather than in prose. [2026-08-10]
+- `check-consistency.ts` check 16 — the caps themselves. Skill bodies (20 lines), agent bodies
+  (150), `compact.md` (7–15) and the always-loaded budgets (250 per file / 500 combined) are
+  enforced by three separate scripts and then quoted by hand in five documents. Each quotation is
+  now compared against the constant that enforces it, and a quotation that disappears is an error
+  rather than a silently unmatched pattern. [2026-08-10]
 
 - `check-consistency.ts` check 13 — every backticked `agent_docs/…` and `rules/…` path in
   agents, skills and commands must resolve on disk, and no file may hardcode a `~/.claude/…`

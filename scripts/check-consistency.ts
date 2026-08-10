@@ -891,7 +891,13 @@ if (existsSync(join(ROOT, 'skills')) && existsSync(join(ROOT, 'commands'))) {
     ...readdirSync(join(ROOT, 'skills'), { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name),
     ...readdirSync(join(ROOT, 'commands')).filter(f => f.endsWith('.md')).map(f => f.replace(/\.md$/, '')),
   ])
-  for (const file of REPO_DOC_GLOBS) {
+  // The SessionStart hook tells plugin users to run a specific command when the
+  // path-scoped rules are missing. It is the one place a renamed skill breaks
+  // silently in code rather than in prose, so it is scanned alongside the docs.
+  const slashScanFiles = [...REPO_DOC_GLOBS, 'scripts/session-context.mjs'].filter(f =>
+    existsSync(join(ROOT, f))
+  )
+  for (const file of slashScanFiles) {
     // Backticked only: prose like "and/or" or a path fragment is not a command.
     for (const m of read(file).matchAll(/`\/([a-z][a-z0-9-]*)`/g)) {
       const name = m[1]
@@ -900,6 +906,74 @@ if (existsSync(join(ROOT, 'skills')) && existsSync(join(ROOT, 'commands'))) {
       if (!installable.has(name)) {
         errors.push(`${file} references \`/${name}\`, which is neither a skill in skills/ nor a file in commands/`)
       }
+    }
+  }
+}
+
+// --- 16. Budget numbers quoted in prose === the constants that enforce them --
+// The same class as checks 5/6/8, one layer deeper: the caps themselves. Skill
+// bodies (20), agent bodies (150), compact.md (7-15) and the always-loaded
+// budgets (250/500) are enforced by three different scripts and then restated
+// by hand in README.md, README.tr.md, CONTRIBUTING.md, CLAUDE.md and
+// presets/README.md. Raising a cap in the validator and leaving five documents
+// quoting the old one is not hypothetical — it is what happened to the suite
+// count, the deny-rule count and the golden-prompt count before each got a
+// check. Gated on the real repo's shape so fixture roots skip it wholesale.
+if (existsSync(join(ROOT, 'CONTRIBUTING.md')) && existsSync(join(ROOT, 'scripts/lib/presets.ts'))) {
+  const constFrom = (file: string, name: string): number | null => {
+    if (!existsSync(join(ROOT, file))) return null
+    const m = read(file).match(new RegExp(`const ${name}\\s*=\\s*(\\d+)`))
+    if (!m) {
+      errors.push(`check-consistency.ts cannot find \`${name}\` in ${file} — the prose cross-check for that budget is comparing nothing`)
+      return null
+    }
+    return Number(m[1])
+  }
+  const skillBody = constFrom('scripts/lib/validate-skills.ts', 'SKILL_BODY_MAX_LINES')
+  const agentBody = constFrom('scripts/lib/validate-agents.ts', 'AGENT_BODY_MAX_LINES')
+  const compactMin = constFrom('scripts/lib/presets.ts', 'COMPACT_MIN_LINES')
+  const compactMax = constFrom('scripts/lib/presets.ts', 'COMPACT_MAX_LINES')
+  const perFile = ALWAYS_LOADED_LINE_BUDGET
+  const combined = ALWAYS_LOADED_COMBINED_BUDGET
+  const ruleCount = actualCounts.Rule
+  const docCount = actualCounts.agent_docs
+  const skillCount = actualCounts.Skill
+
+  // Each entry is one sentence, in one file, that quotes numbers owned
+  // elsewhere. A pattern that stops matching is reported rather than ignored:
+  // a silently-unmatched claim is indistinguishable from a verified one, which
+  // is the failure mode checks 4, 8 and 10 each had to be rescued from.
+  const claims: { file: string; re: RegExp; expected: (number | null)[]; what: string }[] = [
+    { file: 'README.md', re: /capped at (\d+) lines/g, expected: [combined], what: 'always-loaded combined budget' },
+    { file: 'README.tr.md', re: /\((\d+) satır üst sınır/g, expected: [combined], what: 'always-loaded combined budget' },
+    { file: 'README.md', re: /(\d+) rule files, (\d+) reference docs/g, expected: [ruleCount, docCount], what: 'rule + agent_docs counts in prose' },
+    { file: 'README.tr.md', re: /(\d+) rule dosyası, (\d+) referans doküman/g, expected: [ruleCount, docCount], what: 'rule + agent_docs counts in prose' },
+    { file: 'README.md', re: /improvising\. (\d+) of them/g, expected: [skillCount], what: 'skill count in prose' },
+    { file: 'README.tr.md', re: /Toplam (\d+) tane/g, expected: [skillCount], what: 'skill count in prose' },
+    { file: 'CONTRIBUTING.md', re: /Skill bodies are capped at (\d+) lines\*\* and agent bodies at (\d+)/g, expected: [skillBody, agentBody], what: 'skill/agent body caps' },
+    { file: 'CONTRIBUTING.md', re: /compact\.md` \((\d+)[–-](\d+) lines\)/g, expected: [compactMin, compactMax], what: 'compact.md line range' },
+    { file: 'CONTRIBUTING.md', re: /budget of (\d+) lines each and (\d+) combined/g, expected: [perFile, combined], what: 'always-loaded budgets' },
+    { file: 'CLAUDE.md', re: /compact\.md` \((\d+)-(\d+) line summary/g, expected: [compactMin, compactMax], what: 'compact.md line range' },
+    { file: 'CLAUDE.md', re: /agent bodies \((\d+) lines\), skill bodies \((\d+) lines\)/g, expected: [agentBody, skillBody], what: 'agent/skill body caps' },
+    { file: 'CLAUDE.md', re: /\((\d+) lines\/file, (\d+) combined/g, expected: [perFile, combined], what: 'always-loaded budgets' },
+    { file: 'presets/README.md', re: /(\d+)-(\d+) line summary/g, expected: [compactMin, compactMax], what: 'compact.md line range' },
+  ]
+  for (const { file, re, expected, what } of claims) {
+    if (!existsSync(join(ROOT, file))) continue
+    const matches = [...read(file).matchAll(re)]
+    if (matches.length === 0) {
+      errors.push(
+        `${file} no longer contains the sentence stating the ${what} that check 16 verifies — restore it, or drop the pattern from check-consistency.ts deliberately rather than leaving a check that matches nothing`
+      )
+      continue
+    }
+    for (const m of matches) {
+      expected.forEach((want, i) => {
+        if (want === null) return
+        if (Number(m[i + 1]) !== want) {
+          errors.push(`${file} states ${what} as ${m[i + 1]}, but the enforced value is ${want}`)
+        }
+      })
     }
   }
 }
@@ -941,8 +1015,11 @@ if (existsSync(join(ROOT, 'scripts', 'run-checks.ts'))) {
 if (installerNodeFloor !== undefined) {
   console.log(`✓ Installer Node floor "${installerNodeFloor}" stated once, claimed consistently, and exercised by a CI job.`)
 }
+if (existsSync(join(ROOT, 'CONTRIBUTING.md')) && existsSync(join(ROOT, 'scripts/lib/presets.ts'))) {
+  console.log(`✓ Budget numbers quoted in prose (skill/agent body, compact.md range, always-loaded) match the constants that enforce them.`)
+}
 if (executableClaimCount > 0) {
-  console.log(`✓ Every documented command, installer flag and slash command resolves (${executableClaimCount} checked across ${REPO_DOC_GLOBS.length} file(s)).`)
+  console.log(`✓ Every documented command, installer flag and slash command resolves (${executableClaimCount} checked across ${REPO_DOC_GLOBS.length} document(s) plus the SessionStart hook).`)
 }
 if (kitRefFiles.length > 0) {
   console.log(

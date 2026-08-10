@@ -154,7 +154,7 @@ türetilir. Tek komut:
 npm run check
 ```
 
-Şu an: 244/244 test geçiyor (50 suites). `routing-eval` yönlendirme tablosunu 26 gerçekçi isteği
+Şu an: 246/246 test geçiyor (50 suites). `routing-eval` yönlendirme tablosunu 26 gerçekçi isteği
 ile sabitler, `check-consistency` bu dosyadaki elle yazılmış her sayıyı yeniden türetir,
 `check-plugin` ise plugin manifestlerinin diskteki bileşenlerle hâlâ eşleştiğini doğrular.
 

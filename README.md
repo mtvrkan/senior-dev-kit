@@ -154,7 +154,7 @@ from disk by the test suite. One command:
 npm run check
 ```
 
-Currently: 244/244 tests passing (50 suites). `routing-eval` pins 26 realistic requests against
+Currently: 246/246 tests passing (50 suites). `routing-eval` pins 26 realistic requests against
 the routing table, `check-consistency` re-derives every hand-written number in this file, and
 `check-plugin` verifies the plugin manifests still match the components on disk.
 
