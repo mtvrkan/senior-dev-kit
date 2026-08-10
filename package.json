@@ -49,6 +49,6 @@
     "eslint": "^10.6.0",
     "markdownlint-cli2": "^0.23.1",
     "typescript": "^5.8.0",
-    "typescript-eslint": "^8.62.1"
+    "typescript-eslint": "^8.66.0"
   }
 }
