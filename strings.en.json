@@ -1,0 +1,23 @@
+{
+  "pipeTitle": "Four things happen on every task: the model reads the project, sizes the blast radius, routes to whoever owns that surface, and verifies exactly what it changed.",
+
+  "pipe1Name": "It reads the project before it edits",
+  "pipe1Body": "Once per session: package manager, config, CI/CD, ORM and migration layout, architecture shape, and the real test command. What it cannot detect it marks <code>UNKNOWN</code> rather than guessing — a wrong assumption is worse than a stated gap.",
+
+  "pipe2Name": "It sizes the blast radius before it plans",
+  "pipe2Body": "Every task lands in a tier, decided before a single file is opened. A one-line CSS fix goes straight through. Anything touching auth, payments, database schema, CI/CD, secrets or infrastructure lands higher.",
+  "pipeTierLow": "straight through, smallest safe diff",
+  "pipeTierHigh": "plan mode, read-only, no edits until you say yes",
+
+  "pipe3Name": "It routes to whoever owns that surface",
+  "pipe3Body": "A guarded noun outranks a task verb: \"fix the CSS in the login form\" is a security question, not a styling one. Rule files load the same way — by path glob, so a Flutter project never pays for the REST-API rules.",
+  "pipeGuardTag": "tier 3+",
+  "pipeGuard": "A guard",
+  "pipeGuardSub": "Read-only by tool grant, not by instruction: there is no Edit or Write tool in its configuration to reach for. It produces a plan and stops.",
+  "pipeImplTag": "tier 0 – 2",
+  "pipeImpl": "An implementer",
+  "pipeImplSub": "Works inside the conventions it just read, changes the smallest thing that fixes the problem, and leaves the refactor you did not ask for alone.",
+
+  "pipe4Name": "It verifies the specific thing it changed",
+  "pipe4Body": "Targeted test for behaviour, lint plus test for a new file, a build for a new route, a type-check for a type change. Never the full suite for a one-file edit, and no \"done\" without the command output behind it."
+}

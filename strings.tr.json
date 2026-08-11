@@ -1,0 +1,23 @@
+{
+  "pipeTitle": "Her işte dört şey olur: model önce projeyi okur, etki alanını ölçer, o alanın sahibine yönlendirir ve tam olarak neyi değiştirdiyse onu doğrular.",
+
+  "pipe1Name": "Düzenlemeden önce projeyi okur",
+  "pipe1Body": "Oturum başına bir kez: paket yöneticisi, config, CI/CD, ORM ve migration düzeni, mimarinin şekli ve projenin gerçek test komutu. Tespit edemediği şeyi tahmin etmez, <code>UNKNOWN</code> diye işaretler — yanlış bir varsayım, açıkça söylenmiş bir boşluktan daha kötüdür.",
+
+  "pipe2Name": "Plan yapmadan önce etki alanını ölçer",
+  "pipe2Body": "Her iş, daha tek dosya açılmadan bir katmana yerleşir. Tek satırlık bir CSS düzeltmesi doğrudan geçer. Auth, ödeme, veritabanı şeması, CI/CD, secret ya da altyapıya dokunan her şey yukarı çıkar.",
+  "pipeTierLow": "doğrudan geçer, en küçük güvenli değişiklik",
+  "pipeTierHigh": "plan modu, salt okunur, sen onaylamadan düzenleme yok",
+
+  "pipe3Name": "İşi, o alanın sahibine yönlendirir",
+  "pipe3Body": "Korumalı bir isim, işin fiiline baskın gelir: \"login formundaki CSS'i düzelt\" bir stil sorusu değil, güvenlik sorusudur. Kural dosyaları da aynı mantıkla yüklenir — dosya yoluna göre, böylece bir Flutter projesi REST-API kurallarının bedelini ödemez.",
+  "pipeGuardTag": "katman 3+",
+  "pipeGuard": "Bir koruma",
+  "pipeGuardSub": "Talimatla değil, araç tanımıyla salt okunur: yapılandırmasında uzanabileceği bir Edit ya da Write aracı yok. Planı çıkarır ve durur.",
+  "pipeImplTag": "katman 0 – 2",
+  "pipeImpl": "Bir uygulayıcı",
+  "pipeImplSub": "Az önce okuduğu düzenin içinde kalır, sorunu çözen en küçük değişikliği yapar ve senin istemediğin refactor'a hiç girmez.",
+
+  "pipe4Name": "Yalnızca değiştirdiği şeyi doğrular",
+  "pipe4Body": "Davranış değiştiyse hedefli test, yeni dosya için lint ve test, yeni route için build, tip değişikliği için type-check. Tek dosyalık bir düzenleme için asla tüm test suite'i çalıştırmaz — ve komut çıktısı olmadan \"bitti\" demez."
+}

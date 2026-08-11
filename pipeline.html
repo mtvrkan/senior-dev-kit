@@ -1,0 +1,54 @@
+<!-- The four steps that run on every task, as one component shared by both locales.
+
+     History worth keeping: this was an inline SVG flow chart with hand-computed
+     coordinates, which a screenshot proved unworkable — SVG text neither wraps nor
+     reports its width, so every box was sized by guessing how long a string would
+     render, and one translation was enough to push a subtitle out of its box and
+     run the join lines through a node. Then it was an HTML flow chart plus a
+     separate numbered list underneath that restated the same four steps in prose.
+     Now it is one vertical pipeline carrying both: text sizes the boxes, the spine
+     is a border, and no string length can break the geometry.
+
+     Structure lives here, labels arrive as {{pipe*}} tokens from strings.<locale>.json —
+     structure duplicated across translations is structure that eventually disagrees. -->
+<ol class="pipe" aria-label="{{pipeTitle}}">
+  <li class="pipe-step reveal">
+    <span class="pipe-num" aria-hidden="true">01</span>
+    <h3>{{pipe1Name}}</h3>
+    <p>{{pipe1Body}}</p>
+  </li>
+
+  <li class="pipe-step reveal">
+    <span class="pipe-num" aria-hidden="true">02</span>
+    <h3>{{pipe2Name}}</h3>
+    <p>{{pipe2Body}}</p>
+    <div class="tiers">
+      <span class="tier"><b>0 – 2</b> {{pipeTierLow}}</span>
+      <span class="tier tier--hot"><b>3 – 4</b> {{pipeTierHigh}}</span>
+    </div>
+  </li>
+
+  <li class="pipe-step reveal">
+    <span class="pipe-num" aria-hidden="true">03</span>
+    <h3>{{pipe3Name}}</h3>
+    <p>{{pipe3Body}}</p>
+    <div class="branch">
+      <article>
+        <span class="tag">{{pipeGuardTag}}</span>
+        <h4>{{pipeGuard}}</h4>
+        <p>{{pipeGuardSub}}</p>
+      </article>
+      <article>
+        <span class="tag">{{pipeImplTag}}</span>
+        <h4>{{pipeImpl}}</h4>
+        <p>{{pipeImplSub}}</p>
+      </article>
+    </div>
+  </li>
+
+  <li class="pipe-step reveal">
+    <span class="pipe-num" aria-hidden="true">04</span>
+    <h3>{{pipe4Name}}</h3>
+    <p>{{pipe4Body}}</p>
+  </li>
+</ol>

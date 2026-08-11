@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- GitHub Pages serves this for any path it cannot resolve, from any depth — which is why every
+     asset and link here is absolute ({{baseUrl}}/…). A relative stylesheet would resolve against
+     the requested path and 404 in turn, leaving an unstyled error page. Bilingual on one page:
+     the visitor arrived from a broken link, so guessing their locale is a worse bet than showing
+     both. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>404 — Senior Dev Kit</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="{{baseUrl}}/favicon.ico" sizes="32x32">
+<link rel="icon" href="{{baseUrl}}/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="{{baseUrl}}/apple-touch-icon.png">
+<link rel="mask-icon" href="{{baseUrl}}/favicon.svg" color="#D97757">
+<meta name="theme-color" content="#221e19" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<link rel="stylesheet" href="{{baseUrl}}/style.css">
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+
+<main class="wrap lost">
+  <a class="brand" href="{{baseUrl}}/">{{mark}}<span>Senior Dev Kit</span></a>
+  <p class="code">404</p>
+  <h1>Nothing routes here.</h1>
+  <p class="lede">
+    This page does not exist — the link is either out of date or was never valid. The kit itself
+    is one click away.
+  </p>
+  <p class="alt-lang" lang="tr">Bu sayfa yok. Kitin ana sayfasına dönebilirsin.</p>
+  <div class="cta">
+    <a class="btn btn--primary" href="{{baseUrl}}/">Home</a>
+    <a class="btn btn--ghost" href="{{baseUrl}}/tr.html" hreflang="tr" lang="tr">Türkçe<span class="arr" aria-hidden="true">→</span></a>
+    <a class="btn btn--ghost" href="{{repoUrl}}">Repository<span class="arr" aria-hidden="true">→</span></a>
+  </div>
+</main>
+</body>
+</html>

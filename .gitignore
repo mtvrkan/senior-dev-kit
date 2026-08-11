@@ -1,0 +1,4 @@
+# Rendered output. Built by `npm run gen-site` from this branch's templates and the
+# kit's contents on `main`, then published to `gh-pages` by CI. It belongs on neither
+# of the two source branches.
+dist/

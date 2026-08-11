@@ -1,0 +1,85 @@
+<!doctype html>
+<!-- Source for site/og.png, the 1200x630 social card. Not published: `scripts/gen-og.ts`
+     renders this, screenshots it with headless Chrome, and writes the PNG next to it.
+     Kept as HTML rather than hand-drawn so the card cannot drift from the page's own
+     palette and type — it reads the same {{tokens}} the landing page does. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; }
+  body {
+    position: relative;
+    overflow: hidden;
+    background: #0b0a09;
+    color: #f2efe9;
+    font-family: "Inter", "Segoe UI Variable Text", "Segoe UI", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .glow {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .glow-a {
+    width: 900px; height: 900px; left: -260px; top: -320px;
+    background: radial-gradient(circle, #e08b6c 0%, transparent 64%);
+    opacity: 0.28;
+  }
+  .glow-b {
+    width: 760px; height: 760px; right: -240px; bottom: -340px;
+    background: radial-gradient(circle, #e08b6c 0%, transparent 68%);
+    opacity: 0.18;
+  }
+  .card {
+    position: relative;
+    height: 100%;
+    padding: 88px 96px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .top { display: flex; align-items: center; gap: 20px; }
+  .top svg { width: 56px; height: 56px; border-radius: 16px; display: block; }
+  .top span {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 24px;
+    letter-spacing: 0.02em;
+    color: #f2efe9;
+  }
+  h1 {
+    max-width: 20ch;
+    font-family: "Sitka Display", "Palatino Linotype", Georgia, serif;
+    font-size: 82px;
+    font-weight: 600;
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+  }
+  h1 em { font-style: italic; color: #eda184; }
+  .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 22px;
+    color: #a8a49c;
+  }
+  .foot b { color: #eda184; font-weight: 400; }
+</style>
+</head>
+<body>
+<div class="glow glow-a"></div>
+<div class="glow glow-b"></div>
+
+<div class="card">
+  <div class="top">{{mark}}<span>Senior Dev Kit</span></div>
+  <h1>Give Claude Code a sense of <em>blast radius</em>.</h1>
+  <div class="foot">
+    <span>{{repoSlug}}</span>
+    <span><b>MIT</b> · v{{version}}</span>
+  </div>
+</div>
+</body>
+</html>

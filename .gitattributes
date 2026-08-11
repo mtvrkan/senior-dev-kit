@@ -1,0 +1,7 @@
+# Same normalisation as `main`. Without it, a Windows checkout gets CRLF here, and the
+# generator's comment-stripping regexes — which required a bare LF — silently left the
+# contributor notes in the published HTML. Fixed in lib/templates.ts as well; a rule that
+# only holds on one branch is not a rule.
+* text=auto eol=lf
+*.png binary
+*.ico binary

@@ -1,0 +1,443 @@
+<!doctype html>
+<!-- Template. Every {{token}} is filled by scripts/gen-site.ts from disk — never hand-type a
+     count here; check 28 in check-consistency.ts fails the build if you do. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Senior Dev Kit — Claude Code with a sense of blast radius</title>
+<meta name="description" content="A Claude Code configuration kit: {{agents}} agents, {{skills}} skills, {{rules}} rules, {{presets}} stack presets. Read-only guards on anything dangerous, a written procedure per task shape, and a context budget a script enforces.">
+<link rel="canonical" href="{{baseUrl}}/">
+<link rel="alternate" hreflang="en" href="{{baseUrl}}/">
+<link rel="alternate" hreflang="tr" href="{{baseUrl}}/tr.html">
+<link rel="alternate" hreflang="x-default" href="{{baseUrl}}/">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="mask-icon" href="favicon.svg" color="#D97757">
+<meta name="theme-color" content="#221e19" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Senior Dev Kit">
+<meta property="og:title" content="Senior Dev Kit">
+<meta property="og:description" content="Agents, skills, rules and guardrails that make Claude Code behave like a senior engineering team.">
+<meta property="og:url" content="{{baseUrl}}/">
+<meta property="og:image" content="{{baseUrl}}/og.png">
+<meta property="og:image:width" content="{{ogWidth}}">
+<meta property="og:image:height" content="{{ogHeight}}">
+<meta property="og:image:alt" content="Senior Dev Kit — give Claude Code a sense of blast radius">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{{baseUrl}}/og.png">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="tr_TR">
+<meta name="author" content="{{authorName}}">
+<link rel="stylesheet" href="style.css">
+<script type="application/ld+json">{{jsonLd}}</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<span id="top" tabindex="-1"></span>
+
+<div class="aurora" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+
+<header class="site-head">
+  <div class="bar">
+    <a class="brand" href="./">{{mark}}<span>Senior Dev Kit</span></a>
+    <nav aria-label="Primary">
+      <a href="#compare">Side by side</a>
+      <a href="#how">Mechanics</a>
+      <a href="#economy">Economy</a>
+      <a href="#install">Install</a>
+      <a href="#inside">Inside</a>
+    </nav>
+    <div class="bar-end">
+      <div class="langs" role="group" aria-label="Language">
+        <span class="is-current" aria-current="true">EN</span>
+        <a href="tr.html" hreflang="tr" lang="tr">TR</a>
+      </div>
+      <a class="head-cta" href="#install">Install</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p class="chip"><span class="pulse-dot" aria-hidden="true"></span> Claude Code configuration kit · v{{version}}</p>
+        <h1>Give the model a sense of <em>blast radius</em>.</h1>
+        <p class="lede">
+          Out of the box, Claude Code will rewrite your auth middleware, drop a column, and
+          refactor three unrelated files on the way to fixing a CSS bug. This kit gives it what a
+          senior teammate has and a fresh model does not: your project&apos;s own conventions, an
+          idea of what is dangerous, and the discipline to read only what the task needs.
+        </p>
+        <div class="cta">
+          <a class="btn btn--primary" href="#install">Install in three lines</a>
+          <a class="btn btn--ghost" href="{{repoUrl}}">Read the source<span class="arr" aria-hidden="true">→</span></a>
+        </div>
+        <p class="hero-micro">MIT licensed · no dependencies · Node.js 18+</p>
+      </div>
+
+      <figure class="term term--hero">
+        <figcaption class="term-bar"><span class="term-dots" aria-hidden="true"><i></i></span> claude — with senior-dev-kit</figcaption>
+        <pre class="term-body"><code><span class="ln">$ claude</span><span class="ln pr">add a column to the users table</span><span class="ln sp"> </span><span class="ln guard">◆ tier 3 — database schema · routed to db-guard</span><span class="ln dim">  read-only. nothing has been written.</span><span class="ln sp"> </span><span class="ln">  PLAN</span><span class="ln">  1  ALTER TABLE users ADD COLUMN plan text NULL</span><span class="ln">  2  backfill in batches, no table lock</span><span class="ln">  3  rollback: DROP COLUMN plan</span><span class="ln sp"> </span><span class="ln ok">  awaiting your approval<span class="caret" aria-hidden="true"></span></span></code></pre>
+      </figure>
+    </div>
+
+    <dl class="rail">
+      <div><dt>Agents</dt><dd>{{agents}}</dd></div>
+      <div><dt>Skills</dt><dd>{{skills}}</dd></div>
+      <div><dt>Rule files</dt><dd>{{rules}}</dd></div>
+      <div><dt>Presets</dt><dd>{{presets}}</dd></div>
+      <div><dt>Reference docs</dt><dd>{{agentDocs}}</dd></div>
+      <div><dt>Deny rules</dt><dd>{{denyRules}}</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section id="compare" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">01 — Side by side</p>
+      <h2>Same sentence. Two completely different outcomes.</h2>
+      <p class="lede">
+        One line typed into Claude Code: <em>add a column to the users table</em>. Flip the switch
+        to see what the kit changes about everything that comes after it.
+      </p>
+    </div>
+
+    <div class="compare">
+      <input class="visually-hidden" type="radio" name="cmp" id="cmp-off" checked>
+      <input class="visually-hidden" type="radio" name="cmp" id="cmp-on">
+
+      <div class="seg" role="group" aria-label="Compare with and without the kit">
+        <span class="seg-thumb" aria-hidden="true"></span>
+        <label for="cmp-off"><span class="dot" aria-hidden="true"></span> Stock Claude Code</label>
+        <label for="cmp-on"><span class="dot" aria-hidden="true"></span> With the kit</label>
+      </div>
+
+      <div class="panes">
+        <figure class="term pane pane--off">
+          <figcaption class="term-bar"><span class="term-dots" aria-hidden="true"><i></i></span> stock</figcaption>
+          <pre class="term-body"><code><span class="ln pr">add a column to the users table</span><span class="ln sp"> </span><span class="ln">● Edit  prisma/schema.prisma</span><span class="ln">● Edit  src/types/user.ts</span><span class="ln">● Bash  npx prisma migrate dev --name add_plan</span><span class="ln sp"> </span><span class="ln bad">  Drop and recreate `users`? … applied</span><span class="ln bad">  47 rows lost</span><span class="ln sp"> </span><span class="ln">Done! I added the column and updated the types.</span></code></pre>
+        </figure>
+
+        <figure class="term pane pane--on">
+          <figcaption class="term-bar"><span class="term-dots" aria-hidden="true"><i></i></span> senior-dev-kit</figcaption>
+          <pre class="term-body"><code><span class="ln pr">add a column to the users table</span><span class="ln sp"> </span><span class="ln guard">◆ tier 3 — DB schema · ESCALATE TO: db-guard</span><span class="ln dim">  db-guard holds no Edit or Write tool.</span><span class="ln sp"> </span><span class="ln">  PLAN — additive, zero-downtime</span><span class="ln">  1  ADD COLUMN plan text NULL      (no lock)</span><span class="ln">  2  backfill in batches of 1000</span><span class="ln">  3  rollback: DROP COLUMN plan</span><span class="ln sp"> </span><span class="ln ok">  awaiting your approval<span class="caret" aria-hidden="true"></span></span></code></pre>
+        </figure>
+      </div>
+
+      <div class="score">
+        <div><b class="v-off">3</b><b class="v-on">0</b><span>files written</span></div>
+        <div><b class="v-off">0</b><b class="v-on">1</b><span>plans shown</span></div>
+        <div><b class="v-off">0</b><b class="v-on">1</b><span>approvals asked</span></div>
+      </div>
+
+      <p class="note compare-note">
+        The guard is read-only by tool grant, not by instruction — there is no Edit or Write tool
+        in its configuration to reach for. It is not being asked nicely to hold back.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">02 — Mechanics</p>
+      <h2>Four things happen on every task.</h2>
+      <p class="lede">
+        You trigger none of them. Describe the work in plain language; the routing is automatic.
+      </p>
+    </div>
+
+    {{pipeline}}
+
+    <div class="routes-wrap reveal">
+      <h3>What that looks like in practice</h3>
+      <p>Ordinary requests, and where each one lands before a single file is touched.</p>
+      <ul class="routes" aria-label="Example requests and where each one routes">
+        <li class="route">
+          <p class="route-say">fix the broken link on the login page</p>
+          <p class="route-meta">
+            <span class="tier">tier 1</span>
+            <span class="agent">bug-hunter</span>
+          </p>
+        </li>
+        <li class="route">
+          <p class="route-say">add a settings page</p>
+          <p class="route-meta">
+            <span class="tier">tier 2</span>
+            <span class="agent">senior-engineer</span>
+          </p>
+        </li>
+        <li class="route">
+          <p class="route-say">redesign the checkout flow</p>
+          <p class="route-meta">
+            <span class="tier tier--hot">tier 3</span>
+            <span class="agent">feature-plan</span>
+            <span class="to" aria-hidden="true">→</span>
+            <span class="agent agent--guard">security-guard</span>
+          </p>
+        </li>
+        <li class="route">
+          <p class="route-say">add SBOM generation to the Docker CI</p>
+          <p class="route-meta">
+            <span class="tier tier--hot">tier 3</span>
+            <span class="agent agent--guard">devops-guard</span>
+          </p>
+        </li>
+        <li class="route route--wide">
+          <p class="route-say">add a column to the users table</p>
+          <p class="route-meta">
+            <span class="tier tier--hot">tier 3</span>
+            <span class="agent agent--guard">db-guard</span>
+            <em class="why">plan first — no migration without approval</em>
+          </p>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="economy" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">03 — Context economy</p>
+      <h2>You pay for what the task touches.</h2>
+      <p class="lede">
+        A configuration kit is a standing tax on every prompt you ever send. This one is measured,
+        capped, and mostly not loaded.
+      </p>
+    </div>
+
+    <div class="econ">
+      <div class="econ-panel reveal">
+        <p class="econ-figure"><b>{{alwaysLoadedLines}}</b><span>lines load on every turn</span></p>
+        <div class="meter" role="img" aria-label="{{alwaysLoadedLines}} of {{totalRuleLines}} rule-set lines load unconditionally — {{alwaysLoadedShare}} percent">
+          <span class="meter-fill" style="width:{{alwaysLoadedShare}}%"></span>
+        </div>
+        <p class="econ-scale"><span>{{alwaysLoadedShare}}% of the rule set</span><span>{{totalRuleLines}} lines in total</span></p>
+        <dl class="econ-grid">
+          <div><dt>Unconditional</dt><dd>{{alwaysLoadedFiles}} files, capped at {{combinedBudget}} lines</dd></div>
+          <div><dt>Path-scoped</dt><dd>{{pathScopedRules}} rule files</dd></div>
+          <div><dt>On demand</dt><dd>{{agentDocs}} reference docs</dd></div>
+        </dl>
+      </div>
+
+      <ul class="checks reveal">
+        <li><b>Three files load unconditionally</b> — the protocol and the two rules with no path
+          scope. Their combined line count is capped, and the cap fails the build, so
+          "always-loaded" cannot quietly become "always-loaded and bloated".</li>
+        <li><b>The other {{pathScopedRules}} rule files wait for a path match</b> — a Flutter
+          project never pays for the REST-API rules, and touching a migration pulls in the
+          database rules by itself.</li>
+        <li><b>{{agentDocs}} reference docs load only when a skill asks</b> — the per-stack command
+          table, the zero-downtime migration playbook, the dependency-audit guide. Read once, when
+          needed, rather than carried all session.</li>
+        <li><b>Trivial work skips the survey entirely</b> — a single file under ten lines runs no
+          boot sequence: no manifest read, no config scan, no architecture detection.</li>
+        <li><b>Verification is targeted, and reading is delegated</b> — the test for the thing that
+          changed rather than the whole suite, and read-heavy sweeps go to subagents with their own
+          context window, so only the conclusion comes back.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="install" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">04 — Install</p>
+      <h2>Three lines, typed inside Claude Code.</h2>
+    </div>
+
+    <div class="install">
+      <div class="reveal">
+        <p class="badge">Recommended</p>
+        <figure class="term">
+          <figcaption class="term-bar"><span class="term-dots" aria-hidden="true"><i></i></span> claude — plugin install</figcaption>
+          <ol class="steps">
+          <li>
+            <code>/plugin marketplace add {{repoSlug}}</code>
+            <span>Registers this repository as a plugin marketplace.</span>
+          </li>
+          <li>
+            <code>/plugin install senior-dev-kit@senior-dev-kit</code>
+            <span>Pulls the agents, skills, commands and stack presets.</span>
+          </li>
+          <li>
+            <code>/kit-setup</code>
+            <span>Writes the two things a plugin structurally cannot: the path-scoped rules and
+              the permission rules. It shows you exactly what it will do, waits for a yes, and
+              backs up anything it touches.</span>
+          </li>
+          </ol>
+        </figure>
+        <p class="note install-note">
+          Restart Claude Code, then run <code>/kit-doctor</code> to confirm every piece landed.
+          Updates arrive through <code>/plugin marketplace update</code>.
+        </p>
+      </div>
+
+      <div class="alt reveal">
+        <h3>Or install the files yourself</h3>
+        <p class="note">Node.js 18 or newer, no dependencies.</p>
+        <pre><code>git clone {{repoUrl}}.git
+cd senior-dev-kit
+node scripts/install.mjs --dry-run
+node scripts/install.mjs</code></pre>
+        <p class="note">
+          Nothing you had is destroyed: the protocol goes into your <code>CLAUDE.md</code> inside
+          markers, deny rules are merged into your <code>settings.json</code>, and anything
+          overwritten is backed up first. Pick one path, not both.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="inside" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">05 — Inside</p>
+      <h2>What you actually get.</h2>
+    </div>
+
+    <div class="bento">
+      <article class="tile reveal">
+        <b>{{agents}}</b>
+        <p class="kind">agents</p>
+        <h3>Guards that cannot write</h3>
+        <p>
+          Four are read-only by tool grant, not by instruction: there is no Edit or Write tool in
+          their configuration to reach for. They produce a plan and stop. The other three
+          implement.
+        </p>
+      </article>
+
+      <article class="tile reveal">
+        <b>{{skills}}</b>
+        <p class="kind">skills</p>
+        <h3>A procedure per task shape</h3>
+        <p>
+          Fix a bug, add a page, review a migration, gate a release — each a written discipline the
+          model follows instead of improvising. Most trigger on task shape; a few are manual-only
+          by design.
+        </p>
+      </article>
+
+      <article class="tile reveal">
+        <b>{{rules}}</b>
+        <p class="kind">rule files</p>
+        <h3>A context budget with a gate behind it</h3>
+        <p>
+          Three files load every turn, under a combined line cap a script enforces. The rest load
+          on a path-glob match, and the {{agentDocs}} reference docs load only when a skill needs
+          one.
+        </p>
+      </article>
+
+      <article class="tile tile--wide reveal">
+        <div>
+          <b>{{denyRules}}</b>
+          <p class="kind">deny rules</p>
+          <h3>Files the model is not allowed to open</h3>
+          <p>
+            Not a prompt asking nicely — permission rules the harness enforces before a tool ever
+            runs, so a secret cannot reach the context window in the first place.
+          </p>
+        </div>
+        <div class="denylist" aria-label="Examples of denied paths">
+          <span>.env</span>
+          <span>.env.*</span>
+          <span>*.pem</span>
+          <span>*.key</span>
+          <span>id_rsa</span>
+          <span>.ssh/</span>
+          <span>serviceAccountKey.json</span>
+          <span>*.tfstate</span>
+          <span>kubeconfig</span>
+          <span>secrets/</span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="presets" aria-label="Stack presets">
+  <div class="wrap">
+    <p class="eyebrow">{{presets}} stack presets · house conventions per stack</p>
+    <p class="visually-hidden">Stack presets included: {{presetList}}.</p>
+  </div>
+  <div class="preset-rail" aria-hidden="true">
+    <div class="preset-track">{{presetTicker}}{{presetTicker}}</div>
+  </div>
+</section>
+
+<section id="built" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">06 — Verified</p>
+      <h2>Every number on this page is derived, not typed.</h2>
+      <p class="lede">
+        A configuration kit rots quietly. Nothing crashes when a rule file starts recommending a
+        tool another rule retired, or when a README claims a count that stopped being true six
+        commits ago.
+      </p>
+    </div>
+
+    <div class="gate">
+      <div class="gate-copy reveal">
+        <p>
+          So the repository checks what a test suite normally cannot. On every change, the
+          consistency checks:
+        </p>
+        <ul class="checks">
+          <li><b>Re-derive every count</b> from disk — the figures in the rail at the top of this
+            page come from that same derivation at build time.</li>
+          <li><b>Pin the line budget</b> of the three files that load on every turn, so the
+            context cost of the kit cannot creep.</li>
+          <li><b>Verify each rule's globs</b> actually reach the layouts it claims to cover.</li>
+          <li><b>Grade the kit's own code examples</b> against the prose around them — the
+            example that logged a user's email nineteen lines under "never log PII" is why.</li>
+          <li><b>Fail the build</b> if a preset recommends a tool a rule file retires.</li>
+        </ul>
+        <p class="note">
+          Findings get closed at the root, and the check that closes one gets written down, so the
+          same class cannot come back unnoticed. That is the whole method. Even the step list on
+          the right is read out of the gate runner rather than transcribed next to it.
+        </p>
+        <div class="cta">
+          <a class="btn btn--ghost" href="{{repoUrl}}#readme">Read the README<span class="arr" aria-hidden="true">→</span></a>
+          <a class="btn btn--ghost" href="{{repoUrl}}/blob/main/CONTRIBUTING.md">Contributing<span class="arr" aria-hidden="true">→</span></a>
+        </div>
+      </div>
+
+      <figure class="term gate-run reveal">
+        <figcaption class="term-bar"><span class="term-dots" aria-hidden="true"><i></i></span> npm run check</figcaption>
+        <ol>{{gateSteps}}</ol>
+        <figcaption class="term-foot">{{gateStepCount}} steps · all green before anything ships</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-foot">
+  <div class="wrap foot">
+    <a class="foot-brand" href="./">{{mark}}<span>Senior Dev Kit</span></a>
+    <p class="foot-credit">Developed with <span class="heart" aria-hidden="true">♥</span><span class="visually-hidden">love</span>
+      by <a href="{{authorUrl}}" rel="me">{{owner}}</a></p>
+  </div>
+</footer>
+
+<a class="to-top" href="#top" aria-label="Back to top"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+</body>
+</html>

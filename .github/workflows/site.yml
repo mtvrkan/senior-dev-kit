@@ -1,0 +1,18 @@
+# Publishes this branch. Named `site-src`, not `site`: with a `site/` directory in the
+# working tree, `git log site` is ambiguous and every branch-taking command needs a `--`. The build itself lives on `main`, in the workflow this one
+# calls: duplicating it here would create a second copy to keep in sync, and the build
+# has to read `main` anyway — every number on the page is derived from the kit's own
+# contents, not from anything in this branch.
+name: site
+
+on:
+  push:
+    branches: [site-src]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    uses: mtvrkan/senior-dev-kit/.github/workflows/site.yml@main
