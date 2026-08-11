@@ -1,0 +1,9 @@
+- Controllers thin: Form Request validates → Action/service does the work → Resource returned · no logic in controllers or models
+- Validation in Form Requests only — `$request->validated()` IS the mass-assignment allowlist · NEVER `$request->all()` into `create()`/`update()` · `$fillable` on every model
+- Authorize every resource read: `$this->authorize('view', $post)` + a Policy · `findOrFail()` with no policy check is an IDOR — route-model binding does not authorize
+- Eloquent: eager load with `with()` (N+1) · `Model::preventLazyLoading()` in dev · NEVER interpolate into `DB::select`/`DB::raw` — use `?` bindings
+- Queue anything >200ms: `dispatch(new Job($user))` implementing `ShouldQueue` with `$tries`/`$backoff` · jobs serialize by ID and re-fetch
+- Migrations are Tier 3: plan first, expand-then-contract, `down()` truly reverses `up()`, no `dropColumn` in the same deploy as the code change
+- Errors: `renderable()` in the Handler → JSON with status · `APP_DEBUG=false` in prod · `Log::info('event', ['user_id' => $id])` with no PII
+- Verify: `php artisan test --filter Name` · `phpstan analyse` · `pint --test` · `php artisan route:list` after adding a route
+- Anti: `$request->all()` mass assignment · unauthorized `findOrFail` · N+1 in view loops · interpolated SQL · inline slow work · committed `dd()`

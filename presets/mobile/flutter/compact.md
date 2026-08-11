@@ -1,0 +1,10 @@
+- Feature-first `lib/features/<f>/{presentation,domain,data}/` + `lib/core/` · Riverpod for state and DI · repositories return domain models, never raw JSON
+- Every async surface renders three states: skeleton loading, error with retry (`ref.invalidate`), and empty
+- `const` on every constructible widget · split `build()` into widget CLASSES, not `_buildX()` helpers (only a real boundary stops rebuilds)
+- `ListView.builder`/`SliverList` for any list that can exceed a screen · `compute()` for CPU work incl. large JSON parses — 16ms budget on the UI thread
+- Riverpod: `ref.watch` in `build`, `ref.read` in callbacks · `AsyncNotifier` for stateful side effects · never hold `BuildContext` in a provider
+- `BuildContext` after an `await` requires `context.mounted`
+- Map transport errors to domain failures at the repository edge — a widget never sees a `DioException`
+- Security: NEVER secrets in Dart constants or pubspec (they ship in the binary) — `--dart-define` + `flutter_secure_storage` (Keychain/Keystore) · no cleartext HTTP · deep-link params are untrusted
+- Verify: `flutter test [file]` · `flutter analyze` · `dart format --set-exit-if-changed .` · `flutter build apk --debug` · `osv-scanner -L pubspec.lock`
+- Anti: missing `const` · `_buildX()` helpers · non-builder `ListView` · HTTP in `build()` · `setState` alongside a provider · `print()` in shipped code

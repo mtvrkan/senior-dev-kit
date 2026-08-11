@@ -1,0 +1,59 @@
+# Pre-commit hooks for the senior-dev-kit repo itself.
+# Install: pip install pre-commit && pre-commit install
+# Run all: pre-commit run --all-files
+# Update pins: pre-commit autoupdate --freeze
+#
+# These hooks keep the kit's own source clean.
+# For the recommended pre-commit stack in consumer projects, see rules/600-devops.md § PRE-COMMIT HOOKS.
+
+repos:
+  # General hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b  # frozen: v5.0.0
+    hooks:
+      - id: no-commit-to-branch
+        args: [--branch, main, --branch, master]
+      - id: check-merge-conflict
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext, md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+        files: \.(yml|yaml)$
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: [--maxkb, 500]
+
+  # Secret scanning — full git history on first run
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 78eebaca9d8940b8c511a6e67349168f6477943a  # frozen: v8.26.0
+    hooks:
+      - id: gitleaks
+
+  # Shell script lint (any *.sh added to the repo — none ship today)
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: a23f6b85d0fdd5bb9d564e2579e678033debbdff  # frozen: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        files: \.sh$
+        args: [--severity=warning]
+
+  # Local hooks run the repo's own npm scripts on purpose. A mirrored
+  # markdownlint-cli2 hook pinned its own frozen rev here (v0.17.2) while
+  # package.json installed ^0.23.1 — two linters, one config, and a pre-commit
+  # pass that meant nothing about whether CI would agree. Going through
+  # `npm run` makes the version single-sourced by construction.
+  # Requires the repo's Node floor (package.json engines.node) and `npm ci`.
+  - repo: local
+    hooks:
+      - id: markdown-lint
+        name: Markdown lint (npm run markdown-lint)
+        language: system
+        entry: npm run markdown-lint
+        pass_filenames: false
+        files: \.md$
+      - id: validate-skills
+        name: Validate skill frontmatter
+        language: system
+        entry: npm run validate
+        pass_filenames: false
+        always_run: true

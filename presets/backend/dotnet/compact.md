@@ -1,0 +1,11 @@
+- Endpoint → service → repository/`DbContext` · one style per project (minimal APIs or controllers) · `AddScoped` for anything touching `DbContext`, never `AddSingleton`
+- `record` DTOs at the boundary — an EF entity is never a request or response body
+- `CancellationToken` on every async endpoint and service method, threaded all the way down
+- Validation: data annotations + `[ApiController]` auto-400 with `ProblemDetails` · FluentValidation for anything beyond attributes, never `if` chains in the endpoint
+- Tier 3 area: `Program.cs`, `appsettings*.json`, JWT config, `[Authorize]` policies — plan first · `[Authorize]` is not an ownership check; verify the owner id or it's an IDOR
+- EF Core: project with `.Select(...)` + `AsNoTracking()` on reads (N+1) · `FromSqlInterpolated`/parameters, never interpolated `FromSqlRaw` · migrations are Tier 3
+- Async all the way — NEVER `.Result`/`.Wait()`/`async void` · `Task.WhenAll` for independent calls
+- Errors: `UseExceptionHandler()` + `AddProblemDetails()` · never `ex.ToString()` to the client
+- Logging: structured templates `LogInformation("User created {UserId}", id)` — never interpolated, never secrets or bodies
+- Verify: `dotnet test --filter "FullyQualifiedName~Tests"` · `dotnet build` · `dotnet format --verify-no-changes`
+- Anti: entity returned from endpoint · `BinaryFormatter`/`TypeNameHandling` ≠ None · `throw ex;` (use `throw;`) · missing `AsNoTracking()`

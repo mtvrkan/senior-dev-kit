@@ -1,0 +1,10 @@
+- Layout: `cmd/<bin>/main.go`, private code in `internal/` · handler → service → store · deps are struct fields wired in `main`, never package globals or working `init()`
+- Accept interfaces, return structs — define the interface in the CONSUMER package
+- Errors are values: wrap with `fmt.Errorf("...: %w", err)`, inspect with `errors.Is`/`errors.As` · NEVER `_ = err`, never compare error strings · generic message to the client, wrapped error to the log
+- `ctx context.Context` is the first parameter of every I/O function, threaded from `r.Context()` to the driver · never stored in a struct
+- Concurrency: every goroutine has a defined exit · bound fan-out (`errgroup.SetLimit`) · `go test -race` before anything concurrent ships
+- SQL: `QueryRowContext(ctx, "... WHERE email = $1", email)` — never `Sprintf` · `defer rows.Close()` + check `rows.Err()` after the loop · set `SetMaxOpenConns`/`SetConnMaxLifetime`
+- `html/template` for browser output — `text/template` does not escape · `exec.Command` takes argv elements, never `sh -c userInput`
+- Timeouts on every `http.Server` (esp. `ReadHeaderTimeout`) and every outbound client — the defaults wait forever
+- Verify: `go test ./pkg/... -run TestName -v` · `go test -race ./...` · `golangci-lint run` · `go vet ./...` · `govulncheck ./...`
+- Anti: swallowed errors · `panic` as library control flow · `any` where a concrete type fits · leaked goroutines · timeout-less clients

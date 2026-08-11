@@ -1,0 +1,11 @@
+---
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/mtvrkan/senior-dev-kit/security/advisories/new
+    about: >-
+      Report privately through GitHub Security Advisories. Do not open a public
+      issue for a vulnerability.
+  - name: Question or idea
+    url: https://github.com/mtvrkan/senior-dev-kit/discussions
+    about: Ask how something works, or propose a change before writing code.

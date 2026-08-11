@@ -1,0 +1,12 @@
+- `.tsx` here is React Native, not web: `rules/100-web.md` auto-loads by extension but does NOT apply — no DOM, no CSS cascade, no viewport. Read `rules/400-mobile.md` for platform questions
+- Expo Router v6 for all navigation (files under `app/`) · feature folders `features/<f>/{components,hooks,api}/`
+- TanStack Query for server state, Zustand for client state — never mirror server data into `useState`/`useEffect`
+- Three required states per screen: skeleton loading, error with `refetch` retry, empty
+- `FlashList` over ~20 items · `FlatList` only for short fixed lists · NEVER `ScrollView` + `.map()` over network data · `React.memo` rows + stable `keyExtractor`
+- Animate with Reanimated on the UI thread, not `setState`
+- Platform differences via `.ios.tsx`/`.android.tsx`/`.native.tsx` splits or `Platform.select` · `useSafeAreaInsets()`, never hardcoded notch heights
+- Tokens in `expo-secure-store` (Keychain/Keystore) — `AsyncStorage` is unencrypted plain text · `EXPO_PUBLIC_*` ships inside the bundle, so nothing secret goes there · deep-link params are untrusted
+- One API client module (base URL, auth header, error mapping) — screens call hooks, never `fetch` · handle offline (Query retry + NetInfo)
+- Native dependency or `app.json` change ⇒ say a rebuild is required: `npx expo prebuild --clean` + `eas build`
+- Verify: `npx jest [file]` · `npx tsc --noEmit` · `npx eslint .` · `npx expo-doctor`
+- Anti: web idioms that silently no-op (`className`, `window`, `onMouseEnter`) · secrets behind `EXPO_PUBLIC_`

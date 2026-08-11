@@ -1,0 +1,74 @@
+# Builds and publishes the landing page.
+#
+# Three branches, three jobs: `main` holds the kit and the generator, `site` holds the
+# page source, `gh-pages` holds the rendered output and is written only by this job.
+#
+# The split exists so that installing the kit does not also download a website. It costs
+# this checkout dance, and nothing else: every number the page states is still derived
+# from `main` at build time, because `main` is what the generator reads.
+#
+# Callable from the `site-src` branch (workflow_call) so that the build logic lives in one
+# file rather than being duplicated onto a branch that would drift from it.
+name: site
+
+on:
+  push:
+    branches: [main]
+    # Prose changes cannot move a derived number, so they do not need to republish.
+    paths-ignore:
+      - '**/*.md'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: site-publish
+  # Queue rather than cancel: the job takes under a minute, the last run still wins, and
+  # a cancelled check on a commit is indistinguishable from a failed one at a glance.
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the kit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: main
+
+      - name: Check out the page source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: site-src
+          path: site
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      # With site/ present, this now scans the templates too — check 28 fails the build
+      # if one hard-codes a count instead of using the token that derives it.
+      - name: Consistency checks, templates included
+        run: npm run consistency-check
+
+      - name: Render
+        run: npm run gen-site
+
+      - name: Publish to gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # An orphan commit force-pushed each time: gh-pages is output, not history, and
+        # nothing should ever need to read a previous version of it.
+        run: |
+          cd site/dist
+          git init -q
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -qm "Publish landing page from ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:gh-pages

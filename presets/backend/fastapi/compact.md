@@ -1,0 +1,9 @@
+- Routers thin: validate → call service → return Pydantic schema · business logic in services, DB in repositories
+- Pydantic v2: `model_config = ConfigDict(from_attributes=True)` on response schemas · `EmailStr`, `Field(min_length=...)` on requests · FastAPI validates → 422 auto
+- Ownership check in service: `if post.user_id != requesting_user_id: raise HTTPException(403)` — every resource
+- Async: NEVER `requests`, `time.sleep`, or sync DB calls in `async def` · CPU work → `run_in_threadpool(fn, data)`
+- DB: SQLAlchemy 2.0 async — `await db.execute(select(User).where(User.email == email))` · NEVER f-string SQL · transactions: `async with db.begin()`
+- Errors: `@app.exception_handler(Exception)` global handler · log + return `{"detail": "Internal server error"}` · NEVER raw SQLAlchemy errors to client
+- Logging: `structlog.get_logger()` — `logger.info("event", user_id=id)` · NEVER passwords/tokens/PII
+- Verify: `pytest [file] -x -q` · `ruff check .` · `mypy app/` · `uvicorn app.main:app --reload` smoke check
+- Anti: sync I/O in async route · returning ORM object · f-string SQL · logic in route function · `except: pass`

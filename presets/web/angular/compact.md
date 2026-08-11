@@ -1,0 +1,10 @@
+- Standalone components only (`NgModule` is legacy) · features lazy-routed under `app/features/`, shared in `app/shared/`, services in `app/core/` · `inject()` over constructor DI (works in field initializers and functional guards)
+- `ChangeDetectionStrategy.OnPush` on EVERY component — default CD re-checks the whole tree per event and is the root cause of most "Angular is slow"
+- Signals for state: `signal()` writable, `computed()` derived, `input()`/`output()` for the component API, `effect()` for SIDE EFFECTS ONLY — never to compute a value
+- Keep RxJS for HTTP, event streams, debounce, cancellation · `toSignal()` at the boundary · never shadow a signal with a `BehaviorSubject` for the same state
+- New control flow `@if`/`@for`/`@switch` · `@for` REQUIRES `track` — never `track $index` on a reorderable list
+- No function calls in template bindings (re-evaluated every CD cycle) — use `computed()` or a pure pipe · `async` pipe over manual `subscribe()`
+- Subscriptions leak by default: `takeUntilDestroyed()` on every manual subscribe, or use the `async` pipe
+- HTTP: functional interceptors for auth header / correlation id / error mapping · map `HttpErrorResponse` to a domain error at the service edge · `withFetch()` + `withInterceptors([...])`
+- Security: `bypassSecurityTrustHtml` needs a justifying comment and never user content · route guards are UX, not authorization — the API enforces it · tokens in memory or httpOnly cookie, never `localStorage`
+- Verify: `ng test --include='**/x.spec.ts'` · `ng lint` · `ng build` (catches template type errors) · set `budgets` in `angular.json` so bundle regressions fail the build

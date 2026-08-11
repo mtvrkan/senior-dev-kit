@@ -1,0 +1,11 @@
+- Schema in TS is the source of truth · derive types with `typeof t.$inferSelect` / `$inferInsert` — never hand-write an interface mirroring a table
+- `relations()` only powers query-API type inference; `references()` creates the actual FK. One without the other = a join that type-checks over a database with no referential integrity
+- Migrations: `drizzle-kit generate` then READ the emitted SQL (a rename is emitted as drop + add and destroys data) then `migrate` · Tier 3, expand → backfill → contract
+- NEVER `drizzle-kit push` against a shared or production database — it skips the migration file, so a dropped column leaves no record
+- Two query APIs: relational (`db.query.x.findMany({ with: ... })`) for nested reads, SQL-like (`select().from().innerJoin()`) for exact control — pick deliberately
+- Always project columns explicitly and `.limit()` every list query; both APIs return everything by default
+- `sql\`...${id}\`` binds parameters safely; `sql.raw()` does NOT — never pass user input to it
+- `db.delete(t)` / `db.update(t)` with no `.where()` hits EVERY row — missing `where` is a bug, bulk-destructive is Tier 4
+- Inside `db.transaction(async (tx) => ...)` use `tx`, not `db`, or the statement runs outside the transaction and won't roll back
+- Index every filtered/joined/sorted column · `with:` is a join, but an awaited query inside `.map()` is a real N+1 that looks harmless
+- Verify: `drizzle-kit check` (migration folder consistency) · `drizzle-kit generate` emits nothing when schema and migrations agree · `tsc --noEmit` · `vitest run [file]`

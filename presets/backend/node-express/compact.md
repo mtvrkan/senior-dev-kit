@@ -1,0 +1,10 @@
+- Layers: routes → controllers → services → repositories · handlers thin, business logic in services only
+- Validate all input with Zod `safeParse()` at route boundary → 422 on failure · NEVER trust `req.body.userId` for auth — use `req.user.id` from JWT middleware
+- SQL: parameterized always — `pool.query("... WHERE id = $1", [id])` · Prisma/Drizzle safe by default · NEVER string interpolation
+- Errors: `AppError` hierarchy (NotFoundError/ForbiddenError/ConflictError) · global Express error handler last · never raw DB errors to client
+- Ownership check: `if (resource.userId !== req.user.id) throw new ForbiddenError(...)` — every resource route
+- Async: `import "express-async-errors"` at entry point · parallel independent calls with `Promise.all()`
+- Rate limiting: `express-rate-limit` on all `/auth/*` endpoints (5 req / 15 min)
+- Logging: `pino` structured — `logger.info({ userId }, "event")` · NEVER `console.log` · NEVER log passwords/tokens/PII
+- Verify: `tsc --noEmit` · `eslint src/` · `vitest run [file]` or `jest [file] --no-coverage`
+- Anti: business logic in routes · `req.body.userId` auth · silent `catch {}` · serial `await` for independent calls · `any` type

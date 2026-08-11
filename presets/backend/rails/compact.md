@@ -1,0 +1,10 @@
+- Conventional layout, fat model / skinny controller, cross-model logic in `app/services/` POROs with one `call` · controllers: authenticate → authorize → call → render, no queries or logic in views
+- Scope through the association: `current_user.posts.find(params[:id])` — a bare `Post.find(params[:id])` is an IDOR
+- `params.require(...).permit(...)` IS the allowlist · NEVER `permit!` · never permit `:role`/`:admin`/`:user_id`
+- N+1: `includes`/`preload`/`eager_load` · run the `bullet` gem in dev so N+1 fails loudly instead of just being slow
+- SQL safety: `where("name = ?", name)` never interpolation · `order(params[:sort])` is injectable too — allowlist the column · `find_each` for large sets, `pluck` when you want columns not objects
+- Migrations are Tier 3: reversible `change` or explicit `up`/`down` · `null: false` only after a backfill · `disable_ddl_transaction!` + `algorithm: :concurrently` for indexes on big tables · Rails creates the FK but NOT its index
+- Anything >200ms → ActiveJob (Sidekiq/GoodJob); jobs take ids not AR objects and are idempotent because retries happen
+- Secrets in `credentials.yml.enc`, `master.key` never committed · CSRF stays on for session apps · `html_safe`/`raw` on user content is XSS
+- Verify: `rspec spec/models/x_spec.rb:42` · `rubocop` · `brakeman -q` · `rails zeitwerk:check`
+- Anti: callback chains that trigger further saves · `.all.each` over a large table · logic in controllers or views
