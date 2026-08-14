@@ -1,4 +1,6 @@
 {
+  "ogHeadline": "Give Claude Code a sense of <em>blast radius</em>.",
+
   "pipeTitle": "Four things happen on every task: the model reads the project, sizes the blast radius, routes to whoever owns that surface, and verifies exactly what it changed.",
 
   "pipe1Name": "It reads the project before it edits",

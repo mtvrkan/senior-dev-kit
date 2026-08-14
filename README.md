@@ -37,10 +37,16 @@ npm run site-check              # renders everything and throws it away
 
 `site/` is git-ignored on `main`, so the worktree sits there without polluting anything.
 
-`npm run gen-og` regenerates `og.png`, `apple-touch-icon.png` and `favicon.ico` with
-headless Chrome. It is a manual step and its outputs are committed here: rendering the
-card on a Linux CI runner would silently pick different fonts from the ones it was
+`npm run gen-og` regenerates the social cards, `apple-touch-icon.png` and `favicon.ico`
+with headless Chrome. It is a manual step and its outputs are committed here: rendering
+the card on a Linux CI runner would silently pick different fonts from the ones it was
 designed and checked with.
+
+One card per locale — `og.html` is rendered once for every entry in `gen-site.ts`'s
+`PAGES`, so `og.png` is English and `og.tr.png` Turkish, and its headline comes from
+`strings.<locale>.json` like every other translated line. Adding a locale there is the
+whole change: the page's `og:image`, its width and height, and the copy into `dist/` all
+follow from that list.
 
 ## Publishing
 

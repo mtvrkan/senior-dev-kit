@@ -1,9 +1,10 @@
 <!doctype html>
-<!-- Source for site/og.png, the 1200x630 social card. Not published: `scripts/gen-og.ts`
-     renders this, screenshots it with headless Chrome, and writes the PNG next to it.
-     Kept as HTML rather than hand-drawn so the card cannot drift from the page's own
-     palette and type — it reads the same {{tokens}} the landing page does. -->
-<html lang="en">
+<!-- Source for the 1200x630 social cards. Not published: `scripts/gen-og.ts` renders this
+     once per locale, screenshots each with headless Chrome, and writes og.png / og.tr.png
+     next to it. Kept as HTML rather than hand-drawn so the card cannot drift from the page's
+     own palette and type — it reads the same {{tokens}} the landing page does, and its
+     headline comes from strings.<locale>.json like every other translated line. -->
+<html lang="{{lang}}">
 <head>
 <meta charset="utf-8">
 <style>
@@ -75,7 +76,7 @@
 
 <div class="card">
   <div class="top">{{mark}}<span>Senior Dev Kit</span></div>
-  <h1>Give Claude Code a sense of <em>blast radius</em>.</h1>
+  <h1>{{ogHeadline}}</h1>
   <div class="foot">
     <span>{{repoSlug}}</span>
     <span><b>MIT</b> · v{{version}}</span>
