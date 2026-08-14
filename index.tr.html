@@ -7,11 +7,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Senior Dev Kit — Claude Code, etki alanını bilerek</title>
 <meta name="description" content="Claude Code yapılandırma kiti: {{agents}} ajan, {{skills}} skill, {{rules}} kural dosyası, {{presets}} stack preset'i. Tehlikeli her şeyde salt okunur korumalar, her iş tipi için yazılı prosedür ve bir script'in denetlediği bağlam bütçesi.">
-<link rel="canonical" href="{{baseUrl}}/tr.html">
-<link rel="alternate" hreflang="en" href="{{baseUrl}}/">
-<link rel="alternate" hreflang="tr" href="{{baseUrl}}/tr.html">
-<link rel="alternate" hreflang="x-default" href="{{baseUrl}}/">
-<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="canonical" href="{{trUrl}}">
+<link rel="alternate" hreflang="en" href="{{enUrl}}">
+<link rel="alternate" hreflang="tr" href="{{trUrl}}">
+<link rel="alternate" hreflang="x-default" href="{{enUrl}}">
+<link rel="icon" href="favicon.ico" sizes="32x32 48x48 96x96">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="mask-icon" href="favicon.svg" color="#D97757">
@@ -21,7 +21,7 @@
 <meta property="og:site_name" content="Senior Dev Kit">
 <meta property="og:title" content="Senior Dev Kit">
 <meta property="og:description" content="Claude Code'u istekli bir junior yerine kıdemli bir mühendislik ekibi gibi davrandıran ajanlar, skill'ler, kurallar ve korumalar.">
-<meta property="og:url" content="{{baseUrl}}/tr.html">
+<meta property="og:url" content="{{trUrl}}">
 <meta property="og:image" content="{{baseUrl}}/{{ogImage}}">
 <meta property="og:image:width" content="{{ogWidth}}">
 <meta property="og:image:height" content="{{ogHeight}}">
@@ -43,7 +43,7 @@
 
 <header class="site-head">
   <div class="bar">
-    <a class="brand" href="tr.html">{{mark}}<span>Senior Dev Kit</span></a>
+    <a class="brand" href="{{trHref}}">{{mark}}<span>Senior Dev Kit</span></a>
     <nav aria-label="Ana">
       <a href="#compare">Yan yana</a>
       <a href="#how">İşleyiş</a>
@@ -53,7 +53,7 @@
     </nav>
     <div class="bar-end">
       <div class="langs" role="group" aria-label="Dil">
-        <a href="./" hreflang="en" lang="en">EN</a>
+        <a href="{{enHref}}" hreflang="en" lang="en">EN</a>
         <span class="is-current" aria-current="true">TR</span>
       </div>
       <a class="head-cta" href="#install">Kur</a>
@@ -436,7 +436,7 @@ node scripts/install.mjs</code></pre>
 
 <footer class="site-foot">
   <div class="wrap foot">
-    <a class="foot-brand" href="tr.html">{{mark}}<span>Senior Dev Kit</span></a>
+    <a class="foot-brand" href="{{trHref}}">{{mark}}<span>Senior Dev Kit</span></a>
     <p class="foot-credit">Developed with <span class="heart" aria-hidden="true">♥</span><span class="visually-hidden">sevgiyle</span>
       by <a href="{{authorUrl}}" rel="me">{{owner}}</a></p>
   </div>
