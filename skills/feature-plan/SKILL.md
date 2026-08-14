@@ -26,4 +26,4 @@ CONTRACT: API→[method path req→res] | UI→[component props state] | DB→[m
 VERIFY: [exact command] | ROLLBACK: [strategy | n/a] | OPEN: [questions | none]
 ```
 
-Rules: grep/glob to confirm paths before listing. Every step specific enough to hand to an engineer. Mark `[P:GroupName]` on independent steps. Do not start coding.
+Rules: read the recorded architecture first (`PROJECT-CONTRACTS.md` / `.claude/codebase-overview.md` / project `CLAUDE.md`) and place every new file inside it; a plan that quietly crosses an existing boundary is where a project's second architecture starts. Adding a module, layer or package → `/arch-check` before planning, so the plan starts from the real boundary state. grep/glob to confirm paths before listing. Every step specific enough to hand to an engineer. Mark `[P:GroupName]` on independent steps. Do not start coding.

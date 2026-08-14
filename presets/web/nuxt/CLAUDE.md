@@ -1,5 +1,9 @@
 # Project Preset — Nuxt 3/4 (Vue)
 
+<!-- reviewed: 2026-08 — the 3/4 version claim in this heading only. Nuxt 4 is current and 3 is
+still in wide use, so the range holds. The idioms and commands below were not re-verified in this
+pass; re-check them before widening this marker's scope. -->
+
 ## Architecture
 
 - File-based routing in `pages/`, layouts in `layouts/`, server routes in `server/api/`.

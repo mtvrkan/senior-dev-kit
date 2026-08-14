@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url'
 import { parseFrontmatter, findDuplicateFrontmatterKeys, getFrontmatterList } from './lib/frontmatter.ts'
 import { validatePresetClaudeMd, findPresetDirs, checkCompactMd, checkCompactToolDrift } from './lib/presets.ts'
 import { findBrokenLinks, extractAnchors, extractLinks, slugifyHeading, isCheckable } from './lib/links.ts'
-import { extractRoutedAgent, significantWords } from './routing-eval.ts'
+import { extractRoutedAgent, significantWords, NO_AGENT } from './routing-eval.ts'
 import { globToRegExp as bashGlobToRegExp, pathGlobToRegExp } from './deny-cost.ts'
 
 // Temp dirs are tracked and force-removed after the suite — the rmSync at the
@@ -2307,6 +2307,45 @@ describe('extractRoutedAgent (routing-eval live-scoring rule)', () => {
   test('returns null when no known agent appears', () => {
     assert.strictEqual(extractRoutedAgent('not sure which one fits here', agents), null)
   })
+
+  // Round 45: `none` is a scorable answer, not an unparseable one. Before the negative cases
+  // existed, "delegate to nobody" fell through to `null` and scored as a miss in both arms —
+  // which is precisely why a suite of only positive cases could never see over-routing.
+  test('scores the reserved no-agent answer like any other', () => {
+    const answers = new Set([...agents, NO_AGENT])
+    assert.strictEqual(extractRoutedAgent(NO_AGENT, answers), NO_AGENT)
+    assert.strictEqual(extractRoutedAgent('none — handle it directly', answers), NO_AGENT)
+  })
+
+  test('does not invent a no-agent answer when the reserved word is not offered', () => {
+    assert.strictEqual(extractRoutedAgent('none', agents), null)
+  })
+
+  test('an answer naming both an agent and none is ambiguous, not a no-agent verdict', () => {
+    assert.strictEqual(extractRoutedAgent('bug-hunter, none of the others', new Set([...agents, NO_AGENT])), null)
+  })
+})
+
+describe('golden-prompts.json negative coverage (routing-eval static check)', () => {
+  // The suite's structural defect for four rounds: every expected answer was an agent, so a
+  // ROUTING.md that delegated absolutely everything would have scored 100%. The static check
+  // that stops it from silently reverting is worth a test of its own, because the property it
+  // protects is invisible in any single prompt.
+  const suite = JSON.parse(
+    readFileSync(join(REPO_ROOT, 'eval', 'golden-prompts.json'), 'utf8')
+  ) as { prompts: { expect: string }[] }
+
+  test('the shipped suite carries at least one no-agent expectation', () => {
+    const negatives = suite.prompts.filter(p => p.expect === NO_AGENT)
+    assert.ok(negatives.length > 0, 'a one-sided suite cannot detect over-routing')
+  })
+
+  test('the shipped suite is still mostly positive cases', () => {
+    // Balance guard in the other direction: negatives that outnumber the routes would make the
+    // eval measure reluctance to delegate rather than routing quality.
+    const negatives = suite.prompts.filter(p => p.expect === NO_AGENT).length
+    assert.ok(negatives < suite.prompts.length / 2, `${negatives}/${suite.prompts.length} negatives is no longer a routing suite`)
+  })
 })
 
 describe('significantWords (routing-eval expectedSkill drift lint)', () => {
@@ -2540,6 +2579,158 @@ describe('check-consistency.ts drift detection', () => {
     assert.ok(out.includes('actually has 2 deny rules'), `got: ${out}`)
   })
 
+  test('exits 1 when SECURITY.md stops stating a deny-rule count in the shape check 6 reads', () => {
+    // Round 45: the claim's tool list changed from "Read/Bash/PowerShell" to include
+    // Write/Edit, and the old literal pattern would have matched nothing — printing a pass
+    // over a number nobody checked. A pattern that stops matching has to fail loudly.
+    const root = buildConsistencyFixture()
+    writeFileSync(join(root, 'settings-template.json'), JSON.stringify({ permissions: { deny: ['Read(./**/.env)'] } }))
+    writeFileSync(join(root, 'SECURITY.md'), 'The kit ships a deny list.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('no longer states a "**N <tools> deny rules**" claim'), `got: ${out}`)
+  })
+
+  // --- credential writes (check 22, write half) ----------------------------
+  // The PROTECTED FILES heading has always read "never read, modify, or reference"; until
+  // round 45 the check asserted only the read half. These pin both directions: a credential
+  // pattern with no Write/Edit deny fails, and the two-block structure the policy is derived
+  // from cannot be flattened back into one list without saying so.
+  function writeProtectedFiles(root: string, credential: string[], writable: string[]): void {
+    writeFileSync(
+      join(root, 'rules', '000-security.md'),
+      [
+        '## PROTECTED FILES — never read, modify, or reference in output',
+        '',
+        '**Credential material — never read, never written.**',
+        '',
+        credential.map((p) => `\`${p}\``).join(' · '),
+        '',
+        '**Read-denied only — writable when the task genuinely calls for it:**',
+        '',
+        writable.map((p) => `\`${p}\``).join(' · '),
+        '',
+      ].join('\n')
+    )
+  }
+
+  test('exits 1 when a credential pattern is Read-denied but not Edit-denied', () => {
+    const root = buildConsistencyFixture()
+    writeProtectedFiles(root, ['*.pem'], ['.env'])
+    writeFileSync(
+      join(root, 'settings-template.json'),
+      JSON.stringify({ permissions: { deny: ['Read(./**/*.pem)', 'Read(./**/.env)'] } })
+    )
+    writeFileSync(join(root, 'SECURITY.md'), 'The kit ships **2 Read/Edit deny rules**.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('no Edit(...) deny rule'), `got: ${out}`)
+  })
+
+  test('exits 1 on a Write(...) deny rule, which Claude Code does not match and warns about', () => {
+    // Measured, not assumed: shipping 33 of these produced one "Write(...) is not matched by
+    // file permission checks — only Edit(path) rules are" warning apiece at session start.
+    const root = buildConsistencyFixture()
+    writeProtectedFiles(root, ['*.pem'], ['.env'])
+    writeFileSync(
+      join(root, 'settings-template.json'),
+      JSON.stringify({ permissions: { deny: ['Read(./**/*.pem)', 'Read(./**/.env)', 'Edit(./**/*.pem)', 'Write(./**/*.pem)'] } })
+    )
+    writeFileSync(join(root, 'SECURITY.md'), 'The kit ships **4 Read/Edit deny rules**.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('does not match Write(...) rules'), `got: ${out}`)
+    assert.ok(out.includes('Use Edit(./**/*.pem) instead'), `names the replacement; got: ${out}`)
+  })
+
+  test('exits 1 when the PROTECTED FILES section loses its two-block structure', () => {
+    const root = buildConsistencyFixture()
+    writeFileSync(
+      join(root, 'rules', '000-security.md'),
+      '## PROTECTED FILES — never read, modify, or reference in output\n\n`*.pem` · `.env`\n'
+    )
+    writeFileSync(join(root, 'settings-template.json'), JSON.stringify({ permissions: { deny: ['Read(./**/*.pem)', 'Read(./**/.env)'] } }))
+    writeFileSync(join(root, 'SECURITY.md'), 'The kit ships **2 Read/Bash deny rules**.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('cannot tell which patterns must also be write-denied'), `got: ${out}`)
+  })
+
+  test('passes when both halves of the PROTECTED FILES promise are enforced', () => {
+    const root = buildConsistencyFixture()
+    writeProtectedFiles(root, ['*.pem'], ['.env'])
+    writeFileSync(
+      join(root, 'settings-template.json'),
+      JSON.stringify({ permissions: { deny: ['Read(./**/*.pem)', 'Read(./**/.env)', 'Edit(./**/*.pem)'] } })
+    )
+    writeFileSync(join(root, 'SECURITY.md'), 'The kit ships **3 Read/Edit deny rules**.\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 0, `expected exit 0, got: ${out}`)
+    assert.match(out, /Every credential pattern is Edit\(\.\.\.\)-denied too/)
+  })
+
+  // --- per-session trigger text (check 37) ---------------------------------
+  // Check 3 caps the three always-loaded files because they are paid every session. So is
+  // every skill/agent/command description, and the only guard on those was per-item — which
+  // is not a budget when the item count only grows.
+  function writeSkills(root: string, count: number, chars: number): void {
+    for (let i = 0; i < count; i++) {
+      const dir = join(root, 'skills', `skill-${i}`)
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(join(dir, 'SKILL.md'), `---\nname: skill-${i}\ndescription: ${'d'.repeat(chars)}\n---\n\nbody\n`)
+    }
+  }
+
+  test('exits 1 when trigger text busts the combined budget while every item passes its own cap', () => {
+    const root = buildConsistencyFixture()
+    writeSkills(root, 40, 350) // 14,000 chars: each under the 360-char per-item cap
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('over the 12000-char combined budget'), `got: ${out}`)
+    assert.ok(out.includes('each item passing its own 360-char cap'), `got: ${out}`)
+  })
+
+  test('passes when the same number of components stay inside the combined budget', () => {
+    const root = buildConsistencyFixture()
+    writeSkills(root, 40, 100)
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 0, `expected exit 0, got: ${out}`)
+    assert.match(out, /Per-session trigger text is 4000\/12000 chars/)
+  })
+
+  // --- social cards (check 38) ---------------------------------------------
+  // The claim lives on `main` (gen-site.ts's PAGES) and the evidence on `site-src`, and
+  // nothing bound them: the Turkish locale shipped in PAGES while og.tr.png sat uncommitted,
+  // and the first thing that noticed was the publish workflow dying on an ENOENT inside a
+  // PNG header parser.
+  function writePagesDecl(root: string, cards: string[]): void {
+    mkdirSync(join(root, 'scripts'), { recursive: true })
+    writeFileSync(
+      join(root, 'scripts', 'gen-site.ts'),
+      `export const PAGES = [\n${cards.map((c) => `  { ogImage: '${c}' },`).join('\n')}\n]\n`
+    )
+  }
+
+  test('exits 1 when a published locale has no committed social card', () => {
+    const root = buildConsistencyFixture()
+    writePagesDecl(root, ['og.png', 'og.tr.png'])
+    mkdirSync(join(root, 'site'), { recursive: true })
+    writeFileSync(join(root, 'site', 'og.png'), 'x')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('site/og.tr.png'), `got: ${out}`)
+    assert.ok(out.includes('npm run gen-og'), `names the command that makes it; got: ${out}`)
+  })
+
+  test('exits 1 when the PAGES literal stops parsing rather than reporting a pass', () => {
+    const root = buildConsistencyFixture()
+    mkdirSync(join(root, 'scripts'), { recursive: true })
+    writeFileSync(join(root, 'scripts', 'gen-site.ts'), 'export const PAGES = buildPages()\n')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('the literal shape changed and the card check is comparing nothing'), `got: ${out}`)
+  })
+
   // --- installer Node floor (check 2c) ------------------------------------
   // "Requires Node.js 18+" was the one load-bearing claim in this repo with
   // nothing behind it: every CI job ran Node 24, engines.node said >=24, and the
@@ -2574,6 +2765,40 @@ describe('check-consistency.ts drift detection', () => {
     const { code, out } = runConsistency(root)
     assert.strictEqual(code, 1)
     assert.ok(out.includes('no CI job pins node-version "18"'), `got: ${out}`)
+  })
+
+  // --- preset language coverage (check 32) ---------------------------------
+  // The regression this guards: presets grew 9 → 28 while 000-security.md's hotspot table did
+  // not, so the kit shipped stacks whose language-specific risks appeared in no always-loaded
+  // rule. Both directions are tested — a language with no row, and a preset with no decision.
+  function writeHotspotTable(root: string, languages: string[]): void {
+    const rows = languages.map(l => `| ${l} | something dangerous |`).join('\n')
+    writeFileSync(
+      join(root, 'rules', '000-security.md'),
+      `line 0\n\n## LANGUAGE-SPECIFIC HOTSPOTS\n\n| Language | Watch for |\n| --- | --- |\n${rows}\n`
+    )
+  }
+  function writePreset(root: string, relPath: string): void {
+    mkdirSync(join(root, 'presets', relPath), { recursive: true })
+    writeFileSync(join(root, 'presets', relPath, 'CLAUDE.md'), '# Project Preset — fixture\n')
+  }
+
+  test('exits 1 when a shipped preset maps to a hotspot row the security rule does not have', () => {
+    const root = buildConsistencyFixture()
+    writeHotspotTable(root, ['JS/TS', 'Python'])
+    writePreset(root, 'backend/rails')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('presets/backend/rails is mapped to hotspot row "Ruby"'), `got: ${out}`)
+  })
+
+  test('exits 1 when a preset ships with no language decision recorded at all', () => {
+    const root = buildConsistencyFixture()
+    writeHotspotTable(root, ['JS/TS'])
+    writePreset(root, 'backend/elixir-phoenix')
+    const { code, out } = runConsistency(root)
+    assert.strictEqual(code, 1)
+    assert.ok(out.includes('presets/backend/elixir-phoenix ships but check 32'), `got: ${out}`)
   })
 
   // --- executable claims (check 15) ----------------------------------------

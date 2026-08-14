@@ -16,7 +16,7 @@ npm run check
 ```
 
 This runs, in order: `test` → `validate` → `link-check` → `consistency-check` → `docs-check` →
-`routing-eval` → `check-plugin` → `typecheck` → `lint` → `markdown-lint` →
+`routing-eval` → `behavior-eval` → `check-plugin` → `check-install` → `typecheck` → `lint` → `markdown-lint` →
 `audit`. Every step
 runs even if an earlier one fails, so you get the full report in one pass. A pull request is not
 ready until this is green. Only the last step needs the network.
@@ -33,7 +33,7 @@ Narrower commands while iterating:
 | `npm run docs-check` | Fails if `docs/reference.md` and that frontmatter disagree |
 | `npm run gen-site` | Renders the landing page into `site/dist/`. Needs the `site-src` branch checked out into `site/` — see below |
 | `npm run site-check` | Same render, result discarded. Runs in the site workflow, not in `npm run check` |
-| `npm run gen-og` | Regenerates the card and raster icons on the `site-src` branch. Needs Chrome; outputs are committed there |
+| `npm run gen-og` | Regenerates the social card — one per locale — and the raster icons on the `site-src` branch. Needs Chrome; outputs are committed there |
 
 ### The landing page lives on its own branch
 
@@ -68,6 +68,12 @@ Most review feedback is automated. Before opening a PR, know that:
   `rules/001-conventions.md` — have a hard budget of 250 lines each and 500 combined. These
   three cost every user context on every turn, in every project. Adding to them is the most
   expensive edit in the repo; prefer a path-scoped rule or an `agent_docs/` page.
+- **Trigger text has a budget too**, and it is the other half of the same bill: a skill's
+  `description` + `when_to_use`, an agent's `description` and a command's frontmatter are all
+  injected into every session before the user types. 360 chars each and 12000 combined across
+  every component. The combined cap is the one that matters — every item can sit under its own
+  cap while the sum grows past anything anyone approved, which is why the always-loaded files
+  have a combined cap as well.
 - **Rule files use `paths:` frontmatter** (Claude Code's native key — not Cursor's `globs:`)
   so they load only when a matching file is read. Only `000` and `001` omit it.
 - **Numbers in prose are derived, not typed.** `scripts/check-consistency.ts` re-reads counts,

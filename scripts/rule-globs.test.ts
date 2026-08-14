@@ -134,6 +134,14 @@ const MUST_COVER: Record<string, string[]> = {
   ],
   // All three platforms the description names must still reach the rule after `.kts` was dropped
   // from the glob — the narrowing is only allowed to cost build files, not source files.
+  // Every framework named in 1000-i18n.md's FRAMEWORK MAP keeps its catalogs somewhere different;
+  // a rule about message catalogs that does not load for Android's strings.xml or Rails' YAML is
+  // the same defect check 18 was written for on the preset side.
+  '1000-i18n.md': [
+    'messages/tr.json', 'src/locales/en/common.json', 'lib/l10n/app_tr.arb',
+    'app/src/main/res/values-tr/strings.xml', 'config/locales/tr.yml', 'lang/tr/validation.php',
+    'Resources/SharedResource.tr.resx', 'Localizable.xcstrings', 'locale/django.po',
+  ],
   '400-mobile.md': [
     'app/src/main/kotlin/Main.kt', 'Sources/App/ContentView.swift', 'lib/features/home.dart',
     'android/app/src/main/AndroidManifest.xml',
@@ -172,7 +180,7 @@ describe('rule paths: globs match the files their descriptions promise', () => {
       'src/engine.cpp', 'Sources/App/Main.swift', 'styles/app.css', 'index.html',
       'migrations/001_init.sql', 'prisma/schema.prisma', 'Dockerfile', '.github/workflows/ci.yml',
       'infra/main.tf', 'k8s/deploy.yaml', 'api/users.ts', 'tests/test_user.py',
-      'src/ai/prompt.ts', 'docker-compose.yml',
+      'src/ai/prompt.ts', 'docker-compose.yml', 'messages/tr.json', 'config/locales/tr.yml',
     ]
     for (const file of readdirSync(RULES_DIR).filter(f => f.endsWith('.md'))) {
       const globs = globsOf(file)

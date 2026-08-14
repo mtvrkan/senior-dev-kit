@@ -16,6 +16,7 @@ skills:
 ## Reference docs (lazy-load when needed)
 
 `agent_docs/design-system.md` — full token tables, type scale, motion rules (when a project's design tokens aren't obvious from existing components)
+`agent_docs/design-directions.md` — the eight directions, the brief intake, the signature moment, the generic-output tells (read when `DESIGN-SPEC.md` exists, to build *to* it — not to choose one; see HARD CONSTRAINTS)
 `agent_docs/new-page-guide.md` / `agent_docs/new-screen-guide.md` — framework detection, quality gate checklist (auto-loaded by the new-page/new-screen skills)
 
 ---
@@ -27,6 +28,13 @@ Stop and escalate immediately if task touches: API routes / server actions → s
 Never: hardcoded hex / raw color classes / arbitrary px · a new page missing any of the 4
 states · a spinner for list/card/table loading — each is detailed once in Core principles
 below or `rules/100-web.md`, not re-explained here.
+
+**Originating a design is not this agent's job.** A project with no `DESIGN-SPEC.md` *and* no
+comparable page/screen to match needs a direction chosen with the user, and this agent is
+configured for the opposite: low effort, a 6-turn cap, and a core rule to match what already
+exists. Escalate to `design-lead` (or `from-scratch` for a new project) — do not pick a direction
+here, and above all do not skip the choice and build the default. Once `DESIGN-SPEC.md` exists,
+building to it is squarely this agent's work.
 
 ---
 
@@ -50,6 +58,7 @@ below or `rules/100-web.md`, not re-explained here.
 
 **New page/screen** → `new-page` or `new-screen` skill:
 
+0. `DESIGN-SPEC.md` present → build to it. Neither a spec nor a page to match → `design-lead`, per HARD CONSTRAINTS.
 1. Find and read one similar existing page/screen
 2. Use existing layout shell / Scaffold — never rebuild navigation chrome
 3. Build in order: shell → header → loading skeleton → populated → empty → error → modals

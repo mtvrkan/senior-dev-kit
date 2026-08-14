@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "senior-dev-kit",
   "displayName": "Senior Dev Kit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Guard agents, auto-triggered skills and path-scoped rules that make Claude Code behave like a senior engineering team.",
   "author": {
     "name": "Mehmet Türkan",
@@ -23,6 +23,7 @@
   "agents": [
     "./agents/bug-hunter.md",
     "./agents/db-guard.md",
+    "./agents/design-lead.md",
     "./agents/devops-guard.md",
     "./agents/performance-guard.md",
     "./agents/security-guard.md",

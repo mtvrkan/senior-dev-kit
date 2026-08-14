@@ -1,14 +1,16 @@
 {
   "$comment": "Golden routing prompts — each entry states a realistic user request and the agent that agents/ROUTING.md + global-CLAUDE.md should route it to. Static checks (npm run routing-eval) verify structural integrity and agent coverage on every CI run. The live evaluation (RUN_ROUTING_EVAL=1, needs the claude CLI and API credits) is an A/B: every prompt is routed twice, once with only the agent frontmatter descriptions (control — what Claude Code has without this kit's routing doc) and once with ROUTING.md added (treatment). It is the only measurement in this repo of whether the kit changes model behavior rather than whether documentation matches disk. TR+EN mixed prompts are intentional — the kit advertises bilingual routing signals.",
   "pass_threshold": 0.9,
-  "min_lift": 0.077,
-  "$comment_min_lift": "Minimum accuracy the treatment arm must gain over control, in absolute fraction. Measured, not invented: the first live A/B (see last_measured) scored control 22/26 and treatment 26/26, a lift of +15.4 pts. The bar is set at half of that — two prompts out of 26 — so ordinary run-to-run variance in the model does not fail the gate while a collapse in the routing table's value does. Re-measure and re-derive it, never nudge it to make a red run green.",
+  "min_error_reduction": 0.5,
+  "$comment_min_error_reduction": "Share of the routes the control arm gets WRONG that ROUTING.md must fix. This replaced `min_lift` (absolute percentage points, 0.077) on 2026-08-14, and the replacement is a change of metric rather than a lowered bar — the distinction matters, because the file it replaced said in as many words: never lower it to make a red run green. What went wrong with absolute lift: the treatment arm has scored 100% in all three recorded runs, so lift measures only how well the CONTROL arm happened to do that day. One control-arm flip is 3.7 pts on a 27-prompt suite, which is half the bar it had to clear. The 2026-08-14 re-run scored 25/27 → 27/27: two wrong routes, both fixed, zero regressions, a perfect treatment arm — and +7.4 pts, which the 7.7 bar called a failure of ROUTING.md. Worse, the failure mode is structural rather than unlucky: as base models improve the control arm rises toward the treatment arm, so the largest lift the suite can physically show shrinks toward zero and an absolute bar becomes unsatisfiable exactly while the routing doc is still doing its job. Error reduction has neither property: it asks what share of the mistakes the kit is there to prevent it actually prevents, and it is undefined (skipped, not failed) when the base model makes none. Every recorded run to date fixed 100% of control's errors; the bar sits at half of that. Raise it when a run justifies raising it. The barriers that catch a genuinely worse ROUTING.md are still `max_regressions: 0` and the absolute `pass_threshold`.",
   "last_measured": {
-    "date": "2026-08-11",
-    "prompts": 26,
-    "control_passed": 22,
-    "treatment_passed": 26,
-    "$comment": "Result of the most recent RUN_ROUTING_EVAL=1 live A/B, and the single source for the numbers both READMEs quote — scripts/check-consistency.ts fails the gate if a README states a control/treatment score this file does not. Zero regressions: no prompt that the agent descriptions alone route correctly was broken by ROUTING.md. Update these three integers whenever the live A/B is re-run."
+    "date": "2026-08-14",
+    "prompts": 31,
+    "control_passed": 25,
+    "treatment_passed": 31,
+    "context_digest": "fd0f040c1e921f43",
+    "$comment_context_digest": "Fingerprint of what the treatment arm actually read for this run — every agent's frontmatter `description` (the control body) plus agents/ROUTING.md in full. scripts/lib/eval-context.ts derives it; check 34 fails the gate when it stops matching, and routing-eval.ts prints the fresh value beside the scores after a live run so it is never computed by hand. It exists because `prompts` alone binds the recording to the suite and not to the document the suite is measuring: round 41 broke two routes by editing ROUTING.md, and the count check caught that only because the same round happened to add a prompt as well. Agent prose bodies are deliberately outside the digest — they cannot reach either arm, and invalidating a good measurement on an unrelated edit is how a check earns its way into being disabled. Seeded 2026-08-14 from the files as the 24/27 → 27/27 re-run above read them; nothing in that set has been touched since.",
+    "$comment": "Result of the most recent RUN_ROUTING_EVAL=1 live A/B, and the single source for the numbers both READMEs quote — scripts/check-consistency.ts fails the gate if a README states a control/treatment score no recorded run contains, and check 34 fails it if this `prompts` count stops matching the suite on disk. Zero regressions: no prompt that the agent descriptions alone route correctly was broken by ROUTING.md, and the two it fixed are the ones where a sentence's noun has to outrank its verb in both directions ('fix CSS in the login form' → security-guard; integration tests FOR payment code → senior-engineer). Update these three integers whenever the live A/B is re-run. Provenance: the suite was re-measured twice on 2026-08-14, after the eval's transport changed (the prompt now goes over stdin rather than as a command-line argument) and after global-CLAUDE.md's HARD STOPS block gained the escalation-is-not-completed-by-printing-it paragraph. The treatment arm scored 27/27 in both, and in the three recorded runs to date it has never scored anything else; the control arm scored 25/27 and then 24/27 on the same unchanged suite. That spread — one prompt, 3.7 points, on a bar of 7.7 — is the run-to-run variance that made absolute lift the wrong barrier, and is why this file now gates on error reduction. This entry records the later of the two."
   },
   "max_regressions": 0,
   "$comment_max_regressions": "How many prompts ROUTING.md may break that the agent descriptions alone route correctly. Zero, and unlike min_lift this is not a placeholder waiting for data: net lift is an aggregate, so three broken routes cancel against three fixed ones and the run passes while six prompts route wrong. A rule that steers the model AWAY from an answer it already had is a different defect from a rule that merely fails to help. Raise it only with a written reason next to the number.",
@@ -21,6 +23,11 @@
     {
       "prompt": "TypeError: Cannot read properties of undefined (reading 'map') at UserList.tsx:42 — stack trace attached",
       "expect": "bug-hunter"
+    },
+    {
+      "prompt": "yeni bir ürün için sıfırdan landing page tasarlayalım, linear.app gibi dursun ama bizim mor markamızla",
+      "expect": "design-lead",
+      "note": "A brief with a reference and a brand constraint, on a project with nothing to match: the direction has to be decided, not matched. ui-fixer is the wrong answer here specifically because it is configured to match what exists — the distinction this prompt exists to test"
     },
     {
       "prompt": "testler patlıyor, CI'da 3 test fail oluyor, düzelt",
@@ -134,6 +141,26 @@
       "expect": "senior-engineer",
       "expectedSkill": "test-writer",
       "note": "test-engineer agent removed (round-26 simplification) — test work runs as the test-writer skill under senior-engineer"
+    },
+    {
+      "prompt": "src/utils/format.ts:8'de değişken adı `usr` olmuş, `user` yap. Başka bir şeye dokunma.",
+      "expect": "none",
+      "note": "NEGATIVE CASE. One rename, one named file, no guard area — Tier 0 by global-CLAUDE.md's table, so Step 3.5 stops before the task-type row that would otherwise send it somewhere. Until round 45 every prompt in this suite expected an agent, which meant a ROUTING.md that delegated everything would score 100%: the suite could measure mis-routing and under-routing, never over-routing, and over-routing is the one that costs tokens."
+    },
+    {
+      "prompt": "Bu fonksiyon ne yapıyor, kısaca açıklar mısın? Kod değiştirme, sadece anlat.",
+      "expect": "none",
+      "note": "NEGATIVE CASE. An explicit no-edit request. A subagent here spends a fresh context window re-reading the project to return prose the main loop already has the context to write."
+    },
+    {
+      "prompt": "README'de 'reciever' yazılmış, 'receiver' olacak. Sadece o kelimeyi düzelt.",
+      "expect": "none",
+      "note": "NEGATIVE CASE. ROUTING.md's Step 4 already sends README work to the main loop with the docs-update skill; this pins that as a non-delegation rather than leaving it implied, and catches a future edit that turns the docs row into an agent row."
+    },
+    {
+      "prompt": "src/pages/About.tsx'te 'Kurumsal' başlığını 'Hakkımızda' yap",
+      "expect": "none",
+      "note": "NEGATIVE CASE, and the discriminating one: Step 4 says copy changes go to ui-fixer, so this is the prompt that tests whether the tier gate actually runs BEFORE the task-type table. If ROUTING.md ever loses Step 3.5 this is the first prompt to fail, which is why it is worded as a copy change rather than as an obvious typo."
     }
   ]
 }

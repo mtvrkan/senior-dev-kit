@@ -25,6 +25,7 @@ rules in [`SECURITY.md`](../SECURITY.md) — strong, but not a sandbox.
 | --- | --- | --- | --- |
 | `bug-hunter` | sonnet | read + write | `bug-fix` |
 | `db-guard` | opus | **read-only** | `db-change`, `migration-review` |
+| `design-lead` | opus | read + write | `new-page`, `new-screen` |
 | `devops-guard` | opus | **read-only** | `release-gate`, `security-scan`, `/env-audit` |
 | `performance-guard` | sonnet | **read-only** | `performance-check` |
 | `security-guard` | opus | **read-only** | `security-review`, `security-scan` |
@@ -52,6 +53,16 @@ Use for database schema changes, data modeling, ORM queries, indexes, constraint
 - **Permission mode:** `plan` — plans first instead of acting. Claude Code strips `permissionMode` from plugin-shipped agents, so this holds for `~/.claude` installs; the tool grant above is what holds in both
 - **Turn budget:** 10
 - **Definition:** [`agents/db-guard.md`](../agents/db-guard.md)
+
+### `design-lead`
+
+Use when a project's visual design has to be decided rather than matched — a first page or screen with no DESIGN-SPEC.md, a redesign, a brief with references or brand assets, or "make it look like its own product". Produces the direction, the tokens and the signature moment; hands construction to ui-fixer.
+
+- **Tools:** `Read`, `Grep`, `Glob`, `Write`, `Edit`, `Bash`
+- **Model / effort:** opus · high
+- **Permission mode:** `default`
+- **Turn budget:** 10
+- **Definition:** [`agents/design-lead.md`](../agents/design-lead.md)
 
 ### `devops-guard`
 
@@ -161,6 +172,7 @@ pays for the REST-API rules.
 | [`000-security.md`](../rules/000-security.md) | **every session** — no `paths:` field | Core security rules — passive scan on every change, OWASP 2025, supply chain, protected files. No paths field: loads unconditionally every session. |
 | [`001-conventions.md`](../rules/001-conventions.md) | **every session** — no `paths:` field | Core development conventions — architecture patterns, holistic consistency, modern tech preferences. No paths field: loads unconditionally every session. |
 | [`100-web.md`](../rules/100-web.md) | `**/*.{tsx,jsx,vue,svelte,astro,html,css,scss}` · `**/*.blade.php` · `**/*.erb` · `**/*.component.ts` | Web UI rules — design tokens, 8px grid, skeleton loading, motion, SEO, WCAG 2.2, Tailwind v4. Auto-loads for React/Vue/Svelte/Astro/Angular/Blade/ERB/plain HTML. |
+| [`1000-i18n.md`](../rules/1000-i18n.md) | `**/locales/**` · `**/i18n/**` · `**/lang/**` · `**/messages/**` · `**/translations/**` · `**/*.{arb,po,pot,ftl,xliff,xlf,resx}` · `**/strings.xml` · `**/*.strings` · `**/*.xcstrings` · `**/*i18n.config.*` · `**/next-intl.config.*` | Internationalization and localization — message catalogs, ICU plurals, Intl formatting, RTL, text expansion, locale routing. Auto-loads for locale/message files in every framework the kit ships a preset for. |
 | [`200-api.md`](../rules/200-api.md) | `**/api/**` · `**/routes/**` · `**/controllers/**` · `**/handler/**` · `**/handlers/**` · `**/endpoints/**` · `**/*.controller.*` · `**/*.routes.*` · `**/Controllers/**` · `**/*Controller.{java,kt,cs,php}` · `**/*Resource.java` · `**/*Endpoint.{java,kt,cs}` · `**/routers/**` · `**/{views,viewsets,urls}.py` | API design rules — REST conventions, OpenAPI 3.2, error format, auth, rate limiting, versioning. Auto-loads for route/controller/handler/endpoint files. |
 | [`300-testing.md`](../rules/300-testing.md) | `**/*.test.*` · `**/*.spec.*` · `**/test/**` · `**/__tests__/**` · `**/tests/**` · `**/*_test.*` · `**/*_spec.*` · `**/test_*.py` · `**/*Test.{java,kt,cs,swift}` · `**/*Tests.{java,kt,cs,swift}` · `**/*Spec.{java,kt,groovy}` · `**/tests.py` · `**/conftest.py` | Testing rules — pyramid ratios, mock policy, naming conventions, stability, coverage. Auto-loads for test/spec files. |
 | [`400-mobile.md`](../rules/400-mobile.md) | `**/*.{swift,kt}` · `**/lib/**/*.dart` · `**/test/**/*.dart` · `**/android/**` · `**/ios/**` · `**/*.native.{ts,tsx,js,jsx}` · `app.config.{js,ts}` · `**/apps/*/app.config.{js,ts}` · `**/packages/*/app.config.{js,ts}` · `**/metro.config.{js,cjs}` | Mobile rules — iOS Swift, Android Kotlin/Compose, Flutter/Dart, React Native. Auto-loads for mobile source files. |
@@ -176,7 +188,10 @@ pays for the REST-API rules.
 
 | Command | What it does | Takes |
 | --- | --- | --- |
+| `/a11y-check` | Audit built UI against WCAG 2.2 AA — keyboard, focus, contrast, state announcement, targets, reflow. | "[page, screen, flow, or component — optional]" |
 | `/agents-guide` | List all installed Senior Dev Kit agents and when to use each one. | — |
+| `/arch-check` | Audit architecture integrity — boundary violations, dependency direction, mixed patterns, contract drift. | "[directory, package, or feature — optional]" |
+| `/design-check` | Audit built UI for design-direction adherence, generic-output tells, and layout monotony. | "[page, screen, or route — optional]" |
 | `/seo-check` | Audit the project for SEO, AEO, Core Web Vitals, and technical SEO issues. | "[page or route — optional]" |
 | `/skills-guide` | List all installed Senior Dev Kit skills and when each one auto-triggers. | — |
 

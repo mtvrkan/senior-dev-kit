@@ -1,5 +1,10 @@
 # Project Preset — iOS / SwiftUI
 
+<!-- reviewed: 2026-08 — the "iOS 17+" and "Swift 6 strict" claims in the body (and the same iOS 17+
+line in compact.md). Verified: `@Observable` and SwiftData are iOS 17+, and Swift 6 language mode is
+what App Store submissions are built with since Apple's April 2026 cutoff. iOS 26 is the current
+release, so 17+ is a deployment floor rather than a statement about the newest OS. -->
+
 ## Architecture
 
 - Feature folders: `Features/<Feature>/{Views,ViewModel,Models}`, shared code in `Core/`.

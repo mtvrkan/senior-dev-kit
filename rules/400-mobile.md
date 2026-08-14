@@ -64,6 +64,18 @@ Security:
 - Validate deep link destinations before navigating
 - Clear sensitive data (passwords, tokens) from memory after use
 
+Design character:
+
+- Differentiate *inside* the platform idiom, never against it — reinvented navigation, gestures or
+  system controls make a worse app, not a distinctive one
+- First screen of a new app: settle idiom distance (native default / branded native / fully custom),
+  surface material and motion character with the user before building — `agent_docs/design-directions.md`
+  § MOBILE DIRECTIONS. Existing app: the screens already there are the spec
+- Never port one platform's material to the other (glass on Android, wallpaper-derived colour on iOS)
+- One signature moment per app, recorded in the spec — the single idea the product is remembered
+  for. It must survive Dynamic Type, reduce-motion and the smallest supported width, or it is a
+  defect rather than a differentiator (`design-directions.md` § THE SIGNATURE)
+
 Accessibility:
 
 - Every button/icon needs content description: `contentDescription` (Android) · `.accessibilityLabel` (iOS/Flutter) · `accessible={true}` + `accessibilityLabel` (RN)

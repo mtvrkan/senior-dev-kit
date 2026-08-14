@@ -1,5 +1,9 @@
 # Project Preset — Go HTTP API (net/http + chi)
 
+<!-- reviewed: 2026-08 — the "Go 1.22+" floor in the errgroup example only. Verified against the Go
+release history: the per-iteration loop variable landed in 1.22, so the comment is still the right
+floor, and 1.26 is current — the claim is a minimum, not a pin, and does not go stale as Go moves. -->
+
 ## Architecture
 
 - Standard layout: `cmd/<binary>/main.go`, private packages under `internal/`, shared libraries

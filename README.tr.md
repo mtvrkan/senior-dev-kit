@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Claude Code'u hevesli bir junior yerine kıdemli bir mühendislik takımı gibi davrandıran
-konfigürasyon kiti: **7 agent, 25 skill, 11 rule, 3 komut, 28 preset**.
+konfigürasyon kiti: **8 agent, 25 skill, 12 rule, 6 komut, 28 preset**.
 
 🇬🇧 [English README](README.md) — kanonik sürüm; bu dosya onun çevirisidir.
 
@@ -24,7 +24,7 @@ Bu kit, kıdemli bir takım arkadaşında olan ama modelde olmayan üç şeyi ek
 - **Her iş tipi için bir prosedür.** "Şu bug'ı düzelt", "sayfa ekle", "bu migration'ı incele" —
   her birinin doğaçlama yerine izlenen yazılı bir disiplini var. Toplam 25 tane.
 - **Context bütçesi.** Her turda yalnızca üç dosya yükleniyor (500 satır üst sınır, script'le
-  denetleniyor). Geri kalan her şey — 11 rule dosyası, 16 referans doküman — eşleşen bir dosya
+  denetleniyor). Geri kalan her şey — 12 rule dosyası, 17 referans doküman — eşleşen bir dosya
   okununca veya bir skill gerçekten ihtiyaç duyunca lazy yükleniyor.
 
 Kitin kendisi hakkındaki her iddia elle değil, `npm run check` ile doğrulanır.
@@ -90,14 +90,14 @@ yazabileceğiniz komutlar — [`docs/usage.md`](docs/usage.md) içinde.
 
 | | Sayı | Notlar |
 | --- | --- | --- |
-| Agent | 7 | 4'ü salt-okunur guard (db, security, devops, performance) |
+| Agent | 8 | 4'ü salt-okunur guard (db, security, devops, performance) |
 | Skill | 25 | Çoğu iş tipine göre otomatik tetiklenir; birkaçı yalnızca slash komutuyla |
-| Rule | 11 | `000`/`001` her oturumda yüklenir; kalan 9'u `paths:` glob eşleşmesiyle |
-| Komut | 3 | `/agents-guide`, `/skills-guide`, `/seo-check` |
+| Rule | 12 | `000`/`001` her oturumda yüklenir; kalan 10'u `paths:` glob eşleşmesiyle |
+| Komut | 6 | `/agents-guide`, `/skills-guide`, `/seo-check`, `/design-check`, `/arch-check`, `/a11y-check` |
 | Preset | 28 | web: nextjs-saas, react-vite, nuxt, sveltekit, astro, angular · backend: node-express, nestjs, fastapi, django, laravel, rails, spring-boot, dotnet, go-api, rust-axum · mobile: flutter, react-native, swiftui · orm: prisma, drizzle · db: postgres, mongodb, supabase · infra: docker, kubernetes, terraform · generic: fallback |
-| agent_docs | 16 | Talep üzerine okunan derin referans sayfaları |
+| agent_docs | 17 | Talep üzerine okunan derin referans sayfaları |
 
-Kısaca: 7 agent, 25 skill, 11 rule, 3 komut, 28 preset.
+Kısaca: 8 agent, 25 skill, 12 rule, 6 komut, 28 preset.
 
 Ayrıca bir guardrail katmanı: `settings-template.json` içinde ~400 deny kuralı — secret dosya
 okumalarını, yıkıcı shell komutlarını ve onaysız uzak paket çalıştırıcılarını engeller. Kapsam ve
@@ -127,39 +127,98 @@ türetilir. Tek komut:
 npm run check
 ```
 
-Şu an: 346/346 test geçiyor (55 suites). `routing-eval` yönlendirme tablosunu 26 gerçekçi isteği
+Şu an: 390/390 test geçiyor (61 suites). `routing-eval` yönlendirme tablosunu 31 gerçekçi isteği
 ile sabitler, `check-consistency` bu dosyadaki elle yazılmış her sayıyı yeniden türetir,
 `check-plugin` ise plugin manifestlerinin diskteki bileşenlerle hâlâ eşleştiğini doğrular.
 
-**Bunun kanıtladığı ve kanıtlamadığı şey.** Açık olalım: bu 346 test *iç tutarlılık* testidir.
+**Bunun kanıtladığı ve kanıtlamadığı şey.** Açık olalım: bu 390 test *iç tutarlılık* testidir.
 Dokümantasyonun diskteki dosyalarla eşleştiğini kanıtlar — hiçbir sayının bayat, hiçbir yolun ölü,
 hiçbir kuralın bir yerde iddia edilip başka yerde eksik olmadığını. **Kitin modelin çıktısını
 iyileştirip iyileştirmediğini ölçmezler.** CI'da yeşil geçen hiçbir şey bunu ölçmüyor.
 
-Tek davranışsal ölçüm `routing-eval`'in canlı kolu ve API kredisi harcadığı için opt-in:
+Davranışı ölçen iki adım var ve ikisi de API kredisi harcadığı için opt-in:
 
 ```bash
-RUN_ROUTING_EVAL=1 npm run routing-eval
+RUN_ROUTING_EVAL=1 npm run routing-eval     # bash
+$env:RUN_ROUTING_EVAL=1; npm run routing-eval   # PowerShell — satır içi ön ek yok
 ```
 
-26 golden prompt üzerinde bir A/B çalıştırır — prompt başına iki CLI çağrısı, toplam 52: yalnızca
+Golden prompt'lar üzerinde bir A/B çalıştırır — prompt başına iki CLI çağrısı: yalnızca
 agent frontmatter açıklamalarıyla bir **kontrol** kolu (bu kitin yönlendirme dokümanı olmadan
 Claude Code'un elindeki bilgi) ve `agents/ROUTING.md` eklenmiş bir **tedavi** kolu; sonra ikisi
 arasındaki doğruluk farkını raporlar. Üç şekilde başarısız olur: tedavi kolu mutlak eşiğin altına
-düşerse; tedavi kolu kontrolü geçemezse (`ROUTING.md` her oturumda context'e yükleniyor, bunu hak
-etmek zorunda); ya da düz açıklamaların doğru yönlendirdiği bir prompt'u `ROUTING.md` bozarsa —
-bu, net lift'ten ayrı kontrol edilir, aksi hâlde bozulma iyileşmeyle sadeleşip görünmez olurdu.
+düşerse; `ROUTING.md`, düz açıklamaların yanlış yönlendirdiği rotaların yarısından azını
+düzeltirse (her oturumda context'e yükleniyor, bunu hak etmek zorunda); ya da düz açıklamaların
+doğru yönlendirdiği bir prompt'u `ROUTING.md` bozarsa — bu ayrı kontrol edilir, aksi hâlde bozulma
+iyileşmeyle sadeleşip görünmez olurdu.
 
-**Ölçülen sonuç, 2026-08-11:** kontrol 22/26 (%85), tedavi 26/26 (%100) — +15,4 puanlık bir lift
-ve düz açıklamaların doğru yönlendirdiği hiçbir prompt bozulmadı. Tablonun taşıdığı dört prompt,
-cümledeki fiilin korumalı alan ismine yenildiği durumlardı (`login formundaki CSS'i düzelt` →
-`ui-fixer` değil `security-guard`). Bu tam sayılar `eval/golden-prompts.json` içinde duruyor ve
-`check-consistency`, bu paragraf o dosyada olmayan bir skor iddia ederse kapıyı kırmızıya
-çeviriyor. Tek model sürümünde tek koşu; taze istiyorsan kendin çalıştır.
+Prompt'ların dördü `none` bekliyor — kimseye devretme, doğrudan hallet. Bunlar olmadan süit, bir
+yönlendirme dokümanının gerçekte bozulduğu şekilde bozulamıyordu: eskiden her prompt *bir* ajan
+beklediği için, her şeyi devreden bir `ROUTING.md` de 100% alırdı. Eval yanlış ajanı ve eksik
+devri görebiliyor, gereksiz devri göremiyordu. Pahalı olan o — bir subagent, tek kelimeyi
+değiştirmek için projeyi sıfırdan okuyan yeni bir context penceresi — ve devretmeyi savunan bir
+dokümanın en olası hatası da o.
 
-Bu, birkaç bileşenden yalnızca birini — yönlendirmeyi — kapsıyor. Kuralların, skill'lerin ve
-preset'lerin arkasında A/B yok, kod kalitesinde öncesi/sonrası ölçümü yok; onlar ölçüme değil
-muhakemeye dayanıyor. Bu kiti benimseyip benimsememeye karar veriyorsan buna göre tart.
+**Ölçülen sonuç, 2026-08-14:** kontrol 25/31 (%81), tedavi 31/31 (%100) — açıklamaların yanlış
+yönlendirdiği altı rotanın hepsi düzeltildi, doğru yönlendirdiklerinden hiçbiri bozulmadı. Arayı
+açan şey negatif vakalar oldu: düz ajan açıklamalarının "ne zaman devretme" hakkında söyleyecek
+hiçbir şeyi yok, o yüzden `src/pages/About.tsx'te 'Kurumsal' başlığını 'Hakkımızda' yap` yalnızca
+"metin" kelimesine bakıp `ui-fixer`'a gidiyor; tedavi kolu ise `ROUTING.md`'nin Adım 3.5'ine ulaşıp
+`none` diyor. Taşıdığı diğer rotalar, cümledeki ismin fiile iki yönde de üstün gelmesi gereken
+durumlar (`login formundaki CSS'i düzelt` → `ui-fixer` değil `security-guard`; ama ödeme kodu
+*için* test → guard değil `senior-engineer`). Tedavi kolu kayıtlı her koşuda kusursuz, örneklenen
+taraf kontrol kolu — baraj bu yüzden puan değil, hata düzeltme oranı. Bu tam sayılar
+`eval/golden-prompts.json` içinde duruyor ve `check-consistency`, bu paragraf o dosyada olmayan bir
+skor iddia ederse — ya da kayıtlı koşu diskteki süiti tarif etmeyi bırakırsa — kapıyı kırmızıya
+çeviriyor. Önceki sayı tam böyle bayatlamıştı: bir prompt eklenmeden önce ölçülmüştü ve arayı
+kapatan yeni koşu, güncellenmiş tablonun bozduğu iki rotayı ortaya çıkardı. Tek model sürümünde tek
+koşu; taze istiyorsan kendin çalıştır.
+
+İkinci ölçüm, kuralların kendisi için: `behavior-eval`, zorunlu-seçim biçiminde on dokuz karar
+sorar (korumalı alanda escalate ediyor mu, PII logluyor mu, yön kaydı yokken soruyor mu, testi mi
+siliyor kodu mu düzeltiyor) ve aynı A/B'yi kurar — **kontrol** hiç kit bağlamı yok, **tedavi** o
+kararı üretmesi gereken kural dosyaları eklenmiş. Her kural dosyasının en az bir prompt tarafından
+anılması zorunlu, anılmayan varsa kapı kırılıyor: dördü iki tur boyunca hiç ölçülmeden yayınlandı
+ve süit temiz skor verdi, çünkü "var olan prompt'ların hepsi geçiyor" ile "yayınlanan kuralların
+hepsi ölçülüyor" farklı iddialar ve yalnızca birincisinin kontrolü vardı.
+
+```bash
+RUN_BEHAVIOR_EVAL=1 npm run behavior-eval          # bash
+$env:RUN_BEHAVIOR_EVAL=1; npm run behavior-eval    # PowerShell
+```
+
+**Ölçülen sonuç, 2026-08-14:** kontrol 19/19 (%100), tedavi 19/19 (%100) — lift yok, regresyon da
+yok. Bunu olduğu gibi oku: bu süit bir regresyon dedektörüdür, kuralların faydasının kanıtı değil.
+Cevap uzayı iki token olduğunda ve biri bir disiplinin adını taşıdığında (escalate / plan / flag /
+refuse) temel model onu yardımsız seçiyor; süite girmeden önce sekiz aday prompt daha pilotlandı ve
+kontrol sekizini de doğru bildi. Bu yüzden her iki süit de mutlak lift puanına değil, **temel
+modelin yaptığı hataların ne kadarını kitin düzelttiğine** bağlandı: iki örneklenmiş kol arasındaki
+fark, modeller iyileştikçe sıfıra yaklaşır ve puan barajı, kit hâlâ işini yaparken bile
+aşılamaz hâle gelir. Burada kontrol hiç hata yapmıyor, dolayısıyla o baraj boşta — ve bunu açıkça
+söylüyor.
+
+Bu süitin kanıtlayabildiği şeyi artık iki kez kanıtladı ve asıl öğretici olan ikincisi. `global-CLAUDE.md`
+ile `rules/500-database.md` tek başlarına doğru escalate üretiyor; birlikte yüklendiğinde, modelin
+hiç kit bağlamı yokken reddettiği `DROP COLUMN` migration'ını yazdırıyorlar. Bu bir kez bulunup
+always-loaded protokolde yamandı — ve **geri geldi**, 3 örneğin 3'ünde, çünkü yama yanlış dosyadaydı.
+İkisi birlikte context'teyken *prosedürel* olan daha spesifik olandır ve `500-database.md`,
+zero-downtime deseni, backup protokolü ve örnek DROP SQL'iyle birlikte, bunları onay-sonrasına
+kilitleyen hiçbir cümle taşımıyordu. Bir dosyada "escalate", diğerinde "migration şöyle yazılır"
+okuyan model, isteği cevaplayanı takip ediyor. Nitelendirme artık prosedürlerin yanında: hem o
+dosyada hem de aynı şekle sahip olup bunun için hiç ölçülmemiş `600-devops.md`'de. `check-consistency`
+bu zorunluluğu, bir kural dosyasında `ESCALATE TO:` geçmesinden türetiyor. Yukarıdaki 19/19,
+düzeltmeden sonraki yeniden koşu.
+
+Her iki kayıt da bir `context_digest` taşıyor: tedavi kolunun tam olarak neyi okuduğunun parmak
+izi — bir süitte `ROUTING.md` ve ajan açıklamaları, diğerinde prompt'lar ve kural dosyaları.
+Bunlardan biri değişirse A/B yeniden koşulana kadar `check-consistency` kırmızıya döner; çünkü
+sonradan yeniden yazılmış bir dokümana karşı ölçülmüş puan, daha zayıf bir sayı değil, yanlış bir
+sayıdır. İki süit de haftalık olarak canlı koşuyor
+([`.github/workflows/live-evals.yml`](.github/workflows/live-evals.yml)) — regresyon, kimse
+bakmayı hatırlamadan da yüzeye çıkıyor.
+
+Skill'lerin ve preset'lerin arkasında hâlâ A/B yok, kod kalitesinde öncesi/sonrası ölçümü yok. Bu
+kiti benimseyip benimsememeye karar veriyorsan buna göre tart.
 
 ---
 
@@ -177,6 +236,10 @@ muhakemeye dayanıyor. Bu kiti benimseyip benimsememeye karar veriyorsan buna g�
 - [`CHANGELOG.md`](CHANGELOG.md) — ne, ne zaman değişti
 - [`CLAUDE.md`](CLAUDE.md) — kitin kendisi üzerinde çalışırken geçerli kurallar
 - [`presets/README.md`](presets/README.md) — preset yapısı ve stack birleştirme
+- [`PROJECT-BOOTSTRAP.md`](PROJECT-BOOTSTRAP.md) — bağımsız, ayrı bir şablon: boş bir repoda Claude
+  Code'a verirsin, projeye özel bir `.claude/` kurulumunu kendi yalın ajan kadrosuyla üretir. Bu kiti
+  kurmaz, bu kit de onu kurmaz; ikisi birlikte kullanılabilir. Kapının "yazılan komut gerçekten var
+  mı" kontrolünün dışındadır, çünkü içindeki komutlar bu repoyu değil ürettiği projeyi anlatır.
 
 ## Lisans
 

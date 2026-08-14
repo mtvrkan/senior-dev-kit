@@ -1,5 +1,9 @@
 # Project Preset — Node / Express / Fastify / Hono API
 
+<!-- reviewed: 2026-08 — the Express 4 vs 5 claims in the body only. Verified on npm: 5.x is the
+Technical Committee's production-recommended line (5.2.1 current) and 4.x is in maintenance, so the
+guidance to write 5-shaped code and treat 4 as legacy still matches upstream. -->
+
 ## Architecture
 
 - Respect existing layer boundaries: `routes/` → `controllers/` → `services/` → `repositories/`.

@@ -80,13 +80,13 @@ if (!/^https:\/\/\S+$/.test(authorUrl)) {
 
 // PNG dimensions live in the IHDR chunk, at fixed offsets right after the signature.
 // Reading them beats hand-typing 1200x630 into two templates that would then have to be
-// remembered if the card is ever re-cropped.
+// remembered if the card is ever re-cropped. Read per locale, not once: each locale ships its
+// own card, and a shared width would be a hand-copied number again the moment one is re-cropped.
 function pngSize(file: string): { width: number; height: number } {
   const b = readFileSync(file)
   if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) throw new Error(`${file} is not a PNG`)
   return { width: b.readUInt32BE(16), height: b.readUInt32BE(20) }
 }
-const og = pngSize(join(SRC, 'og.png'))
 
 const counts = componentCounts(ROOT)
 const budget = contextBudget(ROOT)
@@ -153,8 +153,6 @@ export const TOKENS: Record<string, string> = {
   owner: slug.split('/')[0],
   authorUrl,
   authorName,
-  ogWidth: String(og.width),
-  ogHeight: String(og.height),
   jsonLd,
   mark: readSrc('favicon.svg').replace(/^<svg /, '<svg aria-hidden="true" focusable="false" ').trim(),
   presetTicker: presetNames.map((n) => `<span>${n}</span>`).join(''),
@@ -175,10 +173,33 @@ export function render(template: string, tokens: Record<string, string> = TOKENS
   return out
 }
 
-const PAGES: { template: string; out: string; strings: string }[] = [
-  { template: 'index.en.html', out: 'index.html', strings: 'strings.en.json' },
-  { template: 'index.tr.html', out: 'tr.html', strings: 'strings.tr.json' },
+/**
+ * One entry per published locale. `lang` and `ogImage` sit here rather than in the strings
+ * files for the same reason the pipeline partial does: those hold prose, this holds structure.
+ *
+ * The card is per-locale because it is the page's first sentence for anyone who never clicks.
+ * A Turkish page that unfurls an English card is a translation that stops at the door — and the
+ * failure is invisible from the branch, since `og:locale` was already `tr_TR` and the alt text
+ * already Turkish while the image behind them was not.
+ */
+export const PAGES: { template: string; out: string; strings: string; lang: string; ogImage: string }[] = [
+  { template: 'index.en.html', out: 'index.html', strings: 'strings.en.json', lang: 'en', ogImage: 'og.png' },
+  { template: 'index.tr.html', out: 'tr.html', strings: 'strings.tr.json', lang: 'tr', ogImage: 'og.tr.png' },
 ]
+
+/**
+ * The tokens one locale renders with, minus the card's pixel size. `gen-og.ts` renders the card
+ * itself from these, and on a first run the PNG it is about to write does not exist yet — so
+ * measuring it belongs to the page build below, not here.
+ */
+export function localeTokens(page: (typeof PAGES)[number]): Record<string, string> {
+  return {
+    ...TOKENS,
+    ...(JSON.parse(readSrc(page.strings)) as Record<string, string>),
+    lang: page.lang,
+    ogImage: page.ogImage,
+  }
+}
 // Rendered like a page but deliberately outside PAGES: the sitemap lists pages worth indexing,
 // and an error page is neither indexed nor a destination. It takes no locale strings.
 const STANDALONE: { template: string; out: string }[] = [{ template: '404.html', out: '404.html' }]
@@ -186,7 +207,7 @@ const STANDALONE: { template: string; out: string }[] = [{ template: '404.html',
 const COPIED = ['style.css', 'favicon.svg']
 // Rasters produced by `gen-og.ts`. Copied byte-for-byte: reading them as text would
 // corrupt them, which is why they are a separate list rather than another entry above.
-const COPIED_BINARY = ['og.png', 'apple-touch-icon.png', 'favicon.ico']
+const COPIED_BINARY = [...new Set(PAGES.map((p) => p.ogImage)), 'apple-touch-icon.png', 'favicon.ico']
 
 // GitHub Pages runs Jekyll over a branch unless `.nojekyll` exists. CNAME is the same argument
 // one step further: it was added to gh-pages by hand, which is how the canonical tags ended up
@@ -209,11 +230,12 @@ const literalFiles = (): { path: string; content: string }[] => [
 function buildArtifacts(): { path: string; content: string | Buffer }[] {
   const pipelineTpl = stripPartialNote(readSrc('pipeline.html'))
   return [
-    ...PAGES.map(({ template, out, strings }) => {
-      const localeTokens = { ...TOKENS, ...JSON.parse(readSrc(strings)) }
-      const pipeline = render(pipelineTpl, localeTokens)
-      const page = render(stripTemplateNote(readSrc(template)), { ...localeTokens, pipeline })
-      return { path: out, content: page }
+    ...PAGES.map((entry) => {
+      const card = pngSize(join(SRC, entry.ogImage))
+      const tokens = { ...localeTokens(entry), ogWidth: String(card.width), ogHeight: String(card.height) }
+      const pipeline = render(pipelineTpl, tokens)
+      const page = render(stripTemplateNote(readSrc(entry.template)), { ...tokens, pipeline })
+      return { path: entry.out, content: page }
     }),
     ...STANDALONE.map(({ template, out }) => ({
       path: out,

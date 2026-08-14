@@ -46,10 +46,13 @@ color: hsl(var(--destructive));
 
 ## SPACING — see rules/100-web.md's SPACING section (canonical) — don't restate
 
-## TYPOGRAPHY SCALE — Perfect Fourth (1.333 ratio), the default ratio
+## TYPOGRAPHY SCALE — the fallback ratio, not the project's ratio
 
-One ratio, held across the project, matters more than which ratio. 1.333 is the kit's default;
-1.25 and 1.2 are equally standard and fit dense/data-heavy UI better. Pick one and keep it.
+One ratio, held across the project, matters more than which ratio. The ladder below is 1.333
+(Perfect Fourth) and is what to use when nothing else has been decided. **If the project has a
+`DESIGN-SPEC.md`, its direction sets the ratio and this ladder is overridden** — 1.2 for dense
+data UI, 1.618 for expressive display type, see `agent_docs/design-directions.md`. Recompute the
+steps from the chosen ratio rather than shipping this one under a different name.
 
 ```text
 xs:   0.75rem   (12px)  → fine print, captions
@@ -62,15 +65,15 @@ xl:   1.333rem  (21px)  → section headings
 4xl:  3.157rem  (51px)  → display only
 ```
 
-Font pairing by archetype:
+**Font pairing comes from the chosen direction** — `agent_docs/design-directions.md` gives a
+display/body/mono set per direction, and they are deliberately spread across grotesk, serif,
+geometric and mono-flavoured rather than converging on one body face. An earlier revision of this
+file paired four of five archetypes with the same body font, which is the monoculture the
+directions file exists to break; do not reintroduce a "safe" default body family here.
 
-| Archetype | Display (headings) | Body |
-| --- | --- | --- |
-| SaaS / DevTool | Geist | Inter |
-| Corporate | Manrope | Inter |
-| Marketing / Creative | Cal Sans | Inter |
-| Ecommerce | Plus Jakarta Sans | Inter |
-| Healthcare / Education | Source Serif 4 | Source Sans 3 |
+Absent a direction, the pairing rules that still hold: two families (display + body) is a safe
+default and one well-cut variable family is a legitimate choice, per `rules/100-web.md`'s
+TYPOGRAPHY section. Three or more is where it usually goes wrong.
 
 ## THREE MANDATORY STATES — always implement all three
 
@@ -239,6 +242,83 @@ className="
 
 **Every button, link, input, card-with-click must have these 4 states.**
 Never `outline: none` without providing an alternative visible focus indicator (WCAG 2.4.11).
+
+### State priority — when more than one applies at once
+
+```text
+disabled > loading > active > focus > hover > default
+```
+
+A disabled control never shows hover; a submitting one never shows active. Declare them in that
+order so the higher-priority rule wins — otherwise the button flashes its hover colour mid-submit,
+which reads as "your click did nothing".
+
+### The state has to reach a screen reader too
+
+Visual state is half the job: a spinner inside a button announces nothing, and `opacity-50` never
+says why a control is inert.
+
+| State | Visual | What announces it |
+| --- | --- | --- |
+| Loading | spinner replaces the icon | `aria-busy="true"` + visually-hidden status text |
+| Disabled, form control | muted + `opacity-50` | the native `disabled` attribute |
+| Disabled, but the reason matters | muted + `opacity-50` | `aria-disabled="true"` — stays focusable |
+| Invalid field | error border + helper text | `aria-invalid="true"` + `aria-describedby` at the message, message `role="alert"` |
+
+```tsx
+<button aria-busy={isSaving} disabled={isSaving}>
+  {isSaving ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+  Save
+  {isSaving && <span className="sr-only">Saving…</span>}
+</button>
+
+<input id="email" aria-invalid={!!error} aria-describedby={error ? 'email-error' : undefined} />
+{error && <p id="email-error" role="alert" className="text-destructive text-sm">{error}</p>}
+```
+
+`disabled` also removes the element from the tab order, so a keyboard user can never reach the
+tooltip explaining why it is off. When that explanation is the point, use `aria-disabled` plus a
+handler that returns early — the control stays reachable and stays inert.
+
+### Spinner placement — where the never-a-spinner rule stops
+
+`rules/100-web.md` bans spinners for lists, cards and tables because a skeleton can match their
+shape. A button cannot. These are the surfaces where a spinner is the right answer:
+
+| Surface | Loading treatment |
+| --- | --- |
+| Button | spinner replaces the icon; label stays, width must not change or the row reflows |
+| Input | spinner in the trailing slot |
+| Card · list · table | skeleton — never a spinner |
+| Full page / route change | centred spinner, or a route-level skeleton if the shape is known |
+
+## VARIANTS — one indirection, not a class list per variant
+
+Give the component its own token names and let each variant reassign them. Layout is written once;
+a variant changes only what its own tokens point at, so a new size or colour is three declarations
+instead of a duplicated class list that drifts the first time padding changes.
+
+```css
+.btn {
+  --btn-bg: var(--color-primary);          /* component tokens: the defaults */
+  --btn-fg: var(--color-primary-foreground);
+  --btn-h: 40px;
+  --btn-px: var(--space-4);
+
+  background: var(--btn-bg);               /* written once, for every variant */
+  color: var(--btn-fg);
+  height: var(--btn-h);
+  padding-inline: var(--btn-px);
+}
+.btn--destructive { --btn-bg: var(--color-destructive); --btn-fg: var(--color-destructive-foreground); }
+.btn--sm          { --btn-h: 32px; --btn-px: var(--space-3); }
+```
+
+This is the component layer of the token hierarchy above, applied: `--btn-bg` is a component token
+and may only ever point at a semantic one, never at a raw hex. In a Tailwind codebase `cva`
+(class-variance-authority) expresses the same indirection — one base class list, variants that
+override named slots — and shadcn/ui components are already written that way; extend their
+`variants` map rather than adding a parallel set of conditional class strings.
 
 ## WCAG 2.2 REQUIREMENTS
 

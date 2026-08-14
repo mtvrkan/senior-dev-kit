@@ -215,6 +215,12 @@ describe('parseArgs', () => {
     deepStrictEqual(o.components, ['agents'])
   })
 
+  it('--check implies --dry-run, so no flag combination lets the gate write', () => {
+    const o = parseArgs(['--check', '--yes'])
+    strictEqual(o.check, true)
+    strictEqual(o.dryRun, true)
+  })
+
   it('reports a typo instead of silently doing a real install', () => {
     // The whole point of the installer is that nothing happens by surprise;
     // `--dryrun` must not fall through to a live write.
@@ -264,6 +270,45 @@ describe('installer CLI (end to end)', () => {
     strictEqual(res.status, 0, res.stderr)
     ok(res.stdout.includes('Dry run'))
     ok(!existsSync(join(target, 'rules')), 'dry run must not create anything')
+  })
+
+  it('--check skips loudly when there is no install, rather than passing in silence', () => {
+    const target = makeTarget()
+    const res = run(['--check'], target)
+    strictEqual(res.status, 0, res.stderr)
+    ok(res.stdout.includes('nothing measured'), res.stdout)
+    ok(!existsSync(join(target, 'rules')), '--check must never write')
+  })
+
+  it('--check passes on a fresh install and fails once the install falls behind', () => {
+    const target = makeTarget()
+    strictEqual(run(['--yes'], target).status, 0)
+
+    const clean = run(['--check'], target)
+    strictEqual(clean.status, 0, clean.stderr)
+    ok(clean.stdout.includes('matches this checkout'), clean.stdout)
+
+    // Exactly the state the check exists to catch: the repo moved on (or the
+    // installed copy was edited) and every session keeps loading the old bytes
+    // while the repo's own gate stays green.
+    const stalePath = join(target, 'rules', '000-security.md')
+    writeFileSync(stalePath, 'stale content\n', 'utf8')
+    const drifted = run(['--check'], target)
+    strictEqual(drifted.status, 1, drifted.stdout)
+    ok(drifted.stderr.includes('rules/000-security.md'), drifted.stderr)
+    ok(drifted.stderr.includes('install.mjs --yes'), 'the report has to say how to fix it')
+    strictEqual(readFileSync(stalePath, 'utf8'), 'stale content\n', '--check reports, never repairs')
+  })
+
+  it('--check only measures the components that were actually installed', () => {
+    // A plugin user installs `--only rules,deny-rules` on purpose. Reporting the
+    // absent agents/ and skills/ as drift would make the check noise they learn
+    // to ignore, which is worse than not having it.
+    const target = makeTarget()
+    strictEqual(run(['--yes', '--only', 'rules,deny-rules'], target).status, 0)
+    const res = run(['--check'], target)
+    strictEqual(res.status, 0, `${res.stdout}${res.stderr}`)
+    ok(!res.stderr.includes('agents/'), res.stderr)
   })
 
   it('rejects an unknown flag rather than installing', () => {

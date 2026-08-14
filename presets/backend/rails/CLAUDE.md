@@ -1,5 +1,9 @@
 # Project Preset — Ruby on Rails 7/8
 
+<!-- reviewed: 2026-08 — the 7/8 version claim in this heading only. Rails 8 is current and 7 is
+still maintained, so both remain supported floors. The idioms and commands below were not
+re-verified in this pass; re-check them before widening this marker's scope. -->
+
 ## Architecture
 
 - Conventional Rails layout. Fat model / skinny controller, with business logic that spans

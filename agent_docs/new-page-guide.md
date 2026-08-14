@@ -73,3 +73,7 @@ Read the closest existing page fully. Extract: layout/shell component, data fetc
 - [ ] No `alert()` — project's toast/notification only
 - [ ] Submit buttons show loading while pending
 - [ ] Lint passes
+- [ ] `DESIGN-SPEC.md` honoured where one exists — direction axes, brief constraints, and the
+      page supporting the recorded signature moment rather than competing with it
+- [ ] `/design-check` run on the built page (adherence, tells, monotony, signature) — the items
+      above are self-marking; the command measures the code independently

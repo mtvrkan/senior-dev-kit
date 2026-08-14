@@ -15,7 +15,9 @@ A plugin cannot write `rules/*.md` or permission rules into the user's settings 
 this is a one-time, consented step. Never skip step 2.
 
 1. PLAN: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/install.mjs" --only rules,deny-rules --dry-run`
-   (drop `${CLAUDE_PLUGIN_ROOT}/` when running from a clone of the repo). Show the output verbatim.
+   (drop `${CLAUDE_PLUGIN_ROOT}/` when running from a clone of the repo). If the user passed
+   `--only rules` or `--only deny-rules`, use that value instead of `rules,deny-rules` —
+   installing both when they asked for one is not the smaller surprise. Show the output verbatim.
 2. ASK: state plainly that this writes to the user's `~/.claude/rules/` and merges deny rules into
    `~/.claude/settings.json`, that existing files are backed up and their own settings keys and deny
    rules are preserved, and that `--uninstall` reverses it. Wait for an explicit yes. Never pass

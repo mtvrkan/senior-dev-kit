@@ -15,9 +15,10 @@ effort: medium
 2. Map each top-level source directory to a one-line purpose (skip node_modules/dist/build/.git/.next).
 3. Trace primary data flow: entry point → routing → key components/screens → data layer (API/store/DB).
 4. Flag performance-sensitive integration points by file:line — third-party script loading, router/navigation setup, large media/asset loading, analytics init.
-5. Write/update `PROJECT/.claude/codebase-overview.md` with the findings — the reusable reference other tasks read instead of re-discovering.
-6. If root `CLAUDE.md` lacks an architecture section, add ≤10 lines pointing to it (essentials inline, detail lazy-loaded from `codebase-overview.md`) — never let CLAUDE.md itself balloon past its existing budget.
-7. Never modify source files — documentation only.
+5. Write/update `PROJECT/.claude/codebase-overview.md` with the findings — the reusable reference other tasks read instead of re-discovering. Record the architecture explicitly (pattern, boundaries, dependency direction, which layer owns transactions/errors/authz): detected-but-unrecorded is re-detected differently next session.
+6. Run `/arch-check` once the map exists — it measures the tree against the architecture just recorded; a mixed pattern or an inverted dependency belongs in the overview as a known state, not as a surprise for the next feature.
+7. If root `CLAUDE.md` lacks an architecture section, add ≤10 lines pointing to it (essentials inline, detail lazy-loaded from `codebase-overview.md`) — never let CLAUDE.md itself balloon past its existing budget.
+8. Never modify source files — documentation only.
 
 ## Output
 

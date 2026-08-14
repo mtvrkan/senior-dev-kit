@@ -9,6 +9,7 @@ import { readFileSync, readdirSync, existsSync } from 'fs'
 import { join, relative, dirname } from 'path'
 import { parseFrontmatter, findDuplicateFrontmatterKeys, getBodyAfterFrontmatter, stripBom } from './frontmatter.ts'
 import { checkModelId, checkEffort, validateToolList, missingRequiredFields, type Counts } from './validate-common.ts'
+import { TRIGGER_TEXT_BUDGET_CHARS } from './counts.ts'
 
 const REQUIRED = ['description', 'allowed-tools']
 const RECOMMENDED = ['when_to_use']
@@ -21,7 +22,12 @@ const SKILL_BODY_MAX_LINES = 20
 // growth the 250-line cap on global-CLAUDE.md/000/001 exists to stop. 360
 // fits the longest legitimate trigger with headroom; detail beyond that
 // belongs in the body, which is free at session time.
-const SKILL_TRIGGER_BUDGET_CHARS = 360
+//
+// The number moved to lib/counts.ts in round 45, when agents and commands turned out to
+// pay the same per-session bill with no cap at all and the aggregate had no cap either.
+// One value, three validators, one aggregate check — a second copy here is how the caps
+// would eventually disagree about what "the trigger budget" is.
+const SKILL_TRIGGER_BUDGET_CHARS = TRIGGER_TEXT_BUDGET_CHARS
 
 export interface SkillWalkResult extends Counts {
   checked: number

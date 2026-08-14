@@ -9,6 +9,16 @@ Full step-by-step reference for `/from-scratch` skill. Read after reviewing the 
 ```markdown
 # Project Contracts — [Project Name]
 
+## Architecture
+Pattern: [layered | vertical slice | clean/DDD | framework MVC] — chosen, not inherited by accident.
+Boundaries: [what a feature owns · what lives in the shared kernel · what never imports what]
+Dependency direction: [e.g. controller → service → repository → DB; domain imports no framework]
+Seams: transactions [layer] · error boundary [layer] · authz [layer] · retries [layer]
+
+Recorded for the same reason the design direction is: a pattern that is only ever *detected*
+from folder shape gets re-derived — differently — by every later session, and the second
+answer is what turns one architecture into two. `/arch-check` audits the code against this.
+
 ## Routes / Pages
 | Route | Purpose | Auth? |
 |-------|---------|-------|
@@ -62,21 +72,44 @@ Do not proceed to Step 1 until this file is written.
 
 ## Step 2 — DESIGN-SPEC.md (web projects only)
 
+**Collect the brief, then pick the direction.** Read `agent_docs/design-directions.md`. Its BRIEF
+section comes first — references, brand assets, adjectives, exclusions, hard constraints — because
+a direction chosen from the product type alone is a guess about the user's taste. Then narrow to
+three genuinely far-apart options and ask once, one question, each named with its consequence; when
+the brief points somewhere none of the eight goes, one of the three is a bespoke direction. This is
+the step that decides whether the project looks like its own thing or like every other generated
+site; skipping it and filling the spec from defaults is what produced the sameness complaint in the
+first place. The answer is resolved into real numbers here, and every later page reads them instead
+of choosing again.
+
 ```markdown
 # Design Specification — [Project Name]
 
-## Archetype: [SaaS|Marketing|etc]
+## Direction: [one of the eight in agent_docs/design-directions.md, or a named bespoke one]
+Chosen with the user on [date]. Later pages read this; they do not re-choose.
+Bespoke → name the base it started from and what the brief moved.
+
+## Brief — constraints and exclusions (from the user, not derivable from the code)
+Fixed: [brand palette / logo / component library / density requirement / …]
+Avoid: [competitor or look the user ruled out]
+References: [what was pointed at, and which axes it actually bound]
+
+## Signature moment
+One sentence: what the single idea is and where it lives. Later pages support it, never compete
+with it. See design-directions.md § THE SIGNATURE.
 
 ## Personality
 One-sentence brand voice.
 
-## Font Pairing
-Display: [font] — headings only (h1–h3)
-Body: [font] — all body text, labels, UI
-Mono: [font] — code blocks
-
-## Color Palette
-Primary hue: [HSL base] | Neutral: slate/gray/zinc | Success/Warning/Destructive: standard
+## Axis values (resolved — these are what get written into globals.css)
+Type:       display [font] / body [font] / mono [font] · scale ratio [1.2|1.25|1.333|1.5|1.618]
+Colour:     base [light|dark] · neutral [warm|cool|pure] · accents [n] · primary [HSL]
+Geometry:   --radius-sm/md/lg [values] · border [weight, or "structure carried by shadow"]
+Depth:      [flat|soft shadow|hard offset|glow|glass] — exactly one
+Density:    section spacing [px] · body line-height · measure [ch]
+Motion:     duration band [ms] · easing · what animates
+Decoration: [gradient|grain|rules|imagery|none]
+Layout:     rhythm [centred|editorial|split|modular|full-bleed|dense shell]
 
 ## Semantic Tokens (copy into globals.css)
 --background  --foreground  --card  --card-foreground
@@ -84,9 +117,9 @@ Primary hue: [HSL base] | Neutral: slate/gray/zinc | Success/Warning/Destructive
 --muted  --muted-foreground  --accent  --accent-foreground
 --destructive  --destructive-foreground  --border  --input  --ring  --radius
 
-## Spacing/typography/motion/component-state rules: fixed, not project-specific —
-## see agent_docs/design-system.md (8px grid, Perfect Fourth scale, motion tokens)
-## and rules/100-web.md (THREE MANDATORY STATES) instead of restating them here.
+## The token NAMES above are fixed on every project; the direction sets their VALUES.
+## Component-state, accessibility and three-mandatory-state rules are fixed too and are not
+## restated here — see rules/100-web.md and agent_docs/design-system.md.
 ```
 
 ---
@@ -214,6 +247,17 @@ Build ONE complete page from PROJECT-CONTRACTS.md:
 - [ ] Every spacing: on the project's chosen scale (kit default = 8px grid, p-1/2/3/4/6/8/12/16) — no arbitrary values like `gap-[18px]`
 - [ ] Every font size: typography scale — no `text-[17px]`
 - [ ] Dark mode tokens tested (if in scope)
+- [ ] The chosen direction is actually visible: radius, depth model, type pairing, density and
+      motion all match `DESIGN-SPEC.md`. A spec naming one direction over a page built from the
+      defaults is the failure this checklist exists to catch — the file agreeing with itself is
+      not evidence that the page does.
+- [ ] Section composition varies within the page — not the same centred heading over a 3-column
+      card grid three times (see `agent_docs/design-directions.md`, LAYOUT RHYTHM)
+- [ ] The signature moment recorded in `DESIGN-SPEC.md` is built, survives 360px and
+      `prefers-reduced-motion`, and is the only one on the page
+- [ ] The brief's fixed constraints and exclusions are honoured
+- [ ] `/design-check` run and its findings addressed — this checklist is the author marking their
+      own work; the command measures the built UI against the spec independently
 
 ### Component completeness
 
@@ -229,6 +273,11 @@ Build ONE complete page from PROJECT-CONTRACTS.md:
 - [ ] All TypeScript types from types/index.ts — no inline duplication
 - [ ] All imports resolve — no "Cannot find module" errors
 - [ ] No component re-invents what components/shared/ provides
+- [ ] The architecture recorded in `PROJECT-CONTRACTS.md` is what the tree implements — one
+      pattern, dependency direction held, each seam (transactions, error boundary, authz) owned
+      by one layer
+- [ ] `/arch-check` run and its findings addressed — cheapest at project zero, when the whole
+      codebase is the first feature and nothing has calcified yet
 
 ### Holistic consistency
 

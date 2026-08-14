@@ -8,6 +8,7 @@ import { readFileSync, readdirSync, existsSync } from 'fs'
 import { join } from 'path'
 import { parseFrontmatter, findDuplicateFrontmatterKeys, getBodyAfterFrontmatter } from './frontmatter.ts'
 import { checkModelId, checkEffort, validateToolList, missingRequiredFields, type Counts } from './validate-common.ts'
+import { TRIGGER_TEXT_BUDGET_CHARS } from './counts.ts'
 
 export function getAgentNames(agentsDir: string): Set<string> {
   if (!existsSync(agentsDir)) return new Set()
@@ -50,6 +51,12 @@ const isGuardAgent = (agentName: string): boolean => agentName.endsWith('-guard'
 // agent_docs/ and gets pulled in only when the task needs it — see the
 // "Reference docs (lazy-load when needed)" pattern in agents/performance-guard.md.
 const AGENT_BODY_MAX_LINES = 150
+// The body above is lazy — it loads when the agent is dispatched. `description` is not:
+// the harness lists every installed agent's description before the first user turn, and
+// the routing eval's control arm is literally that list. So it is trigger text under the
+// same cap as a skill's, and until round 45 it had no cap at all while the skill next to
+// it had one. Same number, one declaration — see lib/counts.ts.
+const AGENT_DESCRIPTION_BUDGET_CHARS = TRIGGER_TEXT_BUDGET_CHARS
 
 export interface AgentValidationResult extends Counts {
   checked: number
@@ -97,6 +104,11 @@ export function validateAgentFrontmatter(agentsDir: string): AgentValidationResu
     }
     if (isGuardAgent(agentName) && fm.permissionMode !== 'plan') {
       console.error(`  ✗ agents/${file} — guard agent must have permissionMode: plan (found: '${fm.permissionMode ?? 'missing'}')`)
+      result.errors++
+      agentOk = false
+    }
+    if ((fm.description?.length ?? 0) > AGENT_DESCRIPTION_BUDGET_CHARS) {
+      console.error(`  ✗ agents/${file} — description is ${fm.description.length} chars (required ≤${AGENT_DESCRIPTION_BUDGET_CHARS}); it loads into every session before the user types, so detail belongs in the body or in agents/ROUTING.md`)
       result.errors++
       agentOk = false
     }

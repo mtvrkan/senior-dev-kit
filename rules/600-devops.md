@@ -36,6 +36,12 @@ ANY change to Dockerfile, GitHub Actions, GitLab CI, Terraform, K8s manifests, H
 
 devops-guard runs the checklist below and approves before implementation.
 
+**Everything below this line is what devops-guard applies *after* the user approves its plan.**
+The Dockerfile pattern, the Actions snippets, the Terraform and K8s checklists — none of them is a
+way to satisfy an infrastructure request without escalating first. Until the guard has returned a
+plan and the user has said yes, the escalation line **is** the turn's output — no Dockerfile, no
+workflow YAML, no "here is roughly what it would look like".
+
 ## DOCKERFILE SECURITY CHECKLIST
 
 ```dockerfile

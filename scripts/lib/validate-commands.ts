@@ -5,6 +5,7 @@ import { readFileSync, readdirSync, existsSync } from 'fs'
 import { join } from 'path'
 import { parseFrontmatter, findDuplicateFrontmatterKeys } from './frontmatter.ts'
 import { missingRequiredFields, type Counts } from './validate-common.ts'
+import { TRIGGER_TEXT_BUDGET_CHARS } from './counts.ts'
 
 export interface CommandValidationResult extends Counts {
   checked: number
@@ -30,6 +31,15 @@ export function validateCommands(commandsDir: string): CommandValidationResult {
     let cmdOk = true
     for (const field of missingRequiredFields(fm, ['description'])) {
       console.error(`  ✗ commands/${file} — missing required field: ${field}`)
+      result.errors++
+      cmdOk = false
+    }
+    // A command's frontmatter is trigger text, same as a skill's: the harness lists every
+    // installed command before the first user turn so `/` autocomplete can offer it. The
+    // body is what loads on invocation and is where detail belongs.
+    const triggerChars = Object.entries(fm).reduce((sum, [k, v]) => sum + k.length + v.length, 0)
+    if (triggerChars > TRIGGER_TEXT_BUDGET_CHARS) {
+      console.error(`  ✗ commands/${file} — frontmatter is ${triggerChars} chars (required ≤${TRIGGER_TEXT_BUDGET_CHARS}); it loads into every session — move detail into the body`)
       result.errors++
       cmdOk = false
     }

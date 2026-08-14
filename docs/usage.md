@@ -84,6 +84,9 @@ because they only make sense when *you* decide to run them:
 | `/agents-guide` | command | List the installed agents and when each is used |
 | `/skills-guide` | command | List the installed skills and what auto-triggers each |
 | `/seo-check` | command | Audit the project for SEO, AEO and Core Web Vitals issues |
+| `/design-check` | command | Audit built UI against its design direction: tells, monotony, signature |
+| `/arch-check` | command | Audit structure: boundaries, dependency direction, mixed patterns, drift |
+| `/a11y-check` | command | Audit against WCAG 2.2 AA: keyboard, focus, contrast, targets, reflow |
 | `/deep-research` | manual-only skill | Multi-source research with cited synthesis |
 | `/env-audit` | manual-only skill | Environment-variable audit across the codebase |
 | `/kit-doctor` | manual-only skill | Diagnose an install that isn't behaving |

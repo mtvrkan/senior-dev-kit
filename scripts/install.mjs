@@ -19,6 +19,7 @@
  *
  * Usage:
  *   node scripts/install.mjs [--dry-run] [--yes] [--target DIR] [--only a,b]
+ *   node scripts/install.mjs --check
  *   node scripts/install.mjs --uninstall [--dry-run] [--yes]
  *
  * Plain JavaScript on purpose — see the note at the top of lib/install-core.mjs.
@@ -100,6 +101,9 @@ Options:
       --target DIR  Install into DIR instead of ~/.claude (or $CLAUDE_CONFIG_DIR).
       --only LIST   Comma-separated subset of:
                     agents,skills,commands,rules,agent_docs,presets,protocol,deny-rules
+      --check       Report whether the installed copy still matches this
+                    checkout; exit 1 if it drifted. Writes nothing. Part of
+                    \`npm run check\`; skips loudly when there is no install.
       --uninstall   Remove what a previous run of this installer wrote.
       --allow-duplicate-protocol
                     Install even if CLAUDE.md already holds an unmarked copy of
@@ -399,6 +403,59 @@ function pruneEmptyDirs(dir) {
   if (readdirSync(dir).length === 0) rmSync(dir, { recursive: true, force: true })
 }
 
+// --- drift check ------------------------------------------------------------
+
+/**
+ * Report whether the installed copy under `target` still matches this checkout,
+ * and set a non-zero exit code if it does not. Writes nothing.
+ *
+ * Why this is in the gate: every other check in `npm run check` verifies that
+ * the repo agrees with itself. None of them can see `~/.claude`, so a whole
+ * round of work can sit green in the repo while the installed kit — the one
+ * that actually loads into sessions — is a version behind. That happened: the
+ * design-direction machinery shipped, passed 11/11, and was still absent from
+ * the maintainer's own install a day later, so every session kept falling back
+ * to the default the work existed to replace.
+ *
+ * @param {string} target
+ */
+function reportDrift(target) {
+  const manifest = readManifest(target)
+  // A copy install is the only thing this can measure. Plugin installs have no
+  // manifest (the plugin root IS the checkout), and CI machines have no install
+  // at all — both land here. Say so out loud rather than printing a tick over an
+  // empty scan; a check that silently measures nothing reads as a passing one.
+  if (!manifest) {
+    console.log(`No senior-dev-kit copy install found at ${target} — nothing measured.`)
+    console.log('  (Expected on CI and for plugin installs. `node scripts/install.mjs` creates one.)')
+    return
+  }
+
+  // Only the components this target actually installed. Someone who ran
+  // `--only rules,deny-rules` — the subset the usage text recommends to plugin
+  // users — has no agents/ or skills/ there on purpose, and reporting those as
+  // drift would teach the reader to ignore the check.
+  const { selected } = resolveComponents(manifest.components ?? null)
+  const plan = buildPlan(target, selected, manifest)
+
+  const stale = plan.files.filter(f => f.action !== 'unchanged')
+  const protocolStale = Boolean(plan.protocol?.changed)
+  const denyMissing = plan.deny && !plan.deny.error ? plan.deny.added.length : 0
+
+  if (stale.length === 0 && !protocolStale && denyMissing === 0) {
+    console.log(`✓ ${target} matches this checkout (${plan.files.length} files, components: ${selected.join(', ')}).`)
+    return
+  }
+
+  console.error(`✗ ${target} is out of date with this checkout — installed sessions are running older content.`)
+  for (const f of stale.slice(0, 15)) console.error(`    ${f.action === 'create' ? 'missing  ' : 'stale    '}${f.rel}`)
+  if (stale.length > 15) console.error(`    … and ${stale.length - 15} more`)
+  if (protocolStale) console.error('    stale    CLAUDE.md (kit protocol block)')
+  if (denyMissing > 0) console.error(`    missing  ${denyMissing} deny rule(s) in settings.json`)
+  console.error('\n  Fix: node scripts/install.mjs --yes')
+  process.exitCode = 1
+}
+
 // --- entry point ------------------------------------------------------------
 
 const NO_TTY = Symbol('no-tty')
@@ -457,6 +514,11 @@ async function main() {
     if (!answer) return console.log('Aborted.')
     applyUninstall(target, plan)
     console.log('Uninstalled. Backups from previous installs are kept under', join(target, STATE_DIR, 'backups'))
+    return
+  }
+
+  if (opts.check) {
+    reportDrift(target)
     return
   }
 

@@ -13,7 +13,7 @@ import { realpathSync } from 'fs'
 // the gate at all because the dep-audit CI job was red for three transitive
 // advisories with nothing local reporting it — a CI job with no local
 // counterpart is a check you find out about after pushing.
-export const CHECK_STEPS = ['test', 'validate', 'link-check', 'consistency-check', 'docs-check', 'routing-eval', 'check-plugin', 'typecheck', 'lint', 'markdown-lint', 'audit']
+export const CHECK_STEPS = ['test', 'validate', 'link-check', 'consistency-check', 'docs-check', 'routing-eval', 'behavior-eval', 'check-plugin', 'check-install', 'typecheck', 'lint', 'markdown-lint', 'audit']
 
 // A step whose green tick means less than it looks like says so in the summary. `routing-eval`
 // runs its static checks unconditionally but skips live routing scoring unless the `claude` CLI
@@ -21,6 +21,15 @@ export const CHECK_STEPS = ['test', 'validate', 'link-check', 'consistency-check
 // verified", which is the same class of quiet over-claim this file was written to end.
 export const STEP_NOTES: Record<string, string> = {
   'routing-eval': 'static only — live scoring needs RUN_ROUTING_EVAL=1 and the claude CLI',
+  // Every other step in this list compares the repo with itself. This one is the only one that
+  // looks at the installed copy — the thing that actually loads into sessions — and it can only
+  // do that where a copy install exists. On CI, and for plugin users, it measures nothing and
+  // says so; the note keeps a bare green tick from reading as "the install is current".
+  // Same over-claim risk as routing-eval, one level worse: the static half here only proves the
+  // prompts and their context files are well-formed. Whether any rule changes a decision is the
+  // live arm, and the live arm is opt-in.
+  'behavior-eval': 'static only — live scoring needs RUN_BEHAVIOR_EVAL=1 and the claude CLI',
+  'check-install': 'copy installs only — where there is none it compares nothing, and says so in its own output',
 }
 
 export interface StepResult {

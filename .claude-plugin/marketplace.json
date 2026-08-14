@@ -12,7 +12,7 @@
       "source": "./",
       "displayName": "Senior Dev Kit",
       "description": "Guard agents, auto-triggered skills and path-scoped rules that make Claude Code behave like a senior engineering team.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "category": "workflow",
       "tags": [
         "agents",

@@ -16,6 +16,8 @@ New mobile screen from scratch. Follow this protocol — do not skip steps. See 
 4. STOP + ESCALATE to security-guard if the screen handles auth or payment data — this is a hard stop, not a "wait for go and proceed" case.
 5. Build in order: UiState/state class → ViewModel/Controller → screen skeleton → loading → error → empty → populated → forms/dialogs/sheets → previews.
 6. Colors/typography from theme/semantic tokens only — never hardcoded. Spacing: 4dp/8pt grid only. Feedback: Snackbar/SnackBar/.alert — never Toast/alert().
+7. First screen in a new app, or no design direction recorded? That belongs to `design-lead` — brief intake, then idiom distance + material + motion + the one signature moment settled **with the user** and recorded before building; existing app → match the screens read in step 2, never introduce a second character.
+8. Run `/design-check` and `/a11y-check` after building — this skill covers states and platform tokens, not direction adherence, monotony, whether the signature landed, or TalkBack/VoiceOver conformance.
 
 ## Output
 

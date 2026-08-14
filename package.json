@@ -1,6 +1,6 @@
 {
   "name": "senior-dev-kit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Agents, skills, rules and guardrails that make Claude Code behave like a senior engineering team. Installed as a Claude Code plugin or into ~/.claude.",
   "type": "module",
   "private": true,
@@ -34,7 +34,7 @@
     "siteOrigin": "https://senior.mtvrkan.com"
   },
   "scripts": {
-    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/deny-cost.test.ts scripts/run-checks.test.ts scripts/rule-globs.test.ts scripts/templates.test.ts scripts/install.test.mjs scripts/session-context.test.mjs",
+    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/deny-cost.test.ts scripts/run-checks.test.ts scripts/behavior-eval.test.ts scripts/rule-globs.test.ts scripts/templates.test.ts scripts/install.test.mjs scripts/session-context.test.mjs",
     "setup": "node scripts/install.mjs",
     "validate": "node --experimental-strip-types scripts/validate-skills.ts",
     "link-check": "node --experimental-strip-types scripts/check-links.ts",
@@ -44,7 +44,9 @@
     "gen-site": "node --experimental-strip-types scripts/gen-site.ts",
     "site-check": "node --experimental-strip-types scripts/gen-site.ts --check",
     "routing-eval": "node --experimental-strip-types scripts/routing-eval.ts",
+    "behavior-eval": "node --experimental-strip-types scripts/behavior-eval.ts",
     "check-plugin": "node --experimental-strip-types scripts/check-plugin.ts",
+    "check-install": "node scripts/install.mjs --check",
     "deny-cost": "node --experimental-strip-types scripts/deny-cost.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint scripts/",

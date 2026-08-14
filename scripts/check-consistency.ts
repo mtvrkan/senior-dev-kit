@@ -24,10 +24,14 @@ import {
   ALWAYS_LOADED_FILES as alwaysLoadedFiles,
   ALWAYS_LOADED_LINE_BUDGET,
   ALWAYS_LOADED_COMBINED_BUDGET,
+  TRIGGER_TEXT_BUDGET_CHARS,
+  TRIGGER_TEXT_COMBINED_BUDGET_CHARS,
+  triggerText,
   lineCount as countLines,
 } from './lib/counts.ts'
 import { parseArgs, resolveComponents, COMPONENTS } from './lib/install-core.mjs'
 import { CHECK_STEPS } from './run-checks.ts'
+import { AB_SUITE_FILES, evalContextDigest } from './lib/eval-context.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = process.env.CONSISTENCY_ROOT ?? join(__dirname, '..')
@@ -329,11 +333,23 @@ let denyRuleCount: number | null = null
 let denyCountClaims: { text: string; claimed: number }[] = []
 if (existsSync(join(ROOT, 'settings-template.json')) && existsSync(join(ROOT, 'SECURITY.md'))) {
   denyRuleCount = deriveDenyRuleCount(ROOT)
-  const denyCountPattern = /\*\*(\d+) Read\/Bash\/PowerShell deny rules\*\*/g
+  // The tool list inside the claim is not pinned: round 45 added `Write`/`Edit` rules and the
+  // old literal `Read/Bash/PowerShell` pattern would have matched nothing — leaving the count
+  // unverified while printing a pass, which is worse than the drift it was written to catch.
+  // What IS pinned is the shape: a bolded number followed by tool names and "deny rules".
+  const denyCountPattern = /\*\*(\d+) (?:[A-Za-z]+\/)+[A-Za-z]+ deny rules\*\*/g
   denyCountClaims = [...read('SECURITY.md').matchAll(denyCountPattern)].map(m => ({
     text: m[0],
     claimed: Number(m[1]),
   }))
+  // Same guard as checks 16/22: a pattern that stops matching must fail loudly. Silence here
+  // is indistinguishable from a verified claim, and this is the number the whole document is about.
+  if (denyCountClaims.length === 0) {
+    errors.push(
+      'SECURITY.md no longer states a "**N <tools> deny rules**" claim in the shape check 6 verifies — restore it, or ' +
+        'retire the check deliberately rather than leaving the deny-rule count unguarded'
+    )
+  }
   for (const { text, claimed } of denyCountClaims) {
     if (claimed !== denyRuleCount) {
       errors.push(`SECURITY.md claims "${text}" but settings-template.json actually has ${denyRuleCount} deny rules`)
@@ -1055,6 +1071,7 @@ if (existsSync(join(ROOT, 'CONTRIBUTING.md')) && existsSync(join(ROOT, 'scripts/
     { file: 'CONTRIBUTING.md', re: /Skill bodies are capped at (\d+) lines\*\* and agent bodies at (\d+)/g, expected: [skillBody, agentBody], what: 'skill/agent body caps' },
     { file: 'CONTRIBUTING.md', re: /compact\.md` \((\d+)[–-](\d+) lines\)/g, expected: [compactMin, compactMax], what: 'compact.md line range' },
     { file: 'CONTRIBUTING.md', re: /budget of (\d+) lines each and (\d+) combined/g, expected: [perFile, combined], what: 'always-loaded budgets' },
+    { file: 'CONTRIBUTING.md', re: /(\d+) chars each and (\d+) combined/g, expected: [TRIGGER_TEXT_BUDGET_CHARS, TRIGGER_TEXT_COMBINED_BUDGET_CHARS], what: 'trigger-text budgets' },
     { file: 'CLAUDE.md', re: /compact\.md` \((\d+)-(\d+) line summary/g, expected: [compactMin, compactMax], what: 'compact.md line range' },
     { file: 'CLAUDE.md', re: /agent bodies \((\d+) lines\), skill bodies \((\d+) lines\)/g, expected: [agentBody, skillBody], what: 'agent/skill body caps' },
     { file: 'CLAUDE.md', re: /\((\d+) lines\/file, (\d+) combined/g, expected: [perFile, combined], what: 'always-loaded budgets' },
@@ -1420,6 +1437,26 @@ if (existsSync(join(ROOT, 'presets')) && existsSync(join(ROOT, 'global-CLAUDE.md
 // (don't COMMIT it); this binds PROTECTED FILES → deny rules (don't READ it), closing the other
 // half of the same promise.
 //
+// Round 45 — the heading says "never read, MODIFY, or reference", and for four rounds this
+// check asserted only the read half while the deny list held 61 `Read(...)` rules and no
+// write-side rule at all. A check written to bind a promise to its enforcement, enforcing half
+// of it, is the shape round 39 named: a partial digest reads as full coverage, so the gate went
+// green on a promise the kit was keeping halfway. The rule file now answers which patterns:
+// the credential block is never legitimately written, the second block (`.env`, lockfiles,
+// build output) legitimately is, and each is graded against the tools that apply to it rather
+// than against a list hand-copied into this file.
+//
+// `Edit(...)` only, and this one is measured rather than assumed. The first attempt shipped
+// `Write(...)` rules alongside `Edit(...)` ones, on the reasonable-looking theory that the two
+// tools need separate rules the way `Bash(...)` and `PowerShell(...)` do. Claude Code answered
+// directly, once per rule, on the next session start: "Write(~/.pgpass) is not matched by file
+// permission checks — only Edit(path) rules are. Use Edit(~/.pgpass) instead (Edit rules cover
+// all file-editing tools)." So 33 `Write(...)` rules were inert *and* printed a warning banner
+// every session. They are gone. This is the same class of claim as the Assumption note in
+// SECURITY.md — someone else's matcher, not this repo's code — except it arrived as an explicit
+// upstream diagnostic instead of a differential session, which is better evidence than the kit
+// has for anything else in that note.
+//
 // One direction only, deliberately. The reverse (every Read rule must appear in PROTECTED FILES)
 // would fail on every `~/…` home-directory rule — the deny list protects the developer's whole
 // machine, PROTECTED FILES describes files inside the project being worked on. They are supersets
@@ -1429,6 +1466,7 @@ if (existsSync(join(ROOT, 'presets')) && existsSync(join(ROOT, 'global-CLAUDE.md
 // `scripts/validate-skills.test.ts` already derives them from these same Read(...) rules, so a
 // pattern that lands here inherits that coverage automatically.
 let protectedPatternsChecked = 0
+let credentialWritesChecked = 0
 if (existsSync(join(ROOT, 'rules/000-security.md')) && existsSync(join(ROOT, 'settings-template.json'))) {
   const section = read('rules/000-security.md').match(/## PROTECTED FILES[^\n]*\n([\s\S]*?)(?:\n## |$)/)
   if (!section) {
@@ -1437,14 +1475,44 @@ if (existsSync(join(ROOT, 'rules/000-security.md')) && existsSync(join(ROOT, 'se
     // Same pattern-line shape check 17 uses: only the ` · `-separated backtick lines, never the
     // prose that closes the section (which backticks `*.tfvars` precisely to say it is excluded).
     const patternLine = /^(?:`[^`\n]+`)(?:\s*·\s*`[^`\n]+`)*$/
-    const patterns = section[1]
-      .split('\n')
-      .map(l => l.trim())
-      .filter(l => patternLine.test(l))
-      .flatMap(l => [...l.matchAll(/`([^`\n]+)`/g)].map(m => m[1].trim()))
-    const readPatterns = (JSON.parse(read('settings-template.json')).permissions?.deny ?? [])
-      .filter((r: string) => r.startsWith('Read(') && r.endsWith(')'))
-      .map((r: string) => r.slice('Read('.length, -1))
+    const sectionLines = section[1].split('\n').map(l => l.trim())
+    // The rule file's own two-block structure is the source of the write policy — the credential
+    // block is "never written", the block after it is not. Tracked by walking the section in
+    // order and flipping at the second bold label, so moving a pattern between blocks in the rule
+    // file moves its enforcement here with no second list to update.
+    const CREDENTIAL_LABEL = '**Credential material'
+    const WRITABLE_LABEL = '**Read-denied only'
+    const patterns: { glob: string; credential: boolean }[] = []
+    let inCredentialBlock = false
+    let sawBothLabels = 0
+    for (const line of sectionLines) {
+      if (line.startsWith(CREDENTIAL_LABEL)) { inCredentialBlock = true; sawBothLabels++; continue }
+      if (line.startsWith(WRITABLE_LABEL)) { inCredentialBlock = false; sawBothLabels++; continue }
+      if (!patternLine.test(line)) continue
+      for (const m of line.matchAll(/`([^`\n]+)`/g)) patterns.push({ glob: m[1].trim(), credential: inCredentialBlock })
+    }
+    if (sawBothLabels !== 2) {
+      errors.push(
+        `rules/000-security.md's PROTECTED FILES section no longer opens its two blocks with "${CREDENTIAL_LABEL}…" and ` +
+          `"${WRITABLE_LABEL}…" (found ${sawBothLabels} of 2) — check 22 cannot tell which patterns must also be write-denied, ` +
+          `so the write half of "never read, modify, or reference" would silently stop being enforced`
+      )
+    }
+    const denyRules: string[] = JSON.parse(read('settings-template.json')).permissions?.deny ?? []
+    const rulesFor = (tool: string): string[] =>
+      denyRules.filter(r => r.startsWith(`${tool}(`) && r.endsWith(')')).map(r => r.slice(tool.length + 1, -1))
+    const readPatterns = rulesFor('Read')
+    const editPatterns = rulesFor('Edit')
+    // A `Write(...)` rule is not merely redundant here, it is noise: Claude Code prints a
+    // warning for every one of them at session start, so the kit would ship a banner instead
+    // of a protection. Caught the moment the first batch shipped; pinned so it cannot return.
+    for (const rule of rulesFor('Write')) {
+      errors.push(
+        `settings-template.json ships Write(${rule}). Claude Code does not match Write(...) rules against file ` +
+          `permission checks — only Edit(...) rules, which cover every file-editing tool — and prints a warning for each ` +
+          `one at session start. Use Edit(${rule}) instead`
+      )
+    }
 
     // `**` crosses `/`, a single `*` does not. Imported, not re-implemented: this is the fourth
     // call site of the same path-glob semantics and the copies had already diverged in how they
@@ -1458,7 +1526,10 @@ if (existsSync(join(ROOT, 'rules/000-security.md')) && existsSync(join(ROOT, 'se
     if (patterns.length === 0) {
       errors.push('check 22 parsed 0 patterns out of the PROTECTED FILES section — the list format changed')
     }
-    for (const pattern of patterns) {
+    if (patterns.some(p => p.credential) === false && sawBothLabels === 2) {
+      errors.push('check 22 parsed 0 credential patterns out of the PROTECTED FILES section — the write half is grading nothing')
+    }
+    for (const { glob: pattern, credential } of patterns) {
       const sample = sampleFor(pattern)
       if (readPatterns.some((p: string) => pathGlobToRegExp(p).test(sample))) {
         protectedPatternsChecked++
@@ -1466,6 +1537,16 @@ if (existsSync(join(ROOT, 'rules/000-security.md')) && existsSync(join(ROOT, 'se
         errors.push(
           `rules/000-security.md lists \`${pattern}\` as a PROTECTED FILE ("never read"), but no Read(...) ` +
             `deny rule in settings-template.json matches ${sample} — the rule is prompt discipline with no backstop`
+        )
+      }
+      if (!credential) continue
+      if (editPatterns.some(p => pathGlobToRegExp(p).test(sample))) {
+        credentialWritesChecked++
+      } else {
+        errors.push(
+          `rules/000-security.md lists \`${pattern}\` as credential material ("never read, never written"), but no Edit(...) ` +
+            `deny rule in settings-template.json matches ${sample} — the heading promises "never read, modify, or reference" and ` +
+            `only the read half would be enforced`
         )
       }
     }
@@ -1936,7 +2017,13 @@ const FRESHNESS_ROOT_FILES = ['SECURITY.md', 'global-CLAUDE.md', 'README.md', 'R
 // edition arm carries it) covers every legitimate use without an allowlist of files.
 const YEAR_IS_A_FACT = /(?:edition|version|spec|standard|owasp|wcag|rfc|cve|incident|released?|published|since|until|through|report|survey|©|copyright|[\w/.-]+\/[\w/.-]+)\s*$/i
 const BARE_YEAR = /\((20\d{2})\)/g
-const REVIEWED_MARKER = /<!--\s*(?:(reviewed)|upstream-assumption\s+(verified)):\s*(\d{4})-(\d{2})\s*-->/g
+// The optional trailing note is what keeps a marker honest about its own scope. Check 36 requires
+// one on every version-naming preset, and "reviewed" over a whole preset would vouch for every
+// idiom and command in it; "reviewed: 2026-08 — Rails 7/8 version line" vouches for what was
+// actually re-checked. A marker whose scope is implicit is re-dated blindly, which is the round-37
+// failure check 26 already records.
+const REVIEWED_MARKER =
+  /<!--\s*(?:(reviewed)|upstream-assumption\s+(verified)):\s*(\d{4})-(\d{2})\s*(?:—[^>]*)?-->/g
 const now = new Date()
 let freshnessMarkers = 0
 const scanFreshness = (rel: string): void => {
@@ -2028,16 +2115,26 @@ if (historyDepth !== null && historyDepth < MIN_COMMITS_FOR_PROVENANCE) {
 // it in the data file and binding the prose to it is the same treatment every other count in the
 // READMEs gets — otherwise the kit's headline evidence would be its one hand-typed number.
 // Both fractions and percentages are matched, in both languages, because both READMEs state both.
-const measured = JSON.parse(read('eval/golden-prompts.json')).last_measured as
-  | { prompts: number; control_passed: number; treatment_passed: number; date: string }
-  | undefined
+// Both live suites feed this, not just routing: the behavior A/B started recording a result too,
+// and a second measured number quoted in the same prose with nothing binding it would be the exact
+// gap this check was written to close — one arm bound, one arm hand-typed.
+type MeasuredRun = { prompts: number; control_passed: number; treatment_passed: number; date: string }
+// existsSync guard, not optimism: the fixtures in scripts/validate-skills.test.ts copy a partial
+// repo, so an unguarded read here fails every one of them at once.
+const AB_SUITES = AB_SUITE_FILES.filter(f => existsSync(join(ROOT, f)))
+const measuredRuns = AB_SUITES.map(file => ({ file, run: JSON.parse(read(file)).last_measured as MeasuredRun | null | undefined })).filter(
+  (r): r is { file: string; run: MeasuredRun } => Boolean(r.run)
+)
 let abClaimCount = 0
-if (measured) {
-  const pct = (n: number): number => Math.round((n / measured.prompts) * 100)
-  const expected = new Map([
-    [`${measured.control_passed}/${measured.prompts}`, pct(measured.control_passed)],
-    [`${measured.treatment_passed}/${measured.prompts}`, pct(measured.treatment_passed)],
-  ])
+if (measuredRuns.length > 0) {
+  const expected = new Map<string, number>()
+  const sources: string[] = []
+  for (const { file, run } of measuredRuns) {
+    const pct = (n: number): number => Math.round((n / run.prompts) * 100)
+    expected.set(`${run.control_passed}/${run.prompts}`, pct(run.control_passed))
+    expected.set(`${run.treatment_passed}/${run.prompts}`, pct(run.treatment_passed))
+    sources.push(`${file} (control ${run.control_passed}/${run.prompts}, treatment ${run.treatment_passed}/${run.prompts}, measured ${run.date})`)
+  }
   // "22/26 (85%)" / "22/26 (%85)" — fraction plus the percentage rendered beside it.
   const AB_CLAIM = /(\d+)\/(\d+)\s*\((?:%\s*(\d+)|(\d+)\s*%)\)/g
   for (const readme of READMES) {
@@ -2048,16 +2145,447 @@ if (measured) {
       abClaimCount++
       if (truth === undefined) {
         errors.push(
-          `${readme} states routing-eval score "${m[0]}", which is neither arm of the recorded run in ` +
-            `eval/golden-prompts.json (control ${measured.control_passed}/${measured.prompts}, treatment ` +
-            `${measured.treatment_passed}/${measured.prompts}, measured ${measured.date}). Re-run ` +
-            `RUN_ROUTING_EVAL=1 npm run routing-eval and record what it actually returns`
+          `${readme} states A/B score "${m[0]}", which is not an arm of any recorded run — ${sources.join(' · ')}. ` +
+            `Re-run the eval it belongs to (RUN_ROUTING_EVAL=1 / RUN_BEHAVIOR_EVAL=1) and record what it actually returns`
         )
       } else if (claimedPct !== truth) {
         errors.push(
           `${readme} states "${m[0]}" but ${fraction} is ${truth}% — the percentage was typed, not computed`
         )
       }
+    }
+  }
+}
+
+// --- 32. Every shipped preset's language has a hotspot row in 000-security ---
+// `rules/000-security.md`'s LANGUAGE-SPECIFIC HOTSPOTS table loads in every session, everywhere
+// this kit is installed. The preset list grew from 9 to 28 (round 34) and that table did not,
+// so the kit shipped a Rails preset for a language whose hotspots — `Marshal.load`, `permit!`,
+// `html_safe` on user content — appeared in no always-loaded rule, and a Flutter preset whose
+// row said "Swift/Kotlin mobile" and therefore did not obviously cover Dart. Same class as
+// check 18's MUST_COVER globs: a preset ships, and the rule meant to protect it never widened.
+//
+// The map is declared here rather than derived from the preset titles on purpose. A fuzzy
+// title→language matcher was tried for a different check in round 37 and produced four false
+// positives out of four; a preset added without a decision recorded here fails the gate instead,
+// which is the behaviour that actually forces the decision. `null` is a legitimate answer with a
+// reason: a stack whose risks are covered by a path-scoped rule rather than by a language row.
+const PRESET_HOTSPOT_LANGUAGE: Record<string, string | null> = {
+  'web/nextjs-saas': 'JS/TS',
+  'web/react-vite': 'JS/TS',
+  'web/nuxt': 'JS/TS',
+  'web/sveltekit': 'JS/TS',
+  'web/astro': 'JS/TS',
+  'web/angular': 'JS/TS',
+  'backend/node-express': 'JS/TS',
+  'backend/nestjs': 'JS/TS',
+  'backend/fastapi': 'Python',
+  'backend/django': 'Python',
+  'backend/laravel': 'PHP',
+  'backend/rails': 'Ruby',
+  'backend/spring-boot': 'Java/Kotlin',
+  'backend/dotnet': 'C#',
+  'backend/go-api': 'Go',
+  'backend/rust-axum': 'Rust',
+  'mobile/flutter': 'Mobile (Swift/Kotlin/Dart/RN)',
+  'mobile/react-native': 'Mobile (Swift/Kotlin/Dart/RN)',
+  'mobile/swiftui': 'Mobile (Swift/Kotlin/Dart/RN)',
+  'orm/prisma': 'JS/TS',
+  'orm/drizzle': 'JS/TS',
+  // Query languages and config formats, not implementation languages: their injection and
+  // exposure risks live in the PASSIVE SCAN table and `rules/500-database.md`.
+  'database/postgres': null,
+  'database/mongodb': null,
+  'database/supabase': null,
+  // Infrastructure definitions: `rules/600-devops.md` owns non-root containers, SHA pins, OIDC
+  // and IaC scanning, and it path-loads for exactly these files.
+  'infrastructure/docker': null,
+  'infrastructure/kubernetes': null,
+  'infrastructure/terraform': null,
+  // Deliberately language-agnostic — it exists for stacks with no preset.
+  'generic/fallback': null,
+}
+let presetLanguagesChecked = 0
+if (existsSync(join(ROOT, 'presets')) && existsSync(join(ROOT, 'rules/000-security.md'))) {
+  const section = read('rules/000-security.md').match(/## LANGUAGE-SPECIFIC HOTSPOTS[^\n]*\n([\s\S]*?)(?:\n## |$)/)
+  if (!section) {
+    errors.push('rules/000-security.md has no "## LANGUAGE-SPECIFIC HOTSPOTS" section — check 32 is comparing nothing')
+  } else {
+    const rows = new Set(
+      section[1]
+        .split('\n')
+        .filter(l => l.startsWith('|') && !/^\|\s*-+/.test(l) && !/^\|\s*Language\s*\|/.test(l))
+        .map(l => l.split('|')[1]?.trim())
+        .filter((l): l is string => Boolean(l))
+    )
+    if (rows.size === 0) {
+      errors.push('check 32 parsed 0 language rows out of the HOTSPOTS table — its shape changed and the check is inert')
+    } else {
+      const onDisk = new Set(findPresetDirs(join(ROOT, 'presets')).map(p => p.relPath))
+      for (const name of onDisk) {
+        if (!(name in PRESET_HOTSPOT_LANGUAGE)) {
+          errors.push(
+            `presets/${name} ships but check 32's PRESET_HOTSPOT_LANGUAGE map never names it — add it with the ` +
+              `hotspot row that covers its language, or \`null\` plus the rule that covers it instead`
+          )
+        }
+      }
+      for (const [name, language] of Object.entries(PRESET_HOTSPOT_LANGUAGE)) {
+        if (!onDisk.has(name)) {
+          errors.push(`check 32's map names preset \`${name}\`, which is not a directory under presets/ — renamed or removed?`)
+          continue
+        }
+        if (language === null) continue
+        presetLanguagesChecked++
+        if (!rows.has(language)) {
+          errors.push(
+            `presets/${name} is mapped to hotspot row "${language}", which rules/000-security.md's ` +
+              `LANGUAGE-SPECIFIC HOTSPOTS table does not have — the kit ships a stack whose language-specific ` +
+              `risks appear in no always-loaded rule`
+          )
+        }
+      }
+    }
+  }
+}
+
+// --- 33. A POSIX-only command shape must ship its Windows equivalent ---------
+// `RUN_ROUTING_EVAL=1 npm run routing-eval` and `ANALYZE=true next build` are parse errors in
+// PowerShell, which has no inline env-var prefix — and both appeared in this repo's own README
+// and rule files while the maintainer works on Windows. The kit's whole promise is that a command
+// it tells you to type actually runs, so the shape is allowed only where the same fenced block
+// also shows the `$env:NAME=…` form. One check rather than a per-file audit: the failure repeats
+// every time someone writes a shell example from muscle memory.
+//
+// Scoped to fenced blocks so prose that merely names an env var is untouched, and anchored at the
+// start of a line so `run: VAR=x cmd` inside YAML and `ENV VAR=x` inside a Dockerfile — both
+// genuinely POSIX contexts — never match.
+const ENV_PREFIX_LINE = /^[A-Z][A-Z0-9_]*=\S+\s+\S/
+const shellDocFiles: string[] = [...COUNT_CLAIM_DOCS]
+for (const dir of ['rules', 'agent_docs', 'agents', 'skills', 'commands', 'presets']) {
+  collectMarkdown(dir, shellDocFiles)
+}
+let shellBlocksChecked = 0
+for (const file of shellDocFiles) {
+  const lines = read(file).split('\n')
+  let fenceStart: number | null = null
+  let block: string[] = []
+  lines.forEach((line, i) => {
+    if (/^\s*```/.test(line)) {
+      if (fenceStart === null) {
+        fenceStart = i
+        block = []
+      } else {
+        shellBlocksChecked++
+        const offenders = block.filter(l => ENV_PREFIX_LINE.test(l.trim()))
+        const hasWindowsForm = block.some(l => l.includes('$env:'))
+        if (offenders.length > 0 && !hasWindowsForm) {
+          errors.push(
+            `${file}:${(fenceStart ?? 0) + 1} shows \`${offenders[0].trim().slice(0, 60)}\` — an inline env-var prefix ` +
+              `is a parse error in PowerShell, and this block offers no \`$env:NAME=…\` equivalent. Add the Windows ` +
+              `form next to it or rewrite the command`
+          )
+        }
+        fenceStart = null
+      }
+      return
+    }
+    if (fenceStart !== null) block.push(line)
+  })
+}
+
+// --- 34. A recorded measurement must describe the suite that is on disk -------
+// Check 31 binds the READMEs to `last_measured`. Nothing bound `last_measured` to the file it
+// lives in. Round 41 added a design-lead prompt after the 2026-08-11 run, so the suite became 27
+// prompts while the recorded — and quoted — result still read 26/26, and the gate stayed green.
+// The prompt outside the measurement was the one for the newest agent: precisely the routing a
+// reader would want the evidence to cover, and precisely the one it silently did not.
+//
+// A measurement that no longer describes its suite is not a weaker measurement, it is a wrong one,
+// because the reader has no way to see the difference. So growing or shrinking the suite
+// invalidates the recording rather than quietly widening what the recording appears to vouch for.
+// Same class as check 26: the number is not re-derivable at gate time, so what the gate can
+// enforce is that nobody moves the thing being measured without moving the measurement.
+//
+// The count is only half of it, and the smaller half. A suite measures the effect of KIT FILES —
+// ROUTING.md, the rule files a behavior prompt names — and those can change without the suite
+// changing at all. Round 41 broke two routes by editing ROUTING.md; the count check caught it only
+// because the same round happened to add a prompt too. Edit the routing document alone and every
+// check in this file stays green while the recorded score describes a document that no longer
+// exists. So the recording also carries `context_digest`: the fingerprint of exactly what the
+// treatment arm read (lib/eval-context.ts derives it, and both eval scripts print the fresh value
+// after a live run so there is nothing to compute by hand).
+let evalSuitesChecked = 0
+for (const suiteFile of AB_SUITE_FILES) {
+  if (!existsSync(join(ROOT, suiteFile))) continue
+  const suite = JSON.parse(read(suiteFile)) as {
+    prompts: unknown[]
+    last_measured?: { prompts: number; date: string; context_digest?: string } | null
+  }
+  const recorded = suite.last_measured
+  if (!recorded) continue // null is the honest state before the first live run — check 27 guards the prose
+  evalSuitesChecked++
+  if (recorded.prompts !== suite.prompts.length) {
+    errors.push(
+      `${suiteFile}: last_measured describes a ${recorded.prompts}-prompt run (${recorded.date}) but the file now ` +
+        `holds ${suite.prompts.length} prompt(s). The recorded score no longer covers the suite it is quoted for — ` +
+        `re-run the live A/B and record what it returns, or move the new prompt(s) out until it is re-run. ` +
+        `Round 41 shipped a design-lead prompt this way: the newest agent was the one arm the "100%" never measured`
+    )
+  }
+  const currentDigest = evalContextDigest(suiteFile, ROOT)
+  if (currentDigest === null) continue
+  if (!recorded.context_digest) {
+    errors.push(
+      `${suiteFile}: last_measured has no context_digest. Without it the recording is bound to the prompt count ` +
+        `only, and the kit files the run actually measured can be rewritten under it silently. Add ` +
+        `"context_digest": "${currentDigest}" if the recorded run read the files as they stand now, otherwise re-run the live A/B`
+    )
+  } else if (recorded.context_digest !== currentDigest) {
+    errors.push(
+      `${suiteFile}: last_measured records context_digest ${recorded.context_digest}, but the files that run read now ` +
+        `digest to ${currentDigest}. Something the treatment arm depends on changed after the ${recorded.date} run — ` +
+        `for routing that is an agent description or ROUTING.md, for behavior a prompt's wording or one of its context ` +
+        `files. The score is now about a version of the kit that no longer exists: re-run the live A/B and record what ` +
+        `it returns (both eval scripts print the new digest), or revert the change`
+    )
+  }
+}
+
+// --- 35. A command nothing invokes is a command nothing runs ------------------
+// Round-41's root finding was that the design infrastructure existed in the repo and nothing
+// called it. The same shape reappeared one layer over: `/a11y-check` shipped as a 10-step WCAG
+// audit that no skill, agent or guide referenced, so it could only ever run if the user typed it
+// — while `new-page` claimed inline that it "covers a11y" with three bullets. The kit's own
+// discovery model is that skills and agents route work; a command outside that graph is a file,
+// not a capability.
+//
+// Declared exemptions rather than a heuristic (round-37's lesson: a fuzzy matcher scored 0/4).
+// A command is user-entry-only when its whole purpose is to be typed — the guides that list what
+// is installed have no upstream caller by construction. Everything else must be reachable from
+// something that runs on its own.
+const USER_ENTRY_COMMANDS = new Set(['agents-guide', 'skills-guide'])
+const COMMAND_CALLERS = ['skills', 'agents', 'agent_docs', 'rules']
+const callerCorpus: string[] = []
+for (const dir of COMMAND_CALLERS) collectMarkdown(dir, callerCorpus)
+const callerText = callerCorpus.map(read).join('\n')
+let commandsWired = 0
+// Reachability is a question about the routing graph, so it is only asked where the graph exists:
+// `agents/` present means a real kit tree, and its absence means a consistency-test fixture that
+// copied `commands/` for some other case. The summary line below prints the graded count, so the
+// real repo cannot quietly grade zero — the failure mode this guard could otherwise introduce.
+const hasRoutingGraph = existsSync(join(ROOT, 'agents')) && existsSync(join(ROOT, 'commands'))
+for (const entry of hasRoutingGraph ? readdirSync(join(ROOT, 'commands')) : []) {
+  if (!entry.endsWith('.md')) continue
+  const name = entry.replace(/\.md$/, '')
+  if (USER_ENTRY_COMMANDS.has(name)) continue
+  if (callerText.includes(`/${name}`)) {
+    commandsWired++
+    continue
+  }
+  errors.push(
+    `commands/${entry} is invoked by no skill, agent, agent_doc or rule — it runs only if the user happens to ` +
+      `type \`/${name}\`. Reference it from whatever produces the work it audits (the way new-page calls ` +
+      `/design-check), or add it to USER_ENTRY_COMMANDS if being typed is the whole point`
+  )
+}
+
+// --- 36. A preset that names a version must date that claim -------------------
+// `CLAUDE.md` states the preset risk in one line: "A new preset must be accurate, not merely
+// plausible: the risk is staleness, not breadth." Check 26 built the mechanism for exactly that
+// — digest the claim, date the review, age the date — and applied it to one hand-picked file,
+// `rules/600-devops.md`. Check 29 then generalised the age-out to every `<!-- reviewed: -->`
+// marker in the kit, presets included. What was still missing is the requirement: nothing made a
+// preset carry one, so the age-out aged a set that happened to be empty.
+//
+// Scoped to presets whose H1 asserts a specific upstream major ("Ruby on Rails 7/8", "Nuxt 3/4",
+// "Angular (v17+…)", "SvelteKit (Svelte 5)"). That is derived from the title, not from a list of
+// files, so a preset acquires the obligation the moment someone writes a version into its
+// heading. Presets that assert no version are not exempted by an allowlist — they simply make no
+// claim that upstream can falsify, which is why their titles are written the way they are.
+//
+// The heading was where this started and only ever half of it. A preset makes the same falsifiable
+// claim in its body — "Swift 6 strict", "Next.js 16 patterns", "Express 5 · Express 4", "Go 1.22+"
+// — and three presets carried one with no marker while the check reported a clean pass, because
+// the arm below graded titles. Same class as check 26's original shape: a mechanism aimed at one
+// hand-picked location while the population it was built for sat outside the scan.
+//
+// The body arm derives its vocabulary from the preset H1s themselves rather than from a hand-typed
+// list of technologies, so the day a preset for a new stack lands, its name is already a term the
+// scan knows. Round 42 tried the opposite — spraying 600-devops's pin regex across the whole kit —
+// and it read `4.5:1` as a version; scoping the pattern to `<name the kit itself ships a preset
+// for> <number>` inside `presets/` is what keeps the false-positive rate at zero.
+const H1_VERSION_CLAIM = /\bv?\d+(?:\.\d+)*(?:\s*\/\s*\d+(?:\.\d+)*)*\s*\+?/
+let versionedPresets = 0
+const presetFiles: string[] = []
+collectMarkdown('presets', presetFiles)
+
+// The marker is a property of the PRESET, not of each file in it: `compact.md` is a 7-15 line
+// summary under its own budget, so requiring it to repeat the comment would spend a scarce line to
+// say something its `CLAUDE.md` already says.
+const presetDir = (f: string): string => f.slice(0, f.lastIndexOf('/'))
+const reviewedDirs = new Set<string>()
+for (const f of presetFiles) {
+  if (/<!--\s*reviewed:\s*\d{4}-\d{2}/.test(read(f))) reviewedDirs.add(presetDir(f))
+}
+
+// Connectors that survive tokenising an H1 ("Ruby on Rails") and generic catalogue nouns. Without
+// this, `on` matched "…on 19 signals" and reported a version claim that was never made.
+const H1_STOPWORDS = new Set(['on', 'of', 'for', 'with', 'and', 'the', 'project', 'preset', 'database', 'orm', 'infrastructure', 'generic'])
+const techVocab = new Set<string>()
+for (const presetFile of presetFiles) {
+  if (!presetFile.endsWith('/CLAUDE.md')) continue
+  const h1 = read(presetFile).split('\n').find(l => l.startsWith('# ')) ?? ''
+  for (const token of h1.split('—').slice(1).join(' ').split(/[^A-Za-z.#+/]+/)) {
+    const term = token.replace(/^[./]+|[./]+$/g, '')
+    if (term.length >= 2 && !H1_STOPWORDS.has(term.toLowerCase())) techVocab.add(term)
+  }
+}
+const BODY_VERSION_CLAIM =
+  techVocab.size > 0
+    ? new RegExp(`\\b(?:${[...techVocab].map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\s+v?\\d+(?:\\.\\d+)*\\+?`)
+    : null
+
+for (const presetFile of presetFiles) {
+  const body = read(presetFile)
+  const dir = presetDir(presetFile)
+  const reviewed = reviewedDirs.has(dir)
+
+  if (presetFile.endsWith('/CLAUDE.md')) {
+    const h1 = body.split('\n').find(l => l.startsWith('# ')) ?? ''
+    const claim = h1.split('—').slice(1).join('—')
+    if (H1_VERSION_CLAIM.test(claim)) {
+      versionedPresets++
+      if (!reviewed) {
+        errors.push(
+          `${presetFile} names a specific version in its heading (${h1.trim()}) but carries no ` +
+            `\`<!-- reviewed: YYYY-MM — what was checked -->\` marker. A version claim is the one thing in a preset ` +
+            `that upstream can falsify while the file sits unchanged; date it so check 29 can age it out`
+        )
+      }
+      continue
+    }
+  }
+
+  if (reviewed || BODY_VERSION_CLAIM === null) continue
+  const lines = body.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith('# ')) continue
+    const hit = BODY_VERSION_CLAIM.exec(lines[i])
+    if (!hit) continue
+    errors.push(
+      `${presetFile}:${i + 1} states "${hit[0]}" but its preset carries no ` +
+        `\`<!-- reviewed: YYYY-MM — what was checked -->\` marker. A version in the body ages exactly like one ` +
+        `in the heading; put the marker in the preset's CLAUDE.md`
+    )
+    break
+  }
+}
+
+// --- 37. The per-session floor is a SUM, and only its first term was budgeted ----
+// Check 3 caps three files at 250 lines each and 500 combined, and states the reason in its
+// own comment: they "cost every user's context budget on every single turn, forever". That
+// reason does not stop at those three files. Before the user types anything, the harness has
+// also injected every skill's description + when_to_use, every agent's description, and every
+// command's frontmatter. Measured on round 44's tree: 5.8k tokens of always-loaded files and
+// 2.3k of trigger text — 29% of the real floor, and the only guard on it was per-item.
+//
+// Per-item is not a budget when the item count only grows. Check 3 already learned this once:
+// "three files at 249 lines each would pass every per-file check while costing 747 lines every
+// session", which is why it has a combined cap. 25 skills each passing a 360-char cap is 9,000
+// chars nobody approved, and agents and commands had no cap at all. This is that same combined
+// cap, one surface over — and the per-item caps it complements now live beside it in
+// lib/counts.ts so the three validators cannot disagree about the number.
+//
+// Reported with the worst offenders rather than as a bare total: the actionable output is
+// which component to trim, and the answer is always the longest few.
+const triggerEntries = triggerText(ROOT)
+let triggerTotal = 0
+if (triggerEntries.length > 0) {
+  triggerTotal = triggerEntries.reduce((sum, e) => sum + e.chars, 0)
+  if (triggerTotal > TRIGGER_TEXT_COMBINED_BUDGET_CHARS) {
+    const worst = [...triggerEntries]
+      .sort((a, b) => b.chars - a.chars)
+      .slice(0, 3)
+      .map(e => `${e.file} (${e.chars})`)
+      .join(', ')
+    errors.push(
+      `skill/agent/command trigger text totals ${triggerTotal} chars across ${triggerEntries.length} component(s), over the ` +
+        `${TRIGGER_TEXT_COMBINED_BUDGET_CHARS}-char combined budget. Every one of them is injected into every session before the ` +
+        `user types, so this is paid alongside the ${ALWAYS_LOADED_COMBINED_BUDGET}-line always-loaded budget, not instead of it — ` +
+        `each item passing its own ${TRIGGER_TEXT_BUDGET_CHARS}-char cap is exactly how the sum grew unseen. Longest: ${worst}`
+    )
+  }
+}
+
+// --- 38. A page the generator renders must have the asset it renders from --------
+// `gen-site.ts` declares one PAGES entry per published locale, each naming an `ogImage`.
+// Those cards are committed source assets on the `site-src` branch, generated by hand with
+// `npm run gen-og` because rasterising needs Chrome. So the claim lives on `main` and its
+// evidence lives on another branch, with nothing binding them — add a locale, forget the
+// card, and every check on `main` stays green because `main` has nothing to check.
+//
+// That is not hypothetical: the Turkish locale shipped in PAGES while `og.tr.png` sat
+// uncommitted on a maintainer's machine, and the first thing that noticed was the publish
+// workflow dying on an ENOENT stack trace inside a PNG header parser — a failure that names
+// `binding.open` and `readUInt32BE`, not the file to generate or the command that makes it.
+//
+// This runs in the same place check 28 does: the site workflow, which is the only context
+// where both branches exist. Silence when site/ is absent would read as a pass, so it says so.
+const pagesSrc = existsSync(join(ROOT, 'scripts/gen-site.ts')) ? read('scripts/gen-site.ts') : ''
+// Parsed from source rather than imported: gen-site.ts throws at module load when site/ is
+// absent (deliberately — every read below that point would otherwise fail on an unrecognisable
+// path), and a checker that cannot run in a plain clone is a checker that runs nowhere.
+const declaredCards = [...pagesSrc.matchAll(/ogImage:\s*'([^']+)'/g)].map(m => m[1])
+let siteCardsChecked = 0
+if (pagesSrc.includes('export const PAGES') && declaredCards.length === 0) {
+  errors.push(
+    'check 38 found no `ogImage:` entries in scripts/gen-site.ts despite a PAGES declaration — the literal shape changed and the card check is comparing nothing'
+  )
+}
+if (existsSync(join(ROOT, 'site'))) {
+  for (const card of declaredCards) {
+    if (existsSync(join(ROOT, 'site', card))) {
+      siteCardsChecked++
+    } else {
+      errors.push(
+        `scripts/gen-site.ts declares a locale whose social card is site/${card}, but that file is not on the \`site-src\` branch. ` +
+          `Run \`npm run gen-og\` (needs Chrome) and commit the result to \`site-src\` — otherwise the publish workflow fails inside ` +
+          `gen-site.ts's PNG header read, which names neither the missing card nor the command that makes it`
+      )
+    }
+  }
+}
+
+// --- 39. A rule that escalates must lock its own procedures behind the approval -----
+// Round 43 measured it: `global-CLAUDE.md` and `rules/500-database.md`, each producing the correct
+// escalation alone, together produced a `DROP COLUMN` migration. The fix went into global-CLAUDE.md
+// — "escalating is not a step you complete by printing that line" — and round 45 measured the same
+// regression again, 3 of 3 samples, on the same pair.
+//
+// Because the fix was in the wrong file. When both are loaded, the *procedural* file is the more
+// specific one, and 500-database.md carried a zero-downtime pattern, a backup protocol and example
+// DROP SQL with nothing scoping them to after the approval. A model reading "escalate" in one file
+// and "here is how the migration is written" in another follows the one that answers the request.
+//
+// So the qualifier belongs beside the procedures, in every rule file that escalates — which is a
+// property a check can hold. Derived from `ESCALATE TO:` appearing in the file, not from a list of
+// filenames, so a new guarded rule file arrives already owing the sentence.
+const ESCALATION_QUALIFIER = /Everything below this line is what \S+ applies \*after\* the user approves its plan/
+let escalatingRulesChecked = 0
+if (existsSync(join(ROOT, 'rules'))) {
+  for (const name of readdirSync(join(ROOT, 'rules')).filter(n => n.endsWith('.md'))) {
+    const body = read(join('rules', name))
+    if (!body.includes('ESCALATE TO:')) continue
+    escalatingRulesChecked++
+    if (!ESCALATION_QUALIFIER.test(body)) {
+      errors.push(
+        `rules/${name} tells the model to ESCALATE TO: a guard, then ships the procedures that satisfy the request ` +
+          `anyway, with nothing scoping them to after the approval. Measured twice (rounds 43 and 45): with the ` +
+          `always-loaded protocol AND this file in context, the model follows the procedures. Add the ` +
+          `"Everything below this line is what <guard> applies *after* the user approves its plan" paragraph ` +
+          `directly under the HARD RULE block`
+      )
     }
   }
 }
@@ -2084,7 +2612,25 @@ console.log(`✓ No bare-year freshness labels; ${freshnessMarkers} dated review
 if (historyDepth !== null && historyDepth < MIN_COMMITS_FOR_PROVENANCE) {
   console.log(`✓ No shipped document cites git history as authoritative (repo has ${historyDepth} commit(s) — squashed at v1.0.0).`)
 }
-if (measured) console.log(`✓ README routing A/B claims match eval/golden-prompts.json's recorded run (${abClaimCount} claim(s); control ${measured.control_passed}/${measured.prompts}, treatment ${measured.treatment_passed}/${measured.prompts}, measured ${measured.date}).`)
+if (measuredRuns.length > 0) {
+  console.log(
+    `✓ ${abClaimCount} README A/B claim(s) match a recorded run in ${measuredRuns.length} eval suite(s): ` +
+      measuredRuns
+        .map(({ file, run }) => `${file.replace('eval/', '')} control ${run.control_passed}/${run.prompts}, treatment ${run.treatment_passed}/${run.prompts} (${run.date})`)
+        .join(' · ')
+  )
+}
+console.log(`✓ ${shellBlocksChecked} fenced command block(s) carry a PowerShell form wherever they use an inline env-var prefix.`)
+console.log(`✓ ${evalSuitesChecked} recorded eval measurement(s) still describe the suite on disk (a null last_measured is skipped, not passed).`)
+console.log(`✓ ${commandsWired} command(s) reachable from a skill, agent, agent_doc or rule; ${USER_ENTRY_COMMANDS.size} declared user-entry-only.`)
+console.log(
+  `✓ ${versionedPresets} preset(s) name a version in their heading and date that claim; ` +
+    `${reviewedDirs.size} preset(s) carry a dated review marker, and every version claim found in a preset body ` +
+    `(vocabulary derived from ${techVocab.size} terms in the preset headings) sits under one (check 29 ages the markers).`
+)
+if (presetLanguagesChecked > 0) {
+  console.log(`✓ ${presetLanguagesChecked} language-bearing preset(s) have a LANGUAGE-SPECIFIC HOTSPOTS row in rules/000-security.md.`)
+}
 console.log(`✓ Golden-prompt count claims match disk (${actualPromptCount}).`)
 console.log(`✓ Node version consistent across ${workflowFiles.length} workflow file(s), .node-version, and package.json engines (${[...allVersions][0] ?? 'none pinned'}).`)
 console.log(`✓ Always-loaded files (${alwaysLoadedFiles.join(', ')}) within the ${ALWAYS_LOADED_LINE_BUDGET}-line per-file budget (combined: ${alwaysLoadedTotal}/${ALWAYS_LOADED_COMBINED_BUDGET}).`)
@@ -2120,6 +2666,17 @@ if (siteTemplatesChecked > 0) {
   // into site/ — which the site workflow does, and a plain clone of the kit does not.
   console.log('· Landing-page count check scanned nothing — site/ is absent (page source lives on the `site-src` branch).')
 }
+if (siteCardsChecked > 0) {
+  console.log(`✓ Every locale gen-site.ts publishes has its social card committed on \`site-src\` (${siteCardsChecked} card(s)).`)
+} else if (declaredCards.length > 0) {
+  console.log(`· Social-card check scanned nothing — site/ is absent, so the ${declaredCards.length} card(s) gen-site.ts needs cannot be verified from a plain clone.`)
+}
+if (triggerEntries.length > 0) {
+  console.log(
+    `✓ Per-session trigger text is ${triggerTotal}/${TRIGGER_TEXT_COMBINED_BUDGET_CHARS} chars across ${triggerEntries.length} component(s) ` +
+      `— the half of the session floor that sits outside the always-loaded line budget.`
+  )
+}
 if (installerNodeFloor !== undefined) {
   console.log(`✓ Installer Node floor "${installerNodeFloor}" stated once, claimed consistently, and exercised by a CI job.`)
 }
@@ -2140,6 +2697,12 @@ if (stackPresetsChecked > 0) {
 }
 if (protectedPatternsChecked > 0) {
   console.log(`✓ Every PROTECTED FILES pattern has a Read(...) deny rule behind it (${protectedPatternsChecked} checked).`)
+}
+if (escalatingRulesChecked > 0) {
+  console.log(`✓ Every rule file that escalates scopes its own procedures to after the approval (${escalatingRulesChecked} checked).`)
+}
+if (credentialWritesChecked > 0) {
+  console.log(`✓ Every credential pattern is Edit(...)-denied too, not just Read (${credentialWritesChecked} pattern(s) matched).`)
 }
 if (bootSignalsChecked > 0) {
   console.log(`✓ Every data-layer preset is detectable by BOOT SEQUENCE step 4 (${bootSignalsChecked} signals checked).`)

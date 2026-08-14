@@ -2,7 +2,7 @@
 
 Highest-priority signal wins. Read top-to-bottom; stop at the first match.
 
-**Precedence order (memorize this line):** live-incident signal (Step 0) > guard-area noun (Steps 1 and 3) > stack trace (Step 2) > task-type verb (Step 4). Step 0 outranks everything else because it doesn't pick an agent — it decides whether Steps 1-3 run as one coordinated, parallel dispatch instead of a single sequential match. A guard-area noun outranks every other remaining signal whenever the request **changes that guarded surface** — "fix CSS in the login form" is security-guard territory, not ui-fixer. A request that only *references* a guarded area without touching its code (writing tests against it, documenting it, researching it) routes by task type instead. Ties between two guard areas are resolved by blast radius (see "Multiple guard signals"); ties between non-guard signals by the [Conflict resolution](#conflict-resolution--when-two-signals-match) table.
+**Precedence order (memorize this line):** live-incident signal (Step 0) > guard-area noun (Steps 1 and 3) > stack trace (Step 2) > too-small-to-delegate (Step 3.5) > task-type verb (Step 4). Step 0 outranks everything else because it doesn't pick an agent — it decides whether Steps 1-3 run as one coordinated, parallel dispatch instead of a single sequential match. A guard-area noun outranks every other remaining signal whenever the request **changes that guarded surface** — "fix CSS in the login form" is security-guard territory, not ui-fixer. A request that only *references* a guarded area without touching its code (writing tests against it, documenting it, researching it) routes by task type instead. Ties between two guard areas are resolved by blast radius (see "Multiple guard signals"); ties between non-guard signals by the [Conflict resolution](#conflict-resolution--when-two-signals-match) table.
 
 ---
 
@@ -94,9 +94,32 @@ User: "review this migration file" (migration exists, no schema-design question)
 
 ---
 
+## Step 3.5 — Is this worth an agent at all?
+
+No guard area matched, no stack trace. Every other step picks *which* agent; this one decides
+*whether*. A subagent is a fresh context window that re-reads the project from zero and returns
+a summary — on Tier 0-1 work that costs several times what doing it directly costs, and buys
+nothing. Over-routing is the failure mode a routing document is most likely to cause and least
+likely to notice.
+
+**Route to NO agent — handle it in the main loop — when any of these holds:**
+
+```text
+Tier 0-1 by global-CLAUDE.md's TOKEN TIER table (1-2 files, <10 lines, isolated)
+Pure question / explanation / review-only, no edit requested
+A typo, rename, copy tweak or comment in a file the user already named
+```
+
+This gate runs before the task-type table below, not after it. "Copy / CSS → ui-fixer" means
+*once the work is big enough to delegate at all* — a one-word label change in one named file is
+Tier 0 and stops here. Steps 0-3 always override this one: a one-line edit to `auth.ts` is a
+guard's call however small it is.
+
+---
+
 ## Step 4 — Task type signal
 
-No guard area matched. What kind of task is it?
+No guard area matched and the work is big enough to hand off. What kind of task is it?
 
 ```text
 CSS / button / modal / copy / animation / layout    → ui-fixer   (sonnet, Tier 0-1)
@@ -104,6 +127,12 @@ Bug / error in specific file, no guard area         → bug-hunter (sonnet, Tier
 Add test / update spec / regression coverage        → senior-engineer, `test-writer` skill (Tier 1-2)
 Review a diff / PR / recent change                  → main loop, `code-review` skill (Tier 1-2)
 New page / screen / component — pure UI             → ui-fixer   (sonnet, Tier 1-2)
+Design has to be DECIDED, not matched: first page/  → design-lead (opus, Tier 2-3)
+  screen with no DESIGN-SPEC.md · whole-project
+  redesign · a brief with references or brand assets
+  ("make it ours"). Restyling ONE existing component
+  — "make this modal look modern" — is an edit against
+  its neighbours, not a decision → ui-fixer, always
 New page needing backend (upload, API, DB)          → senior-engineer (sonnet, Tier 2)
 API contract / endpoint design / versioning         → senior-engineer (sonnet, Tier 2-3)
 Normal feature, refactor, multi-file work           → senior-engineer (sonnet, Tier 2)
@@ -111,7 +140,8 @@ Slow query / N+1 / bundle / render loop             → performance-guard (sonne
 Dep CVE / audit / outdated packages                 → security-guard (scan mode, Tier 1-2)
   (app/language dependency audit — "scan our dependencies" defaults here; container image
   or CI pipeline scan specifically → devops-guard instead, see below)
-Large feature / architecture / system design        → native plan mode + `feature-plan` skill (Tier 3)
+Large feature / architecture / system design        → senior-engineer in native plan mode,
+  incl. "should we migrate to X" evaluations           running the `feature-plan` skill (Tier 3)
 New project / greenfield / starting from scratch    → `feature-plan` in plan mode; senior-engineer runs `from-scratch`
 Research / fact-check / comparison                  → main loop; type /deep-research (Tier 2-3)
 README / changelog / API docs                       → main loop, `docs-update` skill (Tier 0-1)
@@ -140,6 +170,8 @@ two copies can't drift). Stack trace present → bug-hunter, no clarification ne
 | "Review my auth/payment/DB/CI code" (review verb + guard-area noun) | The matching Step 3 guard, not `code-review` | Guard-area nouns always outrank the generic "review/check" verb — `code-review` is for diffs with no guard-area signal |
 | "Design the API contract" for one feature/service | senior-engineer (no full plan cycle) | `feature-plan` is for system-wide / multi-system design; a single service's API contract and versioning is Tier 2-3 engineering |
 | New page that also needs backend (upload, API, DB) | senior-engineer (not ui-fixer) | ui-fixer is UI-only — anything requiring server/state work starts at senior-engineer instead of escalating mid-task |
+| First page/screen of a project — no `DESIGN-SPEC.md` and nothing to match | design-lead (not ui-fixer) | Choosing a design direction is a decision made *with the user*; ui-fixer runs at low effort with a 6-turn cap and a match-what-exists rule, so routing it there silently ships the default look. Once the spec exists, construction goes back to ui-fixer |
+| "Make this modal / page nicer, more modern, more impressive" — ONE existing surface | ui-fixer (not design-lead) | Restyling something that already exists is an edit against its neighbours, whatever words the request uses. With a `DESIGN-SPEC.md` the direction is already decided and re-opening it is the drift the spec prevents; without one, the surrounding pages *are* the spec. design-lead enters only when there is nothing to match or the whole project is being re-decided |
 | Refactor with no behavior change | senior-engineer (not bug-hunter) | Nothing is broken — bug-hunter needs an error/regression signal; behavior-preserving restructuring is normal engineering |
 | Write tests for auth/payment/DB code | senior-engineer with `test-writer` (not the guard) | Tests exercise existing behavior without changing the guarded surface — escalate to the guard only if the tests expose a vulnerability |
 | System-wide redesign that spans a guarded area (e.g. the whole checkout flow) | `feature-plan` in plan mode (not the guard) | Architecture-scale scope wins the entry point; the matching guards then review their slices of the plan before implementation (see "Multiple guard signals") |
@@ -149,7 +181,10 @@ two copies can't drift). Stack trace present → bug-hunter, no clarification ne
 ## Escalation chain
 
 ```text
+design-lead (only when the design must be decided; hands the built spec back down)
+  └─▶ ui-fixer
 ui-fixer
+  └─▶ design-lead (no DESIGN-SPEC.md and nothing to match — a decision, not an edit)
   └─▶ senior-engineer (if backend or state needed)
         └─▶ `feature-plan` in native plan mode (if scope grows or design ambiguous)
               └─▶ security-guard / devops-guard ─────────────┐
@@ -199,7 +234,8 @@ a skill the model is structurally unable to invoke.)
 | `security-guard` | `security-review`, `security-scan` | reviewing / scanning |
 | `db-guard` | `db-change`, `migration-review` | changing schema / reviewing migrations |
 | `devops-guard` | `release-gate`, `security-scan`, `/env-audit` | gating a release |
-| `ui-fixer` | `ui-change`, `new-page`, `new-screen` | building UI |
+| `ui-fixer` | `ui-change`, `new-page`, `new-screen` | building UI to a design that is already decided |
+| `design-lead` | `new-page`, `new-screen` | deciding the design itself — direction, tokens, signature — then handing construction to `ui-fixer` |
 | `senior-engineer` | `feature-build`, `refactor-safe`, `test-writer`, `codebase-overview`, `api-design`, `from-scratch`, `project-memory` | general implementation — bound to more skills than the others because it's the default implementer, not a specialist |
 
 This table mirrors each agent's `skills:` frontmatter, which `npm run validate` already
@@ -216,14 +252,15 @@ source of truth).
 | fix / broke / error / crash / hata / düzelt | bug-hunter |
 | add / create / build / implement / ekle / oluştur | senior-engineer |
 | refactor / restructure / split / modularize / sadeleştir / böl | senior-engineer |
-| design / architecture / plan / tasarla / mimari | feature-plan |
+| design / look / visual / tasarla / görsel | design-lead — but a single existing component is ui-fixer (Step 4) |
+| architecture / system design / plan / mimari | senior-engineer, running the `feature-plan` skill in plan mode |
 | auth / login / token / session / JWT / güvenlik | security-guard |
 | secret / API key / credential / gizli anahtar | security-guard |
 | slow / perf / N+1 / bundle / yavaş | performance-guard |
 | DB / schema / column / model / tablo | db-guard |
 | migrate / migration / ALTER / DROP | db-guard |
 | Docker / CI / pipeline / deploy / infra | devops-guard |
-| review / check / incele / bak / diff | code-review |
+| review / check / incele / bak / diff | main loop, running the `code-review` skill |
 | test / spec / coverage | test-writer |
 | CSS / button / modal / tailwind / layout | ui-fixer |
 | research / find / compare / araştır | main loop — offer `/deep-research` (never auto-routes) |

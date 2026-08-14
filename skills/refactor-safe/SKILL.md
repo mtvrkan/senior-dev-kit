@@ -15,6 +15,8 @@ Behavior must be identical before and after. If tests don't exist: write them FI
 3. Diffs >150 lines → split into sequential mini-refactors. No features/bugfixes in same diff.
 4. Read budget: refactored file + grep for symbol importers + existing test file. Imports updated across independent files → apply in one parallel batch.
 
+5. Refactor that moves a module boundary (extract, restructure): run `/arch-check` before and after. The point of a boundary refactor is that violations go down — unmeasured, "cleaner" is an opinion.
+
 Deep reference: `agent_docs/testing-strategy.md` (baseline coverage before refactor) · `agent_docs/architecture.md` (module boundary rules).
 
 ## Output

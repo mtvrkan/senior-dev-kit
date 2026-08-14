@@ -19,6 +19,13 @@ Rule: "Project does X" beats "best practice says Y."
 
 Never mix architectures. Follow what exists.
 
+Detected is not the same as decided. On a new project record the pattern, its boundaries, its
+dependency direction and where each seam lives (transactions, error boundary, authz) in
+`PROJECT-CONTRACTS.md`; on an existing one record what you detected the first time you detect it,
+in the project's `CLAUDE.md` or `.claude/codebase-overview.md`. A pattern only ever re-derived
+from folder shape gets derived differently by the next session, and that second answer is how one
+architecture becomes two. `/arch-check` audits the code against the record.
+
 **Monorepo first** — `turbo.json` / `nx.json` / `pnpm-workspace.yaml` / `lerna.json` / Cargo or Go
 workspace: detect the architecture *per package*, not repo-wide, and re-run boot for the package
 you're editing. A shared type lives in the shared package, not copied; a cross-package change is
@@ -65,6 +72,20 @@ FWD: No error boundary — reliability risk ([component tree])
 FWD: Unrelated dead code noticed — not touching it, flag only ([location])
 OBS: [service] no metrics — add request count + latency
 ```
+
+**A flag that is only spoken is not a flag.** Raising one means appending one line to the
+project's `.claude/TECH-DEBT.md` (create it if absent) — otherwise the finding lives in a chat
+message that ends with the session, which is why the same three issues get "flagged" every month
+and never fixed:
+
+```text
+| 2026-08-14 | src/orders/service.ts:210 | FWD: God service >300 lines — split by responsibility | noticed while adding refund flow |
+```
+
+Rules: one line per flag · never a duplicate (same file + same flag = leave the existing row) ·
+never fix on sight, that is the point of a flag · delete the row when the condition is genuinely
+gone, not when it becomes inconvenient. Read-only guards cannot write the file; they report the
+flag and the calling session records it. `/arch-check` reconciles the ledger against the code.
 
 ## MODERN TECHNOLOGY PREFERENCES
 

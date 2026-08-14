@@ -1,0 +1,90 @@
+---
+name: Live Evals
+
+# The kit's two behavioral measurements. Both are A/B runs against the `claude`
+# CLI and both cost API tokens, so neither runs on push: trigger them from the
+# Actions tab (workflow_dispatch), or let the weekly schedule catch regressions.
+# The free static half of both evals runs on every push via repo-ci.yml.
+#
+#   routing  — eval/golden-prompts.json: which agent a request is routed to.
+#              Control = agent descriptions only, treatment = + ROUTING.md.
+#   behavior — eval/behavior-prompts.json: what the model DECIDES to do.
+#              Control = no kit context, treatment = + the named rule files.
+#
+# The behavior suite lived here as a hand-run script for two rounds. That is the
+# wrong home for it: it cannot show lift (a two-token forced choice telegraphs
+# its own answer), so its entire value is as a regression tripwire — and a
+# tripwire that fires only when someone remembers to pull it is not one. Its one
+# finding to date appeared when two individually-correct rule files were loaded
+# together, which is precisely the failure a rule edit reintroduces silently.
+# The two jobs are independent on purpose: a red routing arm must not stop the
+# behavior arm from reporting.
+
+"on":
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'  # Mondays 06:00 UTC — weekly behavioral regression check
+
+permissions:
+  contents: read
+
+jobs:
+  routing:
+    name: Live routing score
+    runs-on: ubuntu-latest
+    # Repos without the ANTHROPIC_API_KEY secret (e.g. forks) skip inside the
+    # run step instead of failing — see the guard below.
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run live routing evaluation
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RUN_ROUTING_EVAL: '1'
+        run: |
+          set -euo pipefail
+          if [ -z "${ANTHROPIC_API_KEY}" ]; then
+            echo "ANTHROPIC_API_KEY secret not configured — skipping live eval."
+            exit 0
+          fi
+          npm run routing-eval
+
+  behavior:
+    name: Live behavior score
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e  # v4.3.0
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run live behavior evaluation
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RUN_BEHAVIOR_EVAL: '1'
+        run: |
+          set -euo pipefail
+          if [ -z "${ANTHROPIC_API_KEY}" ]; then
+            echo "ANTHROPIC_API_KEY secret not configured — skipping live eval."
+            exit 0
+          fi
+          npm run behavior-eval

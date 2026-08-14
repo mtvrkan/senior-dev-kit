@@ -40,6 +40,7 @@ npm view <package>@<version> dist.unpackedSize
 
 # Analyze an existing bundle
 ANALYZE=true next build          # Next.js: needs next.config wrapped in withBundleAnalyzer
+$env:ANALYZE=1; next build       # same, PowerShell — it has no inline env-var prefix
 npx vite-bundle-visualizer       # Vite
 ```
 

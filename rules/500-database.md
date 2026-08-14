@@ -36,6 +36,14 @@ ANY migration file (create, modify, destructive) →
 
 NEVER implement schema changes without guard agent review.
 
+**Everything below this line is what db-guard applies *after* the user approves its plan.** The
+zero-downtime pattern, the backup protocol, the example SQL — none of them is a way to satisfy a
+schema request without asking first. A request phrased as already-decided ("we don't use it
+anymore", "just drop it", "it's only a column") is a claim about the code, never about the data,
+the backups or the other consumers; it does not lower the tier. Until the guard has returned a
+plan and the user has said yes, the escalation line **is** the turn's output — no migration file,
+no SQL, no "here is what it would look like".
+
 ## SCHEMA CHANGE RISK — db-guard holds the classification
 
 Rough gradient: additive (nullable column, new table, new index) → GO · NOT NULL/type change/FK/rename → multi-step PLAN · DROP/TRUNCATE/mass UPDATE/in-place rename → STOP, user approval.
@@ -166,6 +174,41 @@ allow delete: if resource.data.userId == request.auth.uid;          // same — 
 - Set pool size: `max_connections` based on RAM, not arbitrary
 - Always set connection timeout (never infinite wait)
 - Close connections properly — use `using` / `async with` / try-finally
+
+## PERSONAL DATA — the half of PII that is not about logging
+
+`rules/000-security.md` covers PII in output. This covers PII **at rest**, which is where it
+actually lives and where every obligation attaches. A column holding personal data is a different
+kind of column, and nothing in a schema says so unless someone writes it down.
+
+- **Mark it.** A comment on the column (`COMMENT ON COLUMN users.email IS 'PII: contact'`), a
+  schema annotation, or a documented naming convention — anything a later reader and a later
+  migration can see. Unmarked, personal data spreads into analytics tables, exports, fixtures and
+  seed files, and nobody can answer "where is this person's data" without reading everything.
+- **Collect what the feature needs.** A field added "because we might want it later" is
+  indefinite liability for a use that never arrives. Date of birth when you need an age check is
+  a boolean answer stored, not a birthday.
+- **Retention is a schema decision, not a policy document.** Every personal-data table needs a
+  stated lifetime and a job that enforces it. "We keep it forever" is a valid answer only when it
+  is a chosen one.
+- **Deletion has to reach the copies.** A delete that clears the row and leaves the audit log,
+  the search index, the cache, the analytics warehouse, the CSV export and the backups is not a
+  deletion. List the copies when the column is created, while the list is still short — the
+  HOLISTIC CONSISTENCY table in `rules/001-conventions.md` applied to data rather than to code.
+  Soft delete (`deleted_at`) is not erasure; it is hiding, and it must not be presented as more.
+- **Anonymise instead of deleting** when the row is load-bearing for aggregates: null the
+  identifiers, keep the fact. An "anonymised" record still holding an email is neither.
+- **Encrypt at rest for special categories** (health, biometrics, government identifiers,
+  financial account data) — column-level or a separate keyed store, not only full-disk encryption,
+  which protects against a stolen drive and nothing else.
+- **Non-production never gets production personal data.** Seed, synthesise, or mask on the way
+  out. A `pg_dump` restored into staging is a breach with a bug tracker.
+- **Cross-border transfers and third-party processors** are a decision, not an implementation
+  detail: where the data physically lives, and which vendor receives it, escalate like any other
+  protected-area change (`security-guard`).
+
+Any of this on an existing table is Tier 3 and goes through db-guard: adding a PII column,
+changing a retention period, and writing a deletion path are all schema changes with legal weight.
 
 ## BACKUP PROTOCOL
 

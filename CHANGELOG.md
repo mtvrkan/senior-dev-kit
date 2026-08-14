@@ -4,6 +4,346 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-08-14
+
+Everything in this release is one shape: a check that watched a proxy instead of the thing, and
+reported a pass because the proxy was fine. The write half of PROTECTED FILES, the per-session
+context budget, the routing eval's blind spot for over-routing, the plugin-install probe, and a
+`DROP COLUMN` regression whose fix had gone into the wrong file. Four of the six were caught by
+measurements this release also had to fix first.
+
+### Security
+
+- Credential files are now edit-denied, not only read-denied. `rules/000-security.md`'s
+  PROTECTED FILES heading has always read "never read, **modify**, or reference", and the deny
+  list held 61 `Read(...)` rules and nothing on the write side — so half the promise was prompt
+  discipline with no backstop, while check 22 (written to bind that promise to its enforcement)
+  asserted only the read half and reported a pass. The rule file now splits its list in two:
+  credential material (`*.pem`, `*.key`, `id_rsa*`, `.ssh/`, `secrets/`, `*.tfstate`,
+  `kubeconfig`, service-account JSON, plus the home-directory credential stores) carries an
+  `Edit(...)` deny; `.env`, lockfiles and build output deliberately stay writable, because
+  adding a variable to `.env` is real work and the risk there is reading a secret out. Check 22
+  derives which half is which from the rule file's own blocks. 412 → 445 deny rules. Shell
+  writes are still not blocked, and SECURITY.md says so. [2026-08-14]
+- `Edit(...)`, not `Write(...)` — and the kit knows why, because Claude Code said so. The first
+  version of the change above shipped 33 `Write(...)` rules beside the `Edit(...)` ones. The next
+  session start answered once per rule: "Write(~/.pgpass) is not matched by file permission checks
+  — only Edit(path) rules are. Use Edit(~/.pgpass) instead (Edit rules cover all file-editing
+  tools)." All 33 were inert and printed a warning banner every session. They are gone, check 22
+  fails the gate if one returns, and SECURITY.md records the diagnostic verbatim — it is better
+  evidence than anything else in that document's Assumption note. [2026-08-14]
+- Three of SECURITY.md's four upstream assumptions are now measured rather than reasoned about. A
+  dummy `.pem` was written, attacked from every vector, and deleted, with the identical operation
+  on a `.txt` in the same directory as the control. Verified: `Edit(path)` denies cover the Write
+  tool; the Read tool, PowerShell `gc`/`cat`/`type`, `Set-Content`, `Out-File`, `Move-Item`,
+  `Test-Path` and `>` redirection are all blocked on a credential path. The previous claim that
+  *all* writes into protected paths were unguarded was wrong and too pessimistic. What does get
+  through, in both directions, is the verb-free .NET file API — and it stays open deliberately:
+  `deny-cost` measured a namespace-wide block at 284 of 17,565 real commands (1.62%), around 250
+  of them legitimate encoding-sensitive file work, and the rule is defeated anyway by holding the
+  path in a variable. A rule with that false-positive rate and that bypass is worse than an honest
+  gap. [2026-08-14]
+- `Bash(*eval *)` was blocking this repo's own `eval/` directory. Re-running `deny-cost` against a
+  corpus that had grown from 10,753 to 17,565 commands showed it matching 55 of them and **not one
+  an inline-interpreter `eval`** — it fired on `head -c 700 eval/golden-prompts.json`, on
+  `ls docs eval`, and on the word "eval" inside `echo` strings. Replaced with six quote- and
+  `$`-anchored rules that match zero of the 17,565. Total friction 1.03% → 0.72%. The measured-cost
+  paragraph in SECURITY.md is now dated, because the corpus grows and a stale friction number reads
+  as a current one. [2026-08-14]
+
+### Changed
+
+- Both live evals gate on the share of the base model's *errors* the kit fixes
+  (`min_error_reduction`) instead of absolute points of lift (`min_lift`). Lift is a difference
+  between two sampled arms: with the treatment arm at 100%, it measures only how well control
+  happened to do, and one control-arm flip on a 27-prompt suite is 3.7 points — half the bar it
+  had to clear. The 2026-08-14 re-run scored 25/27 → 27/27 — two wrong routes, both fixed, zero
+  regressions — and the old bar called that a failure. The failure is structural, not unlucky:
+  as base models improve, the largest lift a suite can show shrinks toward zero, so a points bar
+  becomes unsatisfiable exactly while the kit is still working. Error reduction is undefined
+  rather than failing when the base model makes no mistakes, which is the behavior suite's
+  current state and is now stated as such. [2026-08-14]
+
+- `design-lead` can now return the question it is required to ask. Its contract is three far-apart
+  options and one question, but a subagent has no channel to the user and its five-line output had
+  no slot for either — so the one thing separating it from `ui-fixer` was the one thing it could
+  not report. It now has two output shapes, and picking the right one is the contract. [2026-08-14]
+- The gate can now see outside the repo. `npm run check` gained `check-install`
+  (`install.mjs --check`), which compares `~/.claude` with the checkout and fails when the
+  installed copy is behind. Every other step verifies the repo against itself, which is exactly
+  how a green gate coexisted with an install a day stale — the design machinery below shipped,
+  passed 11/11, and never reached a session. It reuses the installer's own plan, measures only the
+  components that target actually installed, and skips out loud where there is no copy install
+  (CI, plugin users) instead of ticking over an empty scan. [2026-08-14]
+- Personal data at rest is now covered where it lives. `rules/000-security.md` said never log PII
+  and stopped there; `rules/500-database.md` gains marking PII columns, collecting only what the
+  feature needs, retention as a schema decision, deletion that reaches the copies (index, cache,
+  warehouse, exports, backups), anonymisation over deletion for load-bearing rows, encryption for
+  special categories, and the rule that non-production never receives production personal data.
+  [2026-08-14]
+- Commands the kit tells you to type now run on Windows. `RUN_ROUTING_EVAL=1 npm run …` and
+  `ANALYZE=true next build` are parse errors in PowerShell — which is the maintainer's own shell —
+  and they sat in both READMEs and two rule files. Every affected block now shows the `$env:` form
+  beside the POSIX one, and check 33 fails the gate on a fenced block that uses an inline env-var
+  prefix without one. [2026-08-14]
+- `rules/000-security.md`'s language hotspots cover the languages the kit ships presets for.
+  Ruby had no row while `backend/rails` shipped — `Marshal.load`, `permit!`, `html_safe` on user
+  content appeared in no always-loaded rule — and the mobile row read "Swift/Kotlin", which does
+  not obviously include the Flutter and React Native presets. Both fixed, and check 32 now fails
+  the gate when a preset ships whose language has no row, or that no one has decided about.
+  [2026-08-14]
+- `/design-check` is now invoked rather than merely available: `new-page` and `new-screen` run it
+  after building and `from-scratch` runs it at self-review, the way `new-page` already ran
+  `/seo-check`. The enforcement half of the design work existed since the previous round and
+  nothing called it. [2026-08-14]
+- `new-page` gained the branch `new-screen` already had: no `DESIGN-SPEC.md` **and** no comparable
+  page to match is a design decision, not an edit — read the directions, run the brief intake,
+  settle it with the user. Web was the half without it. [2026-08-14]
+- Originating a design is no longer routed to `ui-fixer`. That agent runs at low effort with a
+  six-turn cap and a core rule to match what already exists — correct for edits, and the reason a
+  first page silently shipped the default look. It now hands the choice back (or to `from-scratch`)
+  and builds to `DESIGN-SPEC.md` once one exists; `ROUTING.md` carries the case. [2026-08-14]
+- The design axes the kit froze are now project-specific. `agent_docs/design-system.md`'s font
+  table paired four of five archetypes with the same body font and its type scale read as law;
+  `from-scratch-guide.md` declared spacing, typography and motion fixed; `rules/100-web.md` asked
+  for an "original design character" with no mechanism behind the ask. All three now defer to the
+  chosen direction, and the defaults are labelled as what to use when nothing has been decided
+  rather than as the answer. [2026-08-13]
+
+### Fixed
+
+- The SessionStart hook no longer reports a half-finished plugin install as a finished one. It
+  probed `rules/000-security.md` and treated that as proof `/kit-setup` had run, but `/kit-setup`
+  advertises `--only rules`, so a user could hold every rule file and none of the deny list — the
+  kit's only tool-layer block on reading credential files — with nothing anywhere saying so. It
+  now probes both halves against the template the plugin ships, and names the missing one.
+  `/kit-setup` also honours the `--only` argument its own hint advertises. [2026-08-14]
+- Check 6's deny-rule-count pattern no longer hard-codes the tool list, and fails loudly when it
+  matches nothing. Adding `Edit` to the claim would have silently unverified the number the whole
+  of SECURITY.md is about. [2026-08-14]
+- The Turkish landing page advertised an English social card. `gen-site.ts` renders one page per
+  locale and each names its own `ogImage`, but `og.html` hard-coded the English headline and both
+  templates pointed `og:image` at `og.png`. The headline now comes from `strings.<locale>.json`
+  like every other translated line. [2026-08-14]
+
+- The `DROP COLUMN` regression came back, and the round-43 fix turned out to be in the wrong file.
+  Round 43 measured `global-CLAUDE.md` + `rules/500-database.md` producing a destructive migration
+  and patched the always-loaded protocol; round 45 measured the same pair producing it again, 3 of
+  3 samples. The reason is that the *procedural* file is the more specific one when both are
+  loaded: `500-database.md` shipped a zero-downtime pattern, a backup protocol and example DROP SQL
+  with nothing scoping them to after the approval, so a model reading "escalate" in one file and
+  "here is how the migration is written" in the other follows the one that answers the request.
+  The qualifier now sits beside the procedures, in that file and in `600-devops.md`, which had the
+  identical shape and had never been measured for it. Check 39 derives the obligation from
+  `ESCALATE TO:` appearing in a rule file, so a new guarded rule arrives already owing the
+  sentence. Re-measured: 19/19 → 19/19. [2026-08-14]
+- Escalation now means stop, not label. Measured: with `global-CLAUDE.md` and
+  `rules/500-database.md` loaded together the model wrote a `DROP COLUMN` migration it correctly
+  refused with no kit context at all — 4/4 reproducible, control 3/3 right. Each file alone was
+  correct; only the pair failed, and nothing in the kit measured rule combinations even though a
+  real session always loads several. The HARD STOPS block now says what escalating forbids until
+  the guard has returned a plan and the user has approved it, which restored the correct answer.
+  [2026-08-14]
+- `behavior-eval` and `routing-eval` pass the prompt over stdin instead of as a command-line
+  argument. The treatment arm embeds whole kit files and Windows caps a command line at 32,767
+  characters, so two design prompts died with `ENAMETOOLONG` and a full behavior number was
+  unobtainable on the maintainer's own platform while the same suite ran on Linux. [2026-08-14]
+- Both evals now score over the whole suite instead of over the calls that succeeded, and fail
+  loudly when any prompt never reached the CLI. A shrinking denominator reported "8 of 10 prompts
+  never ran" as a confident `8/8 (100%)`. [2026-08-14]
+- The routing table had regressed and the measurement could not see it. Re-running the live A/B
+  against the current suite scored 24/27 control, 25/27 treatment with two regressions: round 41's
+  design rows sent "make this modal look modern" to `design-lead` when restyling one existing
+  component is an edit, and the architecture rows named the `feature-plan` skill where an agent was
+  asked. `agents/ROUTING.md` now draws the edit-vs-decision line inside the design entry itself
+  rather than in a tie-breaker keyed on whether a `DESIGN-SPEC.md` exists, and every destination
+  that is a skill says so. Re-measured: control 24/27 (89%), treatment 27/27 (100%), +11.1 points,
+  zero regressions. [2026-08-14]
+- The Turkish landing page unfurled an English social card. `og:locale`, the alt text and the
+  hreflang tags were all translated while the image behind them was not — the one part of a
+  shared link most people read. The card template now renders once per locale from the same
+  strings file the page uses, so `og.png` is English and `og.tr.png` Turkish, and a new locale is
+  one entry in `gen-site.ts`'s `PAGES` rather than a hand-copied filename in four places.
+  [2026-08-13]
+
+### Added
+
+- Every rule file must now be measured by a behavior prompt, and the gate fails if one is not.
+  Four were not — `200-api`, `400-mobile`, `800-llm-safety`, `1000-i18n` — and had shipped that way
+  for two rounds while the suite reported a clean 14/14, because "the prompts that exist all pass"
+  and "the rules that ship are all measured" are different claims and only the first had a check.
+  Coverage is derived from `rules/` on disk, so a rule file added tomorrow arrives already owing a
+  prompt. Five prompts added, one of them a deliberate rule *combination* (an N+1 fix that is also
+  a response-shape break — `900-performance` and `200-api` pulling opposite ways), because this
+  suite's only finding to date was a combination and a suite of single-file prompts cannot
+  reproduce that class however many prompts it has. [2026-08-14]
+- A combined budget on per-session trigger text. Check 3 caps the three always-loaded files at
+  500 lines because they are paid every session — but so is every skill's description, every
+  agent's description and every command's frontmatter, which the harness injects before the user
+  types. Measured: 5.8k tokens of always-loaded files and a further 2.3k of trigger text, 29% of
+  the real floor, guarded only per-item. A per-item cap is not a budget when the component count
+  only grows, which is the same reasoning that gave check 3 its combined cap. Agents and commands
+  now have the per-item cap they never had, all three validators read one constant, and check 37
+  fails the gate on the sum. [2026-08-14]
+- The routing eval can now detect over-routing. Every one of its 27 prompts expected some agent,
+  so a `ROUTING.md` that delegated absolutely everything would have scored 100% — the suite could
+  see mis-routing and under-routing, and was structurally blind to the third failure, which is
+  also the expensive one: a subagent is a fresh context window spent on a one-line edit. Four
+  Tier 0-1 prompts now expect `none`, both arms may answer it, and the static check fails if the
+  suite ever loses its last negative case. `agents/ROUTING.md` gained Step 3.5, the gate that runs
+  before the task-type table and asks whether the work is worth an agent at all. Measured the same
+  day: control 25/31, treatment 31/31, all six fixed, zero regressions. [2026-08-14]
+- Regressions in both live evals are re-sampled before they are believed. Observed, not reasoned
+  about: the behavior suite ran twice minutes apart against byte-identical files and reported the
+  design prompt as a regression once and not the other time, so `max_regressions: 0` failed the
+  gate on a coin flip. Raising the budget to 1 would fix the noise by also blinding the barrier to
+  one real regression — and one real regression is exactly what this suite's only finding was. So
+  detection stays one call per arm, and only a prompt that actually regresses is re-sampled;
+  majority of three decides, and an unconfirmed regression is still reported, because a prompt
+  that answers both ways is sitting on the decision boundary. A clean run costs what it always
+  did. [2026-08-14]
+- Check 38 binds `gen-site.ts`'s published locales to the social cards on the `site-src` branch.
+  The claim lived on one branch and its evidence on another with nothing between them: the Turkish
+  locale shipped in `PAGES` while `og.tr.png` sat uncommitted, and the first thing that noticed was
+  the publish workflow dying on an ENOENT inside a PNG header parser — a stack trace naming
+  `binding.open`, not the file to generate. [2026-08-14]
+- A recorded eval score is now bound to the kit files it measured, not just to the suite it lives
+  in. Both `last_measured` blocks carry a `context_digest` — for routing, `agents/ROUTING.md` plus
+  every agent's frontmatter description; for behavior, every prompt's wording plus the full text of
+  each rule file it names as context — and check 34 fails the gate when the files stop matching the
+  fingerprint. Three checks already guarded this number and every one of them watched a different
+  variable: the READMEs quoting it, the prompt count, the suite's own shape. None watched the
+  document under test. Round 41 broke two routes by editing `ROUTING.md` alone, and the reason that
+  was caught at all is that the same round happened to add a prompt too; edit the routing table by
+  itself and the recorded "100%" would still describe a file that no longer exists. Both eval
+  scripts print the fresh digest beside the scores, so nothing is computed by hand. [2026-08-14]
+- The behavior eval runs in CI. It shipped two rounds ago as a script only the maintainer could
+  run, which is the wrong home for the one suite whose entire value is regression detection — it
+  cannot show lift, and its single finding to date (two individually-correct rule files that
+  together produced a `DROP COLUMN` migration) is exactly the failure a later rule edit
+  reintroduces silently. `.github/workflows/routing-eval.yml` becomes `live-evals.yml` with one
+  job per suite, sharing the weekly schedule and the fork-safe secret guard the routing arm
+  already had. [2026-08-14]
+- The behavior A/B has a recorded result: control 14/14, treatment 14/14, zero regressions
+  (2026-08-14). `min_lift` is now 0 with the evidence for it in the data file — eight further
+  candidate prompts were piloted and the base model answered all eight correctly with no kit
+  context, so a two-token forced choice cannot demonstrate lift. The suite's job is regression
+  detection, and it caught one on its first run. Four hard-stop tripwires added: payment under
+  deadline pressure, a six-file feature, `node:latest` in CI, and a tfstate secret. [2026-08-14]
+- Check 36 now reads preset bodies, not just headings. `swiftui` ("Swift 6 strict"),
+  `nextjs-saas` ("Next.js 16") and `go-api` ("Go 1.22+") each made a version claim upstream can
+  falsify while carrying no dated review marker. The vocabulary is derived from the preset headings
+  themselves, so a new stack's name is known the day its preset lands. Five presets gained markers,
+  each verified against upstream. [2026-08-14]
+- Check 31 binds README A/B claims to both eval suites, not only the routing one — a second
+  measured number quoted in the same prose with nothing behind it is the gap the check exists for.
+  [2026-08-14]
+- `PROJECT-BOOTSTRAP.md` is linked from both READMEs. A 351-line standalone template at the repo
+  root that no document referenced, no installer installs and the plugin does not carry. [2026-08-14]
+- A recorded eval measurement must describe the suite on disk (consistency check 34). Check 31
+  bound the READMEs to `last_measured` and nothing bound `last_measured` to the file it lives in,
+  so a 27th prompt could be added after a 26-prompt run and the README kept quoting "100%" over a
+  suite it had never covered — the uncovered prompt being the one for the newest agent. [2026-08-14]
+- A command nothing invokes is now a gate failure (consistency check 35). `/a11y-check` shipped as
+  a ten-step WCAG audit that no skill, agent or guide referenced, so it could only run if the user
+  typed it, while `new-page` claimed inline that it already "covers a11y". `new-page`, `new-screen`
+  and `ui-change` now call it, and commands whose whole purpose is to be typed are declared rather
+  than inferred. [2026-08-14]
+- A preset that names a version in its heading must date that claim (consistency check 36). Check
+  26 built the review-marker mechanism for one hand-picked file and check 29 generalised its
+  age-out to every marker in the kit — what was missing was any requirement to carry one, so the
+  age-out aged an empty set. Rails, Nuxt, SvelteKit and Angular now carry markers that state what
+  was re-verified, and a preset acquires the obligation the moment a version enters its heading.
+  [2026-08-14]
+- `behavior-eval` — a second A/B, this one for the rules rather than the routing table. Ten
+  decisions in forced-choice form (escalate or edit a JWT lifetime, log the email or an opaque id,
+  ask for a design direction or ship the default, delete the failing test or fix the code), scored
+  control-without-kit against treatment-with-the-rule-files. Written because the kit's own README
+  said it plainly: everything except routing rested on judgment, and two rounds of design and
+  architecture work had just been added to that pile. Forced choice rather than a judge model, so
+  the result is reproducible; `last_measured` is null until someone spends the credits, and the
+  README says so. [2026-08-14]
+- `design-lead` — an opus/high agent that owns the design decision. The roster spent three
+  opus-tier agents on "will this break production" and put the only UI agent on `effort: low` with
+  a six-turn cap and a rule to match what exists, which is correct for an edit and is exactly why
+  a first page shipped the default look. Deciding is now this agent (brief, direction, tokens,
+  signature, `DESIGN-SPEC.md`); building to a recorded decision stays with `ui-fixer`, and
+  `ROUTING.md` carries both directions of the split. [2026-08-14]
+- `rules/1000-i18n.md` — the kit had eleven rule files and none of them mentioned localization.
+  Message catalogs and key naming, ICU plurals instead of an English ternary, `Intl` formatting,
+  Turkish dotted-i case folding, RTL via logical properties, text expansion, per-locale canonical
+  and `hreflang`, and the catalog format for every framework the kit ships a preset for. Scoped to
+  locale artifacts rather than to every UI file, so a single-locale project pays nothing.
+  [2026-08-14]
+- `/a11y-check` — WCAG 2.2 AA as an audit rather than one line inside `/design-check`: keyboard
+  path, focus management, accessible names, state reaching the API, contrast against the real
+  composited background, targets, reflow and zoom, content, and the mobile equivalents. States
+  what it could not verify instead of marking unrun checks green, and says out loud that a clean
+  axe run covers about a third of the criteria. [2026-08-14]
+- A debt ledger for the flags. `FWD:`/`OBS:` were defined in six files and collected in none, so
+  the same findings were "flagged" every month and lived until the session ended. Raising one now
+  means appending a row to the project's `.claude/TECH-DEBT.md`, and `/arch-check` reconciles it
+  against the code — adds what is missing, closes what is genuinely fixed. [2026-08-14]
+- `/arch-check` — the structural counterpart to `/design-check`, and the same argument one level
+  down. Architecture was detected from folder shape on every task and recorded nowhere, so two
+  sessions reading the same tree could reach two answers and the second one is how a codebase ends
+  up with two architectures. `PROJECT-CONTRACTS.md` now records the pattern, the boundaries, the
+  dependency direction and which layer owns each seam (transactions, error boundary, authz,
+  retries); the command audits the tree against that record — mixed patterns, inverted
+  dependencies, cross-feature reach-ins, cycles, barrels, contract drift — and reports without
+  fixing. Bound into `codebase-overview` (record it while mapping), `feature-plan` (start from the
+  real boundary state) and `refactor-safe` (a boundary refactor should make the violation count go
+  down, and unmeasured "cleaner" is an opinion). [2026-08-14]
+- A **brief intake** in front of the direction gate. The kit picked a direction from the product
+  type and asked the user to choose between three of its own suggestions — the one input it never
+  collected was what the user actually wanted. `design-directions.md` now reads references, brand
+  assets, adjectives, exclusions and hard constraints first, says what each one binds, and records
+  them in `DESIGN-SPEC.md` so a later session inherits the reasons and not just the outcome.
+  [2026-08-14]
+- A **bespoke direction** path. Eight named directions answer one template with eight; a brief that
+  points between them or past them now gets its own direction — all eight axes resolved to real
+  numbers, one depth model, a project-specific name — instead of being rounded to the nearest
+  label. [2026-08-14]
+- **THE SIGNATURE** — the one idea a project is remembered for, and the first additive rule in a
+  design system that was otherwise entirely subtractive. Holding a direction and avoiding the
+  eleven tells produces *competent*; a type moment, a structural break, a material, a motion idea
+  or real content at a scale that says it matters is what produces memorable. Exactly one per
+  project, it has to come from the product, and it has to survive 360px, reduced-motion and
+  contrast or it is a defect with ambition. `/design-check` gained steps for it and for brief
+  adherence, plus a `Memorable` verdict that is only available when the signature is built, zero
+  tells fired, every invariant passes and the brief is honoured. [2026-08-14]
+- `agent_docs/design-directions.md`: eight design directions, each a coordinated set of values
+  across type, colour, geometry, depth, density, motion, decoration and layout rhythm, plus the
+  gate that picks one with the user and records it in `DESIGN-SPEC.md`. Answers the commonest
+  complaint about the kit — that every project it builds looks the same. The cause was the kit's
+  own: `DESIGN-SPEC.md` left exactly one variable open (a primary hue) and declared spacing,
+  typography, motion and component style "fixed, not project-specific", so the only decision the
+  model could make was a colour. Token *names* stay fixed on every project; the direction sets
+  their values. [2026-08-13]
+- `/design-check`: the enforcement half of the above. Audits what was actually built against the
+  direction the spec claims, the eleven generic-output tells, layout monotony, depth coherence and
+  how many distinct radius/shadow/size/spacing values are really in use. Reports only — fixes go
+  back through `ui-change` or `new-page`/`new-screen` so they keep their tier and verification.
+  Written because everything else added here is guidance, and the kit's own recurring lesson is
+  that guidance without a mechanism does not hold. [2026-08-13]
+- Mobile directions in `design-directions.md`: five directions built on an idiom-distance axis
+  (native default / branded native / fully custom), because mobile differentiates inside the
+  platform idiom rather than against it. Covers Apple's Liquid Glass and Material 3 Expressive as
+  the materials the systems now hand you, the cross-platform "one design or adaptive" decision that
+  is a defect when left silent, and the constraints no direction may cross. Carries a review
+  marker — both platform design languages are moving. [2026-08-13]
+- A levers section (variable-font axes, scroll-driven and viewport-scaled type, serif+mono pairing,
+  one deliberate asymmetry) and a tells section listing what makes output read as machine-made.
+  `ui-change` and `new-screen` are now bound to the recorded character the way `new-page` and
+  `from-scratch` are, and `rules/400-mobile.md` gained the mobile equivalent of the web's design
+  continuity rule. [2026-08-13]
+- Interaction-state guidance the kit was missing: the priority order when several states apply at
+  once, the ARIA attributes that make busy/invalid/disabled state reach a screen reader at all,
+  where a spinner is still correct after the never-a-spinner-for-lists rule, and the component-token
+  indirection that keeps variants from becoming duplicated class lists. `rules/100-web.md`'s
+  accessibility table gains the state-announcement row; the rest is in `agent_docs/design-system.md`,
+  which loads only when read. [2026-08-13]
+
 ## [1.0.0] — 2026-08-11
 
 First public release. The kit was developed privately over a long series of internal audit rounds

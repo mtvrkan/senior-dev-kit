@@ -1,5 +1,9 @@
 # Infrastructure Preset — Docker / Docker Compose
 
+<!-- reviewed: 2026-08 — the "Compose v2" claim in the body only. V1 (`docker-compose`, Python) has
+been end-of-life for years and V2 (`docker compose`) is the only supported implementation, so the
+obsolete-`version:`-key guidance describes current behaviour. -->
+
 ## Scope
 
 The Dockerfile hardening checklist — multi-stage, version-pinned base, non-root user,

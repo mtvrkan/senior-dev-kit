@@ -47,7 +47,8 @@ Run silently. If any check fires: STOP → flag → propose fix → continue.
 | C/C++ | `strcpy`/`sprintf`/`gets` · unchecked `malloc` · use-after-free · `printf(userInput)` |
 | Go | `text/template` for HTML (use `html/template`) · `exec.Command` with a shell string · unchecked `err` |
 | Rust | `unsafe` block without a safety comment · `transmute` · `unwrap()`/`expect()` on request-path input |
-| Swift/Kotlin mobile | Keychain misuse · hardcoded keys · cleartext HTTP · deep link without validation |
+| Ruby | `Marshal.load` · `YAML.load` (use `safe_load`) · `send`/`constantize`/`eval` on params · `permit!` · `html_safe`/`raw` on user content · interpolated `where`/`order` |
+| Mobile (Swift/Kotlin/Dart/RN) | Keychain/Keystore misuse · tokens in `UserDefaults`/`SharedPreferences`/`AsyncStorage` · hardcoded keys · cleartext HTTP · deep link without validation · WebView with JS enabled on remote content |
 
 ## SUPPLY CHAIN RULES
 
@@ -66,11 +67,20 @@ Pre-commit hook recommendations (gitleaks, detect-secrets, <10s budget): `rules/
 
 ## PROTECTED FILES — never read, modify, or reference in output
 
-`.env` · `.env.*` · `*.pem` · `*.key` · `*.p12` · `id_rsa` · `id_ed25519` · `.ssh/`
+**Credential material — never read, never written.** No legitimate task produces one of these,
+so both halves are enforced (`Read(...)` + `Edit(...)` deny rules):
+
+`*.pem` · `*.key` · `*.p12` · `*.pfx` · `id_rsa` · `id_ed25519` · `id_ecdsa` · `id_dsa` · `.ssh/`
 `serviceAccountKey.json` · `*firebase-adminsdk*.json` · `*serviceaccount*.json`
-`secrets/` · `config/credentials.json` · `config/secrets.json` · `.secrets.baseline*`
+`secrets/` · `config/credentials.json` · `config/secrets.json`
 `*.tfstate` · `*.tfstate.backup` · `kubeconfig` · `*.kubeconfig`
-`*.lock` · `node_modules/` · `dist/` · `.next/`
+
+**Read-denied only — writable when the task genuinely calls for it:**
+
+`.env` · `.env.*` · `.secrets.baseline*` · `*.lock` · `node_modules/` · `dist/` · `.next/`
+
+Adding a variable to `.env` or regenerating a lockfile is real work; the risk in these is reading
+a secret out, which the `Read` denies already stop. Writing a private key is not real work.
 
 Terraform state holds every provider-returned password in plaintext — it is a credential file,
 not an artifact. `*.tfvars` is deliberately NOT here: it is an input file that legitimately holds

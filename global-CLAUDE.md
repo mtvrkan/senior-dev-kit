@@ -12,6 +12,12 @@ auth | session | JWT | OAuth | payment | billing | DB schema | migration |
 CI/CD | Dockerfile | IaC | Terraform | secrets | prod config | infrastructure
 
 `ESCALATE TO: [agent] — [one-line reason]`
+
+Escalating is not a step you complete by printing that line. Until the guard has returned a plan
+and the user has approved it, that line IS the turn's output — no migration or schema edit, no
+auth/payment/CI code, no "here is how you would do it" snippet. A rule file's procedures describe
+what the guard applies AFTER approval, never a way to satisfy the request without asking.
+
 NEVER output: secrets or PII — even in debug/logs/comments
 
 ---
@@ -177,6 +183,8 @@ manually Read a rule file to "load" it: injection is automatic, once per session
 700-observability — log levels, metrics, tracing, correlation IDs
 800-llm-safety — prompt injection, output trust, cost controls
 900-performance — CWV budgets, bundle limits, API latency, N+1
+1000-i18n — message catalogs, ICU plurals, Intl formatting, RTL, locale routing (loads on
+locale/catalog files only, so a single-locale project never pays for it)
 
 Deterministic enforcement detail (what's harness-blocked vs. prompt discipline only):
 `rules/000-security.md`'s PROTECTED FILES section (also always-loaded).
@@ -187,7 +195,7 @@ copy install, or the plugin directory for a plugin install (its SessionStart hoo
 absolute path). If a kit path won't resolve, resolve it under KIT ROOT before giving up.
 
 Lazy-load docs (all under agent_docs/, read on demand): architecture | design-system |
-testing-strategy | security-protocols | api-design-patterns | seo-patterns |
+design-directions | testing-strategy | security-protocols | api-design-patterns | seo-patterns |
 error-handling-patterns | from-scratch-guide | new-page-guide | new-screen-guide |
 dep-check-guide | env-audit-guide | api-versioning-guide | zero-downtime-migration |
 devops-security-guide | stack-commands

@@ -1,5 +1,9 @@
 # Project Preset — Next.js SaaS
 
+<!-- reviewed: 2026-08 — the "Next.js 16 patterns" reference in the SEO section only. 16 is the
+current stable major (16.3 at time of review) and 15 is in maintenance until October 2026, so the
+pointer into rules/100-web.md still names the line this preset targets. -->
+
 ## Architecture
 
 - Prefer App Router conventions when `app/` exists; preserve Pages Router conventions when `pages/` is the current pattern.

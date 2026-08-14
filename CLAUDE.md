@@ -14,7 +14,14 @@ itself.
 - Validate frontmatter/routing: `npm run validate`
 - Full gate (run before considering any change done): `npm run check`
   — runs test, validate, link-check, consistency-check, docs-check, routing-eval,
-  check-plugin, typecheck, lint, markdown-lint, audit
+  behavior-eval, check-plugin, check-install, typecheck, lint, markdown-lint, audit
+  — `routing-eval` and `behavior-eval` are the only two steps that measure model behavior rather
+  than file contents, and both score live only under their env flag (`RUN_ROUTING_EVAL=1`,
+  `RUN_BEHAVIOR_EVAL=1`; in PowerShell set `$env:NAME=1` first — there is no inline prefix form)
+  — `check-install` is the only step that looks outside the repo: it compares `~/.claude` with
+  this checkout and fails when the installed copy is behind. Every other step verifies the repo
+  against itself, which is how a green gate once coexisted with a day-old install running the
+  content the work had just replaced. It skips loudly where there is no copy install.
 - Type-check only: `npm run typecheck` | Lint only: `npm run lint`
 - Installer dry run: `node scripts/install.mjs --dry-run`
 - Landing page: **not on this branch.** The page source lives on the `site-src` branch and the

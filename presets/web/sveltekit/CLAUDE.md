@@ -1,5 +1,9 @@
 # Project Preset — SvelteKit (Svelte 5)
 
+<!-- reviewed: 2026-08 — the Svelte 5 claim in this heading only. Svelte 5 is current and runes are
+its stable API, so the preset's `export let` ban still reflects upstream. The idioms and commands
+below were not re-verified in this pass; re-check them before widening this marker's scope. -->
+
 ## Architecture
 
 - File-based routes under `src/routes/`. The filename is the contract:

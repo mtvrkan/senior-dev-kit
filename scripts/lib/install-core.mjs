@@ -206,6 +206,7 @@ export function parseArgs(argv) {
     dryRun: false,
     yes: false,
     uninstall: false,
+    check: false,
     help: false,
     allowDuplicateProtocol: false,
     /** @type {string | null} */ target: null,
@@ -217,6 +218,12 @@ export function parseArgs(argv) {
     if (arg === '--dry-run' || arg === '-n') opts.dryRun = true
     else if (arg === '--yes' || arg === '-y') opts.yes = true
     else if (arg === '--uninstall') opts.uninstall = true
+    // Read-only drift report for the gate: implies --dry-run so no combination of
+    // flags can make a check step write to the user's ~/.claude.
+    else if (arg === '--check') {
+      opts.check = true
+      opts.dryRun = true
+    }
     else if (arg === '--allow-duplicate-protocol') opts.allowDuplicateProtocol = true
     else if (arg === '--help' || arg === '-h') opts.help = true
     else if (arg === '--target') opts.target = argv[++i] ?? null

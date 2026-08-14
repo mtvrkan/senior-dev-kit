@@ -10,6 +10,7 @@
 import { readFileSync, readdirSync, existsSync } from 'fs'
 import { join } from 'path'
 import { findPresetDirs } from './presets.ts'
+import { parseFrontmatter } from './frontmatter.ts'
 
 export interface ComponentCounts {
   Agent: number
@@ -93,6 +94,86 @@ export function contextBudget(root: string): ContextBudget {
     pathScopedRules,
     alwaysLoadedShare: totalRuleLines === 0 ? 0 : Math.round((alwaysLoadedLines / totalRuleLines) * 100),
   }
+}
+
+// --- Trigger text: the other half of the per-session bill ---------------------------
+// The three files above are not what a session actually costs. Claude Code also injects,
+// unconditionally and before the user has typed anything, the `description` +
+// `when_to_use` of every installed skill, the `description` of every agent, and every
+// command's frontmatter. Measured on the kit as it shipped in round 44: 5.8k tokens of
+// always-loaded files and a further 2.3k of trigger text — 29% of the real floor, guarded
+// by nothing in aggregate.
+//
+// It was not unguarded by accident. `validate-skills.ts` caps each skill's trigger text at
+// 360 chars for precisely this reason. But a per-item cap multiplied by a component count
+// that only ever grows is not a budget — it is the same shape check 3's combined cap was
+// added to fix, one surface over: 25 skills each passing 360 is 9,000 chars nobody
+// approved. Agents and commands had no cap at all, and the routing eval's control arm is
+// built from exactly those agent descriptions, so they are load-bearing and will grow.
+//
+// Chars, not lines: trigger text is prose that wraps arbitrarily, and a line count would
+// reward reflowing a paragraph into one long line. The always-loaded files stay on lines
+// because they are structured documents whose shape is the thing being budgeted.
+export const TRIGGER_TEXT_BUDGET_CHARS = 360
+// Room for roughly seven more components at the per-item cap before this fires. It is a
+// signal, not a wall: raise it deliberately, in the same commit as the component that
+// needs the room, rather than discovering the floor moved a year later.
+export const TRIGGER_TEXT_COMBINED_BUDGET_CHARS = 12_000
+
+export interface TriggerTextEntry {
+  /** Repo-relative file the text came from. */
+  file: string
+  /** `skill` | `agent` | `command` — which per-item cap applies. */
+  kind: string
+  chars: number
+}
+
+/**
+ * Every piece of frontmatter the harness loads into a session before the first user turn.
+ * One derivation, three readers: the aggregate check, the per-item validators, and the
+ * landing page's context-budget claim.
+ */
+export function triggerText(root: string): TriggerTextEntry[] {
+  const entries: TriggerTextEntry[] = []
+  const read = (rel: string): string => readFileSync(join(root, rel), 'utf8')
+
+  const skillsDir = join(root, 'skills')
+  if (existsSync(skillsDir)) {
+    for (const e of readdirSync(skillsDir, { withFileTypes: true })) {
+      const rel = join('skills', e.name, 'SKILL.md')
+      if (!e.isDirectory() || !existsSync(join(root, rel))) continue
+      const fm = parseFrontmatter(read(rel))
+      // description + when_to_use, the exact pair validate-skills.ts caps — the platform
+      // matcher reads both, so both are paid.
+      entries.push({ file: rel.replace(/\\/g, '/'), kind: 'skill', chars: (fm?.description?.length ?? 0) + (fm?.when_to_use?.length ?? 0) })
+    }
+  }
+
+  const agentsDir = join(root, 'agents')
+  if (existsSync(agentsDir)) {
+    for (const name of readdirSync(agentsDir).filter((n) => n.endsWith('.md') && n !== 'ROUTING.md' && n !== 'README.md')) {
+      const fm = parseFrontmatter(read(join('agents', name)))
+      entries.push({ file: `agents/${name}`, kind: 'agent', chars: fm?.description?.length ?? 0 })
+    }
+  }
+
+  const commandsDir = join(root, 'commands')
+  if (existsSync(commandsDir)) {
+    for (const name of readdirSync(commandsDir).filter((n) => n.endsWith('.md'))) {
+      // A command's whole frontmatter block is the injected part — `description` plus
+      // `argument-hint`, both of which the harness surfaces in the slash-command list.
+      const fm = parseFrontmatter(read(join('commands', name))) ?? {}
+      const chars = Object.entries(fm).reduce((sum, [k, v]) => sum + k.length + v.length, 0)
+      entries.push({ file: `commands/${name}`, kind: 'command', chars })
+    }
+  }
+
+  return entries
+}
+
+/** Total chars of trigger text across every component. */
+export function triggerTextTotal(root: string): number {
+  return triggerText(root).reduce((sum, e) => sum + e.chars, 0)
 }
 
 // Null when the template is absent — the consistency-check test fixtures build only the

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Renders the raster assets the web needs and SVG cannot cover: the 1200x630 social
- * card, the iOS home-screen icon, and a .ico for the contexts that still ask for one.
+ * card — one per published locale — the iOS home-screen icon, and a .ico for the contexts
+ * that still ask for one.
  *
  * Why this is a separate script and not part of `gen-site`: it shells out to Chrome.
  * The gate has to run on any machine with Node and nothing else, and a build step that
@@ -11,7 +12,9 @@
  *
  * The card is HTML rather than a hand-drawn image for the same reason the landing page
  * is generated: it fills the same {{tokens}} from the same derivation, so it cannot
- * claim a version or a repository the site does not.
+ * claim a version or a repository the site does not. It also means the card translates
+ * for free — one template, rendered once per entry in `gen-site.ts`'s PAGES, so adding a
+ * locale there is the whole change and no card can be left behind in another language.
  *
  * Usage: node --experimental-strip-types scripts/gen-og.ts
  */
@@ -20,7 +23,8 @@ import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync } from 'fs
 import { join, dirname } from 'path'
 import { tmpdir } from 'os'
 import { fileURLToPath } from 'url'
-import { TOKENS, render } from './gen-site.ts'
+import { TOKENS, render, PAGES, localeTokens } from './gen-site.ts'
+import { stripTemplateNote } from './lib/templates.ts'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SITE = join(ROOT, 'site')
@@ -101,8 +105,10 @@ const iconPage = (px: number, pad: number, background: string): string =>
 function main(): void {
   const chrome = findChrome()
 
-  const card = render(readFileSync(join(SITE, 'og.html'), 'utf8').replace(/^<!doctype html>\n<!--[\s\S]*?-->\n/i, '<!doctype html>\n'))
-  shoot(chrome, card, 1200, 630, join(SITE, 'og.png'))
+  const cardTpl = stripTemplateNote(readFileSync(join(SITE, 'og.html'), 'utf8'))
+  for (const page of PAGES) {
+    shoot(chrome, render(cardTpl, localeTokens(page)), 1200, 630, join(SITE, page.ogImage))
+  }
 
   // iOS draws its own rounded mask and never a transparent background, so this one is
   // rendered opaque on the mark's own clay rather than punched out.
@@ -113,7 +119,7 @@ function main(): void {
   writeFileSync(join(SITE, 'favicon.ico'), icoFromPng(readFileSync(icoPng), 32))
   rmSync(icoPng)
 
-  for (const f of ['og.png', 'apple-touch-icon.png', 'favicon.ico']) {
+  for (const f of [...PAGES.map((p) => p.ogImage), 'apple-touch-icon.png', 'favicon.ico']) {
     console.log(`✓ site/${f} — ${readFileSync(join(SITE, f)).length} bytes`)
   }
 }

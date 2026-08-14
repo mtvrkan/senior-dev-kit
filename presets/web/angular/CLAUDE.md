@@ -1,5 +1,11 @@
 # Project Preset — Angular (v17+, standalone + signals)
 
+<!-- reviewed: 2026-08 — the v17+ floor in this heading only. v17 is where standalone-by-default
+and signals landed, so it remains the correct floor for everything this preset assumes; the
+`resource()`/`httpResource()` note in the body states its own higher floor. The remaining idioms
+and commands were not re-verified in this pass; re-check them before widening this marker's
+scope. -->
+
 ## Architecture
 
 - **Standalone components only.** `NgModule` is legacy; new code declares its own `imports`.
