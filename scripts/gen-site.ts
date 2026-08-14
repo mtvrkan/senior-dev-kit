@@ -107,27 +107,88 @@ const gateSteps = CHECK_STEPS.map((step) => {
   return `<li><span class="tick" aria-hidden="true"></span>${step}${note ? `<small>${note}</small>` : ''}</li>`
 }).join('')
 
+/**
+ * One entry per published locale. `lang` and `ogImage` sit here rather than in the strings
+ * files for the same reason the pipeline partial does: those hold prose, this holds structure.
+ *
+ * The card is per-locale because it is the page's first sentence for anyone who never clicks.
+ * A Turkish page that unfurls an English card is a translation that stops at the door — and the
+ * failure is invisible from the branch, since `og:locale` was already `tr_TR` and the alt text
+ * already Turkish while the image behind them was not.
+ *
+ * `out` is the file GitHub Pages stores; `path` is the URL it answers on, and they are not the
+ * same string. Pages resolves an extensionless request against `<path>.html`, so `/tr` and
+ * `/tr.html` both return 200 — two URLs for one page. Whichever one the canonical, the hreflang
+ * pair, the sitemap and the language switcher name is the one Google indexes, so the clean path
+ * is declared here once and every one of those reads it. Hand-typing `tr.html` into a template
+ * is how the `.html` ended up in the search result this field exists to keep out of it.
+ */
+export const PAGES: {
+  template: string
+  out: string
+  path: string
+  strings: string
+  lang: string
+  ogImage: string
+}[] = [
+  { template: 'index.en.html', out: 'index.html', path: '', strings: 'strings.en.json', lang: 'en', ogImage: 'og.png' },
+  { template: 'index.tr.html', out: 'tr.html', path: 'tr', strings: 'strings.tr.json', lang: 'tr', ogImage: 'og.tr.png' },
+]
+
+// Two link tokens per locale, both derived from `path` above: `<lang>Url` is absolute and belongs
+// in canonical/hreflang/og:url, `<lang>Href` is root-relative and belongs in the page's own links.
+// The 404 page is rendered without locale strings and still has to link Turkish, which is why
+// these live in TOKENS rather than in localeTokens().
+const localeUrlTokens: Record<string, string> = Object.fromEntries(
+  PAGES.flatMap((p) => [
+    [`${p.lang}Url`, `${siteOrigin}/${p.path}`],
+    [`${p.lang}Href`, `/${p.path}`],
+  ])
+)
+
 // Structured data. Emitted from the same derived values as the visible page rather than
 // hand-written into two templates: a JSON-LD block that disagrees with the page is worse than
 // none, because only crawlers read it and nobody proof-reads it.
+//
+// Two nodes, not one. `SoftwareSourceCode` describes the kit; `WebSite` describes the thing the
+// URL is, and it is the only node Google reads to decide what to print where the result's site
+// name goes. Without it the search result was headed `mtvrkan.com` — the registrable domain,
+// guessed, because nothing on the page had ever claimed a name for the site itself.
 const authorName = String((pkg.author as { name?: string }).name ?? '')
+const author = { '@type': 'Person', '@id': `${authorUrl}#person`, name: authorName, url: authorUrl }
 const jsonLd = JSON.stringify({
   '@context': 'https://schema.org',
-  '@type': 'SoftwareSourceCode',
-  name: 'Senior Dev Kit',
-  description:
-    'A Claude Code configuration kit: read-only guard agents, a written procedure per task shape, path-scoped rules under an enforced context budget, stack presets, and permission rules the harness applies before a tool runs.',
-  url: `${siteOrigin}/`,
-  codeRepository: `https://github.com/${slug}`,
-  programmingLanguage: 'TypeScript',
-  runtimePlatform: 'Node.js',
-  applicationCategory: 'DeveloperApplication',
-  operatingSystem: 'macOS, Windows, Linux',
-  license: 'https://opensource.org/licenses/MIT',
-  version: String(pkg.version),
-  inLanguage: ['en', 'tr'],
-  isAccessibleForFree: true,
-  author: { '@type': 'Person', name: authorName, url: authorUrl },
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${siteOrigin}/#website`,
+      name: 'Senior Dev Kit',
+      alternateName: 'senior-dev-kit',
+      url: `${siteOrigin}/`,
+      inLanguage: ['en', 'tr'],
+      author,
+      publisher: author,
+    },
+    {
+      '@type': 'SoftwareSourceCode',
+      '@id': `${siteOrigin}/#kit`,
+      name: 'Senior Dev Kit',
+      description:
+        'A Claude Code configuration kit: read-only guard agents, a written procedure per task shape, path-scoped rules under an enforced context budget, stack presets, and permission rules the harness applies before a tool runs.',
+      url: `${siteOrigin}/`,
+      isPartOf: { '@id': `${siteOrigin}/#website` },
+      codeRepository: `https://github.com/${slug}`,
+      programmingLanguage: 'TypeScript',
+      runtimePlatform: 'Node.js',
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'macOS, Windows, Linux',
+      license: 'https://opensource.org/licenses/MIT',
+      version: String(pkg.version),
+      inLanguage: ['en', 'tr'],
+      isAccessibleForFree: true,
+      author,
+    },
+  ],
 })
 
 export const TOKENS: Record<string, string> = {
@@ -150,6 +211,7 @@ export const TOKENS: Record<string, string> = {
   repoSlug: slug,
   repoUrl: `https://github.com/${slug}`,
   baseUrl: siteOrigin,
+  ...localeUrlTokens,
   owner: slug.split('/')[0],
   authorUrl,
   authorName,
@@ -172,20 +234,6 @@ export function render(template: string, tokens: Record<string, string> = TOKENS
   if (leftover) throw new Error(`unrendered token ${leftover[0]} survived rendering`)
   return out
 }
-
-/**
- * One entry per published locale. `lang` and `ogImage` sit here rather than in the strings
- * files for the same reason the pipeline partial does: those hold prose, this holds structure.
- *
- * The card is per-locale because it is the page's first sentence for anyone who never clicks.
- * A Turkish page that unfurls an English card is a translation that stops at the door — and the
- * failure is invisible from the branch, since `og:locale` was already `tr_TR` and the alt text
- * already Turkish while the image behind them was not.
- */
-export const PAGES: { template: string; out: string; strings: string; lang: string; ogImage: string }[] = [
-  { template: 'index.en.html', out: 'index.html', strings: 'strings.en.json', lang: 'en', ogImage: 'og.png' },
-  { template: 'index.tr.html', out: 'tr.html', strings: 'strings.tr.json', lang: 'tr', ogImage: 'og.tr.png' },
-]
 
 /**
  * The tokens one locale renders with, minus the card's pixel size. `gen-og.ts` renders the card
@@ -222,7 +270,7 @@ const literalFiles = (): { path: string; content: string }[] => [
     path: 'sitemap.xml',
     content:
       '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-      PAGES.map(({ out }) => `  <url><loc>${siteOrigin}/${out === 'index.html' ? '' : out}</loc></url>\n`).join('') +
+      PAGES.map(({ path }) => `  <url><loc>${siteOrigin}/${path}</loc></url>\n`).join('') +
       '</urlset>\n',
   },
 ]

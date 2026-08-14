@@ -4,6 +4,25 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- The landing page is indexed on its clean URL, not on `tr.html`. GitHub Pages answers both
+  `senior.mtvrkan.com/tr` and `senior.mtvrkan.com/tr.html` with 200, and every canonical, hreflang
+  pair, sitemap entry and language link named the `.html` one — so that is the URL Google indexed
+  and printed. The published path is
+  now a `path` field on `gen-site.ts`'s `PAGES`, and the templates read it through derived
+  `{{trUrl}}` / `{{trHref}}` tokens instead of hand-typing a file name. [2026-08-14]
+- The favicon shows in search results. The `.ico` held a single 32x32 image; Google's favicon
+  crawler wants a square that is a multiple of 48px and falls back to a generic globe otherwise.
+  `gen-og.ts` now writes a multi-size icon (32, 48, 96) and the `sizes` attribute says so.
+  [2026-08-14]
+- The result's site name reads "Senior Dev Kit" rather than the bare domain: the page's JSON-LD
+  is a `@graph` whose first node is the `WebSite` entity Google reads for that label. Nothing on
+  the page had ever claimed a name for the site itself, so the domain was being guessed from.
+  [2026-08-14]
+
 ## [1.1.0] — 2026-08-14
 
 Everything in this release is one shape: a check that watched a proxy instead of the thing, and

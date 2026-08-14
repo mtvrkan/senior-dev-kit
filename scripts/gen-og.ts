@@ -75,24 +75,42 @@ function shoot(chrome: string, html: string, width: number, height: number, out:
 }
 
 /**
- * An .ico wrapping a PNG. Every Windows version still in support reads PNG-encoded ICO
- * entries, so there is no need to emit a BMP: header, one directory entry, the PNG.
- * A width byte of 0 means 256 — irrelevant at 32px, but the reason the field is a byte.
+ * An .ico wrapping one PNG per size. Every Windows version still in support reads PNG-encoded
+ * ICO entries, so there is no need to emit a BMP: a 6-byte header, a 16-byte directory entry per
+ * image, then the images. A width byte of 0 means 256 — the reason the field is a byte at all.
+ *
+ * Multi-size, and the sizes are not arbitrary. The .ico shipped a single 32x32 image, which every
+ * browser renders fine and which Google Search does not: its favicon crawler wants a square that
+ * is a multiple of 48px and falls back to a generic globe when it finds nothing else. That is
+ * what the search result was showing. 48 is the floor it documents, 96 is the retina step above
+ * it, and 32 stays for the browser tab that has always been happy with it.
  */
-function icoFromPng(png: Buffer, size: number): Buffer {
-  const dir = Buffer.alloc(22)
-  dir.writeUInt16LE(0, 0) // reserved
-  dir.writeUInt16LE(1, 2) // type: icon
-  dir.writeUInt16LE(1, 4) // one image
-  dir.writeUInt8(size === 256 ? 0 : size, 6)
-  dir.writeUInt8(size === 256 ? 0 : size, 7)
-  dir.writeUInt8(0, 8) // palette size: not paletted
-  dir.writeUInt8(0, 9) // reserved
-  dir.writeUInt16LE(1, 10) // colour planes
-  dir.writeUInt16LE(32, 12) // bits per pixel
-  dir.writeUInt32LE(png.length, 14)
-  dir.writeUInt32LE(dir.length, 18) // image offset
-  return Buffer.concat([dir, png])
+export const ICO_SIZES = [32, 48, 96]
+
+function icoFromPngs(images: { size: number; png: Buffer }[]): Buffer {
+  const header = Buffer.alloc(6)
+  header.writeUInt16LE(0, 0) // reserved
+  header.writeUInt16LE(1, 2) // type: icon
+  header.writeUInt16LE(images.length, 4)
+
+  // Every image sits after the header and the full directory, so the first offset is known
+  // only once the entry count is — which is why this is a running total, not a per-entry sum.
+  let offset = header.length + images.length * 16
+  const entries: Buffer[] = []
+  for (const { size, png } of images) {
+    const dir = Buffer.alloc(16)
+    dir.writeUInt8(size === 256 ? 0 : size, 0)
+    dir.writeUInt8(size === 256 ? 0 : size, 1)
+    dir.writeUInt8(0, 2) // palette size: not paletted
+    dir.writeUInt8(0, 3) // reserved
+    dir.writeUInt16LE(1, 4) // colour planes
+    dir.writeUInt16LE(32, 6) // bits per pixel
+    dir.writeUInt32LE(png.length, 8)
+    dir.writeUInt32LE(offset, 12)
+    entries.push(dir)
+    offset += png.length
+  }
+  return Buffer.concat([header, ...entries, ...images.map((i) => i.png)])
 }
 
 const iconPage = (px: number, pad: number, background: string): string =>
@@ -114,10 +132,14 @@ function main(): void {
   // rendered opaque on the mark's own clay rather than punched out.
   shoot(chrome, iconPage(180, 0, '#d97757'), 180, 180, join(SITE, 'apple-touch-icon.png'))
 
-  const icoPng = join(SITE, 'favicon-32.png')
-  shoot(chrome, iconPage(32, 0, '#d97757'), 32, 32, icoPng)
-  writeFileSync(join(SITE, 'favicon.ico'), icoFromPng(readFileSync(icoPng), 32))
-  rmSync(icoPng)
+  const images = ICO_SIZES.map((size) => {
+    const scratch = join(SITE, `favicon-${size}.png`)
+    shoot(chrome, iconPage(size, 0, '#d97757'), size, size, scratch)
+    const png = readFileSync(scratch)
+    rmSync(scratch)
+    return { size, png }
+  })
+  writeFileSync(join(SITE, 'favicon.ico'), icoFromPngs(images))
 
   for (const f of [...PAGES.map((p) => p.ogImage), 'apple-touch-icon.png', 'favicon.ico']) {
     console.log(`✓ site/${f} — ${readFileSync(join(SITE, f)).length} bytes`)
