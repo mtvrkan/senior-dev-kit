@@ -127,11 +127,11 @@ türetilir. Tek komut:
 npm run check
 ```
 
-Şu an: 390/390 test geçiyor (61 suites). `routing-eval` yönlendirme tablosunu 31 gerçekçi isteği
+Şu an: 393/393 test geçiyor (61 suites). `routing-eval` yönlendirme tablosunu 31 gerçekçi isteği
 ile sabitler, `check-consistency` bu dosyadaki elle yazılmış her sayıyı yeniden türetir,
 `check-plugin` ise plugin manifestlerinin diskteki bileşenlerle hâlâ eşleştiğini doğrular.
 
-**Bunun kanıtladığı ve kanıtlamadığı şey.** Açık olalım: bu 390 test *iç tutarlılık* testidir.
+**Bunun kanıtladığı ve kanıtlamadığı şey.** Açık olalım: bu 393 test *iç tutarlılık* testidir.
 Dokümantasyonun diskteki dosyalarla eşleştiğini kanıtlar — hiçbir sayının bayat, hiçbir yolun ölü,
 hiçbir kuralın bir yerde iddia edilip başka yerde eksik olmadığını. **Kitin modelin çıktısını
 iyileştirip iyileştirmediğini ölçmezler.** CI'da yeşil geçen hiçbir şey bunu ölçmüyor.
@@ -174,7 +174,7 @@ skor iddia ederse — ya da kayıtlı koşu diskteki süiti tarif etmeyi bırak�
 kapatan yeni koşu, güncellenmiş tablonun bozduğu iki rotayı ortaya çıkardı. Tek model sürümünde tek
 koşu; taze istiyorsan kendin çalıştır.
 
-İkinci ölçüm, kuralların kendisi için: `behavior-eval`, zorunlu-seçim biçiminde on dokuz karar
+İkinci ölçüm, kuralların kendisi için: `behavior-eval`, zorunlu-seçim biçiminde yirmi karar
 sorar (korumalı alanda escalate ediyor mu, PII logluyor mu, yön kaydı yokken soruyor mu, testi mi
 siliyor kodu mu düzeltiyor) ve aynı A/B'yi kurar — **kontrol** hiç kit bağlamı yok, **tedavi** o
 kararı üretmesi gereken kural dosyaları eklenmiş. Her kural dosyasının en az bir prompt tarafından
@@ -187,7 +187,7 @@ RUN_BEHAVIOR_EVAL=1 npm run behavior-eval          # bash
 $env:RUN_BEHAVIOR_EVAL=1; npm run behavior-eval    # PowerShell
 ```
 
-**Ölçülen sonuç, 2026-08-14:** kontrol 19/19 (%100), tedavi 19/19 (%100) — lift yok, regresyon da
+**Ölçülen sonuç, 2026-08-20:** kontrol 20/20 (%100), tedavi 20/20 (%100) — lift yok, regresyon da
 yok. Bunu olduğu gibi oku: bu süit bir regresyon dedektörüdür, kuralların faydasının kanıtı değil.
 Cevap uzayı iki token olduğunda ve biri bir disiplinin adını taşıdığında (escalate / plan / flag /
 refuse) temel model onu yardımsız seçiyor; süite girmeden önce sekiz aday prompt daha pilotlandı ve
@@ -206,8 +206,8 @@ zero-downtime deseni, backup protokolü ve örnek DROP SQL'iyle birlikte, bunlar
 kilitleyen hiçbir cümle taşımıyordu. Bir dosyada "escalate", diğerinde "migration şöyle yazılır"
 okuyan model, isteği cevaplayanı takip ediyor. Nitelendirme artık prosedürlerin yanında: hem o
 dosyada hem de aynı şekle sahip olup bunun için hiç ölçülmemiş `600-devops.md`'de. `check-consistency`
-bu zorunluluğu, bir kural dosyasında `ESCALATE TO:` geçmesinden türetiyor. Yukarıdaki 19/19,
-düzeltmeden sonraki yeniden koşu.
+bu zorunluluğu, bir kural dosyasında `ESCALATE TO:` geçmesinden türetiyor. Yukarıdaki kayıt ise
+daha da sonraki bir yeniden koşu: always-loaded protokol, bu süitin okuduğu bir kural kazandı.
 
 Her iki kayıt da bir `context_digest` taşıyor: tedavi kolunun tam olarak neyi okuduğunun parmak
 izi — bir süitte `ROUTING.md` ve ajan açıklamaları, diğerinde prompt'lar ve kural dosyaları.

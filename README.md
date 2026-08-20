@@ -128,11 +128,11 @@ from disk by the test suite. One command:
 npm run check
 ```
 
-Currently: 390/390 tests passing (61 suites). `routing-eval` pins 31 realistic requests against
+Currently: 393/393 tests passing (61 suites). `routing-eval` pins 31 realistic requests against
 the routing table, `check-consistency` re-derives every hand-written number in this file, and
 `check-plugin` verifies the plugin manifests still match the components on disk.
 
-**What that does and does not prove.** Be clear-eyed about it: those 390 tests are *internal
+**What that does and does not prove.** Be clear-eyed about it: those 393 tests are *internal
 consistency* tests. They prove the documentation matches the files on disk — that no count is
 stale, no path is dead, no rule is claimed in one place and missing in another. **They do not
 measure whether the kit improves the model's output.** Nothing that ships green in CI does.
@@ -176,7 +176,7 @@ suite on disk, which is how a previous number went stale: it was measured before
 added, and the re-run that caught up found two routes the updated table had broken. One run on one
 model version; re-run it yourself if you want it fresh.
 
-The second measurement covers the rules themselves. `behavior-eval` puts nineteen decisions in
+The second measurement covers the rules themselves. `behavior-eval` puts twenty decisions in
 forced-choice form — escalate or edit a JWT lifetime, log the email or an opaque id, ask for a
 design direction or ship the default, delete the failing test or fix the code — and runs the same
 A/B: **control** with no kit context, **treatment** with the rule files that are supposed to
@@ -190,7 +190,7 @@ RUN_BEHAVIOR_EVAL=1 npm run behavior-eval          # bash
 $env:RUN_BEHAVIOR_EVAL=1; npm run behavior-eval    # PowerShell
 ```
 
-**The measured result, 2026-08-14:** control 19/19 (100%), treatment 19/19 (100%) — no lift, and no
+**The measured result, 2026-08-20:** control 20/20 (100%), treatment 20/20 (100%) — no lift, and no
 regression. Read that as what it is: this suite is a regression detector, not evidence that the
 rules help. When the answer space is two tokens and one of them names a discipline, the base model
 picks it unaided; eight further candidate prompts were piloted and control got all eight right
@@ -209,7 +209,7 @@ example DROP SQL with nothing scoping them to after the approval. A model readin
 file and "here is how the migration is written" in the other follows the one that answers the
 request. The qualifier now sits beside the procedures, in that file and in `600-devops.md`, which
 had the same shape and had never been measured for it; `check-consistency` derives the obligation
-from `ESCALATE TO:` appearing in a rule file at all. The 19/19 above is the re-run after that.
+from `ESCALATE TO:` appearing in a rule file at all. The recording above is a later re-run still, forced when the always-loaded protocol gained a rule this suite reads.
 
 Both recordings carry a `context_digest` — a fingerprint of exactly what the treatment arm read,
 `ROUTING.md` and the agent descriptions for one suite, the prompts and their rule files for the

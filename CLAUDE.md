@@ -35,6 +35,12 @@ itself.
   rules, the always-loaded line budget, the gate's own step list). `site-check` and
   consistency check 28 therefore run in that workflow, not in `npm run check` — check 28
   says so out loud when it scans nothing, rather than passing silently.
+- The `site-src` templates and `style.css` keep their contributor comments even though
+  global-CLAUDE.md's SHIPPED SOURCE IS PUBLIC forbids comments in browser-served files: nothing
+  on that branch is served as-is. `gen-site.ts` strips every one at build time
+  (`stripTemplateNote` / `stripPartialNote` / `stripCssComments`), and `site-check` fails the
+  publish if any survives into an artifact. Write the rationale in the source; the visitor never
+  receives it. Do not re-open this as a rule violation.
 
 Never mark a task done without running `npm run check` (or the narrowest subset that covers
 the change) and fixing failures — don't report success on unverified changes.

@@ -6,6 +6,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 
 ## [Unreleased]
 
+### Changed
+
+- New always-loaded rule: SHIPPED SOURCE IS PUBLIC. Anything the browser receives as-is — HTML,
+  CSS, client JS, SVG, static dirs, and their translations — carries no comments, because View
+  Source is not a private channel. The rationale goes in the commit, the changelog or a doc.
+  Build-time and server-side code is unaffected. [2026-08-20]
+- The landing page's stylesheet no longer publishes its own contributor notes. `style.css` is the
+  one source file the build copies verbatim, so its 58 comment blocks — art direction, abandoned
+  approaches, why a breakpoint sits where it does — reached every visitor, while the HTML
+  templates had been stripping theirs for a while. They stay in the source and leave at build
+  time; the published stylesheet is 12 KB smaller. `site-check` now fails if either stripper
+  is ever unwired. [2026-08-20]
+
 ### Fixed
 
 - The landing page is indexed on its clean URL, not on `tr.html`. GitHub Pages answers both

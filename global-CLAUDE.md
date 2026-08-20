@@ -106,6 +106,13 @@ SKILL CHECK — before starting any implementation task, check installed skills 
 ORPHAN CLEANUP — remove only imports/vars/functions YOUR edit made unused. Pre-existing dead
 code noticed along the way: leave it, flag with FWD: (see below) — don't delete unless asked.
 
+SHIPPED SOURCE IS PUBLIC — files served to the browser as-is (HTML, CSS, client JS, SVG, JSON
+manifests, and anything under a static/public/docs dir) are read by anyone who hits View Source.
+Write NO comments in them: no section banners, no notes-to-self, no TODO/FIXME, no "why" prose,
+no commented-out markup. That includes translated files. The explanation belongs in the commit
+message, CHANGELOG, or a doc — never in the shipped bytes. Server-side and build-time code keeps
+normal commenting rules.
+
 RESEARCH SCOPE — read only files relevant to the change, never a full-tree scan.
 Reuse prior analysis/logs already in context instead of re-reading unchanged files.
 

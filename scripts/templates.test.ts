@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { stripTemplateNote, stripPartialNote } from './lib/templates.ts'
+import { stripTemplateNote, stripPartialNote, stripCssComments } from './lib/templates.ts'
 
 // Regression: both helpers required a bare `\n` after the comment. On a CRLF checkout
 // the match silently failed and the contributor notes — including one explaining why an
@@ -27,4 +27,22 @@ test('a template without a note is left alone', () => {
 test('only the leading comment goes — later ones are content', () => {
   const html = '<!-- lead -->\n<div>\n<!-- kept -->\n</div>'
   assert.equal(stripPartialNote(html), '<div>\n<!-- kept -->\n</div>')
+})
+
+// The stylesheet is the only source file the build copies rather than renders, so until this
+// existed every art-direction note in it was published to visitors — the exact leak the two
+// helpers above were written to stop, one file over.
+test('stripCssComments removes comments and the blank lines they leave', () => {
+  const css = '@charset "UTF-8";\n/* banner\n   second line */\n\n.a { color: red; } /* trailing */\n'
+  assert.equal(stripCssComments(css), '@charset "UTF-8";\n\n.a { color: red; }\n')
+})
+
+test('stripCssComments leaves comment markers inside quoted values alone', () => {
+  const css = `.a::before { content: "/* not a comment */"; }\n.b { background: url('a/*b*/c.png'); }\n`
+  assert.equal(stripCssComments(css), css)
+})
+
+test('stripCssComments survives an escaped quote and an unterminated comment', () => {
+  assert.equal(stripCssComments('.a { content: "he said \\" /* x */"; }'), '.a { content: "he said \\" /* x */"; }')
+  assert.equal(stripCssComments('.a { color: red; }\n/* never closed'), '.a { color: red; }\n')
 })

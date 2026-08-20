@@ -37,7 +37,7 @@ import {
 } from './lib/counts.ts'
 import { findPresetDirs } from './lib/presets.ts'
 import { CHECK_STEPS, STEP_NOTES } from './run-checks.ts'
-import { stripTemplateNote, stripPartialNote } from './lib/templates.ts'
+import { stripTemplateNote, stripPartialNote, stripCssComments } from './lib/templates.ts'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SRC = join(ROOT, 'site')
@@ -252,6 +252,8 @@ export function localeTokens(page: (typeof PAGES)[number]): Record<string, strin
 // and an error page is neither indexed nor a destination. It takes no locale strings.
 const STANDALONE: { template: string; out: string }[] = [{ template: '404.html', out: '404.html' }]
 
+// Text assets, published as-is apart from the comment strip below. `favicon.svg` has no
+// comments to lose; `style.css` is the reason the strip exists.
 const COPIED = ['style.css', 'favicon.svg']
 // Rasters produced by `gen-og.ts`. Copied byte-for-byte: reading them as text would
 // corrupt them, which is why they are a separate list rather than another entry above.
@@ -289,7 +291,10 @@ function buildArtifacts(): { path: string; content: string | Buffer }[] {
       path: out,
       content: render(stripTemplateNote(readSrc(template))),
     })),
-    ...COPIED.map((asset) => ({ path: asset, content: readSrc(asset) as string | Buffer })),
+    ...COPIED.map((asset) => {
+      const text = readSrc(asset)
+      return { path: asset, content: (asset.endsWith('.css') ? stripCssComments(text) : text) as string | Buffer }
+    }),
     ...COPIED_BINARY.map((asset) => ({ path: asset, content: readFileSync(join(SRC, asset)) as string | Buffer })),
     ...literalFiles(),
   ]
@@ -320,6 +325,18 @@ function main(): void {
       console.error(`\n✗ rendered empty: ${empty.join(', ')}\n`)
       process.exit(1)
     }
+    // The strippers are unit-tested; this asserts they are actually *wired in*, which no unit
+    // test can. Every source file here carries contributor notes — art direction, abandoned
+    // approaches, why a breakpoint is where it is — and none of it is written for a visitor.
+    const leaked = artifacts
+      .filter((a) => typeof a.content === 'string')
+      .filter((a) => (a.path.endsWith('.css') ? (a.content as string).includes('/*') : /\.html?$/.test(a.path) && (a.content as string).includes('<!--')))
+      .map((a) => a.path)
+    if (leaked.length > 0) {
+      console.error(`\n✗ contributor comments would ship to visitors in: ${leaked.join(', ')}\n`)
+      process.exit(1)
+    }
+
     console.log(`✓ site/ renders (${artifacts.length} files) against the counts on disk.`)
     console.log(`  ${counts.Agent} agents · ${counts.Skill} skills · ${counts.Rule} rules · ${counts.Preset} presets · ${deny} deny rules`)
     return
