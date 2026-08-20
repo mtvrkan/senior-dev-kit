@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://senior.mtvrkan.com/sitemap.xml

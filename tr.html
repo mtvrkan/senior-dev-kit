@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Senior Dev Kit — Claude Code, etki alanını bilerek</title>
+<meta name="description" content="Claude Code yapılandırma kiti: 8 ajan, 25 skill, 12 kural dosyası, 28 stack preset'i. Tehlikeli her şeyde salt okunur korumalar, her iş tipi için yazılı prosedür ve bir script'in denetlediği bağlam bütçesi.">
+<link rel="canonical" href="https://senior.mtvrkan.com/tr">
+<link rel="alternate" hreflang="en" href="https://senior.mtvrkan.com/">
+<link rel="alternate" hreflang="tr" href="https://senior.mtvrkan.com/tr">
+<link rel="alternate" hreflang="x-default" href="https://senior.mtvrkan.com/">
+<link rel="icon" href="favicon.ico" sizes="32x32 48x48 96x96">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="mask-icon" href="favicon.svg" color="#D97757">
+<meta name="theme-color" content="#221e19" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f5f0" media="(prefers-color-scheme: light)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Senior Dev Kit">
+<meta property="og:title" content="Senior Dev Kit">
+<meta property="og:description" content="Claude Code'u istekli bir junior yerine kıdemli bir mühendislik ekibi gibi davrandıran ajanlar, skill'ler, kurallar ve korumalar.">
+<meta property="og:url" content="https://senior.mtvrkan.com/tr">
+<meta property="og:image" content="https://senior.mtvrkan.com/og.tr.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Senior Dev Kit — Claude Code&#39;a etki alanı bilinci">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://senior.mtvrkan.com/og.tr.png">
+<meta property="og:locale" content="tr_TR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="author" content="Mehmet Türkan">
+<link rel="stylesheet" href="style.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://senior.mtvrkan.com/#website","name":"Senior Dev Kit","alternateName":"senior-dev-kit","url":"https://senior.mtvrkan.com/","inLanguage":["en","tr"],"author":{"@type":"Person","@id":"https://mtvrkan.com#person","name":"Mehmet Türkan","url":"https://mtvrkan.com"},"publisher":{"@type":"Person","@id":"https://mtvrkan.com#person","name":"Mehmet Türkan","url":"https://mtvrkan.com"}},{"@type":"SoftwareSourceCode","@id":"https://senior.mtvrkan.com/#kit","name":"Senior Dev Kit","description":"A Claude Code configuration kit: read-only guard agents, a written procedure per task shape, path-scoped rules under an enforced context budget, stack presets, and permission rules the harness applies before a tool runs.","url":"https://senior.mtvrkan.com/","isPartOf":{"@id":"https://senior.mtvrkan.com/#website"},"codeRepository":"https://github.com/mtvrkan/senior-dev-kit","programmingLanguage":"TypeScript","runtimePlatform":"Node.js","applicationCategory":"DeveloperApplication","operatingSystem":"macOS, Windows, Linux","license":"https://opensource.org/licenses/MIT","version":"1.1.0","inLanguage":["en","tr"],"isAccessibleForFree":true,"author":{"@type":"Person","@id":"https://mtvrkan.com#person","name":"Mehmet Türkan","url":"https://mtvrkan.com"}}]}</script>
+</head>
+<body>
+<a class="skip" href="#main">İçeriğe geç</a>
+
+<span id="top" tabindex="-1"></span>
+
+<div class="aurora" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+
+<header class="site-head">
+  <div class="bar">
+    <a class="brand" href="/tr"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Senior Dev Kit">
+  <rect width="32" height="32" rx="9" fill="#D97757"/>
+  <path d="M13 9 L7.5 16 L13 23" fill="none" stroke="#20140F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="21" cy="16" r="2.75" fill="#20140F"/>
+</svg><span>Senior Dev Kit</span></a>
+    <nav aria-label="Ana">
+      <a href="#compare">Yan yana</a>
+      <a href="#how">İşleyiş</a>
+      <a href="#economy">Ekonomi</a>
+      <a href="#install">Kurulum</a>
+      <a href="#inside">İçindekiler</a>
+    </nav>
+    <div class="bar-end">
+      <div class="langs" role="group" aria-label="Dil">
+        <a href="/" hreflang="en" lang="en">EN</a>
+        <span class="is-current" aria-current="true">TR</span>
+      </div>
+      <a class="head-cta" href="#install">Kur</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p class="chip"><span class="pulse-dot" aria-hidden="true"></span> Claude Code yapılandırma kiti · v1.1.0</p>
+        <h1>Modele <em>neyin tehlikeli</em> olduğunu öğret.</h1>
+        <p class="lede">
+          Kutudan çıktığı hâliyle Claude Code, bir CSS hatasını düzeltmeye giderken auth
+          middleware&apos;ini baştan yazar, bir kolonu düşürür ve alakasız üç dosyayı refactor
+          eder. Bu kit ona kıdemli bir takım arkadaşında olan, yeni bir modelde olmayan üç şeyi
+          verir: projenin kendi düzenini, neyin tehlikeli olduğu fikrini ve yalnızca işin
+          gerektirdiği kadarını okuma disiplinini.
+        </p>
+        <div class="cta">
+          <a class="btn btn--primary" href="#install">Üç satırda kur</a>
+          <a class="btn btn--ghost" href="https://github.com/mtvrkan/senior-dev-kit">Kaynağa bak<span class="arr" aria-hidden="true">→</span></a>
+        </div>
+        <p class="hero-micro">MIT lisanslı · bağımlılık yok · Node.js 18+</p>
+      </div>
+
+      <figure class="term term--hero">
+        <figcaption class="term-bar"><span class="term-dots" aria-hidden="true"><i></i></span> claude — senior-dev-kit ile</figcaption>
+        <pre class="term-body"><code><span class="ln">$ claude</span><span class="ln pr">users tablosuna kolon ekle</span><span class="ln sp"> </span><span class="ln guard">◆ katman 3 — veritabanı şeması · db-guard'a yönlendi</span><span class="ln dim">  salt okunur. henüz hiçbir şey yazılmadı.</span><span class="ln sp"> </span><span class="ln">  PLAN</span><span class="ln">  1  ALTER TABLE users ADD COLUMN plan text NULL</span><span class="ln">  2  parti parti backfill, tablo kilidi yok</span><span class="ln">  3  geri alma: DROP COLUMN plan</span><span class="ln sp"> </span><span class="ln ok">  onayın bekleniyor<span class="caret" aria-hidden="true"></span></span></code></pre>
+      </figure>
+    </div>
+
+    <dl class="rail">
+      <div><dt>Ajan</dt><dd>8</dd></div>
+      <div><dt>Skill</dt><dd>25</dd></div>
+      <div><dt>Kural dosyası</dt><dd>12</dd></div>
+      <div><dt>Preset</dt><dd>28</dd></div>
+      <div><dt>Referans doküman</dt><dd>17</dd></div>
+      <div><dt>Deny kuralı</dt><dd>450</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section id="compare" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">01 — Yan yana</p>
+      <h2>Aynı cümle. Tamamen farklı iki sonuç.</h2>
+      <p class="lede">
+        Claude Code'a yazılan tek bir satır: <em>users tablosuna kolon ekle</em>. Anahtarı çevir,
+        kitin bundan sonrasını nasıl değiştirdiğini gör.
+      </p>
+    </div>
+
+    <div class="compare">
+      <input class="visually-hidden" type="radio" name="cmp" id="cmp-off" checked>
+      <input class="visually-hidden" type="radio" name="cmp" id="cmp-on">
+
+      <div class="seg" role="group" aria-label="Kitli ve kitsiz karşılaştırma">
+        <span class="seg-thumb" aria-hidden="true"></span>
+        <label for="cmp-off"><span class="dot" aria-hidden="true"></span> Düz Claude Code</label>
+        <label for="cmp-on"><span class="dot" aria-hidden="true"></span> Kit ile</label>
+      </div>
+
+      <div class="panes">
+        <figure class="term pane pane--off">
+          <figcaption class="term-bar"><span class="term-dots" aria-hidden="true"><i></i></span> düz</figcaption>
+          <pre class="term-body"><code><span class="ln pr">users tablosuna kolon ekle</span><span class="ln sp"> </span><span class="ln">● Edit  prisma/schema.prisma</span><span class="ln">● Edit  src/types/user.ts</span><span class="ln">● Bash  npx prisma migrate dev --name add_plan</span><span class="ln sp"> </span><span class="ln bad">  `users` düşürülüp yeniden kurulsun mu? … uygulandı</span><span class="ln bad">  47 satır kayboldu</span><span class="ln sp"> </span><span class="ln">Tamamdır! Kolonu ekledim ve tipleri güncelledim.</span></code></pre>
+        </figure>
+
+        <figure class="term pane pane--on">
+          <figcaption class="term-bar"><span class="term-dots" aria-hidden="true"><i></i></span> senior-dev-kit</figcaption>
+          <pre class="term-body"><code><span class="ln pr">users tablosuna kolon ekle</span><span class="ln sp"> </span><span class="ln guard">◆ katman 3 — DB şeması · ESCALATE TO: db-guard</span><span class="ln dim">  db-guard'ın Edit veya Write aracı yok.</span><span class="ln sp"> </span><span class="ln">  PLAN — eklemeli, kesintisiz</span><span class="ln">  1  ADD COLUMN plan text NULL      (kilit yok)</span><span class="ln">  2  1000'lik partiler hâlinde backfill</span><span class="ln">  3  geri alma: DROP COLUMN plan</span><span class="ln sp"> </span><span class="ln ok">  onayın bekleniyor<span class="caret" aria-hidden="true"></span></span></code></pre>
+        </figure>
+      </div>
+
+      <div class="score">
+        <div><b class="v-off">3</b><b class="v-on">0</b><span>dosya yazıldı</span></div>
+        <div><b class="v-off">0</b><b class="v-on">1</b><span>plan gösterildi</span></div>
+        <div><b class="v-off">0</b><b class="v-on">1</b><span>onay istendi</span></div>
+      </div>
+
+      <p class="note compare-note">
+        Koruma, talimatla değil araç tanımıyla salt okunur — yapılandırmasında uzanabileceği bir
+        Edit ya da Write aracı yok. Kendini tutması rica edilmiyor; eli yok.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">02 — İşleyiş</p>
+      <h2>Her işte aynı dört adım işler.</h2>
+      <p class="lede">
+        Hiçbirini sen tetiklemiyorsun. İşi kendi cümlelerinle anlatıyorsun; yönlendirmeyi kit
+        yapıyor.
+      </p>
+    </div>
+
+    <ol class="pipe" aria-label="Her işte dört şey olur: model önce projeyi okur, etki alanını ölçer, o alanın sahibine yönlendirir ve tam olarak neyi değiştirdiyse onu doğrular.">
+  <li class="pipe-step reveal">
+    <span class="pipe-num" aria-hidden="true">01</span>
+    <h3>Düzenlemeden önce projeyi okur</h3>
+    <p>Oturum başına bir kez: paket yöneticisi, config, CI/CD, ORM ve migration düzeni, mimarinin şekli ve projenin gerçek test komutu. Tespit edemediği şeyi tahmin etmez, <code>UNKNOWN</code> diye işaretler — yanlış bir varsayım, açıkça söylenmiş bir boşluktan daha kötüdür.</p>
+  </li>
+
+  <li class="pipe-step reveal">
+    <span class="pipe-num" aria-hidden="true">02</span>
+    <h3>Plan yapmadan önce etki alanını ölçer</h3>
+    <p>Her iş, daha tek dosya açılmadan bir katmana yerleşir. Tek satırlık bir CSS düzeltmesi doğrudan geçer. Auth, ödeme, veritabanı şeması, CI/CD, secret ya da altyapıya dokunan her şey yukarı çıkar.</p>
+    <div class="tiers">
+      <span class="tier"><b>0 – 2</b> doğrudan geçer, en küçük güvenli değişiklik</span>
+      <span class="tier tier--hot"><b>3 – 4</b> plan modu, salt okunur, sen onaylamadan düzenleme yok</span>
+    </div>
+  </li>
+
+  <li class="pipe-step reveal">
+    <span class="pipe-num" aria-hidden="true">03</span>
+    <h3>İşi, o alanın sahibine yönlendirir</h3>
+    <p>Korumalı bir isim, işin fiiline baskın gelir: "login formundaki CSS'i düzelt" bir stil sorusu değil, güvenlik sorusudur. Kural dosyaları da aynı mantıkla yüklenir — dosya yoluna göre, böylece bir Flutter projesi REST-API kurallarının bedelini ödemez.</p>
+    <div class="branch">
+      <article>
+        <span class="tag">katman 3+</span>
+        <h4>Bir koruma</h4>
+        <p>Talimatla değil, araç tanımıyla salt okunur: yapılandırmasında uzanabileceği bir Edit ya da Write aracı yok. Planı çıkarır ve durur.</p>
+      </article>
+      <article>
+        <span class="tag">katman 0 – 2</span>
+        <h4>Bir uygulayıcı</h4>
+        <p>Az önce okuduğu düzenin içinde kalır, sorunu çözen en küçük değişikliği yapar ve senin istemediğin refactor'a hiç girmez.</p>
+      </article>
+    </div>
+  </li>
+
+  <li class="pipe-step reveal">
+    <span class="pipe-num" aria-hidden="true">04</span>
+    <h3>Yalnızca değiştirdiği şeyi doğrular</h3>
+    <p>Davranış değiştiyse hedefli test, yeni dosya için lint ve test, yeni route için build, tip değişikliği için type-check. Tek dosyalık bir düzenleme için asla tüm test suite'i çalıştırmaz — ve komut çıktısı olmadan "bitti" demez.</p>
+  </li>
+</ol>
+
+    <div class="routes-wrap reveal">
+      <h3>Pratikte nasıl görünüyor</h3>
+      <p>Sıradan istekler ve daha tek dosyaya dokunulmadan her birinin nereye düştüğü.</p>
+      <ul class="routes" aria-label="Örnek istekler ve her birinin yönlendiği yer">
+        <li class="route">
+          <p class="route-say">login sayfasındaki kırık linki düzelt</p>
+          <p class="route-meta">
+            <span class="tier">katman 1</span>
+            <span class="agent">bug-hunter</span>
+          </p>
+        </li>
+        <li class="route">
+          <p class="route-say">ayarlar sayfası ekle</p>
+          <p class="route-meta">
+            <span class="tier">katman 2</span>
+            <span class="agent">senior-engineer</span>
+          </p>
+        </li>
+        <li class="route">
+          <p class="route-say">checkout akışını yeniden tasarla</p>
+          <p class="route-meta">
+            <span class="tier tier--hot">katman 3</span>
+            <span class="agent">feature-plan</span>
+            <span class="to" aria-hidden="true">→</span>
+            <span class="agent agent--guard">security-guard</span>
+          </p>
+        </li>
+        <li class="route">
+          <p class="route-say">Docker CI'ya SBOM üretimi ekle</p>
+          <p class="route-meta">
+            <span class="tier tier--hot">katman 3</span>
+            <span class="agent agent--guard">devops-guard</span>
+          </p>
+        </li>
+        <li class="route route--wide">
+          <p class="route-say">users tablosuna kolon ekle</p>
+          <p class="route-meta">
+            <span class="tier tier--hot">katman 3</span>
+            <span class="agent agent--guard">db-guard</span>
+            <em class="why">önce plan — onay olmadan migration yok</em>
+          </p>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="economy" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">03 — Bağlam ekonomisi</p>
+      <h2>Yalnızca işin dokunduğu kadarını ödüyorsun.</h2>
+      <p class="lede">
+        Bir yapılandırma kiti, göndereceğin her prompt&apos;tan alınan sabit bir vergidir. Bunun
+        miktarı ölçülü, tavanı belli ve büyük kısmı hiç yüklenmiyor.
+      </p>
+    </div>
+
+    <div class="econ">
+      <div class="econ-panel reveal">
+        <p class="econ-figure"><b>416</b><span>satır her turda yükleniyor</span></p>
+        <div class="meter" role="img" aria-label="Kural setinin 2368 satırının 416 satırı koşulsuz yükleniyor — yüzde 18">
+          <span class="meter-fill" style="width:18%"></span>
+        </div>
+        <p class="econ-scale"><span>kural setinin %18&apos;i</span><span>toplam 2368 satır</span></p>
+        <dl class="econ-grid">
+          <div><dt>Koşulsuz</dt><dd>3 dosya, 500 satır tavanıyla</dd></div>
+          <div><dt>Yola bağlı</dt><dd>10 kural dosyası</dd></div>
+          <div><dt>İstek üzerine</dt><dd>17 referans doküman</dd></div>
+        </dl>
+      </div>
+
+      <ul class="checks reveal">
+        <li><b>Koşulsuz yüklenen üç dosya var</b> — protokol ve yola bağlı olmayan iki kural.
+          Toplam satır sayılarının bir tavanı var ve tavan aşılırsa kapı düşüyor; yani
+          &quot;her zaman yüklenen&quot;, sessizce &quot;her zaman yüklenen ve şişmiş&quot; hâline
+          gelemiyor.</li>
+        <li><b>Diğer 10 kural dosyası yol eşleşmesini bekliyor</b> — bir Flutter
+          projesi REST-API kurallarının bedelini hiç ödemiyor, bir migration&apos;a dokunmak ise
+          veritabanı kurallarını kendiliğinden getiriyor.</li>
+        <li><b>17 referans doküman yalnızca bir skill istediğinde açılıyor</b> — stack
+          başına komut tablosu, kesintisiz migration rehberi, bağımlılık denetimi kılavuzu. Oturum
+          boyunca taşınmıyor; gerektiğinde bir kez okunuyor.</li>
+        <li><b>Küçük işler keşif adımını hiç çalıştırmıyor</b> — on satırın altındaki tek dosyalık
+          bir düzenlemede boot dizisi yok: manifest okuması yok, config taraması yok, mimari
+          tespiti yok.</li>
+        <li><b>Doğrulama hedefli, okuma ise devredilmiş</b> — tüm suite yerine değişen şeyin testi;
+          okuma yükü ağır taramalar da kendi bağlam penceresi olan alt ajanlara gidiyor, geriye
+          yalnızca sonuç dönüyor.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="install" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">04 — Kurulum</p>
+      <h2>Üç satır, Claude Code'un içine yazılıyor.</h2>
+    </div>
+
+    <div class="install">
+      <div class="reveal">
+        <p class="badge">Önerilen</p>
+        <figure class="term">
+          <figcaption class="term-bar"><span class="term-dots" aria-hidden="true"><i></i></span> claude — plugin kurulumu</figcaption>
+          <ol class="steps">
+          <li>
+            <code>/plugin marketplace add mtvrkan/senior-dev-kit</code>
+            <span>Bu depoyu bir plugin marketplace'i olarak tanıtır.</span>
+          </li>
+          <li>
+            <code>/plugin install senior-dev-kit@senior-dev-kit</code>
+            <span>Ajanları, skill'leri, komutları ve stack preset'lerini indirir.</span>
+          </li>
+          <li>
+            <code>/kit-setup</code>
+            <span>Bir plugin'in yapısal olarak yazamadığı iki şeyi yazar: yola göre yüklenen
+              kurallar ve izin kuralları. Ne yapacağını önce gösterir, onayını bekler ve
+              dokunduğu her şeyin yedeğini alır.</span>
+          </li>
+          </ol>
+        </figure>
+        <p class="note install-note">
+          Claude Code'u yeniden başlat, sonra <code>/kit-doctor</code> ile her parçanın yerine
+          oturduğunu doğrula. Güncellemeler <code>/plugin marketplace update</code> ile geliyor.
+        </p>
+      </div>
+
+      <div class="alt reveal">
+        <h3>Ya da dosyaları kendin kur</h3>
+        <p class="note">Node.js 18 veya üzeri, bağımlılık yok.</p>
+        <pre><code>git clone https://github.com/mtvrkan/senior-dev-kit.git
+cd senior-dev-kit
+node scripts/install.mjs --dry-run
+node scripts/install.mjs</code></pre>
+        <p class="note">
+          Elindeki hiçbir şey silinmiyor: protokol <code>CLAUDE.md</code> dosyana işaretler
+          arasına giriyor, deny kuralları <code>settings.json</code> ile birleştiriliyor ve üzerine
+          yazılan her şeyin önce yedeği alınıyor. İki yoldan birini seç, ikisini birden değil.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="inside" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">05 — İçindekiler</p>
+      <h2>Kutudan tam olarak ne çıkıyor.</h2>
+    </div>
+
+    <div class="bento">
+      <article class="tile reveal">
+        <b>8</b>
+        <p class="kind">ajan</p>
+        <h3>Yazma yetkisi olmayan korumalar</h3>
+        <p>
+          Dördü talimatla değil, araç tanımıyla salt okunur: yapılandırmalarında uzanabilecekleri
+          bir Edit ya da Write aracı yok. Planı çıkarıp dururlar. Kalan üçü uygular.
+        </p>
+      </article>
+
+      <article class="tile reveal">
+        <b>25</b>
+        <p class="kind">skill</p>
+        <h3>Her iş tipi için bir prosedür</h3>
+        <p>
+          Hata düzelt, sayfa ekle, migration incele, sürüm kapısını geç — her biri, modelin
+          doğaçlama yapmak yerine izlediği yazılı bir disiplin. Çoğu işin şekline göre tetiklenir;
+          birkaçı tasarım gereği yalnızca elle çağrılır.
+        </p>
+      </article>
+
+      <article class="tile reveal">
+        <b>12</b>
+        <p class="kind">kural dosyası</p>
+        <h3>Arkasında kapı olan bir bağlam bütçesi</h3>
+        <p>
+          Her turda üç dosya yükleniyor, bir script'in denetlediği ortak satır sınırının altında.
+          Gerisi dosya yolu eşleşmesiyle geliyor; 17 referans doküman ise ancak bir
+          skill ihtiyaç duyduğunda açılıyor.
+        </p>
+      </article>
+
+      <article class="tile tile--wide reveal">
+        <div>
+          <b>450</b>
+          <p class="kind">deny kuralı</p>
+          <h3>Modelin açmasına izin verilmeyen dosyalar</h3>
+          <p>
+            Kibarca rica eden bir prompt değil — araç çalışmadan önce harness'ın uyguladığı izin
+            kuralları. Yani bir secret, bağlam penceresine en baştan hiç girmiyor.
+          </p>
+        </div>
+        <div class="denylist" aria-label="Engellenen yollardan örnekler">
+          <span>.env</span>
+          <span>.env.*</span>
+          <span>*.pem</span>
+          <span>*.key</span>
+          <span>id_rsa</span>
+          <span>.ssh/</span>
+          <span>serviceAccountKey.json</span>
+          <span>*.tfstate</span>
+          <span>kubeconfig</span>
+          <span>secrets/</span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="presets" aria-label="Stack preset'leri">
+  <div class="wrap">
+    <p class="eyebrow">28 stack preset'i · her stack için ev kuralları</p>
+    <p class="visually-hidden">Gelen stack preset&apos;leri: angular, astro, django, docker, dotnet, drizzle, fallback, fastapi, flutter, go-api, kubernetes, laravel, mongodb, nestjs, nextjs-saas, node-express, nuxt, postgres, prisma, rails, react-native, react-vite, rust-axum, spring-boot, supabase, sveltekit, swiftui, terraform.</p>
+  </div>
+  <div class="preset-rail" aria-hidden="true">
+    <div class="preset-track"><span>angular</span><span>astro</span><span>django</span><span>docker</span><span>dotnet</span><span>drizzle</span><span>fallback</span><span>fastapi</span><span>flutter</span><span>go-api</span><span>kubernetes</span><span>laravel</span><span>mongodb</span><span>nestjs</span><span>nextjs-saas</span><span>node-express</span><span>nuxt</span><span>postgres</span><span>prisma</span><span>rails</span><span>react-native</span><span>react-vite</span><span>rust-axum</span><span>spring-boot</span><span>supabase</span><span>sveltekit</span><span>swiftui</span><span>terraform</span><span>angular</span><span>astro</span><span>django</span><span>docker</span><span>dotnet</span><span>drizzle</span><span>fallback</span><span>fastapi</span><span>flutter</span><span>go-api</span><span>kubernetes</span><span>laravel</span><span>mongodb</span><span>nestjs</span><span>nextjs-saas</span><span>node-express</span><span>nuxt</span><span>postgres</span><span>prisma</span><span>rails</span><span>react-native</span><span>react-vite</span><span>rust-axum</span><span>spring-boot</span><span>supabase</span><span>sveltekit</span><span>swiftui</span><span>terraform</span></div>
+  </div>
+</section>
+
+<section id="built" class="band">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">06 — Doğrulama</p>
+      <h2>Bu sayfadaki hiçbir sayı elle yazılmadı.</h2>
+      <p class="lede">
+        Bir yapılandırma kiti sessizce çürür. Bir kural dosyası, başka bir kuralın emekli ettiği
+        aracı önermeye başladığında ya da bir README altı commit önce doğru olmaktan çıkmış bir
+        sayı iddia ettiğinde hiçbir şey çökmez.
+      </p>
+    </div>
+
+    <div class="gate">
+      <div class="gate-copy reveal">
+        <p>
+          Bu yüzden depo, bir test suite'inin normalde göremediği şeyleri denetliyor. Her
+          değişiklikte tutarlılık kontrolleri:
+        </p>
+        <ul class="checks">
+          <li><b>Her sayıyı diskten yeniden türetiyor</b> — sayfanın en üstündeki rakamlar da
+            derleme anında aynı türetmeden geliyor.</li>
+          <li><b>Satır bütçesini sabitliyor</b>: her turda yüklenen üç dosyanın bağlam maliyeti
+            sessizce büyüyemiyor.</li>
+          <li><b>Her kuralın glob'larını sınıyor</b> — iddia ettiği düzenlere gerçekten ulaşıyor
+            mu diye.</li>
+          <li><b>Kitin kendi kod örneklerini notlandırıyor</b>: "asla PII loglama" maddesinin on
+            dokuz satır altında kullanıcı e-postası loglayan örnek yüzünden.</li>
+          <li><b>Kapıyı düşürüyor</b>: bir preset, bir kuralın emekli ettiği aracı önerirse.</li>
+        </ul>
+        <p class="note">
+          Bulgular kök nedenden kapatılıyor ve kapatan kontrol yazıya dökülüyor; böylece aynı sınıf
+          fark edilmeden geri gelemiyor. Yöntemin tamamı bu. Sağdaki adım listesi bile, yanına elle
+          kopyalanmak yerine kapıyı çalıştıran dosyadan okunuyor.
+        </p>
+        <div class="cta">
+          <a class="btn btn--ghost" href="https://github.com/mtvrkan/senior-dev-kit/blob/main/README.tr.md">Türkçe README<span class="arr" aria-hidden="true">→</span></a>
+          <a class="btn btn--ghost" href="https://github.com/mtvrkan/senior-dev-kit/blob/main/CONTRIBUTING.md">Katkı rehberi<span class="arr" aria-hidden="true">→</span></a>
+        </div>
+      </div>
+
+      <figure class="term gate-run reveal">
+        <figcaption class="term-bar"><span class="term-dots" aria-hidden="true"><i></i></span> npm run check</figcaption>
+        <ol><li><span class="tick" aria-hidden="true"></span>test</li><li><span class="tick" aria-hidden="true"></span>validate</li><li><span class="tick" aria-hidden="true"></span>link-check</li><li><span class="tick" aria-hidden="true"></span>consistency-check</li><li><span class="tick" aria-hidden="true"></span>docs-check</li><li><span class="tick" aria-hidden="true"></span>routing-eval<small>static only — live scoring needs RUN_ROUTING_EVAL=1 and the claude CLI</small></li><li><span class="tick" aria-hidden="true"></span>behavior-eval<small>static only — live scoring needs RUN_BEHAVIOR_EVAL=1 and the claude CLI</small></li><li><span class="tick" aria-hidden="true"></span>check-plugin</li><li><span class="tick" aria-hidden="true"></span>check-install<small>copy installs only — where there is none it compares nothing, and says so in its own output</small></li><li><span class="tick" aria-hidden="true"></span>typecheck</li><li><span class="tick" aria-hidden="true"></span>lint</li><li><span class="tick" aria-hidden="true"></span>markdown-lint</li><li><span class="tick" aria-hidden="true"></span>audit</li></ol>
+        <figcaption class="term-foot">13 adım · hiçbir şey yayınlanmadan önce hepsi yeşil</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-foot">
+  <div class="wrap foot">
+    <a class="foot-brand" href="/tr"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Senior Dev Kit">
+  <rect width="32" height="32" rx="9" fill="#D97757"/>
+  <path d="M13 9 L7.5 16 L13 23" fill="none" stroke="#20140F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="21" cy="16" r="2.75" fill="#20140F"/>
+</svg><span>Senior Dev Kit</span></a>
+    <p class="foot-credit">Developed with <span class="heart" aria-hidden="true">♥</span><span class="visually-hidden">sevgiyle</span>
+      by <a href="https://mtvrkan.com" rel="me">mtvrkan</a></p>
+  </div>
+</footer>
+
+<a class="to-top" href="#top" aria-label="Başa dön"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+</body>
+</html>
