@@ -4,9 +4,9 @@ description: Use for localized bugs, runtime errors, failing tests, console erro
 tools: Read, Grep, Glob, Edit, Write, Bash
 model: sonnet
 permissionMode: default
-effort: medium
+effort: high
 color: yellow
-maxTurns: 8
+maxTurns: 12
 skills:
   - bug-fix
 ---

@@ -5,6 +5,7 @@ allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 when_to_use: Use automatically when behavior changes, or manually when the user asks for tests — including adding coverage to existing untested/legacy code with no behavior change.
 argument-hint: "[file or function to test]"
 context: fork
+background: false
 agent: senior-engineer
 effort: medium
 ---

@@ -5,6 +5,7 @@ allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically on any slowness or resource-bloat complaint about existing code.
 argument-hint: "[file, endpoint, or area to profile]"
 context: fork
+background: false
 agent: performance-guard
 effort: high
 ---

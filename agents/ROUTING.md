@@ -140,8 +140,12 @@ buy nothing a scout needs. Never send a decision to a scout.
 No guard area matched and the work is big enough to hand off. What kind of task is it?
 
 ```text
-CSS / button / modal / copy / animation / layout    → ui-fixer   (sonnet, Tier 0-1)
-Bug / error in specific file, no guard area         → bug-hunter (sonnet, Tier 0-2)
+CSS / button / modal / copy / animation / layout    → ui-fixer   (sonnet, Tier 2; Tier 0-1 stopped at Step 3.5)
+Bug / error in specific file, no guard area         → bug-hunter (sonnet, Tier 2; a stack trace already routed at Step 2)
+Flaky / intermittent / no trace / cause unknown     → main loop, `systematic-debug` skill (Tier 2)
+Upgrade a dependency major / migrate a library      → senior-engineer, `dep-upgrade` skill (Tier 2; build/CI/auth
+                                                      libraries → their guard first)
+New flow taking input, money or access, pre-build   → security-guard, `threat-model` skill (Tier 2-3)
 Add test / update spec / regression coverage        → senior-engineer, `test-writer` skill (Tier 1-2)
 Review a diff / PR / recent change                  → main loop, `code-review` skill (Tier 1-2)
 New page / screen / component — pure UI             → ui-fixer   (sonnet, Tier 1-2)
@@ -158,9 +162,10 @@ Slow query / N+1 / bundle / render loop             → performance-guard (sonne
 Dep CVE / audit / outdated packages                 → security-guard (scan mode, Tier 1-2)
   (app/language dependency audit — "scan our dependencies" defaults here; container image
   or CI pipeline scan specifically → devops-guard instead, see below)
-Large feature / architecture / system design        → senior-engineer in native plan mode,
-  incl. "should we migrate to X" evaluations           running the `feature-plan` skill (Tier 3)
-New project / greenfield / starting from scratch    → `feature-plan` in plan mode; senior-engineer runs `from-scratch`
+Large feature / architecture / system design        → main loop in native plan mode, running the
+  incl. "should we migrate to X" evaluations           `feature-plan` skill (Tier 3); senior-engineer
+                                                      implements the approved plan
+New project / greenfield / starting from scratch    → main loop runs `from-scratch` (its phase gates need the user)
 Research / fact-check / comparison                  → main loop; type /deep-research (Tier 2-3)
 README / changelog / API docs                       → main loop, `docs-update` skill (Tier 0-1)
 ```
@@ -218,13 +223,14 @@ ui-fixer
 
 An **agent** (`agents/<name>.md`) is a persona: it owns a tool grant, a model tier, a turn
 budget, and (for guards) escalation authority. A **skill** (`skills/<name>/SKILL.md`) is a
-reusable procedure any agent can run — it has no tools/model of its own beyond what its
-`allowed-tools:` and optional `agent:` binding grant it.
+reusable procedure any agent can run. `allowed-tools:` only pre-approves tools; it does not
+remove any. A skill that must never edit says so with `disallowed-tools:`.
 
 Most guard-style agents are bound 1:1 (or 1:few) to a same-purpose skill — the agent is *who*
 handles the request (persona, tools, escalation), the skill is *how* (the procedure it
-follows). Skills with no agent row below run **exclusively** in the main loop:
-`code-review`, `docs-update`, `feature-plan` (native plan mode), `incident-response`.
+follows). Skills with no agent row below never run inside a kit agent: `docs-update`,
+`feature-plan` (native plan mode) and `incident-response` run inline in the main loop, and
+`code-review` forks an isolated read-only subagent that the turn waits for (`background: false`).
 Flow skills that DO have a row (`bug-fix`, `api-design`,
 `db-change`, `ui-change`, `new-page`, `new-screen`, …) are dual-mode: invoked directly they
 run in the main loop; when their bound agent is dispatched, the agent follows them as its
@@ -251,7 +257,7 @@ a skill the model is structurally unable to invoke.)
 | `performance-guard` | `performance-check` | checking perf |
 | `security-guard` | `security-review`, `security-scan` | reviewing / scanning |
 | `db-guard` | `db-change`, `migration-review` | changing schema / reviewing migrations |
-| `devops-guard` | `release-gate`, `security-scan`, `/env-audit` | gating a release |
+| `devops-guard` | `release-gate`, `security-scan` (`/env-audit` forks into it; a manual-only skill cannot be preloaded) | gating a release |
 | `ui-fixer` | `ui-change`, `new-page`, `new-screen` | building UI to a design that is already decided |
 | `design-lead` | `new-page`, `new-screen` | deciding the design itself — direction, tokens, signature — then handing construction to `ui-fixer` |
 | `senior-engineer` | `feature-build`, `refactor-safe`, `test-writer`, `codebase-overview`, `api-design`, `from-scratch`, `project-memory` | general implementation — bound to more skills than the others because it's the default implementer, not a specialist |
@@ -271,7 +277,7 @@ source of truth).
 | add / create / build / implement / ekle / oluştur | senior-engineer |
 | refactor / restructure / split / modularize / sadeleştir / böl | senior-engineer |
 | design / look / visual / tasarla / görsel | design-lead — but a single existing component is ui-fixer (Step 4) |
-| architecture / system design / plan / mimari | senior-engineer, running the `feature-plan` skill in plan mode |
+| architecture / system design / plan / mimari | main loop, running the `feature-plan` skill in plan mode; senior-engineer implements |
 | auth / login / token / session / JWT / güvenlik | security-guard |
 | secret / API key / credential / gizli anahtar | security-guard |
 | slow / perf / N+1 / bundle / yavaş | performance-guard |

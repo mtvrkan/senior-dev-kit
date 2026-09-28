@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Claude Code'u hevesli bir junior yerine kıdemli bir mühendislik takımı gibi davrandıran
-konfigürasyon kiti: **8 agent, 25 skill, 12 rule, 7 komut, 28 preset**.
+konfigürasyon kiti: **8 agent, 28 skill, 12 rule, 7 komut, 28 preset**.
 
 🇬🇧 [English README](README.md) — kanonik sürüm; bu dosya onun çevirisidir.
 
@@ -22,7 +22,7 @@ Bu kit, kıdemli bir takım arkadaşında olan ama modelde olmayan üç şeyi ek
   her iş önce salt-okunur bir *guard* ajanına gider. Guard bir plan yazar ve durur. Siz
   onaylamadan tek satır kod yazılmaz.
 - **Her iş tipi için bir prosedür.** "Şu bug'ı düzelt", "sayfa ekle", "bu migration'ı incele" —
-  her birinin doğaçlama yerine izlenen yazılı bir disiplini var. Toplam 25 tane.
+  her birinin doğaçlama yerine izlenen yazılı bir disiplini var. Toplam 28 tane.
 - **Context bütçesi.** Her turda yalnızca üç dosya yükleniyor (500 satır üst sınır, script'le
   denetleniyor). Geri kalan her şey — 12 rule dosyası, 18 referans doküman — eşleşen bir dosya
   okununca veya bir skill gerçekten ihtiyaç duyunca lazy yükleniyor.
@@ -91,13 +91,13 @@ yazabileceğiniz komutlar — [`docs/usage.md`](docs/usage.md) içinde.
 | | Sayı | Notlar |
 | --- | --- | --- |
 | Agent | 8 | 4'ü salt-okunur guard (db, security, devops, performance) |
-| Skill | 25 | Çoğu iş tipine göre otomatik tetiklenir; birkaçı yalnızca slash komutuyla |
+| Skill | 28 | Çoğu iş tipine göre otomatik tetiklenir; birkaçı yalnızca slash komutuyla |
 | Rule | 12 | `000`/`001` her oturumda yüklenir; kalan 10'u `paths:` glob eşleşmesiyle |
 | Komut | 7 | `/agents-guide`, `/skills-guide`, `/seo-check`, `/design-check`, `/arch-check`, `/a11y-check`, `/context-audit` |
 | Preset | 28 | web: nextjs-saas, react-vite, nuxt, sveltekit, astro, angular · backend: node-express, nestjs, fastapi, django, laravel, rails, spring-boot, dotnet, go-api, rust-axum · mobile: flutter, react-native, swiftui · orm: prisma, drizzle · db: postgres, mongodb, supabase · infra: docker, kubernetes, terraform · generic: fallback |
 | agent_docs | 18 | Talep üzerine okunan derin referans sayfaları |
 
-Kısaca: 8 agent, 25 skill, 12 rule, 7 komut, 28 preset.
+Kısaca: 8 agent, 28 skill, 12 rule, 7 komut, 28 preset.
 
 Ayrıca bir guardrail katmanı: `settings-template.json` içinde ~400 deny kuralı — secret dosya
 okumalarını, yıkıcı shell komutlarını ve onaysız uzak paket çalıştırıcılarını engeller. Kapsam ve

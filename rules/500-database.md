@@ -54,7 +54,8 @@ The full GO / REQUIRES PLAN / STOP classification lives in `agents/db-guard.md` 
 Five-step Expand → Write-both → Backfill → Add-constraint → Contract pattern — see `agent_docs/zero-downtime-migration.md` for full detail and example SQL.
 
 Never: add NOT NULL column + deploy code in same migration (breaks existing instances).
-Always: deploy DB migration BEFORE code deploy.
+Order: expand migrations BEFORE the code that needs them; contract/destructive migrations AFTER
+every instance of the old code is gone.
 
 ## N+1 QUERY PREVENTION
 

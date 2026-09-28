@@ -1,16 +1,19 @@
 ---
 name: security-scan
 description: Use for dependency audits (CVEs, outdated majors, paid licenses, bloat), secret scans, SAST, and container/filesystem scans. Not for low-risk UI-only tasks.
-when_to_use: Auto-trigger on dep add/update, auth/payment/DB/API/secrets/CI/release changes, or explicit user request.
+when_to_use: Auto-trigger on a dependency add/update, before a release, or on explicit request.
 allowed-tools: Read, Grep, Glob, Bash
 model: sonnet
 effort: medium
 argument-hint: "[task or target]"
 context: fork
+background: false
 agent: security-guard
 ---
 
 # security-scan
+
+A plain auth/DB/API code change is security-review's job, not a repo-wide scanner run; performing an upgrade this scan recommends is `dep-upgrade`.
 
 Trigger: dep add/update, auth/payment/DB/API/secrets/CI/release changes, or explicit user request. Skip for UI-only tasks.
 

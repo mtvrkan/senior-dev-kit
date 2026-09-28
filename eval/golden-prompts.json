@@ -66,14 +66,14 @@
     },
     {
       "prompt": "we need to redesign the whole checkout flow architecture across web and mobile",
-      "expect": "senior-engineer",
+      "expect": "none",
       "expectedSkill": "feature-plan",
-      "note": "architect agent removed (round-26 simplification) — architecture-scale scope plans via feature-plan in native plan mode, senior-engineer implements"
+      "note": "Architecture-scale scope plans in the main loop under native plan mode via the feature-plan skill (round-47: a forked or delegated planner has no conversation and cannot ask the user). senior-engineer implements the approved plan; guards review their slices."
     },
     {
       "prompt": "mikroservislere geçmeli miyiz? mevcut monolitin mimarisini değerlendir",
-      "expect": "senior-engineer",
-      "note": "plans via feature-plan in native plan mode since the architect agent was removed"
+      "expect": "none",
+      "note": "An architecture evaluation plans in the main loop under native plan mode via feature-plan (round-47); no agent is dispatched to decide it."
     },
     {
       "prompt": "add an index to the orders table and a new status column",

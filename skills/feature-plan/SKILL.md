@@ -1,16 +1,16 @@
 ---
 name: feature-plan
-description: Use before implementing large, multi-file, architecture, DB, auth, payment, or unclear features. Produces a detailed plan; no code.
+description: Use before implementing large, multi-file, architecture or system-design, or unclear features. Produces a detailed plan; no code.
 allowed-tools: Read, Grep, Glob, Bash
+disallowed-tools: Edit, Write, NotebookEdit
 when_to_use: Use automatically before any code when scope is large, unclear, or risky.
 argument-hint: "[feature — goal, constraints, affected areas if known]"
-context: fork
 effort: high
 ---
 
 # feature-plan
 
-Produce a detailed, executable plan for multi-file/risky features. No code edits, wait for confirmation. Auto-fires for clear feature work (the request names a thing to build); also fits non-feature risky work (refactors, config/infra, ambiguous "make X better" asks) when invoked directly. Tier 3+ / protected-area work should run under native plan mode (read-only) with this output format. If the feature description lacks a goal or scope, fill `OPEN:` with the missing questions instead of guessing.
+Produce a detailed, executable plan for multi-file/risky features. No code edits, wait for confirmation. Auto-fires for clear feature work (the request names a thing to build); also fits non-feature risky work (refactors, config/infra, ambiguous "make X better" asks) when invoked directly. Runs inline in the main loop — it needs the conversation and the user's answers, which a forked subagent has neither of. Tier 3+ / protected-area work runs under native plan mode (read-only) with this output format; a DB/auth/payment/CI slice of the plan goes to its guard for review rather than being planned here. If the feature description lacks a goal or scope, fill `OPEN:` with the missing questions instead of guessing.
 
 ## Output format
 

@@ -10,7 +10,6 @@ maxTurns: 8
 skills:
   - release-gate
   - security-scan
-  - env-audit
 ---
 
 ## Reference docs (lazy-load when needed)
@@ -86,4 +85,4 @@ Downtime expected: [yes/no + duration]
 Proceed? [user must confirm]
 ```
 
-Only after explicit user approval: hand off to senior-engineer for implementation (devops-guard is read-only and never applies the plan itself).
+Only after explicit user approval: hand off to senior-engineer for implementation (devops-guard is read-only and never applies the plan itself). Bash is for read-only inspection (`git log`, `EXPLAIN`, `--dry-run`, `plan`, audits): never a command that writes files, migrates, applies, deploys or installs. `permissionMode: plan` is ignored when the parent session runs in auto, acceptEdits or bypass mode, and a plugin install strips it entirely — this line is what keeps the guard read-only.

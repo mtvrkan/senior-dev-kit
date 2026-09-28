@@ -1,5 +1,6 @@
 ---
 description: List all installed Senior Dev Kit skills and when each one auto-triggers.
+disable-model-invocation: true
 ---
 
 # /skills-guide

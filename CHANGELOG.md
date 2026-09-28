@@ -20,6 +20,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 - Always-loaded rules for every project: MODEL ROUTING + DELEGATION, MOVE IS NOT REWRITE,
   CODE STYLE (English identifiers, no comments), NO AI ATTRIBUTION, CHANGELOG and DOC
   FRUGALITY. [2026-09-28]
+- Three skills: `systematic-debug` (flaky/intermittent bugs with no suspect file — reproduce,
+  bisect, hypothesis log), `dep-upgrade` (major-version upgrades from the migration guide, one
+  package family at a time) and `threat-model` (STRIDE and abuse cases for a new flow before it
+  is built). The incident postmortem now has a fixed blameless shape. [2026-09-28]
 
 ### Changed
 
@@ -46,6 +50,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 
 ### Fixed
 
+- Review and gate skills block the turn again. Since Claude Code 2.1.218 a `context: fork` skill
+  runs in the background by default, so release-gate, migration-review, security-review,
+  code-review and the other gates returned before their verdict; they now set
+  `background: false`. `/arch-check`, `/design-check` and `/a11y-check` also fork now instead of
+  filling the main context. [2026-09-28]
+- `feature-plan` and `from-scratch` run in the main loop. A forked planner saw none of the
+  conversation and could not ask the user anything, so it contradicted the routing table's "native
+  plan mode". ROUTING, the global protocol and the routing eval now agree on it. [2026-09-28]
+- db-guard said "DB migration FIRST, then code" for every step, which breaks the old code when a
+  contract/drop migration runs first. Expand goes before the code and contract goes after it. The
+  zero-downtime pattern now has an explicit read-switch step. db-guard's GO verdict still needs
+  user approval, and its orphan check uses `NOT EXISTS` (`NOT IN` reports "no orphans" when a
+  NULL is present). [2026-09-28]
+- Read-only skills (api-design, db-change, feature-plan, incident-response, code-review) set
+  `disallowed-tools`, because `allowed-tools` only pre-approves and never removes a tool. Guards
+  state their Bash limit in the body, since `permissionMode` is ignored under auto/bypass modes
+  and stripped from plugin agents. [2026-09-28]
+- devops-guard no longer preloads the manual-only `/env-audit`, which Claude Code refuses to
+  preload. senior-engineer preloads 3 skills instead of 7 and has room for 20 turns. bug-hunter
+  runs at high effort. Agents run the project's own test command instead of a hard-coded `jest`.
+  [2026-09-28]
+- security-guard pins JWT algorithms and checks `iss`/`aud`. It answers another user's resource
+  with 404 instead of 403, so IDs cannot be enumerated. [2026-09-28]
 - Uninstall refuses when settings.json no longer parses, instead of deleting the manifest and
   losing the record of which deny rules it added. A settings.json the installer created is deleted
   on uninstall once nothing of the user's is left in it. [2026-09-28]

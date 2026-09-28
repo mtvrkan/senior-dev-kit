@@ -1,5 +1,6 @@
 ---
 description: List all installed Senior Dev Kit agents and when to use each one.
+disable-model-invocation: true
 ---
 
 # /agents-guide

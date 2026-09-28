@@ -1,6 +1,9 @@
 ---
 description: Audit built UI for design-direction adherence, generic-output tells, and layout monotony.
 argument-hint: "[page, screen, or route — optional]"
+context: fork
+background: false
+disallowed-tools: Edit, Write, NotebookEdit
 ---
 
 # /design-check

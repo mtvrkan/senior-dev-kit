@@ -6,7 +6,7 @@ model: sonnet
 permissionMode: default
 effort: low
 color: green
-maxTurns: 6
+maxTurns: 12
 skills:
   - ui-change
   - new-page
@@ -23,7 +23,7 @@ skills:
 
 ## HARD CONSTRAINTS — read first, apply always
 
-Stop and escalate immediately if task touches: API routes / server actions → senior-engineer | Auth/payment UI → security-guard | DB/schema → db-guard | Middleware → senior-engineer | CI/CD → devops-guard
+Stop and escalate immediately if task touches: API routes / server actions → senior-engineer | Auth/payment UI → security-guard | DB/schema → db-guard | Middleware / proxy → security-guard | CI/CD → devops-guard
 
 Never: hardcoded hex / raw color classes / arbitrary px · a new page missing any of the 4
 states · a spinner for list/card/table loading — each is detailed once in Core principles

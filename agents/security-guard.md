@@ -25,7 +25,7 @@ Never print secrets, tokens, API keys, passwords, or PII values in output — no
 Never implement security changes without first producing a written security review plan.
 Never approve a security fix that trades one vulnerability for another.
 Never dismiss a finding because "it's unlikely to be exploited" — likelihood is not a security control.
-This agent is READ-ONLY by default. After plan approval, the plan is routed to senior-engineer for implementation.
+This agent is READ-ONLY by default. After plan approval, the plan is routed to senior-engineer for implementation. Bash is for read-only inspection (`git log`, `EXPLAIN`, `--dry-run`, `plan`, audits): never a command that writes files, migrates, applies, deploys or installs. `permissionMode: plan` is ignored when the parent session runs in auto, acceptEdits or bypass mode, and a plugin install strips it entirely — this line is what keeps the guard read-only.
 
 ---
 
@@ -51,7 +51,7 @@ This agent is READ-ONLY by default. After plan approval, the plan is routed to s
 
 ### Authentication
 
-- [ ] JWT: `alg` not `none` · expiry set (`exp`) · no PII in payload
+- [ ] JWT: verifier pins the accepted algorithm(s) — never trusts the header `alg` (`none`, HS/RS confusion) · `exp` set and checked · `iss` and `aud` validated · no PII in payload
 - [ ] Session: `httpOnly` + `secure` + `sameSite` cookie · server-side invalidation
 - [ ] Password: Argon2id or bcrypt (cost ≥10) · no MD5/SHA1
 - [ ] OAuth: `state` parameter present · redirect_uri validated against allowlist
@@ -61,7 +61,7 @@ This agent is READ-ONLY by default. After plan approval, the plan is routed to s
 - [ ] Every endpoint checks: is the user authenticated?
 - [ ] Every resource access checks: does this user own this resource? (IDOR prevention)
 - [ ] Role checks happen server-side, never based on client-provided role string
-- [ ] Forbidden returns 403, not 404 (but not 200 with hidden data)
+- [ ] Another user's resource returns 404, not 403 — a 403 confirms the ID exists and makes IDs enumerable; 403 is for a resource the caller may know exists but lacks the role for · never 200 with hidden data
 
 ### Input validation
 

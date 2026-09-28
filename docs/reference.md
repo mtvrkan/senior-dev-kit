@@ -26,10 +26,10 @@ rules in [`SECURITY.md`](../SECURITY.md) — strong, but not a sandbox.
 | `bug-hunter` | sonnet | read + write | `bug-fix` |
 | `db-guard` | opus | **read-only** | `db-change`, `migration-review` |
 | `design-lead` | opus | read + write | `new-page`, `new-screen` |
-| `devops-guard` | opus | **read-only** | `release-gate`, `security-scan`, `/env-audit` |
+| `devops-guard` | opus | **read-only** | `release-gate`, `security-scan` |
 | `performance-guard` | sonnet | **read-only** | `performance-check` |
 | `security-guard` | opus | **read-only** | `security-review`, `security-scan` |
-| `senior-engineer` | sonnet | read + write | `feature-build`, `refactor-safe`, `test-writer`, `codebase-overview`, `api-design`, `from-scratch`, `project-memory` |
+| `senior-engineer` | sonnet | read + write | `feature-build`, `refactor-safe`, `test-writer` |
 | `ui-fixer` | sonnet | read + write | `ui-change`, `new-page`, `new-screen` |
 
 Routing between them is decided by [`agents/ROUTING.md`](../agents/ROUTING.md).
@@ -39,9 +39,9 @@ Routing between them is decided by [`agents/ROUTING.md`](../agents/ROUTING.md).
 Use for localized bugs, runtime errors, failing tests, console errors, regressions, or broken behavior where root cause can be isolated. Escalate protected areas.
 
 - **Tools:** `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`
-- **Model / effort:** sonnet · medium
+- **Model / effort:** sonnet · high
 - **Permission mode:** `default`
-- **Turn budget:** 8
+- **Turn budget:** 12
 - **Definition:** [`agents/bug-hunter.md`](../agents/bug-hunter.md)
 
 ### `db-guard`
@@ -101,7 +101,7 @@ Use for scoped medium feature implementation or safe refactors requiring multipl
 - **Tools:** `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`, `Agent`
 - **Model / effort:** sonnet · medium
 - **Permission mode:** `default`
-- **Turn budget:** 10
+- **Turn budget:** 20
 - **Definition:** [`agents/senior-engineer.md`](../agents/senior-engineer.md)
 
 ### `ui-fixer`
@@ -111,7 +111,7 @@ Use for low-risk frontend-only UI changes — modals, buttons, layout, responsiv
 - **Tools:** `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`
 - **Model / effort:** sonnet · low
 - **Permission mode:** `default`
-- **Turn budget:** 6
+- **Turn budget:** 12
 - **Definition:** [`agents/ui-fixer.md`](../agents/ui-fixer.md)
 
 ---
@@ -130,10 +130,11 @@ their own when the request matches their shape — you never type their name.
 | `code-review` | Use automatically after meaningful changes or when the user asks for review. | main loop |
 | `codebase-overview` | Use when starting on an unfamiliar codebase, when no overview exists yet, or after structural change since the last one was written. | `senior-engineer` |
 | `db-change` | Use automatically when schema, models, queries, indexes, constraints, or data shape change — or when modeling entities for a new feature. | main loop |
+| `dep-upgrade` | Use automatically when the user asks to upgrade, bump or migrate a dependency to a new major, or when security-scan reports an outdated major that must move. | main loop |
 | `docs-update` | Use automatically for documentation-only changes. | main loop |
 | `feature-build` | Use automatically once risk is low/medium and scope is clear — no plan phase needed. | main loop |
 | `feature-plan` | Use automatically before any code when scope is large, unclear, or risky. | main loop |
-| `from-scratch` | Use when user says "new project", "start from scratch", "build X from zero", or when no existing codebase is present. | `senior-engineer` |
+| `from-scratch` | Use when user says "new project", "start from scratch", "build X from zero", or when no existing codebase is present. | main loop |
 | `incident-response` | Use automatically on live-incident language — "prod is down," "P1," "outage," "5xx spike" — not for routine bug reports with no urgency signal. | main loop |
 | `migration-review` | Use automatically for migrations, destructive DB changes, backfills, rollback, and production data risk. | `db-guard` |
 | `new-page` | Use automatically when the task is to create a new page, route, or screen in the admin panel from scratch. | main loop |
@@ -143,8 +144,10 @@ their own when the request matches their shape — you never type their name.
 | `refactor-safe` | Use automatically only when the change must leave behavior identical. | main loop |
 | `release-gate` | Use automatically for pre-release safety review, or invoke via /release-gate right before deploy. Do not deploy. | `devops-guard` |
 | `security-review` | Use automatically whenever a change touches any security-sensitive area in the description's list. | `security-guard` |
-| `security-scan` | Auto-trigger on dep add/update, auth/payment/DB/API/secrets/CI/release changes, or explicit user request. | `security-guard` |
+| `security-scan` | Auto-trigger on a dependency add/update, before a release, or on explicit request. | `security-guard` |
+| `systematic-debug` | Use automatically when bug-fix cannot name a suspect file from the evidence, or after one fix attempt did not hold. | main loop |
 | `test-writer` | Use automatically when behavior changes, or manually when the user asks for tests — including adding coverage to existing untested/legacy code with no behavior change. | `senior-engineer` |
+| `threat-model` | Use automatically when feature-plan or security-guard plans a new flow that takes user input, moves money, grants access or exposes data. | `security-guard` |
 | `ui-change` | Use automatically only for small frontend UI edits. Avoid backend, auth, DB, payment, migrations, secrets, and CI. | main loop |
 
 ### Manual only

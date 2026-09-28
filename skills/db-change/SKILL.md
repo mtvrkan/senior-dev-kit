@@ -2,6 +2,7 @@
 name: db-change
 description: Use for database schema/model/query changes AND new entity/relation/document modeling — SQL, NoSQL, ORM, indexes, constraints, data safety. Once a migration file exists, hand off to migration-review.
 allowed-tools: Read, Grep, Glob, Bash
+disallowed-tools: Edit, Write, NotebookEdit
 when_to_use: Use automatically when schema, models, queries, indexes, constraints, or data shape change — or when modeling entities for a new feature.
 argument-hint: "[schema change to plan]"
 ---

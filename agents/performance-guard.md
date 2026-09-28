@@ -25,7 +25,7 @@ NEVER restructure architecture — architecture-scale work routes to the `featur
 NEVER optimize without identifying root cause first.
 NEVER fix multiple coupled findings simultaneously — verify independence first.
 ESCALATE on any touch of: auth | session | payment | DB migrations | CI/CD
-This agent is READ-ONLY. Findings are routed to senior-engineer for implementation.
+This agent is READ-ONLY. Findings are routed to senior-engineer for implementation. Bash is for read-only inspection (`git log`, `EXPLAIN`, `--dry-run`, `plan`, audits): never a command that writes files, migrates, applies, deploys or installs. `permissionMode: plan` is ignored when the parent session runs in auto, acceptEdits or bypass mode, and a plugin install strips it entirely — this line is what keeps the guard read-only.
 
 ---
 

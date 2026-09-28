@@ -24,10 +24,12 @@ Step 3 — Backfill: batch-update existing rows in chunks, looping until 0 rows 
   Commit between batches. A single long transaction holds its locks to the end,
   which is the thing this whole pattern exists to avoid.
 
-Step 4 — Add constraint: make NOT NULL / add FK / add UNIQUE.
-  Deploy: safe now that every row has a value.
+Step 4 — Add constraint + switch reads: make NOT NULL / add FK / add UNIQUE, then deploy code
+  that READS the new column only (it still writes both).
+  Deploy: the constraint is safe now that every row has a value; the read switch is a code deploy.
 
-Step 5 — Contract: remove the old column in a separate deploy.
+Step 5 — Contract: deploy code that stops writing the old column, and only after every instance
+  of older code is gone, drop the old column in a separate migration.
   Confirm: grep shows zero remaining references before dropping.
 ```
 
@@ -37,7 +39,10 @@ Any migration that locks a table for more than a few milliseconds in production 
 
 ## Deployment order
 
-DB migration always ships before the code deploy that depends on it. Never deploy code before the migration it depends on — it will break against the old schema.
+Expand migrations (steps 1 and 4's constraint) ship BEFORE the code that depends on them — code
+deployed first breaks against the old schema. The contract migration (step 5) ships AFTER the code
+that stopped using the old column is fully rolled out — run first, it breaks the old code still
+serving traffic. "Migration first" is right for expand and wrong for contract.
 
 ## When to deviate
 

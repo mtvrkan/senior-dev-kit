@@ -1,6 +1,9 @@
 ---
 description: Audit built UI against WCAG 2.2 AA — keyboard, focus, contrast, state announcement, targets, reflow.
 argument-hint: "[page, screen, flow, or component — optional]"
+context: fork
+background: false
+disallowed-tools: Edit, Write, NotebookEdit
 ---
 
 # /a11y-check

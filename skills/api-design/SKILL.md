@@ -2,6 +2,7 @@
 name: api-design
 description: Use for designing REST/GraphQL API contracts before implementing, and for planning breaking-change version transitions (v1→v2, deprecations). No code edits.
 allowed-tools: Read, Grep, Glob, Bash
+disallowed-tools: Edit, Write, NotebookEdit
 when_to_use: Use automatically before any new API endpoint, when API shape is unclear, or when a change breaks existing clients (removed/renamed field, new required field, error-format/auth change).
 argument-hint: "[endpoint or resource to design or version]"
 ---

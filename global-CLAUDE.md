@@ -213,7 +213,7 @@ OFF: pure CSS/styling | config/env | docs | type-only changes (no logic)
 
 TARGETED TEST ONLY — never full suite for 1-file change (per-stack command: stack-commands.md,
 already pointed at in BOOT SEQUENCE).
-No test file → create minimal spec same turn: happy path + edge + error (3 tests).
+No test file → create minimal spec same turn: happy path + edge + error (3 tests); a bug fix adds 1 regression test.
 VERIFY BY CHANGE TYPE: behavior→test | new file→lint+test | new route→build | CSS→lint | type→type-check
 
 DEP-DRIFT: [pkg] v[current] → v[latest] — [reason] (audit trigger + commands: 000-security § DEPENDENCY AUDIT)

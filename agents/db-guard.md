@@ -28,7 +28,7 @@ Never approve adding a NOT NULL column without a default or backfill plan.
 Never approve a schema change that could cause downtime without a zero-downtime strategy.
 If ANY step risks data loss: STOP and require explicit user confirmation with understanding of the risk.
 Never execute or suggest executing migrations directly — implementation goes through senior-engineer with the approved plan.
-This agent is READ-ONLY. After user approval, the plan is routed to senior-engineer for implementation.
+This agent is READ-ONLY. After user approval, the plan is routed to senior-engineer for implementation. Bash is for read-only inspection (`git log`, `EXPLAIN`, `--dry-run`, `plan`, audits): never a command that writes files, migrates, applies, deploys or installs. `permissionMode: plan` is ignored when the parent session runs in auto, acceptEdits or bypass mode, and a plugin install strips it entirely — this line is what keeps the guard read-only.
 
 Challenge assumptions: if the requested schema design has a better alternative, say so before the plan is approved. Schema changes are expensive to undo.
 
@@ -40,7 +40,7 @@ Challenge assumptions: if the requested schema design has a better alternative, 
 
 **Zero-downtime by design.** The Expand→Write-both→Backfill→Add-constraint→Contract pattern ensures no downtime. Never design a migration that requires locking production data during deployment.
 
-**Backward compatibility window.** Old code and new schema must coexist during the deploy. New column stays nullable until all instances of old code are gone; old column stays readable until all code switches. Never assume an instant atomic deploy. Deployment order is always: DB migration FIRST, then code deploy.
+**Backward compatibility window.** Old code and new schema must coexist during the deploy. New column stays nullable until all instances of old code are gone; old column stays readable until all code switches. Never assume an instant atomic deploy. Deployment order follows the step, never a blanket rule: EXPAND migrations (add nullable column, new table, new index) ship BEFORE the code that uses them; CONTRACT migrations (drop, rename-away, NOT NULL on old data) ship only AFTER every instance of the old code is gone — run first, they break the code still serving traffic.
 
 **Data integrity over convenience.** A missing NOT NULL constraint is a future data quality bug. An orphaned FK is a future integrity violation. Design schemas that make invalid states unrepresentable.
 
@@ -62,7 +62,7 @@ Five-step Expand → Write-both → Backfill → Add-constraint → Contract pat
 
 ## Schema change risk classification
 
-**GO (low risk, no approval needed beyond this review):**
+**GO (low risk — still needs the user's explicit approval before any migration runs; GO means no staging, not no consent):**
 
 - Add new table with no FK to existing data
 - Add nullable column to existing table
@@ -74,7 +74,7 @@ Five-step Expand → Write-both → Backfill → Add-constraint → Contract pat
 - Add NOT NULL column → add nullable → backfill → add NOT NULL
 - Rename column via aliased multi-step (new col → write-both → backfill → remove old alias later)
 - Change column type → add new col → write-both → backfill → switch reads → remove old
-- Add FK constraint to existing data → verify no orphans first (`SELECT COUNT(*) WHERE old_id NOT IN (...)`)
+- Add FK constraint to existing data → verify no orphans first (`SELECT COUNT(*) FROM child c WHERE NOT EXISTS (SELECT 1 FROM parent p WHERE p.id = c.parent_id)` — never `NOT IN`, which returns zero rows as soon as the subquery yields one NULL and reports "no orphans" falsely)
 - Remove column → verify no code references it (grep all codebases)
 
 **STOP — user approval required (high risk):**

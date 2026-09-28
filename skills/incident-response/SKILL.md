@@ -2,6 +2,7 @@
 name: incident-response
 description: Use to coordinate a live production incident or outage — triage severity, decide which guards to dispatch in what order, keep one timeline. Produces the dispatch plan only; the caller invokes each guard.
 allowed-tools: Read, Grep, Glob
+disallowed-tools: Edit, Write, NotebookEdit
 when_to_use: Use automatically on live-incident language — "prod is down," "P1," "outage," "5xx spike" — not for routine bug reports with no urgency signal.
 effort: high
 argument-hint: "[what's down / what the user reported]"
@@ -16,4 +17,4 @@ Coordinate, don't firefight solo. This is a triage/dispatch skill (no Agent tool
 3. State the dispatch plan by signal, same as ROUTING.md Step 3: auth/session broken → security-guard; DB/query errors → db-guard; deploy/infra/CI signal → devops-guard; slow/timeout without errors → performance-guard; anything else with a stack trace → bug-hunter. Mark which of these are independent so the calling agent can invoke them in parallel rather than sequentially.
 4. Guard agents stay read-only planners even during an incident — urgency compresses the time between plan and approval, it doesn't skip the plan-then-approve step for a guarded area.
 5. Keep one running timeline (detected → triaged → root cause found → fix applied → verified) — this becomes the postmortem input; don't let it live only in scrollback.
-6. After mitigation: write the postmortem from the timeline (`docs-update` skill), and flag any missing metric/alert that would have caught this sooner as `OBS:` (per `rules/700-observability.md`).
+6. After mitigation: write the postmortem from the timeline (`docs-update` skill) in blameless form — SUMMARY · IMPACT (who, how long, how many) · TIMELINE · ROOT CAUSE · WHAT WENT WELL · ACTION ITEMS (owner + date, each one a prevention or a detection) — and flag any missing metric/alert that would have caught this sooner as `OBS:` (per `rules/700-observability.md`).

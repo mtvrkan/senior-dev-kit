@@ -5,6 +5,7 @@ allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Use automatically whenever a change touches any security-sensitive area in the description's list.
 argument-hint: "[files or area to review (optional — defaults to pending changes)]"
 context: fork
+background: false
 agent: security-guard
 effort: high
 ---

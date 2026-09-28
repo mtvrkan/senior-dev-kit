@@ -6,6 +6,7 @@ allowed-tools: Read, Grep, Glob, Bash
 when_to_use: Manually invoke when setting up a new environment, debugging "undefined env var" errors, onboarding, or before a production deployment.
 argument-hint: "[scope: all | frontend | backend | missing-only]"
 context: fork
+background: false
 agent: devops-guard
 effort: medium
 ---

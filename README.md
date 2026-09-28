@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A Claude Code configuration kit that makes the assistant behave like a senior engineering team
-instead of an eager junior: **8 agents, 25 skills, 12 rules, 7 commands, 28 presets**.
+instead of an eager junior: **8 agents, 28 skills, 12 rules, 7 commands, 28 presets**.
 
 🇹🇷 [Türkçe README](README.tr.md)
 
@@ -22,7 +22,7 @@ This kit adds the three things a senior teammate has and a fresh model does not:
   secrets is routed to a read-only *guard agent* first. The guard writes a plan and stops. No
   code is written until you approve it.
 - **A procedure per task shape.** "Fix this bug," "add a page," "review this migration" each
-  have a written discipline the model follows instead of improvising. 25 of them.
+  have a written discipline the model follows instead of improvising. 28 of them.
 - **A context budget.** Only three files load on every turn (capped at 500 lines, enforced by a
   script). Everything else — 12 rule files, 18 reference docs — loads lazily when a matching
   file is read or a skill actually needs it.
@@ -91,13 +91,13 @@ what you can type — is [`docs/usage.md`](docs/usage.md).
 | | Count | Notes |
 | --- | --- | --- |
 | Agent | 8 | 4 are read-only guards (db, security, devops, performance) |
-| Skill | 25 | Most auto-trigger on task shape; a few are slash-command only |
+| Skill | 28 | Most auto-trigger on task shape; a few are slash-command only |
 | Rule | 12 | `000`/`001` load every session; the other 10 load on a `paths:` glob match |
 | Command | 7 | `/agents-guide`, `/skills-guide`, `/seo-check`, `/design-check`, `/arch-check`, `/a11y-check`, `/context-audit` |
 | Preset | 28 | web: nextjs-saas, react-vite, nuxt, sveltekit, astro, angular · backend: node-express, nestjs, fastapi, django, laravel, rails, spring-boot, dotnet, go-api, rust-axum · mobile: flutter, react-native, swiftui · orm: prisma, drizzle · db: postgres, mongodb, supabase · infra: docker, kubernetes, terraform · generic: fallback |
 | agent_docs | 18 | Deep reference pages, read on demand |
 
-In short: 8 agents, 25 skills, 12 rules, 7 commands, 28 presets.
+In short: 8 agents, 28 skills, 12 rules, 7 commands, 28 presets.
 
 Plus a guardrail layer: ~400 deny rules in `settings-template.json` that block reads of secret
 files, destructive shell commands, and zero-prompt remote package runners. Coverage and its

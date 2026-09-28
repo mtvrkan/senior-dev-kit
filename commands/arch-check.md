@@ -1,6 +1,8 @@
 ---
 description: Audit architecture integrity — boundary violations, dependency direction, mixed patterns, contract drift.
 argument-hint: "[directory, package, or feature — optional]"
+context: fork
+background: false
 ---
 
 # /arch-check

@@ -6,6 +6,7 @@ when_to_use: Use automatically for pre-release safety review, or invoke via /rel
 effort: high
 argument-hint: "[version or release scope (optional)]"
 context: fork
+background: false
 agent: devops-guard
 ---
 
@@ -21,7 +22,7 @@ Release safety check for: $ARGUMENTS. Output GO / NO-GO per item:
 6. BACKWARD COMPAT: breaking API, schema, or behavior changes affecting consumers?
 7. ROLLBACK PLAN: how to revert if this release fails?
 8. KNOWN RISKS: anything uncertain or untested?
-9. SBOM: generated and scanned for this release (devops-guard has the commands)? If missing, flag as blocker.
+9. SBOM: for a distributed artifact (container image, package, binary) — generated and scanned for this release (commands: `rules/600-devops.md` § SBOM GENERATION)? Missing → blocker. A source-only deploy with no shipped artifact → note, not blocker.
 
 Final: GO / NO-GO | summary | blockers list | recommended next step
 Do not deploy. Do not run migrations. Report only.
