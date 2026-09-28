@@ -4,22 +4,27 @@
 
 Design a typed error hierarchy so errors can be caught specifically and handled differently:
 
+Base application error — `code` is machine-readable (`'USER_NOT_FOUND'`), `statusCode` is the HTTP
+status, and `isOperational` separates expected errors from programming errors:
+
 ```typescript
-// Base application error
 class AppError extends Error {
   constructor(
     message: string,
-    public readonly code: string,          // machine-readable: 'USER_NOT_FOUND'
-    public readonly statusCode: number,    // HTTP status
-    public readonly isOperational: boolean = true  // expected vs programming error
+    public readonly code: string,
+    public readonly statusCode: number,
+    public readonly isOperational: boolean = true
   ) {
     super(message)
     this.name = this.constructor.name
     Error.captureStackTrace(this, this.constructor)
   }
 }
+```
 
-// Domain errors (operational — expected, handle gracefully)
+Domain errors (operational — expected, handle gracefully):
+
+```typescript
 class NotFoundError extends AppError {
   constructor(resource: string, id: string) {
     super(`${resource} '${id}' not found`, 'NOT_FOUND', 404)
@@ -55,8 +60,11 @@ class RateLimitError extends AppError {
     super('Too many requests', 'RATE_LIMITED', 429)
   }
 }
+```
 
-// Infrastructure error (non-operational — bug or external failure)
+Infrastructure error (non-operational — bug or external failure):
+
+```typescript
 class DatabaseError extends AppError {
   constructor(cause: Error) {
     super('Database operation failed', 'DATABASE_ERROR', 503, false)
@@ -69,20 +77,31 @@ class DatabaseError extends AppError {
 
 Standard error response format (use this for all REST APIs):
 
+- `type` — URI identifying the error type (docs link)
+- `title` — human-readable summary (same for the same type)
+- `status` — HTTP status code
+- `detail` — specific explanation for this occurrence
+- `instance` — URI of the specific request
+- plus any domain-specific extensions: `errors` for validation errors, `retryAfter` for rate
+  limiting, `code` for a machine-readable code
+
 ```typescript
 interface ProblemDetail {
-  type: string      // URI identifying error type (docs link)
-  title: string     // human-readable summary (same for same type)
-  status: number    // HTTP status code
-  detail: string    // specific explanation for this occurrence
-  instance: string  // URI of the specific request
-  // + any domain-specific extensions:
-  errors?: Record<string, string[]>  // for validation errors
-  retryAfter?: number               // for rate limiting
-  code?: string                     // machine-readable code
+  type: string
+  title: string
+  status: number
+  detail: string
+  instance: string
+  errors?: Record<string, string[]>
+  retryAfter?: number
+  code?: string
 }
+```
 
-// Express global error handler:
+Express global error handler — programming errors don't expose details to the client, but are
+logged fully:
+
+```typescript
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   const requestId = req.headers['x-request-id'] || crypto.randomUUID()
   
@@ -100,7 +119,6 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
       })
   }
   
-  // Programming errors: don't expose details, log fully
   logger.error({ requestId, error: err, stack: err.stack })
   
   return res.status(500)
@@ -119,12 +137,15 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 For operations that have expected failure modes, Result type is cleaner than try/catch:
 
+The function signature makes failure explicit, and the caller is forced to handle both cases:
+`NotFoundError` maps to a 404, anything else is a programming error and is re-thrown, and past
+the check TypeScript knows `result.data` is a `User`.
+
 ```typescript
 type Result<T, E = Error> = 
   | { success: true; data: T }
   | { success: false; error: E }
 
-// Function signature makes failure explicit
 async function getUserById(id: string): Promise<Result<User, NotFoundError | DatabaseError>> {
   try {
     const user = await db.user.findUnique({ where: { id } })
@@ -135,21 +156,22 @@ async function getUserById(id: string): Promise<Result<User, NotFoundError | Dat
   }
 }
 
-// Caller is forced to handle both cases:
 const result = await getUserById(id)
 if (!result.success) {
   if (result.error instanceof NotFoundError) return res.status(404)...
-  throw result.error  // re-throw programming error
+  throw result.error
 }
-const user = result.data  // TypeScript knows this is User
+const user = result.data
 ```
 
 ## ERROR BOUNDARIES (React)
 
-Every distinct section that can fail independently needs an Error Boundary:
+Every distinct section that can fail independently needs an Error Boundary. `componentDidCatch`
+logs to error monitoring (Sentry/DataDog).
+
+`components/ErrorBoundary.tsx`:
 
 ```tsx
-// components/ErrorBoundary.tsx
 'use client'
 import { Component, ReactNode } from 'react'
 
@@ -164,7 +186,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
   
   componentDidCatch(error: Error, info: { componentStack: string }) {
-    // Log to error monitoring (Sentry/DataDog)
     logger.error({ error: error.message, componentStack: info.componentStack })
   }
   
@@ -183,21 +204,24 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children
   }
 }
+```
 
-// Usage: wrap each independent section
+Usage — wrap each independent section, so one section failing doesn't crash the entire page:
+
+```tsx
 <ErrorBoundary fallback={<UserListError />}>
   <UserList />
 </ErrorBoundary>
 <ErrorBoundary fallback={<OrdersError />}>
   <OrderList />
 </ErrorBoundary>
-// One section failing doesn't crash the entire page
 ```
 
 ## ERROR MONITORING INTEGRATION
 
+Sentry setup (Next.js) — `beforeSend` drops operational errors, since they are expected:
+
 ```typescript
-// Sentry setup (Next.js)
 import * as Sentry from '@sentry/nextjs'
 
 Sentry.init({
@@ -205,18 +229,23 @@ Sentry.init({
   environment: process.env.NODE_ENV,
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
   beforeSend(event, hint) {
-    // Don't send operational errors to Sentry (expected)
     const error = hint.originalException
     if (error instanceof AppError && error.isOperational) return null
     return event
   },
 })
+```
 
-// Add context to errors:
+Add context to errors:
+
+```typescript
 Sentry.setUser({ id: user.id })
 Sentry.addBreadcrumb({ message: 'User clicked checkout', category: 'ui' })
+```
 
-// Manual capture with context:
+Manual capture with context:
+
+```typescript
 Sentry.captureException(error, {
   tags: { feature: 'checkout' },
   extra: { orderId, userId },
@@ -225,8 +254,10 @@ Sentry.captureException(error, {
 
 ## RETRY LOGIC
 
+Exponential backoff with jitter, for transient failures. `isRetryable` retries transient DB
+failures and 5xx server errors; a 4xx is a client error and is never retried.
+
 ```typescript
-// Exponential backoff with jitter (for transient failures)
 async function withRetry<T>(
   fn: () => Promise<T>,
   options: { maxAttempts?: number; initialDelay?: number; shouldRetry?: (error: Error) => boolean } = {}
@@ -239,7 +270,6 @@ async function withRetry<T>(
     } catch (error) {
       if (attempt === maxAttempts || !shouldRetry(error as Error)) throw error
       
-      // Exponential backoff with jitter
       const delay = initialDelay * Math.pow(2, attempt - 1) * (0.5 + Math.random() * 0.5)
       await new Promise(r => setTimeout(r, delay))
     }
@@ -248,16 +278,17 @@ async function withRetry<T>(
 }
 
 function isRetryable(error: Error): boolean {
-  if (error instanceof DatabaseError) return true  // DB transient failures
-  if (error instanceof AppError) return error.statusCode >= 500  // 5xx = server error
-  return false  // 4xx = client error, don't retry
+  if (error instanceof DatabaseError) return true
+  if (error instanceof AppError) return error.statusCode >= 500
+  return false
 }
 ```
 
 ## MOBILE ERROR PATTERNS (Flutter/Kotlin/Swift)
 
+Flutter — sealed class result (Dart 3+):
+
 ```dart
-// Flutter — sealed class result (Dart 3+)
 sealed class Result<T> {
   const Result();
 }
@@ -269,8 +300,11 @@ class Failure<T> extends Result<T> {
   final Exception error;
   const Failure(this.error);
 }
+```
 
-// Use in repository:
+Use in the repository:
+
+```dart
 Future<Result<User>> getUser(String id) async {
   try {
     final user = await api.getUser(id);
@@ -281,8 +315,11 @@ Future<Result<User>> getUser(String id) async {
     return Failure(e);
   }
 }
+```
 
-// In ViewModel — exhaustive pattern matching:
+In the ViewModel — exhaustive pattern matching:
+
+```dart
 final result = await repository.getUser(id);
 switch (result) {
   case Success<User>(:final data): state = AsyncData(data);
@@ -290,15 +327,19 @@ switch (result) {
 }
 ```
 
+Kotlin — sealed `UiState` class:
+
 ```kotlin
-// Kotlin — sealed class + Result<T>
 sealed class UiState<out T> {
   object Loading : UiState<Nothing>()
   data class Success<T>(val data: T) : UiState<T>()
   data class Error(val message: String, val cause: Throwable? = null) : UiState<Nothing>()
 }
+```
 
-// In ViewModel:
+In the ViewModel:
+
+```kotlin
 fun loadUser(id: String) {
   viewModelScope.launch {
     _uiState.update { UiState.Loading }
@@ -318,8 +359,9 @@ Avoid `runCatching` inside a coroutine: it catches `CancellationException` too, 
 
 ## USER-FACING ERROR MESSAGES
 
+Machine error → human message mapping:
+
 ```typescript
-// Machine error → human message mapping
 const userMessages: Record<string, string> = {
   'USER_NOT_FOUND': 'Incorrect email or password.',
   'INVALID_CREDENTIALS': 'Incorrect email or password.',
@@ -346,24 +388,31 @@ Rules for user messages:
 
 ## GRACEFUL DEGRADATION
 
+Wrap non-critical features, such as a call to an external recommendations API, with a graceful
+fallback — return default content instead of crashing the page:
+
 ```typescript
-// Wrap non-critical features with fallback
 async function getPersonalizedContent(userId: string) {
   try {
-    return await recommendationService.getFor(userId)  // external API
+    return await recommendationService.getFor(userId)
   } catch (error) {
     logger.warn({ event: 'recommendation.failed', userId, error: error.message })
-    return getDefaultContent()  // graceful fallback — don't crash the page
+    return getDefaultContent()
   }
 }
+```
 
-// Circuit breaker pattern (with opossum library)
+Circuit breaker pattern (with the opossum library) — it trips when a call is slower than 3 s
+(`timeout`) or 50% of calls fail (`errorThresholdPercentage`), and tries again after 30 s
+(`resetTimeout`):
+
+```typescript
 import CircuitBreaker from 'opossum'
 
 const breaker = new CircuitBreaker(recommendationService.getFor, {
-  timeout: 3000,         // If slower than 3s, trip
-  errorThresholdPercentage: 50,  // If 50% fail, trip
-  resetTimeout: 30000,   // After 30s, try again
+  timeout: 3000,
+  errorThresholdPercentage: 50,
+  resetTimeout: 30000,
 })
 
 breaker.fallback(() => getDefaultContent())

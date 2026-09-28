@@ -8,14 +8,19 @@
   repositories themselves.
 - Repositories return domain models, not raw JSON or `Response` objects.
 
+`lib/features/users/data/user_repository.dart`:
+
 ```dart
-// lib/features/users/data/user_repository.dart
 final userRepositoryProvider = Provider((ref) => UserRepository(ref.watch(dioProvider)));
 
 final userProvider = FutureProvider.family<User, String>((ref, id) =>
     ref.watch(userRepositoryProvider).getById(id));
+```
 
-// lib/features/users/presentation/user_screen.dart
+`lib/features/users/presentation/user_screen.dart` — the loading state is a skeleton, never a
+bare spinner for a known layout:
+
+```dart
 class UserScreen extends ConsumerWidget {
   const UserScreen({super.key, required this.id});
   final String id;
@@ -24,7 +29,7 @@ class UserScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ref.watch(userProvider(id)).when(
       data:    (user) => UserView(user: user),
-      loading: () => const UserSkeleton(),      // never a bare spinner for a known layout
+      loading: () => const UserSkeleton(),
       error:   (e, _) => ErrorView(onRetry: () => ref.invalidate(userProvider(id))),
     );
   }
@@ -80,12 +85,15 @@ Map transport errors to domain failures at the repository edge. A widget should 
 
 ## Verification
 
+Targeted test, lint + type issues, style, compile check, then the CVE check — `osv-scanner`,
+because no `pub audit` exists:
+
 ```bash
-flutter test test/features/users/user_repository_test.dart   # targeted
-flutter analyze                                              # lint + type issues
-dart format --set-exit-if-changed .                          # style
-flutter build apk --debug                                    # compile check
-osv-scanner -L pubspec.lock                                  # CVE check (no `pub audit` exists)
+flutter test test/features/users/user_repository_test.dart
+flutter analyze
+dart format --set-exit-if-changed .
+flutter build apk --debug
+osv-scanner -L pubspec.lock
 ```
 
 ## Anti-patterns

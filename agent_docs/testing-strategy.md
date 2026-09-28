@@ -16,27 +16,32 @@ Dummy    → placeholder, never actually used
 
 Why: mocks verify the call was made, not that it worked. A fake DB runs the same ORM queries and surfaces schema bugs.
 
+Mock — verifies interaction only, brittle:
+
 ```typescript
-// MOCK (verifies interaction only — brittle)
 jest.spyOn(emailService, 'send').mockResolvedValue(undefined)
 expect(emailService.send).toHaveBeenCalledWith({ to: 'user@example.com', ... })
+```
 
-// FAKE (real behavior — robust)
+Fake — real behavior, robust:
+
+```typescript
 class InMemoryEmailService implements EmailService {
   sent: Email[] = []
   async send(email: Email) { this.sent.push(email) }
 }
-// Test asserts on: emailService.sent[0].to === 'user@example.com'
-// + actually validates Email shape, recipients, subject
 ```
+
+The test then asserts on `emailService.sent[0].to === 'user@example.com'`, and actually validates the Email shape, recipients and subject.
 
 ## PROPERTY-BASED TESTING — when to use
 
 Use when: function has complex invariants over a range of inputs.
 Don't use for: simple happy/error/edge paths (use example-based tests).
 
+fast-check example, sorting invariants:
+
 ```typescript
-// fast-check example: sorting invariants
 import fc from 'fast-check'
 
 test('sorted array contains same elements as input', () => {
@@ -54,15 +59,22 @@ Good candidates: parsers, serializers, sort/search algorithms, mathematical oper
 
 Run mutation testing to measure test quality (not just coverage):
 
+JavaScript/TypeScript — the bare `stryker` package is the pre-1.0 name, deprecated since 2019 and
+still published; `npx stryker run` fetches that instead of Stryker:
+
 ```bash
-# JavaScript/TypeScript — the bare `stryker` package is the pre-1.0 name, deprecated
-# since 2019 and still published; `npx stryker run` fetches that instead of Stryker.
 npx @stryker-mutator/core run
+```
 
-# Python
+Python:
+
+```bash
 mutmut run
+```
 
-# Java
+Java:
+
+```bash
 ./gradlew pitest
 ```
 
@@ -75,9 +87,9 @@ Coverage 100% but mutation score 30% = tests exist but don't verify behavior.
 
 Use when: services have API contracts. Catches breaking changes before deploy.
 
+Pact (consumer-driven contract testing). The consumer (web app) defines what it expects:
+
 ```typescript
-// Pact (consumer-driven contract testing)
-// Consumer (web app) defines what it expects:
 const interaction = {
   description: 'a request for user list',
   request: { method: 'GET', path: '/users' },
@@ -86,9 +98,16 @@ const interaction = {
     body: like([{ id: like('string'), email: like('string') }])
   }
 }
+```
 
-// Provider (API) verifies it can fulfill the contract:
-// pact verify --provider-base-url http://localhost:3001
+The provider (API) verifies it can fulfill the contract, in a provider-side test run against the
+started API:
+
+```typescript
+await new Verifier({
+  providerBaseUrl: 'http://localhost:3001',
+  pactUrls: [path.resolve('pacts/web-api.json')],
+}).verifyProvider()
 ```
 
 ## SNAPSHOT TESTING — when valid vs trap
@@ -96,25 +115,32 @@ const interaction = {
 **Valid use**: UI components where visual output matters + you want to catch regressions.
 **Trap**: Overusing for business logic — snapshots become "accept whatever the code does" tests.
 
-```typescript
-// VALID: component snapshot
-expect(render(<UserCard user={mockUser} />).container).toMatchSnapshot()
+RIGHT — valid, component snapshot:
 
-// TRAP: snapshot of business logic output
-expect(calculateTax(order)).toMatchSnapshot()  // ← should assert specific values
+```typescript
+expect(render(<UserCard user={mockUser} />).container).toMatchSnapshot()
 ```
 
-Update snapshots: `vitest --update-snapshots` only when the change is intentional.
+WRONG — trap, snapshot of business logic output; it should assert specific values:
+
+```typescript
+expect(calculateTax(order)).toMatchSnapshot()
+```
+
+Update snapshots: `vitest -u` only when the change is intentional.
 
 ## PARALLEL TEST EXECUTION
 
-```typescript
-// Vitest — parallel by default
-// Jest — shard for CI
-jest --shard=1/4  // run 25% of tests (use in CI matrix)
+Vitest runs in parallel by default. Jest shards for CI — `--shard=1/4` runs 25% of the tests, one
+shard per CI matrix job:
 
-// Database isolation for parallel tests
-// Each worker gets its own schema:
+```bash
+jest --shard=1/4
+```
+
+Database isolation for parallel tests — each worker gets its own schema:
+
+```typescript
 beforeAll(() => db.createSchema(`test_${process.env.JEST_WORKER_ID}`))
 afterAll(() => db.dropSchema(`test_${process.env.JEST_WORKER_ID}`))
 ```
@@ -123,8 +149,9 @@ afterAll(() => db.dropSchema(`test_${process.env.JEST_WORKER_ID}`))
 
 ### Builder pattern for test fixtures
 
+GOOD — factory with sensible defaults + override:
+
 ```typescript
-// GOOD: factory with sensible defaults + override
 function createUser(overrides: Partial<User> = {}): User {
   return {
     id: crypto.randomUUID(),
@@ -134,21 +161,26 @@ function createUser(overrides: Partial<User> = {}): User {
     ...overrides,
   }
 }
+```
 
-// Usage:
+Usage:
+
+```typescript
 const admin = createUser({ role: 'admin' })
 const verifiedUser = createUser({ emailVerifiedAt: new Date() })
 ```
 
 ### Database seeding for tests
 
+Use transactions for rollback isolation (faster than recreating the DB); the rollback means no data
+cleanup is needed:
+
 ```typescript
-// Use transactions for rollback isolation (faster than recreating DB)
 beforeEach(async () => {
   await db.beginTransaction()
 })
 afterEach(async () => {
-  await db.rollback()  // ← no data cleanup needed
+  await db.rollback()
 })
 ```
 
@@ -186,29 +218,37 @@ Nightly (full E2E + mutation):
   - Mutation testing on core modules
 ```
 
+Only run tests affected by git changes:
+
 ```bash
-# Only run tests affected by git changes
 vitest run --changed
 jest --onlyChanged
 ```
 
 ## TESTING ASYNC CODE
 
+WRONG — timing-dependent, an arbitrary wait:
+
 ```typescript
-// WRONG: timing-dependent
 test('loads data', async () => {
   render(<UserList />)
-  await new Promise(r => setTimeout(r, 1000))  // ← arbitrary wait
+  await new Promise(r => setTimeout(r, 1000))
   expect(screen.getByText('John')).toBeInTheDocument()
 })
+```
 
-// RIGHT: wait for DOM state
+RIGHT — wait for DOM state; `findByText` waits up to 1s:
+
+```typescript
 test('loads data', async () => {
   render(<UserList />)
-  expect(await screen.findByText('John')).toBeInTheDocument()  // waits up to 1s
+  expect(await screen.findByText('John')).toBeInTheDocument()
 })
+```
 
-// For API polling or delayed effects:
+For API polling or delayed effects:
+
+```typescript
 test('retries on failure', async () => {
   await waitFor(() => {
     expect(screen.getByText('Loaded')).toBeInTheDocument()
@@ -240,21 +280,28 @@ Areas where coverage is a waste:
 
 ## INTEGRATION TEST PATTERNS BY STACK
 
+NestJS — full module integration:
+
 ```typescript
-// NestJS — full module integration
 const app = await Test.createTestingModule({ imports: [AppModule] })
   .overrideProvider(EmailService).useClass(FakeEmailService)
   .compile()
 const server = app.getHttpServer()
 await request(server).post('/users').send(userData).expect(201)
+```
 
-// FastAPI — TestClient
+FastAPI — TestClient:
+
+```python
 from fastapi.testclient import TestClient
 client = TestClient(app)
 response = client.post('/users', json=user_data)
 assert response.status_code == 201
+```
 
-// Go — httptest (double quotes: '/users' is a rune literal in Go and will not compile)
+Go — httptest (double quotes: `'/users'` is a rune literal in Go and will not compile):
+
+```go
 w := httptest.NewRecorder()
 r := httptest.NewRequest(http.MethodPost, "/users", body)
 handler.ServeHTTP(w, r)
@@ -263,13 +310,15 @@ assert.Equal(t, 201, w.Code)
 
 ## VISUAL REGRESSION TESTING
 
+Playwright — screenshot comparison:
+
 ```typescript
-// Playwright — screenshot comparison
 await expect(page).toHaveScreenshot('user-list.png', { maxDiffPixelRatio: 0.02 })
 ```
 
+Update the baseline:
+
 ```bash
-# Update baseline
 npx playwright test --update-snapshots
 ```
 

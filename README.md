@@ -135,11 +135,11 @@ from disk by the test suite. One command:
 npm run check
 ```
 
-Currently: 393/393 tests passing (61 suites). `routing-eval` pins 31 realistic requests against
+Currently: 433/433 tests passing (66 suites). `routing-eval` pins 31 realistic requests against
 the routing table, `check-consistency` re-derives every hand-written number in this file, and
 `check-plugin` verifies the plugin manifests still match the components on disk.
 
-**What that does and does not prove.** Be clear-eyed about it: those 393 tests are *internal
+**What that does and does not prove.** Be clear-eyed about it: those 433 tests are *internal
 consistency* tests. They prove the documentation matches the files on disk — that no count is
 stale, no path is dead, no rule is claimed in one place and missing in another. **They do not
 measure whether the kit improves the model's output.** Nothing that ships green in CI does.

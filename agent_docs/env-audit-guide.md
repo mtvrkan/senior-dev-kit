@@ -6,27 +6,46 @@ Reference for `/env-audit` skill — grep commands by language and .env.example 
 
 ## Grep commands to discover env vars
 
+Node.js / TypeScript / JavaScript:
+
 ```bash
-# Node.js / TypeScript / JavaScript
 grep -r "process\.env\." --include="*.ts" --include="*.js" --include="*.tsx" --include="*.jsx" . \
   | grep -v node_modules | grep -v ".next" | grep -v dist | grep -v ".git"
+```
 
-# Python
+Python:
+
+```bash
 grep -r "os\.environ\|os\.getenv\|settings\." --include="*.py" . | grep -v __pycache__ | grep -v ".git"
+```
 
-# Go
+Go:
+
+```bash
 grep -r "os\.Getenv\|os\.LookupEnv" --include="*.go" . | grep -v ".git"
+```
 
-# Dart / Flutter
+Dart / Flutter:
+
+```bash
 grep -r "const String.fromEnvironment\|dotenv\." --include="*.dart" . | grep -v ".git"
+```
 
-# Ruby / Rails
+Ruby / Rails:
+
+```bash
 grep -r "ENV\[" --include="*.rb" . | grep -v ".git"
+```
 
-# PHP / Laravel
+PHP / Laravel:
+
+```bash
 grep -r "env(" --include="*.php" . | grep -v ".git"
+```
 
-# Java / Kotlin (Spring)
+Java / Kotlin (Spring):
+
+```bash
 grep -r "\${.*}" --include="*.java" --include="*.kt" --include="*.properties" --include="*.yml" . | grep -v ".git"
 ```
 

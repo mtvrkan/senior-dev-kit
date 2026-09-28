@@ -20,29 +20,46 @@
 Schema changes go through `db-guard` review, and never as a side effect of unrelated work
 (`rules/500-database.md`). Prefer additive. Destructive changes need explicit approval.
 
+Every migration session sets these before the DDL, so it never queues behind a long-running
+query — `lock_timeout` makes it fail fast instead of blocking every later query:
+
 ```sql
--- Every migration session, before the DDL: never queue behind a long-running query.
-SET lock_timeout = '3s';        -- fail fast instead of blocking every later query
+SET lock_timeout = '3s';
 SET statement_timeout = '60s';
 ```
 
 An `ALTER TABLE` that waits for `ACCESS EXCLUSIVE` also blocks every query that arrives *behind*
 it — a 30-second wait on one table is a site-wide outage, not a slow migration. Fail and retry.
 
-```sql
--- Adding a NOT NULL column to a populated table, without a full-table rewrite lock:
-ALTER TABLE users ADD COLUMN status text;                          -- 1. nullable, instant
--- 2. backfill in batches, then:
-ALTER TABLE users ADD CONSTRAINT users_status_nn
-  CHECK (status IS NOT NULL) NOT VALID;                            -- 3. instant, no scan
-ALTER TABLE users VALIDATE CONSTRAINT users_status_nn;             -- 4. scans; SHARE UPDATE EXCLUSIVE, writes continue
-ALTER TABLE users ALTER COLUMN status SET NOT NULL;                -- 5. cheap: constraint proves it
+Adding a NOT NULL column to a populated table, without a full-table rewrite lock:
 
--- Indexes on a live table:
-CREATE INDEX CONCURRENTLY idx_users_org ON users (org_id);
--- CONCURRENTLY cannot run inside a transaction block, and a failed build leaves an INVALID
--- index behind that must be dropped before retrying.
+1. Add the column nullable — instant.
+2. Backfill in batches.
+3. Add the `CHECK` constraint `NOT VALID` — instant, no scan.
+4. `VALIDATE CONSTRAINT` — scans, but holds only `SHARE UPDATE EXCLUSIVE`, so writes continue.
+5. `SET NOT NULL` — cheap on PostgreSQL 12+, because the validated constraint proves it.
+
+```sql
+ALTER TABLE users ADD COLUMN status text;
 ```
+
+Then, after the backfill:
+
+```sql
+ALTER TABLE users ADD CONSTRAINT users_status_nn
+  CHECK (status IS NOT NULL) NOT VALID;
+ALTER TABLE users VALIDATE CONSTRAINT users_status_nn;
+ALTER TABLE users ALTER COLUMN status SET NOT NULL;
+```
+
+Indexes on a live table:
+
+```sql
+CREATE INDEX CONCURRENTLY idx_users_org ON users (org_id);
+```
+
+`CONCURRENTLY` cannot run inside a transaction block, and a failed build leaves an `INVALID`
+index behind that must be dropped before retrying.
 
 - Foreign keys added the same way: `ADD CONSTRAINT ... NOT VALID`, then `VALIDATE CONSTRAINT`.
 - A rename or a drop is expand → backfill → contract across deploys, never a single migration.
@@ -52,8 +69,10 @@ CREATE INDEX CONCURRENTLY idx_users_org ON users (org_id);
 
 ## Queries and indexes
 
+Confirm the planner USES the index before shipping:
+
 ```sql
-EXPLAIN (ANALYZE, BUFFERS) SELECT ...;   -- confirm the planner USES the index before shipping
+EXPLAIN (ANALYZE, BUFFERS) SELECT ...;
 ```
 
 - Index from real query patterns (`WHERE`, `ORDER BY`, `JOIN`), not from intuition. A compound
@@ -90,10 +109,13 @@ EXPLAIN (ANALYZE, BUFFERS) SELECT ...;   -- confirm the planner USES the index b
 
 ## Verification
 
+In order: the plan of the query the change affects (before and after), who is blocking whom,
+failed `CONCURRENTLY` builds, and tables read by sequential scan:
+
 ```sql
-EXPLAIN (ANALYZE, BUFFERS) <the query the change affects>;   -- plan, before and after
-SELECT * FROM pg_stat_activity WHERE wait_event_type = 'Lock';   -- who is blocking whom
-SELECT indexrelid::regclass FROM pg_index WHERE NOT indisvalid;  -- failed CONCURRENTLY builds
+EXPLAIN (ANALYZE, BUFFERS) <the query the change affects>;
+SELECT * FROM pg_stat_activity WHERE wait_event_type = 'Lock';
+SELECT indexrelid::regclass FROM pg_index WHERE NOT indisvalid;
 SELECT relname, seq_scan, idx_scan FROM pg_stat_user_tables ORDER BY seq_scan DESC;
 ```
 

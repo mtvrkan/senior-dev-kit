@@ -14,7 +14,7 @@ model User {
   org       Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  @@index([orgId])          // Postgres does NOT index a foreign key for you
+  @@index([orgId])
   @@map("users")
 }
 ```
@@ -24,15 +24,21 @@ model User {
   deploys, per `rules/500-database.md`.
 - `onDelete` is a decision, not a default. Leaving it implicit means `Restrict` on most relations
   and a delete that fails in production rather than in review.
-- Every relation scalar you filter or join on needs `@@index` — Prisma emits the FK, not the index.
+- Every relation scalar you filter or join on needs `@@index` — Prisma emits the FK, not the index,
+  and Postgres does NOT index a foreign key for you.
 
 ## Migrations — three commands, and only two of them are safe
 
+- `migrate dev --name` — DEV ONLY: writes the migration, may reset the DB.
+- `migrate dev --create-only` — write the SQL, review/edit it, apply separately.
+- `migrate deploy` — the only command that runs in CI/production.
+- `migrate status` — pending vs applied; read this before deploying.
+
 ```bash
-npx prisma migrate dev --name add_user_org   # DEV ONLY: writes the migration, may reset the DB
-npx prisma migrate dev --create-only         # write the SQL, review/edit it, apply separately
-npx prisma migrate deploy                    # the only command that runs in CI/production
-npx prisma migrate status                    # pending vs applied — read this before deploying
+npx prisma migrate dev --name add_user_org
+npx prisma migrate dev --create-only
+npx prisma migrate deploy
+npx prisma migrate status
 ```
 
 - `prisma db push` writes no migration file. It is for local prototyping; against a shared or
@@ -46,19 +52,24 @@ npx prisma migrate status                    # pending vs applied — read this 
 
 ## Queries
 
+Explicit projection — both APIs return every scalar column by default:
+
 ```ts
-// Explicit projection — both APIs return every scalar column by default
 const user = await prisma.user.findUnique({
   where: { id },
   select: { id: true, email: true, org: { select: { name: true } } },
 })
+```
 
-// Interactive transaction: use `tx`, never `prisma`, inside the callback
+Interactive transaction: use `tx`, never `prisma`, inside the callback. Throwing rolls back. The
+default timeout is 5s — a slow step aborts the whole transaction, hence the explicit `timeout`:
+
+```ts
 await prisma.$transaction(async (tx) => {
   const acct = await tx.account.update({ where: { id }, data: { balance: { decrement: 100 } } })
-  if (acct.balance < 0) throw new Error('insufficient')   // throwing rolls back
+  if (acct.balance < 0) throw new Error('insufficient')
   await tx.ledger.create({ data: { accountId: id, delta: -100 } })
-}, { timeout: 10_000 })   // default is 5s — a slow step aborts the whole transaction
+}, { timeout: 10_000 })
 ```
 
 - `select` and `include` cannot both appear at the same level — Prisma throws at runtime.
@@ -79,12 +90,17 @@ process, cached across hot reloads in dev. Behind PgBouncer in transaction mode,
 
 ## Verification
 
+- `validate` — schema syntax + relation integrity.
+- `migrate status` — drift and pending migrations.
+- `generate` — the client must be regenerated after any schema edit.
+- `tsc --noEmit` — the generated client is the type check; then the targeted test.
+
 ```bash
-npx prisma validate                  # schema syntax + relation integrity
-npx prisma migrate status            # drift and pending migrations
-npx prisma generate                  # client must be regenerated after any schema edit
-npx tsc --noEmit                     # the generated client is the type check
-npx vitest run src/db/user.test.ts   # targeted
+npx prisma validate
+npx prisma migrate status
+npx prisma generate
+npx tsc --noEmit
+npx vitest run src/db/user.test.ts
 ```
 
 ## Anti-patterns

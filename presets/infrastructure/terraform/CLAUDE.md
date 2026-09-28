@@ -65,13 +65,15 @@ team actually runs.
 
 ## The plan is the review
 
+ALWAYS write the plan to a file, and apply that reviewed plan, not a fresh one:
+
 ```bash
 terraform init -backend-config=env/prod.backend
 terraform validate
 terraform fmt -check -recursive
-terraform plan -out=tf.plan          # ALWAYS to a file
+terraform plan -out=tf.plan
 terraform show -json tf.plan | jq '.resource_changes[] | select(.change.actions[] | . == "delete")'
-terraform apply tf.plan              # apply the reviewed plan, not a fresh one
+terraform apply tf.plan
 ```
 
 Applying without `-out` re-plans at apply time — you approve one thing and apply another. Any

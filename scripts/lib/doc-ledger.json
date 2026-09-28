@@ -1,0 +1,46 @@
+{
+  "reviewed": [
+    { "file": "rules/100-web.md", "date": "2026-08", "note": "STATE MANAGEMENT library table" },
+    { "file": "rules/1000-i18n.md", "date": "2026-08", "note": "FRAMEWORK MAP library and catalog-format table" },
+    { "file": "rules/400-mobile.md", "date": "2026-08", "note": "Flutter state management hierarchy" },
+    { "file": "agent_docs/architecture.md", "date": "2026-08", "note": "STATE MANAGEMENT ARCHITECTURE decision matrix" },
+    { "file": "agent_docs/design-directions.md", "date": "2026-08", "note": "MOBILE DIRECTIONS platform idioms" },
+    { "file": "presets/backend/go-api/CLAUDE.md", "date": "2026-08", "note": "The \"Go 1.22+\" floor in the errgroup example only. The per-iteration loop variable landed in 1.22 and 1.26 is current; the claim is a minimum, not a pin." },
+    { "file": "presets/backend/laravel/CLAUDE.md", "date": "2026-09", "note": "The Laravel 11+ claims only: the slim base Controller without AuthorizesRequests (hence Gate::authorize()), and exception handling moved to withExceptions() in bootstrap/app.php. Both hold on 12." },
+    { "file": "presets/database/postgres/CLAUDE.md", "date": "2026-09", "note": "The PostgreSQL version floors in the migration section only: SET NOT NULL skips the table scan when a validated CHECK constraint proves it (12+), and ADD COLUMN with a non-volatile DEFAULT is metadata-only (11+). Both are floors, not pins." },
+    { "file": "presets/backend/node-express/CLAUDE.md", "date": "2026-08", "note": "The Express 4 vs 5 claims in the body only. 5.x is the production-recommended line (5.2.1 current) and 4.x is in maintenance." },
+    { "file": "presets/backend/rails/CLAUDE.md", "date": "2026-08", "note": "The 7/8 version claim in the heading only. Rails 8 is current and 7 still maintained; idioms and commands were not re-verified." },
+    { "file": "presets/infrastructure/docker/CLAUDE.md", "date": "2026-08", "note": "The \"Compose v2\" claim in the body only. V1 is end-of-life and V2 is the only supported implementation." },
+    { "file": "presets/mobile/swiftui/CLAUDE.md", "date": "2026-08", "note": "The \"iOS 17+\" and \"Swift 6 strict\" claims (body and compact.md). @Observable and SwiftData are iOS 17+; Swift 6 language mode since Apple's April 2026 cutoff; iOS 26 current." },
+    { "file": "presets/web/angular/CLAUDE.md", "date": "2026-08", "note": "The v17+ floor in the heading only (standalone-by-default and signals). Other idioms and commands were not re-verified." },
+    { "file": "presets/web/nextjs-saas/CLAUDE.md", "date": "2026-08", "note": "The \"Next.js 16 patterns\" reference in the SEO section only. 16 is the current stable major; 15 is in maintenance until October 2026." },
+    { "file": "presets/web/nuxt/CLAUDE.md", "date": "2026-08", "note": "The 3/4 version claim in the heading only. Nuxt 4 is current and 3 still in wide use; idioms and commands were not re-verified." },
+    { "file": "presets/web/sveltekit/CLAUDE.md", "date": "2026-08", "note": "The Svelte 5 claim in the heading only; runes are the stable API. Idioms and commands were not re-verified." }
+  ],
+  "upstreamAssumptions": [],
+  "toolchainPins": {
+    "file": "rules/600-devops.md",
+    "reviewed": "2026-08",
+    "digest": "924ec165278b"
+  },
+  "neverLogFields": {
+    "source": "rules/700-observability.md",
+    "fields": [
+      "password", "passwd", "token", "accessToken", "refreshToken", "apiKey", "api_key", "secret",
+      "sessionId", "session_id", "creditCard", "cardNumber", "card_number", "cvv",
+      "email", "phone", "phoneNumber", "ssn", "dob", "dateOfBirth", "authorization", "cookie"
+    ]
+  },
+  "forbiddenInExamples": [
+    {
+      "source": "rules/800-llm-safety.md",
+      "pattern": "role:\\s*['\"]system['\"]",
+      "reason": "a `{ role: 'system' }` entry inside a `messages` array is the OpenAI shape; on the Anthropic Messages API `system` is a top-level parameter, and a system message is rejected as messages[0] and unsupported entirely on some models"
+    },
+    {
+      "source": "rules/800-llm-safety.md",
+      "pattern": "\\.safeParse\\(\\s*JSON\\.parse\\(",
+      "reason": "JSON.parse throws on malformed model output, so nesting it in safeParse's argument position makes the `!success` fallback unreachable. Banned as a SHAPE, not only when unguarded: on one line you cannot tell whether a try/catch wraps it, and the fix is the same either way — split the parse from the validate, with only JSON.parse inside the try"
+    }
+  ]
+}

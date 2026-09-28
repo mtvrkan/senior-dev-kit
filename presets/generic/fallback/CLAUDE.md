@@ -1,7 +1,3 @@
-<!-- SCOPE: per-project — installed to PROJECT/CLAUDE.md (see README.md)
-     Purpose: minimal per-project behavior overlay for the active codebase
-     Global file (all projects): global-CLAUDE.md → ~/.claude/CLAUDE.md -->
-
 # Project Preset — Generic
 
 ## Token Tier — decide before anything else

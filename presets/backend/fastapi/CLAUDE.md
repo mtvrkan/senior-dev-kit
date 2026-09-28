@@ -8,8 +8,9 @@
 - Dependency injection via `Depends()` — auth, db session, current user.
 - Type hints on all functions. Pydantic v2 for all request/response schemas.
 
+`app/routers/users.py`:
+
 ```python
-# app/routers/users.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.schemas.user import CreateUserRequest, UserResponse
 from app.services.user_service import UserService
@@ -46,12 +47,14 @@ class CreateUserRequest(BaseModel):
     name:  str = Field(min_length=1, max_length=100)
 
 class UserResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)  # ORM mode (v2)
+    model_config = ConfigDict(from_attributes=True)
     id:    str
     email: str
     name:  str
-    # NEVER include: password_hash, internal_id, sensitive fields
 ```
+
+`from_attributes=True` is Pydantic v2's ORM mode. A response schema NEVER includes
+`password_hash`, `internal_id` or other sensitive fields.
 
 FastAPI validates all `CreateUserRequest` bodies automatically — validation errors return 422 with field-level details.
 
@@ -61,8 +64,9 @@ separate endpoint guarded by an admin-only dependency.
 
 ## Authorization — ownership check
 
+`services/post_service.py`:
+
 ```python
-# services/post_service.py
 async def get_post(self, post_id: str, requesting_user_id: str) -> PostResponse:
     post = await self.repo.find_by_id(post_id)
     if not post:
@@ -74,20 +78,28 @@ async def get_post(self, post_id: str, requesting_user_id: str) -> PostResponse:
 
 ## Async — never block the event loop
 
+WRONG — blocks the event loop: `time.sleep` stalls every request, and `requests.get` is sync
+HTTP inside an async route:
+
 ```python
-# WRONG — blocks event loop
 @router.get("/users")
 async def list_users():
-    import time; time.sleep(2)          # blocks all requests!
-    return requests.get(url).json()     # sync HTTP in async route
+    import time; time.sleep(2)
+    return requests.get(url).json()
+```
 
-# RIGHT — async I/O only
+RIGHT — async I/O only:
+
+```python
 @router.get("/users")
 async def list_users(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User))
     return result.scalars().all()
+```
 
-# Blocking I/O with no async client — run in thread pool
+Blocking I/O with no async client runs in the thread pool; CPU-bound work goes to a process pool:
+
+```python
 from fastapi.concurrency import run_in_threadpool
 result = await run_in_threadpool(legacy_sync_client.fetch, data)
 
@@ -103,20 +115,28 @@ shut down on exit. Long or retryable jobs belong in a task queue (Celery, RQ, ar
 
 ## Database — SQLAlchemy async + parameterized
 
+Async session (SQLAlchemy 2.0) — `select(...).where(...)` is parameterized, so it is safe:
+
 ```python
-# async session (SQLAlchemy 2.0)
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     result = await db.execute(
-        select(User).where(User.email == email)  # parameterized — safe
+        select(User).where(User.email == email)
     )
     return result.scalar_one_or_none()
+```
 
-# WRONG — never string-format SQL
-await db.execute(f"SELECT * FROM users WHERE email = '{email}'")  # SQL injection!
+WRONG — never string-format SQL; this is SQL injection:
 
-# Transactions for multi-step writes
+```python
+await db.execute(f"SELECT * FROM users WHERE email = '{email}'")
+```
+
+Multi-step writes run in one transaction — `async with db.begin()` commits on success and rolls
+back on an exception:
+
+```python
 async def transfer(db: AsyncSession, from_id: str, to_id: str, amount: Decimal):
-    async with db.begin():  # auto-commit or rollback
+    async with db.begin():
         from_acct = await db.get(Account, from_id, with_for_update=True)
         to_acct   = await db.get(Account, to_id, with_for_update=True)
         if from_acct.balance < amount:
@@ -131,8 +151,9 @@ old balance; lock rows in a consistent order (e.g. by id) to avoid deadlocks.
 
 ## Error handling — global exception handlers
 
+`app/main.py`:
+
 ```python
-# app/main.py
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
@@ -144,8 +165,11 @@ async def value_error_handler(request: Request, exc: ValueError):
 async def generic_handler(request: Request, exc: Exception):
     logger.error("unhandled_error", path=request.url.path, exc_info=True)
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+```
 
-# Domain errors — raise HTTPException with detail, not raw exceptions
+Domain errors raise `HTTPException` with a detail, not raw exceptions:
+
+```python
 raise HTTPException(status_code=409, detail="Email already registered")
 ```
 
@@ -157,23 +181,25 @@ Never let SQLAlchemy `IntegrityError` or `OperationalError` reach the client —
 import structlog
 logger = structlog.get_logger()
 
-# Always include context — identifiers, never the PII behind them
 logger.info("user_created", user_id=user.id, plan=user.plan)
 logger.error("payment_failed", error=str(exc), user_id=user_id)
-
-# NEVER log: passwords, tokens, session IDs, email/phone, full request body with sensitive
-# fields — canonical list in rules/700-observability.md's never-log-fields marker
 ```
+
+Always include context — identifiers, never the PII behind them. NEVER log passwords, tokens,
+session IDs, email/phone, or a full request body with sensitive fields — the canonical list is
+`rules/700-observability.md`'s Never log list.
 
 ## Verification
 
+Targeted test, coverage run, lint, format check, type check, then a startup smoke check:
+
 ```bash
-pytest tests/test_users.py -x -q       # targeted
-pytest --cov=app -q                    # with coverage
-ruff check .                           # lint
-ruff format --check .                  # format check
-mypy app/                              # type check
-uvicorn app.main:app --reload          # startup smoke check
+pytest tests/test_users.py -x -q
+pytest --cov=app -q
+ruff check .
+ruff format --check .
+mypy app/
+uvicorn app.main:app --reload
 ```
 
 ## Anti-patterns

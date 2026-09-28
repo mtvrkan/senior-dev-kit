@@ -12,21 +12,25 @@ const userSchema = new Schema({
   orgId:     { type: Schema.Types.ObjectId, ref: 'Org', required: true, index: true },
   role:      { type: String, enum: ['user', 'admin'], default: 'user' },
   deletedAt: { type: Date, default: null },
-}, { timestamps: true, strict: 'throw' })   // `strict: 'throw'` rejects unknown fields loudly
+}, { timestamps: true, strict: 'throw' })
 ```
 
-- `strict: 'throw'` (or `$jsonSchema` validation on the collection when using the raw driver).
+- `strict: 'throw'` rejects unknown fields loudly (or `$jsonSchema` validation on the collection when using the raw driver).
   Without it a typo silently creates a new field on some documents and nowhere else.
 - Old documents keep their old shape forever. A field change is a **migration**: write the
   backfill script and the read-path fallback in the same change, and treat it as Tier 3.
 
 ## Query injection is the signature MongoDB vulnerability
 
-```ts
-// WRONG — body {"email": {"$ne": null}} matches every user
-await User.findOne({ email: req.body.email })
+WRONG — a body of `{"email": {"$ne": null}}` matches every user:
 
-// RIGHT — cast, or validate with a schema before it reaches the query
+```ts
+await User.findOne({ email: req.body.email })
+```
+
+RIGHT — cast, or validate with a schema before it reaches the query:
+
+```ts
 await User.findOne({ email: String(req.body.email) })
 const { email } = loginSchema.parse(req.body)
 ```
@@ -37,9 +41,10 @@ Also never build `$where` or `$expr` from user input — those evaluate expressi
 
 ```js
 db.orders.find({ orgId, status: 'open' }).sort({ createdAt: -1 }).explain('executionStats')
-// COLLSCAN in the winning plan = missing index
 db.orders.createIndex({ orgId: 1, status: 1, createdAt: -1 })
 ```
+
+`COLLSCAN` in the winning plan means a missing index.
 
 A compound index is used left-to-right: `{ orgId, status, createdAt }` serves a query on `orgId`
 alone, but an index on `{ status }` alone does nothing for a query that filters `orgId` first.
@@ -57,8 +62,10 @@ Add a unique index for anything you treat as unique — application-level checks
 
 ## Atomicity
 
+Use an atomic operator, not read-modify-write:
+
 ```ts
-await Model.updateOne({ _id, version }, { $inc: { count: 1 } })   // atomic operator, not read-modify-write
+await Model.updateOne({ _id, version }, { $inc: { count: 1 } })
 ```
 
 A single write to one document is atomic; anything spanning documents needs a session
@@ -73,10 +80,13 @@ indexed. `allowDiskUse` is a symptom to investigate, not a fix.
 
 ## Verification
 
+Run the targeted test (mongodb-memory-server for isolation), the type check, and
+`scripts/check-indexes.js` to assert the expected indexes exist in the target env:
+
 ```bash
-npx jest src/models/user.test.ts        # targeted (mongodb-memory-server for isolation)
+npx jest src/models/user.test.ts
 npx tsc --noEmit
-node scripts/check-indexes.js           # assert expected indexes exist in the target env
+node scripts/check-indexes.js
 mongosh --eval 'db.orders.getIndexes()'
 ```
 

@@ -1,10 +1,5 @@
 # Project Preset — iOS / SwiftUI
 
-<!-- reviewed: 2026-08 — the "iOS 17+" and "Swift 6 strict" claims in the body (and the same iOS 17+
-line in compact.md). Verified: `@Observable` and SwiftData are iOS 17+, and Swift 6 language mode is
-what App Store submissions are built with since Apple's April 2026 cutoff. iOS 26 is the current
-release, so 17+ is a deployment floor rather than a statement about the newest OS. -->
-
 ## Architecture
 
 - Feature folders: `Features/<Feature>/{Views,ViewModel,Models}`, shared code in `Core/`.
@@ -40,10 +35,12 @@ struct UserScreen: View {
             case .failed:         ErrorView { Task { await vm.load(id: id) } }
             }
         }
-        .task { await vm.load(id: id) }   // cancelled automatically when the view goes away
+        .task { await vm.load(id: id) }
     }
 }
 ```
+
+The `.task` modifier's work is cancelled automatically when the view goes away.
 
 Loading, error-with-retry and empty are three required states.
 
@@ -60,10 +57,11 @@ Loading, error-with-retry and empty are three required states.
 
 ## Networking
 
+Map transport errors to domain errors at the repository edge:
+
 ```swift
 protocol UserRepository { func user(id: String) async throws -> User }
 
-// Map transport errors to domain errors at the repository edge
 struct APIError: Error { let status: Int }
 ```
 

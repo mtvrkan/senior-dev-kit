@@ -128,8 +128,9 @@ Common patterns that need indexes:
 
 RLS (Row Level Security): EVERY table must have RLS policies. No exceptions.
 
+REQUIRED on every table:
+
 ```sql
--- Required on every table:
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can only see their own posts"
   ON posts FOR SELECT USING ((select auth.uid()) = user_id);
@@ -224,9 +225,13 @@ changing a retention period, and writing a deletion path are all schema changes 
 
 Before any destructive operation: confirm backup exists or create one.
 
-```sql
--- Before DROP or TRUNCATE:
--- Verify backup: SELECT count(*) FROM [table];
--- Point-in-time recovery available?
--- If no backup: STOP and ask user to create backup first
-```
+Before DROP or TRUNCATE:
+
+- Verify the backup:
+
+  ```sql
+  SELECT count(*) FROM [table];
+  ```
+
+- Confirm point-in-time recovery is available.
+- If there is no backup: STOP and ask the user to create one first.

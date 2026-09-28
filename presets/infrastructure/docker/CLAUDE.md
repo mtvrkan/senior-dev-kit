@@ -1,9 +1,5 @@
 # Infrastructure Preset — Docker / Docker Compose
 
-<!-- reviewed: 2026-08 — the "Compose v2" claim in the body only. V1 (`docker-compose`, Python) has
-been end-of-life for years and V2 (`docker compose`) is the only supported implementation, so the
-obsolete-`version:`-key guidance describes current behaviour. -->
-
 ## Scope
 
 The Dockerfile hardening checklist — multi-stage, version-pinned base, non-root user,
@@ -17,12 +13,17 @@ was explicitly requested.
 
 ## Compose
 
+In this file: the database port is published host-local ONLY (see the port note below); data
+lives in a named volume, not a bind mount; the api reaches the database by service name, not
+`localhost`; the secret is mounted at `/run/secrets/db_password` and its source file is never
+committed.
+
 ```yaml
 services:
   db:
     image: postgres:17-alpine
-    ports: ["127.0.0.1:5432:5432"]     # host-local ONLY — see the port note below
-    volumes: [pgdata:/var/lib/postgresql/data]   # named volume, not a bind mount
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app"]
       interval: 5s
@@ -31,33 +32,36 @@ services:
     restart: unless-stopped
     logging:
       driver: json-file
-      options: { max-size: "10m", max-file: "3" }   # default rotates never; disks fill
+      options: { max-size: "10m", max-file: "3" }
 
   api:
     build: .
     depends_on:
       db:
-        condition: service_healthy    # plain `depends_on: [db]` waits for START, not READY
+        condition: service_healthy
     environment:
-      DATABASE_URL: postgres://app@db:5432/app   # service name, not localhost
-    secrets: [db_password]                        # mounted at /run/secrets/db_password
+      DATABASE_URL: postgres://app@db:5432/app
+    secrets: [db_password]
     deploy:
       resources:
-        limits: { memory: 512M }      # an unbounded container OOM-kills its neighbours
+        limits: { memory: 512M }
 
 volumes:
   pgdata:
 secrets:
   db_password:
-    file: ./secrets/db_password.txt   # never committed
+    file: ./secrets/db_password.txt
 ```
 
 - **A published port bypasses the host firewall.** Docker writes its own iptables rules, so
   `ports: ["5432:5432"]` is reachable from the internet even with UFW denying 5432. Bind to
   `127.0.0.1:` or don't publish at all — containers on the same Compose network reach each other
   by service name without any published port.
-- `depends_on` without `condition: service_healthy` only orders container *start*. The app boots
-  against a database that isn't accepting connections yet, and it looks like a flaky app.
+- `depends_on` without `condition: service_healthy` only orders container *start* — plain
+  `depends_on: [db]` waits for START, not READY. The app boots against a database that isn't
+  accepting connections yet, and it looks like a flaky app.
+- The json-file log driver's default rotates never, so disks fill — set `max-size`/`max-file`.
+- Set a memory limit: an unbounded container OOM-kills its neighbours.
 - Named volumes for persistent data. A bind mount for source code is a dev-only convenience; in
   production it means the image is not what actually runs.
 - Keep dev and prod separate with override files or profiles rather than branching inside one file.
@@ -81,13 +85,17 @@ secrets:
 
 ## Verification
 
+`docker compose config` resolves overrides and env into the effective config. After `up`, the
+`ps` STATUS must show `(healthy)`, not just `Up`. `hadolint` lints the Dockerfile; `trivy image`
+can be swapped for `docker scout cves <image>`.
+
 ```bash
-docker compose config                    # resolves overrides/env — the effective config
+docker compose config
 docker compose build
-docker compose up -d && docker compose ps   # STATUS must show (healthy), not just Up
+docker compose up -d && docker compose ps
 docker compose logs --tail=50 api
-hadolint Dockerfile                      # Dockerfile lint
-trivy image <image>                       # or: docker scout cves <image>
+hadolint Dockerfile
+trivy image <image>
 ```
 
 ## Anti-patterns (beyond 600-devops's Dockerfile checklist)

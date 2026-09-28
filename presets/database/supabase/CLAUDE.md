@@ -6,8 +6,10 @@
 between a stranger and every row in your database is Row Level Security. A table with RLS
 disabled — or with a policy of `using (true)` — is a public API, whatever the client code does.
 
+RLS is required on EVERY table:
+
 ```sql
-alter table public.posts enable row level security;   -- required on EVERY table
+alter table public.posts enable row level security;
 
 create policy "owner reads own posts"
   on public.posts for select
@@ -30,8 +32,9 @@ Verify, don't assume:
 
 ```sql
 select tablename, rowsecurity from pg_tables where schemaname = 'public';
--- any row with rowsecurity = false is publicly readable via the anon key
 ```
+
+Any row with `rowsecurity = false` is publicly readable via the anon key.
 
 ## Schema and migrations
 
@@ -52,16 +55,19 @@ select tablename, rowsecurity from pg_tables where schemaname = 'public';
 
 ## Queries
 
+Select only what's needed — `select('*')` over a joined table is a common slow path. Always
+paginate with `.range()`; the default cap will surprise you. Never ignore `error` — `data` is
+null on failure.
+
 ```ts
-// Select only what's needed — `select('*')` over a joined table is a common slow path
 const { data, error } = await supabase
   .from('posts')
   .select('id, title, author:profiles(id, name)')
   .eq('published', true)
   .order('created_at', { ascending: false })
-  .range(0, 19)          // always paginate; the default cap will surprise you
+  .range(0, 19)
 
-if (error) throw new AppError(error.message)   // never ignore `error` — data is null on failure
+if (error) throw new AppError(error.message)
 ```
 
 Both `data` and `error` come back on every call. Checking only `data` swallows failures.
@@ -75,11 +81,14 @@ Both `data` and `error` come back on every call. Checking only `data` swallows f
 
 ## Verification
 
+Start the local stack, replay migrations from scratch (catches broken ordering), regenerate
+types, and lint (includes RLS-disabled warnings):
+
 ```bash
-supabase start                     # local stack
-supabase db reset                  # replay migrations from scratch — catches broken ordering
+supabase start
+supabase db reset
 supabase gen types typescript --local > src/types/database.ts
-supabase db lint                   # includes RLS-disabled warnings
+supabase db lint
 ```
 
 ## Anti-patterns

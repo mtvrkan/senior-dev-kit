@@ -13,8 +13,9 @@
 
 Always use class-validator + class-transformer DTOs for request bodies. Never pass raw `req.body` to services.
 
+`create-user.dto.ts`:
+
 ```typescript
-// create-user.dto.ts
 import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator'
 import { Transform } from 'class-transformer'
 
@@ -37,13 +38,14 @@ Global validation pipe (in `main.ts`):
 
 ```typescript
 app.useGlobalPipes(new ValidationPipe({
-  whitelist: true,        // strip unknown properties
+  whitelist: true,
   forbidNonWhitelisted: true,
-  transform: true,        // auto-transform to DTO class
+  transform: true,
 }))
 ```
 
-Never skip `whitelist: true` — it prevents mass assignment.
+`whitelist: true` strips unknown properties; `transform: true` auto-transforms the payload to the
+DTO class. Never skip `whitelist: true` — it prevents mass assignment.
 
 ## Controllers
 
@@ -63,7 +65,7 @@ export class UsersController {
 
   @Get(':id')
   async findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
-    return this.usersService.findOneOrFail(id, req.user.id) // ownership check in service
+    return this.usersService.findOneOrFail(id, req.user.id)
   }
 
   @Patch(':id')
@@ -72,6 +74,8 @@ export class UsersController {
   }
 }
 ```
+
+The controller passes `req.user.id` through; the ownership check happens in the service.
 
 ## Services
 
@@ -109,14 +113,18 @@ Use NestJS built-in exceptions: `NotFoundException`, `ForbiddenException`, `Conf
 - Role-based access: `@Roles('admin')` decorator + `RolesGuard`. Never check roles in service logic.
 - Never modify `AuthModule`, `JwtStrategy`, or existing guards without security-guard review.
 
+Protect an entire controller:
+
 ```typescript
-// Protect entire controller
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class AdminController { ... }
+```
 
-// Protect single route
+Protect a single route:
+
+```typescript
 @Get('profile')
 @UseGuards(JwtAuthGuard)
 getProfile(@Request() req) { return req.user }
@@ -126,8 +134,9 @@ getProfile(@Request() req) { return req.user }
 
 Use built-in NestJS HTTP exceptions. Add a global exception filter only if the project already has one.
 
+A custom exception for domain errors:
+
 ```typescript
-// Custom exception for domain errors
 export class BusinessRuleException extends BadRequestException {
   constructor(rule: string) {
     super({ code: 'BUSINESS_RULE_VIOLATION', rule })
@@ -144,8 +153,9 @@ Never expose stack traces or internal error details in responses. Use `app.useGl
 - Prisma: inject `PrismaService`, call `prisma.$transaction([...])` for atomicity.
 - Never access DB directly in controllers.
 
+A TypeORM transaction:
+
 ```typescript
-// TypeORM transaction
 async transferFunds(fromId: string, toId: string, amount: number) {
   await this.dataSource.transaction(async (manager) => {
     await manager.decrement(Account, { id: fromId }, 'balance', amount)
@@ -164,10 +174,12 @@ export class AppService {
   constructor(private config: ConfigService) {}
   
   getJwtSecret() {
-    return this.config.getOrThrow<string>('JWT_SECRET') // throws if missing
+    return this.config.getOrThrow<string>('JWT_SECRET')
   }
 }
 ```
+
+`getOrThrow` throws if the variable is missing.
 
 Register `ConfigModule.forRoot({ isGlobal: true, validationSchema: Joi.object({...}) })` in `AppModule` to fail fast on missing env vars.
 
@@ -175,8 +187,9 @@ Register `ConfigModule.forRoot({ isGlobal: true, validationSchema: Joi.object({.
 
 Targeted test files only — never run full suite for a single change.
 
+`users.service.spec.ts`:
+
 ```typescript
-// users.service.spec.ts
 describe('UsersService', () => {
   let service: UsersService
   let userRepo: MockRepository<User>

@@ -6,21 +6,29 @@ Reference for the `api-design` skill's API versioning workflow — code template
 
 ## Parallel version routing (Node.js / Express / NestJS)
 
-```typescript
-// router.ts — keep old version, add new alongside
-app.use('/api/v1', v1Router)  // keep working — do NOT remove
-app.use('/api/v2', v2Router)  // new version
+`router.ts` — keep the old version and add the new one alongside. `/api/v1` keeps working: do NOT
+remove it.
 
-// v1 handler — old contract (unchanged)
+```typescript
+app.use('/api/v1', v1Router)
+app.use('/api/v2', v2Router)
+```
+
+v1 handler — old contract (unchanged), old response shape:
+
+```typescript
 export async function getUserV1(req: Request, res: Response) {
   const user = await userService.getUser(req.params.id)
-  return res.json({ name: user.fullName })  // old shape
+  return res.json({ name: user.fullName })
 }
+```
 
-// v2 handler — new contract
+v2 handler — new contract, new response shape:
+
+```typescript
 export async function getUserV2(req: Request, res: Response) {
   const user = await userService.getUser(req.params.id)
-  return res.json({ firstName: user.firstName, lastName: user.lastName })  // new shape
+  return res.json({ firstName: user.firstName, lastName: user.lastName })
 }
 ```
 
@@ -28,11 +36,12 @@ export async function getUserV2(req: Request, res: Response) {
 
 ## Deprecation headers on old version
 
+Middleware applied to all v1 routes; the `Sunset` date is 6 months from the v2 launch:
+
 ```typescript
-// Middleware applied to all v1 routes
 app.use('/api/v1', (req, res, next) => {
   res.set('Deprecation', '@1782864000')
-  res.set('Sunset', 'Sat, 01 Jan 2027 00:00:00 GMT')  // 6 months from v2 launch
+  res.set('Sunset', 'Sat, 01 Jan 2027 00:00:00 GMT')
   res.set('Link', '<https://api.example.com/v2>; rel="successor-version"')
   next()
 })
@@ -65,8 +74,9 @@ until the 2026-08 audit.
 
 ## OpenAPI spec — dual version strategy
 
+`openapi.yaml` — maintain a separate spec per version:
+
 ```yaml
-# openapi.yaml — maintain separate spec per version
 openapi: 3.2.0
 info:
   version: 2.0.0

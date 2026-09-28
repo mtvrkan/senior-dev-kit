@@ -12,11 +12,6 @@ paths:
   - "**/{llm,prompt,prompts}[._-]*.{ts,js,py,go}"
 ---
 
-<!-- forbidden-in-examples
-role:\s*['"]system['"] :: a `{ role: 'system' }` entry inside a `messages` array is the OpenAI shape; on the Anthropic Messages API `system` is a top-level parameter, and a system message is rejected as messages[0] and unsupported entirely on some models
-\.safeParse\(\s*JSON\.parse\( :: JSON.parse throws on malformed model output, so nesting it in safeParse's argument position makes the `!success` fallback unreachable. Banned as a SHAPE, not only when unguarded: on one line you cannot tell whether a try/catch wraps it, and the fix is the same either way — split the parse from the validate, with only JSON.parse inside the try
--->
-
 ## HARD RULES — LLM integration
 
 NEVER trust LLM output as safe input to: SQL queries · shell commands · eval() · innerHTML · file paths
@@ -27,14 +22,18 @@ ALWAYS set a per-user or per-session cost budget — LLM calls are unbounded by 
 
 ## PROMPT INJECTION PREVENTION
 
-```typescript
-// WRONG — user content injected into system context:
-const systemPrompt = `You are a helpful assistant. User's name: ${req.body.name}`
+WRONG — user content injected into system context:
 
-// RIGHT — `system` is a top-level parameter, never an entry in `messages`; user
-// content stays in the user turn. (Putting the static prompt in a system-role
-// message inside the array is the OpenAI shape — on the Messages API it is rejected
-// as the first entry and is not accepted at all on some models.)
+```typescript
+const systemPrompt = `You are a helpful assistant. User's name: ${req.body.name}`
+```
+
+Putting the static prompt in a system-role message inside the array is the OpenAI shape — on the
+Messages API it is rejected as the first entry and is not accepted at all on some models.
+
+RIGHT — `system` is a top-level parameter, never an entry in `messages`; user content stays in the user turn:
+
+```typescript
 const response = await anthropic.messages.create({
   model: 'claude-sonnet-5',
   max_tokens: 1024,
@@ -47,11 +46,8 @@ const response = await anthropic.messages.create({
 
 **Indirect prompt injection — when LLM reads external content (web, docs, emails):**
 
-```typescript
-// Flag user-provided URLs before fetching for LLM context:
-// SSRF + prompt injection double risk
-// Validate URL against allowlist OR run in sandboxed fetch with no internal network access
-```
+Flag user-provided URLs before fetching them for LLM context — SSRF + prompt injection double risk.
+Validate the URL against an allowlist OR run it in a sandboxed fetch with no internal network access.
 
 **Passive check — fires on any LLM integration change:**
 
@@ -63,46 +59,58 @@ const response = await anthropic.messages.create({
 
 LLM output is untrusted input — validate before use:
 
+For structured output, parse and validate are two steps, and only the first throws. Keep
+`JSON.parse` alone inside the `try` — nesting it in `safeParse`'s argument position makes the
+`!parsed.success` fallback unreachable for the commonest failure of all (the model returned prose,
+not JSON), and widening the `try` to cover validation too would swallow unrelated bugs. The `catch`
+branch is the not-JSON-at-all case; the `!parsed.success` branch is where the fallback or retry goes.
+
 ```typescript
-// For structured output: parse and validate are two steps, and only the first throws.
-// Keep JSON.parse alone inside the try — nesting it in safeParse's argument position
-// makes the `!parsed.success` fallback unreachable for the commonest failure of all
-// (the model returned prose, not JSON), and widening the try to cover validation too
-// would swallow unrelated bugs.
 function parseLlmJson(raw: string) {
   let data: unknown
   try {
     data = JSON.parse(raw)
   } catch {
-    return { success: false } as const // not JSON at all
+    return { success: false } as const
   }
   return outputSchema.safeParse(data)
 }
 const parsed = parseLlmJson(llmResponse)
-if (!parsed.success) { /* fallback or retry */ }
+if (!parsed.success) retryOrFallback()
+```
 
-// For text displayed to users: sanitize HTML
+For text displayed to users, sanitize the HTML:
+
+```typescript
 import DOMPurify from 'dompurify'
 element.innerHTML = DOMPurify.sanitize(llmOutput)
-
-// For text used in queries/commands: NEVER do this — redesign
 ```
+
+For text used in queries or commands: NEVER do this — redesign so the LLM output never reaches
+the query or command string.
 
 ## COST CONTROLS — required on every LLM call path
 
+REQUIRED: always set limits — `max_tokens` has no default and is never left open-ended:
+
 ```typescript
-// REQUIRED: always set limits
 const response = await anthropic.messages.create({
   model: 'claude-sonnet-5',
-  max_tokens: 1024,          // always set — no default, no open-ended
+  max_tokens: 1024,
   messages,
 })
+```
 
-// REQUIRED: per-user budget tracking
+REQUIRED: per-user budget tracking:
+
+```typescript
 const userUsage = await getMonthlyUsage(userId)
 if (userUsage.tokens > USER_MONTHLY_LIMIT) throw new QuotaExceededError()
+```
 
-// REQUIRED: log cost on every call
+REQUIRED: log cost on every call:
+
+```typescript
 logger.info({
   action: 'llm.call',
   model: response.model,
@@ -138,14 +146,19 @@ When exposing tools to an LLM agent:
 - Tools with side effects (email, payment, delete): log every call with args + caller identity
 - Never give LLM tools access to: raw DB queries · shell execution · file system writes outside sandbox
 
-```typescript
-// WRONG — LLM controls arbitrary SQL:
-tools: [{ name: 'query_db', description: 'Run a SQL query', params: { sql: 'string' } }]
+WRONG — LLM controls arbitrary SQL:
 
-// RIGHT — LLM controls intent, tool controls execution:
-tools: [{ name: 'get_orders', description: 'Get orders for a user', params: { userId: 'string', status: 'enum' } }]
-// Implementation uses parameterized query, never raw SQL from LLM
+```typescript
+tools: [{ name: 'query_db', description: 'Run a SQL query', params: { sql: 'string' } }]
 ```
+
+RIGHT — LLM controls intent, tool controls execution:
+
+```typescript
+tools: [{ name: 'get_orders', description: 'Get orders for a user', params: { userId: 'string', status: 'enum' } }]
+```
+
+The implementation uses a parameterized query, never raw SQL from the LLM.
 
 ## AGENTIC / MULTI-STEP FLOWS
 
@@ -158,14 +171,19 @@ For agents that run multiple LLM calls in a loop:
 
 ## PII IN PROMPTS
 
-```typescript
-// WRONG — raw PII in prompt:
-const prompt = `User email: ${user.email}, phone: ${user.phone}. Help them reset their password.`
+WRONG — raw PII in prompt:
 
-// RIGHT — use opaque identifiers:
-const prompt = `User ID: ${user.id}. Help them reset their password.`
-// Resolve PII only at the point of action (sending the email), never in the prompt
+```typescript
+const prompt = `User email: ${user.email}, phone: ${user.phone}. Help them reset their password.`
 ```
+
+RIGHT — use opaque identifiers:
+
+```typescript
+const prompt = `User ID: ${user.id}. Help them reset their password.`
+```
+
+Resolve PII only at the point of action (sending the email), never in the prompt.
 
 Never put in prompts: email · phone · SSN · DOB · credit card · full name + address together
 Safe to use: user ID · account tier · feature flags · anonymized preferences

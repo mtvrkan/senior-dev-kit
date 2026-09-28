@@ -1,9 +1,5 @@
 # Project Preset — Laravel
 
-<!-- reviewed: 2026-09 — the Laravel 11+ claims only: the slim base Controller without
-`AuthorizesRequests` (hence `Gate::authorize()`), and exception handling moved from
-`app/Exceptions/Handler.php` to `withExceptions()` in `bootstrap/app.php`. Both hold on 12. -->
-
 ## Architecture
 
 - Controllers stay thin: validate via a Form Request → call an action/service → return a Resource.
@@ -12,8 +8,9 @@
 - Eloquent models hold relationships, casts and scopes. No HTTP, no business rules.
 - Route files declare routes only: `routes/web.php`, `routes/api.php`.
 
+`app/Http/Controllers/UserController.php`:
+
 ```php
-// app/Http/Controllers/UserController.php
 class UserController extends Controller
 {
     public function store(StoreUserRequest $request, CreateUser $createUser): UserResource
@@ -21,13 +18,15 @@ class UserController extends Controller
         return new UserResource($createUser->handle($request->validated()));
     }
 
-    public function show(User $user): UserResource   // route-model binding
+    public function show(User $user): UserResource
     {
-        Gate::authorize('view', $user);              // policy — never skip
+        Gate::authorize('view', $user);
         return new UserResource($user);
     }
 }
 ```
+
+`show` receives `$user` through route-model binding; the policy check is never skipped.
 
 ## Validation — Form Requests, never inline
 
@@ -53,16 +52,17 @@ changes go through a separate endpoint authorized by an admin-only policy or gat
 
 ## Authorization — policies, on every resource read
 
+`app/Policies/PostPolicy.php`:
+
 ```php
-// app/Policies/PostPolicy.php
 public function view(User $user, Post $post): bool
 {
     return $post->user_id === $user->id;
 }
-
-// Controller: Gate::authorize('view', $post);
-// Blade:      @can('view', $post) ... @endcan
 ```
+
+Enforce it with `Gate::authorize('view', $post);` in the controller and
+`@can('view', $post) ... @endcan` in Blade.
 
 A `findOrFail($id)` with no policy check is an IDOR. Route-model binding does not authorize.
 
@@ -72,19 +72,29 @@ on every version; follow whichever the existing controllers already use.
 
 ## Eloquent — N+1 and raw SQL
 
+WRONG — N+1, one query per post:
+
 ```php
-// WRONG — N+1: one query per post
 foreach (Post::all() as $post) { echo $post->user->name; }
+```
 
-// RIGHT — eager load
+RIGHT — eager load:
+
+```php
 foreach (Post::with('user')->get() as $post) { echo $post->user->name; }
+```
 
-// Detect in dev: Model::preventLazyLoading() in AppServiceProvider::boot()
+Detect lazy loading in dev with `Model::preventLazyLoading()` in `AppServiceProvider::boot()`.
 
-// WRONG — SQL injection
+WRONG — SQL injection:
+
+```php
 DB::select("SELECT * FROM users WHERE email = '$email'");
+```
 
-// RIGHT — bindings
+RIGHT — bindings:
+
+```php
 DB::select('SELECT * FROM users WHERE email = ?', [$email]);
 ```
 
@@ -92,8 +102,10 @@ DB::select('SELECT * FROM users WHERE email = ?', [$email]);
 
 ## Queues — anything over ~200ms
 
+Dispatch the job rather than doing the work inline in the request:
+
 ```php
-dispatch(new SendWelcomeEmail($user));          // not inline in the request
+dispatch(new SendWelcomeEmail($user));
 
 class SendWelcomeEmail implements ShouldQueue
 {
@@ -111,15 +123,20 @@ deploy as the code that stops using it. `down()` must actually reverse `up()`.
 
 ## Errors and logging
 
+`bootstrap/app.php` — render domain errors as JSON and never leak stack traces:
+
 ```php
-// bootstrap/app.php — never leak stack traces
 ->withExceptions(function (Exceptions $exceptions) {
     $exceptions->render(fn (DomainException $e) => response()->json(
         ['message' => $e->getMessage()], 422
     ));
 })
+```
 
-Log::info('user.created', ['user_id' => $user->id]);   // context array, no PII
+Log with a context array and no PII:
+
+```php
+Log::info('user.created', ['user_id' => $user->id]);
 ```
 
 Laravel 11+ has no `app/Exceptions/Handler.php`; exception rendering and reporting are configured in
@@ -130,12 +147,17 @@ whichever one it actually has.
 
 ## Verification
 
+- `php artisan test --filter` — targeted test; `phpunit --filter` is the same without artisan.
+- `phpstan analyse` — static analysis.
+- `pint --test` — style check (Laravel Pint).
+- `route:list` — confirm a new route registered.
+
 ```bash
-php artisan test --filter UserTest     # targeted
-./vendor/bin/phpunit --filter UserTest # same, without artisan
-./vendor/bin/phpstan analyse           # static analysis
-./vendor/bin/pint --test               # style check (Laravel Pint)
-php artisan route:list                 # confirm a new route registered
+php artisan test --filter UserTest
+./vendor/bin/phpunit --filter UserTest
+./vendor/bin/phpstan analyse
+./vendor/bin/pint --test
+php artisan route:list
 ```
 
 ## Anti-patterns

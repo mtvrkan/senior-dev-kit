@@ -101,6 +101,34 @@ Most review feedback is automated. Before opening a PR, know that:
 Presets are added when someone actually starts a project on that stack, not speculatively — an
 unused preset is a file that drifts. See `presets/README.md`.
 
+## Shipped markdown carries no comments
+
+Everything under `rules/`, `presets/`, `agent_docs/`, `agents/`, `skills/` and `commands/` is
+loaded into someone's session, and code examples there are copied verbatim. So neither HTML
+comments nor comments inside fenced examples are allowed: `npm run check` fails on both. The only
+exception is the `// SAFETY:` note a Rust `unsafe` block requires. Explain an example in the prose
+around the fence, and label a counter-example with a line such as `WRONG:` or `RIGHT:` directly
+above its fence. Check 25 reads that line.
+
+Machine-readable facts that used to live in HTML comments are recorded in
+`scripts/lib/doc-ledger.json`:
+
+- the `reviewed` date and scope of every version claim;
+- the 600-devops toolchain-pin digest;
+- the never-log field list;
+- the forbidden example shapes.
+
+Move a claim or a pin and the gate names the ledger entry to update.
+
+Accepted overlaps. Do not re-flag these as duplication:
+
+- `agents/security-guard.md`'s authentication checklist restates part of `rules/200-api.md`. The
+  rule serves main-session API edits. The checklist serves guard sessions, where 200-api may never
+  auto-load, because `middleware.ts` and similar files don't match its globs.
+- `agents/devops-guard.md` restates constraints from `rules/600-devops.md`. The rule only
+  auto-loads when a Dockerfile, CI or IaC file is read, and the guard's plan-only sessions may never
+  open one.
+
 ## Commit and PR conventions
 
 - One logical change per PR. A doc fix and a validator change are two PRs.

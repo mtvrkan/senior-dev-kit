@@ -1,9 +1,5 @@
 # Project Preset — Ruby on Rails 7/8
 
-<!-- reviewed: 2026-08 — the 7/8 version claim in this heading only. Rails 8 is current and 7 is
-still maintained, so both remain supported floors. The idioms and commands below were not
-re-verified in this pass; re-check them before widening this marker's scope. -->
-
 ## Architecture
 
 - Conventional Rails layout. Fat model / skinny controller, with business logic that spans
@@ -17,8 +13,8 @@ class PostsController < ApplicationController
   before_action :authenticate_user!
 
   def show
-    @post = current_user.posts.find(params[:id])   # scoped — this is the authorization
-    authorize @post                                 # Pundit, if policies are in use
+    @post = current_user.posts.find(params[:id])
+    authorize @post
   end
 
   def create
@@ -33,10 +29,13 @@ class PostsController < ApplicationController
   private
 
   def post_params
-    params.require(:post).permit(:title, :body)     # strong params = the allowlist
+    params.require(:post).permit(:title, :body)
   end
 end
 ```
+
+The scoped `current_user.posts.find` is the authorization; `authorize @post` is the Pundit call,
+only if the project uses policies. The strong params in `post_params` are the allowlist.
 
 `:unprocessable_content` is the 422 symbol since Rack 3.1, which deprecated `:unprocessable_entity`;
 an app still on Rack < 3.1 keeps `:unprocessable_entity`.
@@ -51,13 +50,16 @@ Never permit `:role`, `:admin`, `:user_id` or anything else the user shouldn't s
 
 ## ActiveRecord — N+1 and query safety
 
-```ruby
-# WRONG — N+1
-Post.all.each { |p| puts p.author.name }
+WRONG — N+1:
 
-# RIGHT
+```ruby
+Post.all.each { |p| puts p.author.name }
+```
+
+RIGHT — `includes`; use `preload` / `eager_load` when you need to control the strategy explicitly:
+
+```ruby
 Post.includes(:author).each { |p| puts p.author.name }
-# preload / eager_load when you need to control the strategy explicitly
 ```
 
 - The `bullet` gem in development turns N+1 into a visible failure instead of a slow page.
@@ -89,12 +91,15 @@ ids, never AR objects, and are idempotent — retries happen.
 
 ## Verification
 
+A targeted spec first; `brakeman` is the security scan, `zeitwerk:check` verifies autoload and
+naming integrity, and the full suite runs before a merge:
+
 ```bash
-bundle exec rspec spec/models/post_spec.rb:42   # targeted
+bundle exec rspec spec/models/post_spec.rb:42
 bundle exec rubocop
-bundle exec brakeman -q                          # security scan
-bin/rails zeitwerk:check                         # autoload/naming integrity
-bundle exec rspec                                # full suite before a merge
+bundle exec brakeman -q
+bin/rails zeitwerk:check
+bundle exec rspec
 ```
 
 ## Anti-patterns

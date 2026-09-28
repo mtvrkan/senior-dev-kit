@@ -88,14 +88,16 @@ anything that should read as precise.
 
 ```css
 --font-display: "Archivo";  --font-body: "Archivo";  --font-mono: "IBM Plex Mono";
---scale-ratio: 1.5;          /* big jumps — hierarchy comes from size, not colour */
+--scale-ratio: 1.5;
 --radius-sm: 0; --radius-md: 2px; --radius-lg: 4px;
 --color-neutral: pure grey (hue 0, sat 0);   --accents: 1
---shadow-sm: none; --shadow-md: none;        /* depth: FLAT */
---border: 1px solid var(--color-border);     /* hairline rules are the only ornament */
+--shadow-sm: none; --shadow-md: none;
+--border: 1px solid var(--color-border);
 --space-section: 96px;  --measure: 68ch;  --leading-body: 1.55;
 ```
 
+Scale: big jumps — hierarchy comes from size, not colour.
+Depth: FLAT — hairline rules are the only ornament.
 Motion: scroll-reveal only, `opacity` + 8px rise, 250ms, `cubic-bezier(0.2,0,0,1)`. No hover lift.
 Decoration: 1px rules between sections; numerals and labels in mono, uppercase, `0.08em` tracking.
 
@@ -109,10 +111,11 @@ through writing rather than screenshots.
 --scale-ratio: 1.333;
 --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px;
 --color-neutral: warm (hue ~40, sat 8-14%);  --base: ivory, not white;  --accents: 1 + 1 muted
---shadow-md: 0 2px 16px hsl(30 20% 20% / 0.08);   /* depth: SOFT SHADOW */
+--shadow-md: 0 2px 16px hsl(30 20% 20% / 0.08);
 --space-section: 128px;  --measure: 62ch;  --leading-body: 1.7;
 ```
 
+Depth: SOFT SHADOW.
 Motion: slow gentle fades, 400ms, no transform on hover beyond a colour shift.
 Decoration: generous margins, real photography, an occasional oversized pull-quote in display italic.
 
@@ -123,14 +126,16 @@ with attitude, anything that must not read as corporate.
 
 ```css
 --font-display: "Archivo Black";  --font-body: "Space Grotesk";
---scale-ratio: 1.5;  /* display weights 800-900, body 400-500 — no in-between */
+--scale-ratio: 1.5;
 --radius-sm: 0; --radius-md: 0; --radius-lg: 4px;
 --color-neutral: pure black on pure white;  --accents: 2-3 fully saturated, used as flat fields
---border: 2px solid #000;                          /* borders carry ALL structure */
---shadow-md: 4px 4px 0 #000;  --shadow-lg: 8px 8px 0 #000;   /* depth: HARD OFFSET, zero blur */
+--border: 2px solid #000;
+--shadow-md: 4px 4px 0 #000;  --shadow-lg: 8px 8px 0 #000;
 --space-section: 80px;  --leading-body: 1.5;
 ```
 
+Type: display weights 800-900, body 400-500 — no in-between.
+Depth: HARD OFFSET, zero blur; borders carry ALL structure.
 Motion: snappy, 100-150ms, `translate` on hover so the offset shadow collapses (`4px 4px` → `0 0`).
 Decoration: none — the colour blocks and borders are the decoration. No gradients, no blur, ever.
 
@@ -139,14 +144,16 @@ Decoration: none — the colour blocks and borders are the decoration. No gradie
 Approachable and rounded. Best for: consumer apps, onboarding-heavy SaaS, education, wellness.
 
 ```css
---font-display: "Plus Jakarta Sans";  --font-body: "Plus Jakarta Sans";  /* one family, weight-led */
+--font-display: "Plus Jakarta Sans";  --font-body: "Plus Jakarta Sans";
 --scale-ratio: 1.25;
---radius-sm: 10px; --radius-md: 16px; --radius-lg: 24px;   /* pills for buttons: 999px */
+--radius-sm: 10px; --radius-md: 16px; --radius-lg: 24px;
 --color-neutral: cool-tinted, never pure grey (sat 6-10%);  --accents: 1 + 2 pastel supports
---shadow-md: 0 4px 20px hsl(var(--primary-hue) 40% 40% / 0.10);  /* depth: SOFT, tinted */
+--shadow-md: 0 4px 20px hsl(var(--primary-hue) 40% 40% / 0.10);
 --space-section: 96px;  --leading-body: 1.65;  --padding-card: 24-32px;
 ```
 
+Type: one family, weight-led. Geometry: pills for buttons (`999px`).
+Depth: SOFT, tinted.
 Motion: spring easing `cubic-bezier(0.34,1.56,0.64,1)`, 200ms, `scale(1.02)` card hover.
 Decoration: soft blob/gradient shapes behind sections at low opacity; generous whitespace inside
 components, not just between them.
@@ -160,13 +167,15 @@ drift, and if a project wants it, commit to the whole bundle rather than a dark 
 ```css
 --base: dark (hsl 240 8% 6-10%);   --color-neutral: cool (hue 230-250, sat 6-10%)
 --font-display: "Inter Tight";  --font-body: "Inter Tight";  --font-mono: "JetBrains Mono";
---scale-ratio: 1.25;   /* mono labels, uppercase, 0.06em tracking, 12-13px */
+--scale-ratio: 1.25;
 --radius-sm: 4px; --radius-md: 6px; --radius-lg: 10px;
---border: 1px solid hsl(0 0% 100% / 0.08);   /* hairlines at low opacity */
---accents: 1 luminous;   /* depth: GLOW — radial gradient behind the accent, no drop shadows */
+--border: 1px solid hsl(0 0% 100% / 0.08);
+--accents: 1 luminous;
 --space-section: 80px;  --leading-body: 1.6;  --measure: 70ch;
 ```
 
+Type: mono labels, uppercase, `0.06em` tracking, 12-13px.
+Depth: GLOW — radial gradient behind the accent, no drop shadows; borders are hairlines at low opacity.
 Motion: precise and fast, 150-200ms, `ease-out`; animate `opacity`/`transform` only.
 Decoration: one radial glow per viewport at most, faint grid lines, subtle grain to kill banding.
 
@@ -180,12 +189,13 @@ dashboard.
 --font-display: "Manrope";  --font-body: "Manrope";
 --scale-ratio: 1.333;
 --radius-md: 16px; --radius-lg: 20px;
---surface: hsl(0 0% 100% / 0.08);  backdrop-filter: blur(16px) saturate(140%);  /* depth: GLASS */
---border: 1px solid hsl(0 0% 100% / 0.18);   /* the light edge is what sells the material */
+--surface: hsl(0 0% 100% / 0.08);  backdrop-filter: blur(16px) saturate(140%);
+--border: 1px solid hsl(0 0% 100% / 0.18);
 --color-neutral: cool;  --accents: 1 + a gradient pair
 --space-section: 112px;  --leading-body: 1.6;
 ```
 
+Depth: GLASS — the light edge of the border is what sells the material.
 Motion: 300ms `ease-out`, gentle parallax between layers, blur/opacity on enter.
 Decoration: a gradient mesh or photograph **behind** the glass — glass over a flat colour reads as
 a grey box and defeats the direction. Always provide a solid fallback where `backdrop-filter` is
@@ -198,13 +208,15 @@ user's job is to read a lot of numbers quickly.
 
 ```css
 --font-display: "IBM Plex Sans";  --font-body: "IBM Plex Sans";  --font-mono: "IBM Plex Mono";
---scale-ratio: 1.2;      /* small steps — many levels must coexist on one screen */
+--scale-ratio: 1.2;
 --radius-sm: 2px; --radius-md: 4px; --radius-lg: 6px;
 --color-neutral: cool grey;  --accents: 1 + semantic status colours carrying real meaning
---shadow-*: none — separation is by 1px border and background step;   /* depth: FLAT + BORDERS */
+--shadow-*: none — separation is by 1px border and background step;
 --space-section: 48px;  --leading-body: 1.5;  --padding-cell: 8px 12px;  --row-height: 36-40px;
 ```
 
+Scale: small steps — many levels must coexist on one screen.
+Depth: FLAT + BORDERS.
 Motion: minimal — 120ms colour transitions, no entrance animation on data. Motion in a table reads
 as a bug, not polish.
 Decoration: none. Status colour is data, not ornament, and must never be the only signal.
@@ -215,13 +227,16 @@ Colour and type as the product. Best for: portfolios, campaigns, events, launche
 
 ```css
 --font-display: "Bricolage Grotesque";  --font-body: "DM Sans";
---scale-ratio: 1.618;    /* display sizes are genuinely large: clamp(3rem, 8vw, 7rem) */
---radius-sm: 8px; --radius-md: 12px; --radius-lg: 999px;   /* mixed by role, not one value */
+--scale-ratio: 1.618;
+--radius-sm: 8px; --radius-md: 12px; --radius-lg: 999px;
 --color-neutral: minimal — colour fields do the work;  --accents: 3+, used as full-bleed sections
---shadow-md: none;        /* depth: FLAT COLOUR FIELDS */
+--shadow-md: none;
 --space-section: 120px;  --leading-body: 1.55;
 ```
 
+Type: display sizes are genuinely large — `clamp(3rem, 8vw, 7rem)`.
+Geometry: radius mixed by role, not one value.
+Depth: FLAT COLOUR FIELDS.
 Motion: energetic — staggered reveals (50ms/item, max 8), marquee, scroll-linked scale. This is the
 one direction where motion is the point, and it is also the one where `prefers-reduced-motion` is
 most likely to be tested against you.
@@ -304,8 +319,6 @@ a row are a centred heading over a 3-column card grid, the page has one idea rep
 palette will hide that.
 
 ## MOBILE DIRECTIONS
-
-<!-- reviewed: 2026-08 -->
 
 Mobile differentiates **inside** the platform idiom, not against it. A web page can throw out every
 convention and still be usable; an app that reinvents navigation, gestures or system controls is

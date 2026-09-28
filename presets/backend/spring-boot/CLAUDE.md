@@ -58,11 +58,15 @@ removed in Spring Security 6 — it only appears in legacy code; new config is a
 
 ## JPA — N+1, lazy loading, transactions
 
-```java
-// WRONG — N+1: one query per order
-orders.forEach(o -> log.info(o.getCustomer().getName()));
+WRONG — N+1, one query per order:
 
-// RIGHT — fetch join
+```java
+orders.forEach(o -> log.info(o.getCustomer().getName()));
+```
+
+RIGHT — fetch join:
+
+```java
 @Query("select o from Order o join fetch o.customer where o.status = :status")
 List<Order> findByStatusWithCustomer(@Param("status") Status status);
 ```
@@ -89,10 +93,10 @@ Never return a raw exception message or stack trace. `server.error.include-stack
 
 ```java
 private static final Logger log = LoggerFactory.getLogger(UserService.class);
-log.info("user.created userId={}", user.id());     // parameterized, no string concat
+log.info("user.created userId={}", user.id());
 ```
 
-Never log tokens, passwords, full request bodies, or `Authorization` headers.
+Parameterized messages, no string concatenation. Never log tokens, passwords, full request bodies, or `Authorization` headers.
 
 ## Kotlin notes
 
@@ -102,11 +106,15 @@ Never log tokens, passwords, full request bodies, or `Authorization` headers.
 
 ## Verification
 
+- Targeted test: `./gradlew test --tests` on Gradle, `./mvnw test -Dtest=Class#method` on Maven.
+- Style: `./gradlew ktlintCheck`, or `./mvnw spotless:check`.
+- `./gradlew build` compiles and runs the suite.
+
 ```bash
-./gradlew test --tests "*UserServiceTest"      # targeted (Gradle)
-./mvnw test -Dtest=UserServiceTest#createsUser # targeted (Maven)
-./gradlew ktlintCheck   # or ./mvnw spotless:check
-./gradlew build         # compiles + runs the suite
+./gradlew test --tests "*UserServiceTest"
+./mvnw test -Dtest=UserServiceTest#createsUser
+./gradlew ktlintCheck
+./gradlew build
 ```
 
 ## Anti-patterns

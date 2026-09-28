@@ -41,17 +41,21 @@ Injection had no mitigation row at all).
 
 ### JWT (stateless)
 
+The access token carries a minimal payload (no PII) and a short expiry. The refresh token is
+long-lived, stored in an httpOnly cookie, and carries a `tokenFamily` so a replayed, already-rotated
+token can be detected.
+
+GOOD — JWT implementation:
+
 ```typescript
-// GOOD JWT implementation
 const token = jwt.sign(
-  { sub: user.id, role: user.role },  // minimal payload — no PII
+  { sub: user.id, role: user.role },
   process.env.JWT_SECRET,
-  { algorithm: 'HS256', expiresIn: '15m' }  // short expiry
+  { algorithm: 'HS256', expiresIn: '15m' }
 )
 
-// Refresh token (long-lived, stored in httpOnly cookie)
 const refreshToken = jwt.sign(
-  { sub: user.id, tokenFamily: uuid() },  // family for rotation detection
+  { sub: user.id, tokenFamily: uuid() },
   process.env.JWT_REFRESH_SECRET,
   { algorithm: 'HS256', expiresIn: '7d' }
 )
@@ -66,19 +70,22 @@ const refreshToken = jwt.sign(
 
 ### Session (stateful)
 
+Express-session with security options: `SESSION_SECRET` is at least 32 random bytes, `httpOnly`
+prevents cookie theft via XSS, `secure` sends the cookie over HTTPS only, `maxAge` is 1 hour, and
+the store is Redis — never `MemoryStore` in production.
+
 ```typescript
-// Express-session with security options
 session({
-  secret: process.env.SESSION_SECRET,  // >= 32 random bytes
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    httpOnly: true,     // prevents XSS cookie theft
-    secure: true,       // HTTPS only
+    httpOnly: true,
+    secure: true,
     sameSite: 'lax',
-    maxAge: 60 * 60 * 1000  // 1 hour
+    maxAge: 60 * 60 * 1000
   },
-  store: new RedisStore({ client })  // never MemoryStore in prod
+  store: new RedisStore({ client })
 })
 ```
 
@@ -86,13 +93,17 @@ session({
 
 ### Password hashing
 
+Argon2id (preferred):
+
 ```typescript
-// Argon2id (preferred)
 import { hash, verify } from '@node-rs/argon2'
 const hashed = await hash(password, { memoryCost: 65536, timeCost: 3 })
+```
 
-// bcrypt (acceptable, if argon2 not available)
-const hashed = await bcrypt.hash(password, 12)  // min cost 10, prefer 12
+bcrypt (acceptable if Argon2 is not available) — minimum cost 10, prefer 12:
+
+```typescript
+const hashed = await bcrypt.hash(password, 12)
 ```
 
 **Never**: MD5, SHA1, SHA256 for passwords (fast hash = easily brute-forced).
@@ -101,8 +112,11 @@ const hashed = await bcrypt.hash(password, 12)  // min cost 10, prefer 12
 
 ```typescript
 cookie: { sameSite: 'lax' }
+```
 
-// Double Submit Cookie (for SPAs with cross-origin)
+Double submit cookie (for SPAs with cross-origin requests):
+
+```typescript
 function issueCsrfToken(sessionId: string): string {
   const nonce = crypto.randomBytes(32).toString('hex')
   const message = `${sessionId.length}!${sessionId}!${nonce.length}!${nonce}`
@@ -119,8 +133,11 @@ function isValidCsrfToken(sessionId: string, cookieToken: string, headerToken: s
   const received = Buffer.from(mac)
   return received.length === expected.length && crypto.timingSafeEqual(received, expected)
 }
+```
 
-// Verify both origin and referer for extra protection:
+Verify both origin and referer for extra protection:
+
+```typescript
 const origin = req.headers.origin || req.headers.referer
 if (!allowedOrigins.includes(new URL(origin).origin)) throw new ForbiddenError()
 ```
@@ -129,22 +146,32 @@ if (!allowedOrigins.includes(new URL(origin).origin)) throw new ForbiddenError()
 
 ## RATE LIMITING STRATEGY
 
-```typescript
-// Different limits for different sensitivity levels:
-const limits = {
-  login:          { window: '15m', max: 5 },    // strict: brute force protection
-  register:       { window: '1h',  max: 10 },   // prevent account farming
-  passwordReset:  { window: '1h',  max: 3 },    // strict: prevent enumeration
-  otpVerify:      { window: '10m', max: 5 },    // strict: prevent OTP brute force
-  api:            { window: '1m',  max: 100 },  // per-user rate limiting
-  publicApi:      { window: '1m',  max: 20 },   // unauthenticated endpoints
-}
+Different limits for different sensitivity levels:
 
-// Always include these headers:
+- `login` — strict: brute-force protection
+- `register` — prevents account farming
+- `passwordReset` — strict: prevents enumeration
+- `otpVerify` — strict: prevents OTP brute force
+- `api` — per-user rate limiting
+- `publicApi` — unauthenticated endpoints
+
+```typescript
+const limits = {
+  login:          { window: '15m', max: 5 },
+  register:       { window: '1h',  max: 10 },
+  passwordReset:  { window: '1h',  max: 3 },
+  otpVerify:      { window: '10m', max: 5 },
+  api:            { window: '1m',  max: 100 },
+  publicApi:      { window: '1m',  max: 20 },
+}
+```
+
+Always include the three `X-RateLimit-*` headers; on a 429, also send `Retry-After`:
+
+```typescript
 res.set('X-RateLimit-Limit', limit.max)
 res.set('X-RateLimit-Remaining', remaining)
 res.set('X-RateLimit-Reset', resetTime)
-// On 429:
 res.set('Retry-After', secondsUntilReset)
 ```
 
@@ -163,8 +190,10 @@ Layer 3: Authorization check
 Never combine layers. Never skip Layer 1 (type coercion first, always).
 ```
 
+Zod validation at the API boundary — past the `success` check, `body.data` is typed and validated,
+safe to use:
+
 ```typescript
-// Zod validation at API boundary:
 const CreateUserSchema = z.object({
   email: z.email().max(255),
   password: z.string().min(12).max(128),
@@ -172,42 +201,57 @@ const CreateUserSchema = z.object({
 
 const body = CreateUserSchema.safeParse(req.body)
 if (!body.success) return res.status(400).json(formatZodError(body.error))
-// body.data is now typed and validated — safe to use
 ```
 
 `role` is deliberately absent: on self-registration the server assigns it (`role: 'user'`), and changing it belongs to a separate admin-only endpoint with its own authorization check. Even an enum-restricted `role` in a client DTO lets anyone sign up as `admin`.
 
 ## SQL INJECTION PREVENTION
 
+WRONG — string interpolation (attacker input: `userId = "' OR '1'='1"`):
+
 ```typescript
-// WRONG: string interpolation
 const user = await db.query(`SELECT * FROM users WHERE id = '${userId}'`)
-// Attacker input: userId = "' OR '1'='1"
+```
 
-// RIGHT: parameterized (ORM)
+RIGHT — parameterized (ORM):
+
+```typescript
 const user = await db.user.findUnique({ where: { id: userId } })
+```
 
-// RIGHT: parameterized (raw SQL)
+RIGHT — parameterized (raw SQL):
+
+```typescript
 const user = await db.query('SELECT * FROM users WHERE id = $1', [userId])
+```
 
-// RIGHT: tagged template (sql-template-tag)
+RIGHT — tagged template (sql-template-tag):
+
+```typescript
 const user = await db.query(sql`SELECT * FROM users WHERE id = ${userId}`)
 ```
 
 ## XSS PREVENTION
 
-```typescript
-// React / Vue / Angular: safe by default (auto-escapes output)
-// DANGER: explicit HTML injection
-<div dangerouslySetInnerHTML={{ __html: userContent }} />  // ← XSS if unchecked
+React / Vue / Angular are safe by default: they auto-escape output.
 
-// If you must render HTML from untrusted source:
+INSECURE — explicit HTML injection, XSS if `userContent` is unchecked:
+
+```typescript
+<div dangerouslySetInnerHTML={{ __html: userContent }} />
+```
+
+If you must render HTML from an untrusted source, sanitize it first:
+
+```typescript
 import DOMPurify from 'isomorphic-dompurify'
 <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(userContent) }} />
+```
 
-// Content Security Policy (defense in depth):
-// Never: Content-Security-Policy: *
-// Always: specific domains + 'nonce-{nonce}' for inline scripts
+Content Security Policy as defense in depth — never `Content-Security-Policy: *`; always specific
+domains plus `'nonce-{nonce}'` for inline scripts:
+
+```text
 Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{nonce}'
 ```
 
@@ -222,17 +266,21 @@ Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: camera=(), microphone=(), geolocation=()
 ```
 
-```typescript
-// Helmet.js (Node):
-import helmet from 'helmet'
-app.use(helmet())  // sets all of the above with secure defaults
+Helmet.js (Node) — `helmet()` sets all of the above with secure defaults:
 
-// Custom CSP:
+```typescript
+import helmet from 'helmet'
+app.use(helmet())
+```
+
+Custom CSP — `'unsafe-inline'` is acceptable for CSS (`styleSrc`) only:
+
+```typescript
 app.use(helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'", `'nonce-${nonce}'`],
-    styleSrc: ["'self'", "'unsafe-inline'"],  // unsafe-inline OK for CSS only
+    styleSrc: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", 'data:', 'https:'],
   }
 }))
@@ -240,61 +288,63 @@ app.use(helmet.contentSecurityPolicy({
 
 ## FILE UPLOAD SECURITY
 
+Never trust the client-provided filename or MIME type; always validate on the server side. The
+size cap below is 5 MB.
+
+1. Check the actual MIME type (magic bytes) — not the `Content-Type` header.
+2. Generate a new filename — never use the original.
+3. Store outside the web root or in blob storage (S3, GCS). Never serve user uploads from the same
+   domain as the app; use a CDN subdomain (`uploads.example.com` ≠ `app.example.com`) — prevents
+   cookie theft.
+4. Virus scan documents (not just images) with ClamAV or a cloud scanner.
+
 ```typescript
-// NEVER: trust client-provided filename or MIME type
-// ALWAYS: validate on server side
+import { fileTypeFromBuffer } from 'file-type'
 
 const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp']
-const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp']
-const maxSize = 5 * 1024 * 1024  // 5MB
+const maxSize = 5 * 1024 * 1024
 
-// 1. Check actual MIME type (magic bytes) — not Content-Type header
-import { fileTypeFromBuffer } from 'file-type'
-const { mime } = await fileTypeFromBuffer(buffer)
-if (!allowedMimeTypes.includes(mime)) throw new ValidationError('Invalid file type')
+if (buffer.length > maxSize) throw new ValidationError('File too large')
+const type = await fileTypeFromBuffer(buffer)
+if (!type || !allowedMimeTypes.includes(type.mime)) throw new ValidationError('Invalid file type')
 
-// 2. Generate new filename — never use original
-const safeFilename = `${crypto.randomUUID()}${allowedExtension}`
-
-// 3. Store outside web root or in blob storage (S3, GCS)
-// NEVER: serve user uploads from the same domain as the app
-// Use: CDN subdomain (uploads.example.com ≠ app.example.com) — prevents cookie theft
-
-// 4. Virus scan for documents (not just images)
-// Use: ClamAV or cloud scanner
+const safeFilename = `${crypto.randomUUID()}.${type.ext}`
 ```
 
 ## SUPPLY CHAIN SECURITY (OWASP A03 2025)
 
 GitHub Actions SHA-pinning and SBOM generation commands are in `rules/600-devops.md` — canonical home (auto-loads for CI/Docker/IaC files), not repeated here.
 
-```yaml
-# Lockfile integrity: commit lockfiles, verify in CI
-npm ci             # ← uses lockfile exactly, fails if package.json changed without update
-pip install --require-hashes -r requirements.txt
+Lockfile integrity: commit lockfiles and verify them in CI. `npm ci` uses the lockfile exactly and
+fails if `package.json` changed without a lockfile update.
 
-# Dependabot: auto-PR for security updates
-# .github/dependabot.yml — enable for npm, pip, docker, github-actions separately
+```bash
+npm ci
+pip install --require-hashes -r requirements.txt
 ```
+
+Dependabot opens auto-PRs for security updates: in `.github/dependabot.yml`, enable it for npm,
+pip, docker and github-actions separately.
 
 ## SECRETS MANAGEMENT
 
+WRONG — a key in code commits to git history forever:
+
 ```bash
-# NEVER in code:
-API_KEY = "sk-abc123..."  # ← commits to git history FOREVER
-
-# ALWAYS: environment variables + secret manager
-process.env.API_KEY         # runtime injection
-AWS Secrets Manager         # production
-HashiCorp Vault             # self-hosted
-GitHub Secrets              # CI/CD
-Doppler / Infisical         # developer experience
-
-# Detect leaked secrets:
-# Pre-commit: gitleaks / detect-secrets
-# CI: trufflesecurity/trufflehog action
-# Rotate immediately if leaked — git history rewrite is not enough
+API_KEY = "sk-abc123..."
 ```
+
+Always use environment variables plus a secret manager:
+
+- `process.env.API_KEY` — runtime injection
+- AWS Secrets Manager — production
+- HashiCorp Vault — self-hosted
+- GitHub Secrets — CI/CD
+- Doppler / Infisical — developer experience
+
+Detect leaked secrets with gitleaks / detect-secrets as a pre-commit hook and the
+trufflesecurity/trufflehog action in CI. Rotate immediately if a secret leaks — a git history
+rewrite is not enough.
 
 ## CRYPTOGRAPHY GUIDELINES
 
@@ -316,12 +366,12 @@ NEVER:
 
 ## AUDIT LOGGING — what to log
 
+Always log security events. A failed login has no `userId` yet: derive a keyed hash of the attempted
+identifier once, outside the log call, and log only that. It correlates repeat attempts just as
+well, and the raw identifier never reaches the log store or a stack frame captured next to it.
+
 ```typescript
-// Always log (security events):
 logger.info({ event: 'auth.login.success', userId, ip, userAgent })
-// A failed login has no userId yet. Derive a keyed hash of the attempted identifier ONCE, outside
-// the log call, and log only that: it correlates repeat attempts just as well, and the raw
-// identifier never reaches the log store or a stack frame captured next to it.
 const attemptedIdHash = hmac(attemptedEmail)
 logger.warn({ event: 'auth.login.failure', attemptedIdHash, ip, reason })
 logger.info({ event: 'auth.logout', userId })
@@ -329,8 +379,8 @@ logger.warn({ event: 'auth.password_reset.requested', attemptedIdHash, ip })
 logger.info({ event: 'admin.user.role_changed', actorId, targetUserId, oldRole, newRole })
 logger.warn({ event: 'access.forbidden', userId, resource, action })
 logger.info({ event: 'data.exported', userId, dataType, count })
-
-// Never log (canonical list: rules/700-observability.md's never-log-fields marker):
-// passwords, tokens, API keys, session IDs, full credit card numbers, SSNs, email/phone
-// Raw request bodies (may contain credentials)
 ```
+
+Never log (canonical list: `rules/700-observability.md`'s Never log list): passwords,
+tokens, API keys, session IDs, full credit card numbers, SSNs, email/phone, or raw request bodies
+(they may contain credentials).

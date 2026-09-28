@@ -1,9 +1,5 @@
 # Project Preset — Node / Express / Fastify / Hono API
 
-<!-- reviewed: 2026-08 — the Express 4 vs 5 claims in the body only. Verified on npm: 5.x is the
-Technical Committee's production-recommended line (5.2.1 current) and 4.x is in maintenance, so the
-guidance to write 5-shaped code and treat 4 as legacy still matches upstream. -->
-
 ## Architecture
 
 - Respect existing layer boundaries: `routes/` → `controllers/` → `services/` → `repositories/`.
@@ -14,18 +10,20 @@ guidance to write 5-shaped code and treat 4 as legacy still matches upstream. --
 
 ## Request validation — at the boundary
 
-Validate all input before it reaches service layer:
+Validate all input before it reaches service layer. Zod is the recommended schema library:
 
 ```typescript
-// Zod (recommended)
 import { z } from "zod"
 
 const CreateUserSchema = z.object({
   email: z.email(),
   name:  z.string().min(1).max(100),
 })
+```
 
-// Express
+Express:
+
+```typescript
 app.post("/users", async (req, res, next) => {
   const result = CreateUserSchema.safeParse(req.body)
   if (!result.success) {
@@ -34,8 +32,11 @@ app.post("/users", async (req, res, next) => {
   const user = await userService.create(result.data)
   res.status(201).json(user)
 })
+```
 
-// Fastify (schema-first)
+Fastify (schema-first):
+
+```typescript
 fastify.post("/users", {
   schema: {
     body: {
@@ -64,10 +65,10 @@ separate endpoint behind an admin-only authorization check.
 
 ## Error handling
 
-Global error handler — never return raw errors to clients:
+Global error handler — never return raw errors to clients. In Express it must be the last
+middleware registered; unexpected errors are logged, not exposed:
 
 ```typescript
-// Express global error handler (must be last middleware)
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
@@ -75,12 +76,14 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
       message: err.message,
     })
   }
-  // Unexpected errors — log, don't expose
   logger.error({ err, path: req.path, method: req.method }, "Unhandled error")
   res.status(500).json({ message: "Internal server error" })
 })
+```
 
-// Domain errors
+Domain errors:
+
+```typescript
 class AppError extends Error {
   constructor(public statusCode: number, public type: string, message: string) {
     super(message)
@@ -93,8 +96,9 @@ class ConflictError   extends AppError { constructor(m: string) { super(409, "co
 
 ## Authorization — every protected route
 
+Check ownership — never skip it:
+
 ```typescript
-// Check ownership — never skip
 async function getPost(req: Request, res: Response) {
   const post = await postRepo.findById(req.params.id)
   if (!post) throw new NotFoundError("Post not found")
@@ -105,17 +109,27 @@ async function getPost(req: Request, res: Response) {
 
 ## SQL safety
 
+WRONG — SQL injection:
+
 ```typescript
-// WRONG — SQL injection
 const users = await db.query(`SELECT * FROM users WHERE email = '${email}'`)
+```
 
-// RIGHT — parameterized (pg)
+RIGHT — parameterized (pg):
+
+```typescript
 const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [email])
+```
 
-// RIGHT — Prisma (always safe)
+RIGHT — Prisma (always safe):
+
+```typescript
 const user = await prisma.user.findUnique({ where: { email } })
+```
 
-// RIGHT — Drizzle
+RIGHT — Drizzle:
+
+```typescript
 const user = await db.select().from(users).where(eq(users.email, email))
 ```
 
@@ -125,27 +139,37 @@ const user = await db.select().from(users).where(eq(users.email, email))
 import pino from "pino"
 const logger = pino({ level: process.env.LOG_LEVEL ?? "info" })
 
-// Always include context — never format strings
 logger.info({ userId: user.id, action: "login" }, "User logged in")
 logger.error({ err, userId: req.user?.id }, "Payment failed")
-
-// NEVER log: passwords, tokens, full req.body, PII
 ```
+
+Always include context as an object — never format strings. NEVER log passwords, tokens, the full
+`req.body`, or PII.
 
 ## Async patterns
 
+WRONG on Express 4 — if `userService.list()` throws, no handler catches it and the unhandled
+rejection crashes the process. On Express 5 the same code is fine: the rejection goes to the error
+middleware.
+
 ```typescript
-// Express 4: WRONG — unhandled rejection crashes the process · Express 5: fine, goes to error middleware
 app.get("/users", async (req, res) => {
-  const users = await userService.list()  // if this throws, no handler catches it
+  const users = await userService.list()
   res.json(users)
 })
+```
 
-// Express 5 (the current default) forwards a rejected async handler to the error middleware
-// on its own. Express 4 does NOT — check the installed major before assuming either.
-import "express-async-errors"  // Express 4 only: once at entry point. Fastify/Hono handle it natively.
+Express 5 (the current default) forwards a rejected async handler to the error middleware on its
+own. Express 4 does NOT — check the installed major before assuming either. On Express 4 only,
+import `express-async-errors` once at the entry point; Fastify and Hono handle it natively.
 
-// RIGHT — parallel independent async calls
+```typescript
+import "express-async-errors"
+```
+
+RIGHT — parallel independent async calls:
+
+```typescript
 const [user, posts] = await Promise.all([
   userRepo.findById(id),
   postRepo.findByUserId(id),
@@ -154,12 +178,13 @@ const [user, posts] = await Promise.all([
 
 ## Rate limiting — required on auth endpoints
 
+Login and register get a strict limit — 5 attempts per 15-minute window:
+
 ```typescript
 import rateLimit from "express-rate-limit"
 
-// Login/register: strict
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 min
+  windowMs: 15 * 60 * 1000,
   max: 5,
   standardHeaders: true,
   message: { error: "Too many attempts, try again later" },
@@ -170,16 +195,15 @@ app.use("/auth/register", authLimiter)
 
 ## Verification
 
+- TypeScript: `tsc --noEmit` type-checks, `eslint` lints.
+- Tests, targeted: `vitest run` or `jest`, whichever the project uses.
+- Build: `tsc -p tsconfig.build.json`.
+
 ```bash
-# TypeScript
-npx tsc --noEmit                  # type check
-eslint src/ --max-warnings 0      # lint
-
-# Tests (targeted)
-vitest run src/users/user.test.ts  # vitest
-jest src/users/user.spec.ts --no-coverage  # jest
-
-# Build
+npx tsc --noEmit
+eslint src/ --max-warnings 0
+vitest run src/users/user.test.ts
+jest src/users/user.spec.ts --no-coverage
 tsc -p tsconfig.build.json
 ```
 

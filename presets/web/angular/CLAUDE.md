@@ -1,11 +1,5 @@
 # Project Preset — Angular (v17+, standalone + signals)
 
-<!-- reviewed: 2026-08 — the v17+ floor in this heading only. v17 is where standalone-by-default
-and signals landed, so it remains the correct floor for everything this preset assumes; the
-`resource()`/`httpResource()` note in the body states its own higher floor. The remaining idioms
-and commands were not re-verified in this pass; re-check them before widening this marker's
-scope. -->
-
 ## Architecture
 
 - **Standalone components only.** `NgModule` is legacy; new code declares its own `imports`.
@@ -29,10 +23,12 @@ scope. -->
 })
 export class UserComponent {
   private readonly service = inject(UserService)
-  readonly id = input.required<string>()          // signal input, v17.1+
+  readonly id = input.required<string>()
   protected readonly vm = toSignal(this.service.user$(this.id), { initialValue: LOADING })
 }
 ```
+
+`input.required()` is a signal input, v17.1+.
 
 On Angular 19+ the `resource()` / `httpResource()` API gives you `isLoading()` / `error()` /
 `value()` directly and replaces the `toSignal` wrapper above — use it if the project is on 19,
@@ -66,8 +62,9 @@ created in `ngOnInit` with no teardown survives the component and keeps its clos
 
 ## HTTP and errors
 
+A functional interceptor keeps the auth header, correlation id and error mapping in one place:
+
 ```ts
-// Functional interceptor — auth header, correlation id, error mapping in one place
 export const authInterceptor: HttpInterceptorFn = (req, next) =>
   next(req.clone({ setHeaders: { Authorization: `Bearer ${inject(TokenStore).value()}` } }))
 ```
@@ -86,11 +83,14 @@ a status code. Provide `HttpClient` with `withFetch()` and `withInterceptors([..
 
 ## Verification
 
+Targeted test, lint, a production build (it catches template type errors), then a
+`--stats-json` build to inspect the bundle budget:
+
 ```bash
-npx ng test --include='**/user.service.spec.ts'   # targeted
+npx ng test --include='**/user.service.spec.ts'
 npx ng lint
-npx ng build                                      # production build catches template type errors
-npx ng build --stats-json                         # then inspect the bundle budget
+npx ng build
+npx ng build --stats-json
 ```
 
 Set `budgets` in `angular.json` so a bundle regression fails the build rather than shipping.

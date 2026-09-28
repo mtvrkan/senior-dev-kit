@@ -1,9 +1,5 @@
 # Project Preset — Go HTTP API (net/http + chi)
 
-<!-- reviewed: 2026-08 — the "Go 1.22+" floor in the errgroup example only. Verified against the Go
-release history: the per-iteration loop variable landed in 1.22, so the comment is still the right
-floor, and 1.26 is current — the claim is a minimum, not a pin, and does not go stale as Go moves. -->
-
 ## Architecture
 
 - Standard layout: `cmd/<binary>/main.go`, private packages under `internal/`, shared libraries
@@ -24,12 +20,14 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
     }
     u, err := h.svc.Create(r.Context(), body)
     if err != nil {
-        writeError(w, statusFor(err), "could not create user")   // generic text out
+        writeError(w, statusFor(err), "could not create user")
         return
     }
     writeJSON(w, http.StatusCreated, toResponse(u))
 }
 ```
+
+Only generic text goes out to the client on a service error.
 
 ## Errors — values, wrapped, inspected with `errors.Is`/`As`
 
@@ -37,7 +35,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 var ErrNotFound = errors.New("not found")
 
 if err != nil {
-    return fmt.Errorf("fetch user %s: %w", id, err)   // %w keeps the chain
+    return fmt.Errorf("fetch user %s: %w", id, err)
 }
 
 switch {
@@ -47,7 +45,7 @@ default: return http.StatusInternalServerError
 }
 ```
 
-Never `_ = err`. Never compare error strings. Log the wrapped error server-side, return a generic
+`%w` keeps the chain for `errors.Is`/`As`. Never `_ = err`. Never compare error strings. Log the wrapped error server-side, return a generic
 message to the client.
 
 ## Context — first parameter, always
@@ -61,10 +59,12 @@ work. Never store a `context.Context` in a struct.
 ```go
 g, ctx := errgroup.WithContext(ctx)
 for _, id := range ids {
-    g.Go(func() error { return fetch(ctx, id) })   // Go 1.22+: no loop-var capture bug
+    g.Go(func() error { return fetch(ctx, id) })
 }
 if err := g.Wait(); err != nil { return err }
 ```
+
+Capturing `id` directly is safe on Go 1.22+, where each loop iteration gets its own variable.
 
 - Every goroutine has a defined exit; a goroutine started and forgotten is a leak.
 - Guard shared state with a mutex or a channel — run `go test -race` and mean it.
@@ -75,12 +75,13 @@ if err := g.Wait(); err != nil { return err }
 
 ```go
 row := db.QueryRowContext(ctx, `SELECT id, email FROM users WHERE email = $1`, email)
-// NEVER: fmt.Sprintf("SELECT ... WHERE email = '%s'", email)
 
-defer rows.Close()          // on every Query
-if err := rows.Err(); err != nil { ... }   // checked after the loop, not only inside it
+defer rows.Close()
+if err := rows.Err(); err != nil { ... }
 ```
 
+NEVER build the query with `fmt.Sprintf("SELECT ... WHERE email = '%s'", email)`.
+`defer rows.Close()` on every `Query`, and check `rows.Err()` after the loop, not only inside it.
 Set `SetMaxOpenConns` / `SetConnMaxLifetime` — the defaults are unbounded.
 
 ## Security
@@ -92,13 +93,16 @@ Set `SetMaxOpenConns` / `SetConnMaxLifetime` — the defaults are unbounded.
 
 ## Verification
 
+A targeted test first; `go test -race` before anything concurrent ships; `govulncheck` is the
+CVE audit:
+
 ```bash
-go test ./internal/user/... -run TestCreateUser -v   # targeted
-go test -race ./...                                  # before anything concurrent ships
+go test ./internal/user/... -run TestCreateUser -v
+go test -race ./...
 golangci-lint run
 go vet ./...
 go build ./...
-govulncheck ./...                                    # CVE audit
+govulncheck ./...
 ```
 
 ## Anti-patterns

@@ -45,10 +45,6 @@ This agent is READ-ONLY by default. After plan approval, the plan is routed to s
 
 ## What to review (comprehensive checklist)
 
-<!-- Accepted overlap with rules/200-api.md (round-28 audit — do not re-flag): that rule serves
-     main-session API edits; this checklist serves guard sessions, where 200-api may never
-     auto-load (middleware.ts etc. don't match its globs). Neither side can be a pointer. -->
-
 ### Authentication
 
 - [ ] JWT: verifier pins the accepted algorithm(s) — never trusts the header `alg` (`none`, HS/RS confusion) · `exp` set and checked · `iss` and `aud` validated · no PII in payload

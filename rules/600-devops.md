@@ -95,17 +95,6 @@ Checklist:
 
 Platform-specific base images:
 
-<!-- toolchain-pins reviewed: 2026-08 digest: 924ec165278b
-     Every pinned version in this file is covered by that digest: image tags (`name:tag`), pip pins
-     (`name==x.y`), and `version:` action inputs — wherever they appear, prose or fence.
-     `scripts/check-consistency.ts` check 26 recomputes it: change a pin without moving the review
-     date and the gate fails. Staleness cannot be detected offline, so the mechanism makes the last
-     conscious "I checked these against upstream" moment explicit instead of invisible.
-     Round-39 audit: the first version of this marker covered only base images and `*-version:`
-     inputs, so the IaC scanner pins 90 lines below were exempt — and both were ~2 years stale
-     (trivy 0.55 → 0.73, checkov 3.2 → 3.3) while this marker read "reviewed". A partial digest is
-     worse than none: it reports coverage it does not have. -->
-
 - Node/Bun: `node:24-alpine` or `oven/bun:1-alpine`
 - Python: `python:3.14-slim`
 - Go: `gcr.io/distroless/static-debian12` (final stage, zero shell)
@@ -118,12 +107,16 @@ Platform-specific base images:
 
 ALWAYS pin to full commit SHA — never mutable version tags:
 
-```yaml
-# WRONG (exploitable if tag is hijacked):
-uses: actions/checkout@v4
+WRONG — exploitable if the tag is hijacked:
 
-# RIGHT (immutable SHA):
-uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+```yaml
+uses: actions/checkout@v4
+```
+
+RIGHT — immutable SHA (this one is `v4.2.2`):
+
+```yaml
+uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 ```
 
 Reference incident: tj-actions/changed-files (2025) — mutable tag modified to exfiltrate secrets.
@@ -140,21 +133,22 @@ steps:
     with:
       role-to-assume: arn:aws:iam::123456789012:role/GitHubActions
       aws-region: us-east-1
-# No long-lived AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY needed
 ```
 
+No long-lived `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` needed.
 Never: long-lived cloud credentials in GitHub Secrets for cloud deployments.
 
 ### Branch protection + deploy gates
 
+Production deploy: require manual approval — set a required reviewer for the environment in
+GitHub Environment settings:
+
 ```yaml
-# Production deploy: require manual approval
 environment:
   name: production
-  # Require reviewer in GitHub Environment settings
-
-# Never: auto-deploy to prod on push to main without approval
 ```
+
+Never: auto-deploy to prod on push to main without approval.
 
 ### Secret handling in Actions
 
@@ -164,23 +158,20 @@ ALWAYS: use `${{ secrets.NAME }}` only in `env:` or `with:` blocks
 
 ### Caching by language
 
+One step each, in order: Node (npm), Python (pip), Go, Rust, Flutter.
+
 ```yaml
-# Node (npm)
 - uses: actions/setup-node@[SHA]
   with: { node-version: '24', cache: 'npm' }
 
-# Python (pip)  
 - uses: actions/setup-python@[SHA]
   with: { python-version: '3.14', cache: 'pip' }
 
-# Go
 - uses: actions/setup-go@[SHA]
   with: { go-version: '1.26', cache: true }
 
-# Rust
 - uses: Swatinem/rust-cache@[SHA]
 
-# Flutter
 - uses: subosito/flutter-action@[SHA]
   with: { channel: 'stable', cache: true }
 ```
@@ -204,10 +195,11 @@ Tools: Checkov (Terraform + K8s + ARM) — preferred, pin to a specific released
 Trivy `--scanners config` for K8s — pin the container tag to a specific release (e.g. `aquasec/trivy:0.73.x`), not `:latest`.
 tfsec is deprecated (merged into Trivy). Terrascan is archived — do not add either to a new pipeline.
 
+CI: scan before plan — the Action is pinned to a full SHA per the rule above, and Checkov's own
+version is pinned separately, since the Action wraps a pip package that updates independently of
+the Action's release tag.
+
 ```yaml
-# CI: scan before plan — Action pinned to full SHA per the rule above,
-# Checkov's own version pinned separately since the Action wraps a pip package
-# that updates independently of the Action's release tag.
 - name: Run Checkov
   uses: bridgecrewio/checkov-action@[SHA]
   with: { directory: '.', soft_fail: false, version: '3.3.20' }
@@ -237,15 +229,22 @@ Kubernetes checklist:
 
 Generate SBOM on every release:
 
+CycloneDX (for vulnerability tracking) + SPDX (for license compliance):
+
 ```bash
-# CycloneDX (for vulnerability tracking) + SPDX (for license compliance)
 syft dir:. -o cyclonedx-json > sbom.cdx.json
 syft dir:. -o spdx-json > sbom.spdx.json
+```
 
-# Vulnerability scan on SBOM
+Vulnerability scan on the SBOM:
+
+```bash
 grype sbom:sbom.cdx.json
+```
 
-# Container image SBOM
+Container image SBOM:
+
+```bash
 syft oven/bun:1-alpine -o cyclonedx-json > base-image-sbom.cdx.json
 ```
 
@@ -261,12 +260,14 @@ Upload SBOM as GitHub Actions artifact. Attach to release.
     format: sarif
     output: trivy-results.sarif
     severity: CRITICAL,HIGH
-    exit-code: '1'  # Fail on CRITICAL/HIGH
+    exit-code: '1'
 
 - name: Upload results
   uses: github/codeql-action/upload-sarif@[SHA]
   with: { sarif_file: trivy-results.sarif }
 ```
+
+`exit-code: '1'` fails the job on any CRITICAL/HIGH finding.
 
 ## ROLLBACK STRATEGY
 

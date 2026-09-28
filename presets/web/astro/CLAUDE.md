@@ -6,16 +6,18 @@ An `.astro` component renders to HTML on the server and ships **no** JavaScript.
 whole point of the framework, and every `client:*` directive is a deliberate exception you should
 be able to justify.
 
+The component script between the `---` fences runs at build/request time on the server only.
+Secrets are safe there; that code never reaches the browser. `client:visible` below hydrates the
+island only when it is scrolled into view.
+
 ```astro
 ---
-// Component script — runs at build/request time on the server only.
-// Secrets are safe here; this code never reaches the browser.
 import { getCollection } from 'astro:content'
 const posts = await getCollection('blog')
 ---
 <ul>{posts.map((p) => <li><a href={`/blog/${p.id}`}>{p.data.title}</a></li>)}</ul>
 
-<SearchBox client:visible />   <!-- hydrated only when scrolled into view -->
+<SearchBox client:visible />
 ```
 
 | Directive | Use when |
@@ -39,8 +41,9 @@ const posts = await getCollection('blog')
 
 ## Content collections, not raw file globbing
 
+`src/content.config.ts`:
+
 ```ts
-// src/content.config.ts
 const blog = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/blog' }),
   schema: z.object({
@@ -71,11 +74,15 @@ Discovering this after building the UI is a rewrite.
 
 ## Verification
 
+- `astro check` — types + template diagnostics, including content-schema errors.
+- `astro build` — catches SSR-only and adapter failures dev never shows.
+- `astro preview` — serves the real build output.
+
 ```bash
-npx astro check      # types + template diagnostics, including content-schema errors
-npx astro build      # catches SSR-only and adapter failures dev never shows
+npx astro check
+npx astro build
 npx vitest run src/lib/util.test.ts
-npx astro preview    # serve the real build output
+npx astro preview
 ```
 
 ## Anti-patterns

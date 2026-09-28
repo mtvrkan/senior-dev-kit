@@ -15,10 +15,18 @@ sealed class ScreenUiState {
     data class Empty(val message: String = "No records yet.") : ScreenUiState()
     data class Error(val message: String) : ScreenUiState()
 }
-// ViewModel
+```
+
+ViewModel:
+
+```kotlin
 private val _uiState = MutableStateFlow<ScreenUiState>(ScreenUiState.Loading)
 val uiState: StateFlow<ScreenUiState> = _uiState.asStateFlow()
-// In Screen composable
+```
+
+In the Screen composable:
+
+```kotlin
 val state by viewModel.uiState.collectAsStateWithLifecycle()
 ```
 
@@ -44,17 +52,25 @@ AlertDialog · ModalBottomSheet · CircularProgressIndicator · SnackbarHostStat
 
 ### State pattern (use existing project pattern)
 
+Sealed class / freezed (if the project uses it):
+
 ```dart
-// Sealed class / freezed (if project uses it)
 abstract class ScreenState {}
 class ScreenLoading extends ScreenState {}
 class ScreenLoaded extends ScreenState { final List<Item> items; ScreenLoaded(this.items); }
 class ScreenEmpty extends ScreenState {}
 class ScreenError extends ScreenState { final String message; ScreenError(this.message); }
+```
 
-// OR: AsyncValue<List<Item>> with Riverpod
+Or `AsyncValue<List<Item>>` with Riverpod:
+
+```dart
 final itemsProvider = FutureProvider<List<Item>>((ref) => ref.read(repoProvider).fetchAll());
-// In widget:
+```
+
+In the widget:
+
+```dart
 final asyncItems = ref.watch(itemsProvider);
 return asyncItems.when(
   data: (items) => items.isEmpty ? EmptyView() : ItemList(items: items),
@@ -85,30 +101,44 @@ showModalBottomSheet · CircularProgressIndicator.adaptive() · ScaffoldMessenge
 
 ### ViewModel pattern
 
+iOS 17+ (`@Observable` — preferred):
+
 ```swift
-// iOS 17+ (@Observable — preferred)
 @Observable class ScreenViewModel {
     var state: ScreenState = .loading
     func load() async { ... }
     func retry() async { await load() }
 }
 enum ScreenState { case loading, loaded([Item]), empty, error(String) }
+```
 
-// iOS 15-16 (ObservableObject)
+iOS 15-16 (`ObservableObject`):
+
+```swift
 class ScreenViewModel: ObservableObject {
     @Published var state: ScreenState = .loading
 }
+```
 
-// View wiring
-@State private var viewModel = ScreenViewModel()  // iOS 17+
-// or
-@StateObject private var viewModel = ScreenViewModel()  // iOS 15-16
+View wiring, iOS 17+:
 
-// Switch on state
+```swift
+@State private var viewModel = ScreenViewModel()
+```
+
+View wiring, iOS 15-16:
+
+```swift
+@StateObject private var viewModel = ScreenViewModel()
+```
+
+Switch on state (`ContentUnavailableView` is iOS 17+):
+
+```swift
 switch viewModel.state {
 case .loading: ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
 case .loaded(let items): ItemList(items: items)
-case .empty: ContentUnavailableView("No Items", systemImage: "tray")  // iOS 17+
+case .empty: ContentUnavailableView("No Items", systemImage: "tray")
 case .error(let msg): ErrorView(message: msg, onRetry: { Task { await viewModel.retry() } })
 }
 ```

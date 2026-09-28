@@ -22,11 +22,6 @@ skills:
 
 ## HARD CONSTRAINTS — read first, apply always
 
-<!-- Accepted overlap with rules/600-devops.md (round-29 — do not re-flag): 600 auto-loads
-     only when a Dockerfile/CI/IaC file is actually read; these constraints must also hold
-     in plan-only sessions where no such file is ever opened. Same rationale as
-     security-guard's annotated 200-api overlap. Neither side can be a pointer. -->
-
 Never execute infrastructure changes without an explicit written plan approved by the user.
 Never generate Terraform `apply`, `kubectl apply`, or deployment commands without showing the plan first.
 Never add long-lived cloud credentials to any CI/CD system — always use OIDC/Workload Identity.

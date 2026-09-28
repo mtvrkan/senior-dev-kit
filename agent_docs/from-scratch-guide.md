@@ -131,18 +131,28 @@ Run the framework's own initializer **before** writing any file into the project
 files, so writing `globals.css` or `layout.tsx` first (as earlier revisions of this guide had
 it) breaks the scaffold outright.
 
+Next.js + shadcn/ui — pass every option; in a non-interactive agent session an unanswered prompt
+hangs the turn:
+
 ```bash
-# Next.js + shadcn/ui — pass every option; in a non-interactive agent session an
-# unanswered prompt hangs the turn.
 npx create-next-app@latest [name] --typescript --tailwind --app --src-dir --eslint --import-alias "@/*"
+```
 
-# Astro
+Astro:
+
+```bash
 npm create astro@latest [name]
+```
 
-# FastAPI
+FastAPI:
+
+```bash
 mkdir [name] && cd [name] && python -m venv venv && pip install fastapi uvicorn pydantic
+```
 
-# Go
+Go:
+
+```bash
 mkdir [name] && cd [name] && go mod init [module-path]
 ```
 
@@ -201,11 +211,12 @@ Next.js: `app/globals.css` | Vite+React: `src/styles/globals.css` | Nuxt: `asset
 
 ## Step 5 — types/index.ts
 
+TypeScript projects: `src/types/index.ts` or `types/index.ts`. Add all types from
+PROJECT-CONTRACTS.md § Shared TypeScript Types; every file imports from here — no inline type
+duplication.
+
 ```typescript
-// TypeScript projects: src/types/index.ts or types/index.ts
 export type User = { id: string; email: string; role: 'admin' | 'member'; createdAt: Date }
-// Add all types from PROJECT-CONTRACTS.md § Shared TypeScript Types
-// Every file imports from here — no inline type duplication
 ```
 
 ---

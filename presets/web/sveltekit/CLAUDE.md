@@ -1,9 +1,5 @@
 # Project Preset — SvelteKit (Svelte 5)
 
-<!-- reviewed: 2026-08 — the Svelte 5 claim in this heading only. Svelte 5 is current and runes are
-its stable API, so the preset's `export let` ban still reflects upstream. The idioms and commands
-below were not re-verified in this pass; re-check them before widening this marker's scope. -->
-
 ## Architecture
 
 - File-based routes under `src/routes/`. The filename is the contract:
@@ -14,8 +10,10 @@ below were not re-verified in this pass; re-check them before widening this mark
 - Shared code in `src/lib/` (`$lib` alias); server-only modules in `src/lib/server/` — importing
   one from client code is a build error, and that is the guardrail to rely on.
 
+`src/routes/users/[id]/+page.server.ts` — the `403` check enforces ownership, not just
+authentication:
+
 ```ts
-// src/routes/users/[id]/+page.server.ts
 import { error } from '@sveltejs/kit'
 import { db } from '$lib/server/db'
 
@@ -23,7 +21,7 @@ export const load = async ({ params, locals }) => {
   if (!locals.user) error(401, 'Unauthorized')
   const user = await db.user(params.id)
   if (!user) error(404, 'Not found')
-  if (user.orgId !== locals.user.orgId) error(403, 'Forbidden')   // ownership, not just auth
+  if (user.orgId !== locals.user.orgId) error(403, 'Forbidden')
   return { user }
 }
 ```
@@ -35,7 +33,7 @@ export const load = async ({ params, locals }) => {
   let { user }: { user: User } = $props()
   let count = $state(0)
   let doubled = $derived(count * 2)
-  $effect(() => { document.title = user.name })   // side effects only — not for deriving values
+  $effect(() => { document.title = user.name })
 </script>
 ```
 
@@ -46,8 +44,9 @@ export const load = async ({ params, locals }) => {
 
 ## Forms — use actions, not a fetch handler
 
+`+page.server.ts`:
+
 ```ts
-// +page.server.ts
 export const actions = {
   create: async ({ request, locals }) => {
     const data = await request.formData()
@@ -87,11 +86,14 @@ error boundary, an explicit empty branch — three states, always.
 
 ## Verification
 
+Targeted test, `svelte-check` (types + template diagnostics), lint, and a build, which catches
+server/client boundary violations:
+
 ```bash
-npx vitest run src/lib/user.test.ts   # targeted
-npx svelte-check                      # types + template diagnostics
+npx vitest run src/lib/user.test.ts
+npx svelte-check
 npx eslint .
-npx vite build                        # catches server/client boundary violations
+npx vite build
 ```
 
 ## Anti-patterns

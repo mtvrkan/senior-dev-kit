@@ -85,22 +85,29 @@ Accessibility:
 
 ## iOS / SWIFT
 
-```swift
-// State management hierarchy
-@Observable class ViewModel { ... }  // iOS 17+ (preferred)
-@StateObject var vm = ViewModel()    // iOS <17
-@ObservedObject var vm: ViewModel    // passed from parent
+State management hierarchy — `@Observable` on iOS 17+ (preferred), `@StateObject` on iOS <17,
+`@ObservedObject` when the view model is passed from the parent:
 
-// Async/await (Swift Concurrency — always over callbacks)
+```swift
+@Observable class ViewModel { ... }
+@StateObject var vm = ViewModel()
+@ObservedObject var vm: ViewModel
+```
+
+Async/await (Swift Concurrency — always over callbacks):
+
+```swift
 func fetchUser() async throws -> User {
     let (data, _) = try await URLSession.shared.data(from: url)
     return try JSONDecoder().decode(User.self, from: data)
 }
+```
 
-// Navigation (iOS 16+)
+Navigation (iOS 16+) — `NavigationStack`, NOT `NavigationView` (deprecated):
+
+```swift
 NavigationStack { ... }
   .navigationDestination(for: Route.self) { ... }
-// NOT: NavigationView (deprecated)
 ```
 
 Patterns:
@@ -120,8 +127,9 @@ Anti-patterns (never):
 
 ## ANDROID / KOTLIN / COMPOSE
 
+State management pattern — network/disk work runs on `Dispatchers.IO`:
+
 ```kotlin
-// State management pattern
 data class UiState(val isLoading: Boolean, val data: List<Item>, val error: String?)
 
 class MyViewModel : ViewModel() {
@@ -129,13 +137,15 @@ class MyViewModel : ViewModel() {
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
     
     fun loadData() = viewModelScope.launch {
-        // Dispatchers.IO for network/disk
         val result = withContext(Dispatchers.IO) { repository.fetch() }
         _uiState.update { it.copy(data = result, isLoading = false) }
     }
 }
+```
 
-// In Composable:
+In the Composable:
+
+```kotlin
 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 ```
 
@@ -155,12 +165,16 @@ Never: `Thread.sleep()` · sync network on main thread · `GlobalScope.launch` (
 
 ## FLUTTER / DART
 
+Riverpod (code generation approach):
+
 ```dart
-// Riverpod (code generation approach)
 @riverpod
 Future<List<User>> users(Ref ref) async => await UserRepository().fetchAll();
+```
 
-// In widget:
+In the widget:
+
+```dart
 class UsersPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -174,16 +188,15 @@ class UsersPage extends ConsumerWidget {
 }
 ```
 
-State management hierarchy: <!-- reviewed: 2026-08 -->
+State management hierarchy:
 
 - Riverpod (code-gen) — always preferred for new projects
 - Bloc — only for complex event-driven flows
 - Provider — only for legacy migration, never new
 
-Testing:
+Testing — a Riverpod unit test:
 
 ```dart
-// Unit test (Riverpod)
 test('loads users', () async {
   final container = ProviderContainer(overrides: [
     usersProvider.overrideWith((ref) async => [mockUser]),
@@ -206,17 +219,19 @@ Shimmer loading: `shimmer` package — never `CircularProgressIndicator` for lis
 
 ## REACT NATIVE / EXPO
 
+FlashList for any list >20 items. FlashList v2 (New Architecture) auto-measures rows — the v1
+`estimatedItemSize` prop was removed; don't pass it.
+
 ```typescript
-// FlashList for any list >20 items. FlashList v2 (New Architecture) auto-measures
-// rows — the v1 `estimatedItemSize` prop was removed; don't pass it.
 import { FlashList } from "@shopify/flash-list"
 <FlashList data={items} renderItem={({ item }) => <Item item={item} />} />
-
-// Expo Router v6 navigation
-// app/(tabs)/index.tsx   → tab route
-// app/[id].tsx           → dynamic route
-// Never: hard-coded React Navigation stack inside Expo project
 ```
+
+Expo Router v6 navigation:
+
+- `app/(tabs)/index.tsx` → tab route
+- `app/[id].tsx` → dynamic route
+- Never: hard-coded React Navigation stack inside an Expo project
 
 Patterns:
 

@@ -2,15 +2,16 @@
 
 ## Schema is TypeScript, and it is the source of truth
 
+`src/db/schema.ts`:
+
 ```ts
-// src/db/schema.ts
 export const users = pgTable('users', {
   id:        uuid('id').primaryKey().defaultRandom(),
   email:     text('email').notNull().unique(),
   orgId:     uuid('org_id').notNull().references(() => orgs.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
-  index('users_org_idx').on(t.orgId),          // every FK you filter on needs one
+  index('users_org_idx').on(t.orgId),
 ])
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -22,6 +23,8 @@ export type User    = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 ```
 
+Every FK you filter on needs an index, as `users_org_idx` does for `orgId`.
+
 Derive types with `$inferSelect` / `$inferInsert` — never hand-write an interface that mirrors a
 table, because nothing keeps the two in sync.
 
@@ -31,9 +34,11 @@ database with no referential integrity.
 
 ## Migrations — generate, review, apply
 
+`generate` emits SQL into `drizzle/` — READ IT; `migrate` applies pending migrations:
+
 ```bash
-npx drizzle-kit generate    # emits SQL into drizzle/ — READ IT
-npx drizzle-kit migrate     # applies pending migrations
+npx drizzle-kit generate
+npx drizzle-kit migrate
 ```
 
 - `drizzle-kit push` skips the migration file entirely. It is for local prototyping only; using
@@ -44,16 +49,21 @@ npx drizzle-kit migrate     # applies pending migrations
 
 ## Querying — two APIs, pick deliberately
 
+Relational API — nested results, no manual joins, one round trip; `columns` is the explicit
+projection:
+
 ```ts
-// Relational API — nested results, no manual joins, one round trip
 const rows = await db.query.users.findMany({
   where: eq(users.orgId, orgId),
-  columns: { id: true, email: true },              // explicit projection
+  columns: { id: true, email: true },
   with: { posts: { columns: { id: true, title: true }, limit: 10 } },
   limit: 20,
 })
+```
 
-// SQL-like API — when you need the exact query
+SQL-like API — when you need the exact query:
+
+```ts
 await db.select({ id: users.id, org: orgs.name })
   .from(users)
   .innerJoin(orgs, eq(users.orgId, orgs.id))
@@ -82,10 +92,14 @@ you forgot about will dominate the payload.
 
 ## Verification
 
+- `drizzle-kit check` — migration folder consistency: collisions, broken ordering.
+- `drizzle-kit generate` — emits nothing when the schema and migrations already agree.
+- `tsc --noEmit` — the schema IS the type check.
+
 ```bash
-npx drizzle-kit check     # migration folder consistency — collisions, broken ordering
-npx drizzle-kit generate  # emits nothing when the schema and migrations already agree
-npx tsc --noEmit          # the schema IS the type check
+npx drizzle-kit check
+npx drizzle-kit generate
+npx tsc --noEmit
 npx vitest run src/db/queries.test.ts
 ```
 

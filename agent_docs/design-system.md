@@ -34,12 +34,16 @@ Primitive tokens    →  Semantic tokens      →  Component tokens
 
 **Rule: components use ONLY semantic tokens. Never primitive hex values.**
 
+WRONG:
+
 ```css
-/* WRONG */
 background: #6366F1;
 color: rgb(239, 68, 68);
+```
 
-/* RIGHT */
+RIGHT:
+
+```css
 background: var(--primary);
 color: var(--destructive);
 ```
@@ -79,8 +83,9 @@ TYPOGRAPHY section. Three or more is where it usually goes wrong.
 
 Every component that loads data needs:
 
+LOADING — skeleton matching content shape:
+
 ```tsx
-// 1. LOADING — skeleton matching content shape
 function UserListSkeleton() {
   return (
     <div className="space-y-3">
@@ -96,22 +101,28 @@ function UserListSkeleton() {
     </div>
   )
 }
+```
 
-// 2. EMPTY — all 4 elements required
+EMPTY — all 4 elements required, in order: icon, headline, description, CTA:
+
+```tsx
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-4">
-      <Users className="h-12 w-12 text-muted-foreground" />   {/* icon */}
-      <h3 className="text-lg font-semibold">No users yet</h3>  {/* headline */}
+      <Users className="h-12 w-12 text-muted-foreground" />
+      <h3 className="text-lg font-semibold">No users yet</h3>
       <p className="text-sm text-muted-foreground text-center max-w-xs">
-        Add your first user to get started.                     {/* description */}
+        Add your first user to get started.
       </p>
-      <Button onClick={onAdd}>Add User</Button>                 {/* CTA */}
+      <Button onClick={onAdd}>Add User</Button>
     </div>
   )
 }
+```
 
-// 3. ERROR — actionable, never just "Something went wrong"
+ERROR — actionable, never just "Something went wrong":
+
+```tsx
 function ErrorState({ error, onRetry }: { error: Error; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 py-12">
@@ -134,29 +145,43 @@ not restated here). Tailwind idiom: `bg-muted animate-pulse` + `h-4` / `rounded-
 
 ## MOTION TOKENS — standardized animation
 
-```css
-/* Timing — matches rules/100-web.md's --transition-* tokens */
---transition-fast:  100ms   /* micro-interactions: button press, focus ring */
---transition-base:  200ms   /* hover states, standard transitions */
---transition-slow:  300ms   /* enter animations (page/component mount) */
---duration-stagger: 50ms    /* per-item in lists, max 8 items staggered */
+Timing — matches rules/100-web.md's `--transition-*` tokens:
 
-/* Easing */
---ease-enter:   cubic-bezier(0.2, 0, 0, 1)  /* decelerate in — matches rules/100-web.md MOTION RULES */
---ease-exit:    cubic-bezier(0.4, 0, 1, 1)  /* accelerate out */
---ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1)  /* spring feel */
+```css
+--transition-fast:  100ms
+--transition-base:  200ms
+--transition-slow:  300ms
+--duration-stagger: 50ms
 ```
 
-Enter animation (300ms, decelerate):
+- `--transition-fast` — micro-interactions: button press, focus ring
+- `--transition-base` — hover states, standard transitions
+- `--transition-slow` — enter animations (page/component mount)
+- `--duration-stagger` — per item in lists, max 8 items staggered
+
+Easing — `--ease-enter` matches rules/100-web.md's MOTION RULES:
+
+```css
+--ease-enter:   cubic-bezier(0.2, 0, 0, 1)
+--ease-exit:    cubic-bezier(0.4, 0, 1, 1)
+--ease-bounce:  cubic-bezier(0.34, 1.56, 0.64, 1)
+```
+
+- `--ease-enter` — decelerate in
+- `--ease-exit` — accelerate out
+- `--ease-bounce` — spring feel
+
+Enter animation (300ms, decelerate). With Tailwind v4 use `@starting-style`; with Framer Motion:
 
 ```tsx
-// Tailwind v4: use @starting-style
-// Framer Motion:
 initial={{ opacity: 0, y: 8 }}
 animate={{ opacity: 1, y: 0 }}
 transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
+```
 
-// List stagger:
+List stagger:
+
+```tsx
 transition={{ delay: index * 0.05 }}
 ```
 
@@ -180,8 +205,9 @@ transition={{ duration: 0.15, ease: [0.4, 0, 1, 1] }}
 
 ## VIEW TRANSITIONS API — zero-KB page transitions
 
+Next.js 16+ / React 19:
+
 ```tsx
-// Next.js 16+ / React 19
 function navigate(url: string) {
   if (!document.startViewTransition) {
     router.push(url)
@@ -206,24 +232,34 @@ CSS for enter/exit:
 
 ## DARK MODE — next-themes pattern
 
+Layout wrapper:
+
 ```tsx
-// Layout wrapper
 import { ThemeProvider } from 'next-themes'
 <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
   {children}
 </ThemeProvider>
-
-// Component usage — semantic tokens only
-// 'dark:' prefix works when attribute="class"
-className="bg-background text-foreground"  // ← semantic, auto-switches
-className="bg-white text-gray-900"         // ← WRONG: no dark mode
 ```
 
-shadcn/ui CSS variables auto-switch:
+Component usage — semantic tokens only. The `dark:` prefix works when `attribute="class"`.
+
+RIGHT — semantic, auto-switches:
+
+```tsx
+className="bg-background text-foreground"
+```
+
+WRONG — no dark mode:
+
+```tsx
+className="bg-white text-gray-900"
+```
+
+shadcn/ui CSS variables auto-switch — `:root` holds the light value, `.dark` the dark one:
 
 ```css
-:root { --background: oklch(1 0 0); }  /* light */
-.dark { --background: oklch(0.145 0 0); }  /* dark */
+:root { --background: oklch(1 0 0); }
+.dark { --background: oklch(0.145 0 0); }
 @theme inline { --color-background: var(--background); }
 ```
 
@@ -231,8 +267,9 @@ Tailwind v4 and current shadcn/ui store complete OKLCH colors in the variables a
 
 ## INTERACTION STATES — every interactive element
 
+Button: hover + active + focus + disabled:
+
 ```tsx
-// Button: hover + active + focus + disabled
 className="
   bg-primary text-primary-foreground
   hover:bg-primary/90
@@ -303,14 +340,17 @@ Give the component its own token names and let each variant reassign them. Layou
 a variant changes only what its own tokens point at, so a new size or colour is three declarations
 instead of a duplicated class list that drifts the first time padding changes.
 
+The first four declarations are the component tokens' defaults; the four after them are written
+once, for every variant:
+
 ```css
 .btn {
-  --btn-bg: var(--color-primary);          /* component tokens: the defaults */
+  --btn-bg: var(--color-primary);
   --btn-fg: var(--color-primary-foreground);
   --btn-h: 40px;
   --btn-px: var(--space-4);
 
-  background: var(--btn-bg);               /* written once, for every variant */
+  background: var(--btn-bg);
   color: var(--btn-fg);
   height: var(--btn-h);
   padding-inline: var(--btn-px);
@@ -339,17 +379,24 @@ Existing critical requirements:
 - Never convey information by color alone — add icon or text
 - All interactive elements keyboard-accessible (no keyboard traps)
 
+Icon-only button — required `aria-label`:
+
 ```tsx
-// Icon-only button — required aria-label
 <button aria-label="Delete user" onClick={handleDelete}>
   <Trash2 className="h-4 w-4" />
 </button>
+```
 
-// Form field — required label association
+Form field — required label association:
+
+```tsx
 <label htmlFor="email">Email</label>
 <input id="email" type="email" />
+```
 
-// Dynamic content — announce changes
+Dynamic content — announce changes:
+
+```tsx
 <div aria-live="polite">{statusMessage}</div>
 ```
 

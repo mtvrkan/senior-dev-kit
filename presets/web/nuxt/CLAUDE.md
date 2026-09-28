@@ -1,9 +1,5 @@
 # Project Preset — Nuxt 3/4 (Vue)
 
-<!-- reviewed: 2026-08 — the 3/4 version claim in this heading only. Nuxt 4 is current and 3 is
-still in wide use, so the range holds. The idioms and commands below were not re-verified in this
-pass; re-check them before widening this marker's scope. -->
-
 ## Architecture
 
 - Nuxt 4 source lives under `app/` (the default `srcDir`): routing in `app/pages/`, layouts in
@@ -46,10 +42,11 @@ common Nuxt bug. Always give `useAsyncData` a stable `key`.
 
 ## Server routes and secrets
 
+`server/api/users/[id].get.ts` — private keys only exist in the server-side `useRuntimeConfig()`:
+
 ```ts
-// server/api/users/[id].get.ts
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()          // private keys only exist here
+  const config = useRuntimeConfig()
   const id = getRouterParam(event, 'id')
   if (!id) throw createError({ statusCode: 400, statusMessage: 'id required' })
   return await db.user(id, config.apiSecret)
@@ -79,11 +76,14 @@ export default defineEventHandler(async (event) => {
 
 ## Verification
 
+Targeted test, `nuxt typecheck` (vue-tsc under the hood), lint, and a build, which catches
+SSR-only failures dev never shows:
+
 ```bash
-npx vitest run tests/user.spec.ts   # targeted
-npx nuxt typecheck                  # vue-tsc under the hood
+npx vitest run tests/user.spec.ts
+npx nuxt typecheck
 npx eslint .
-npx nuxt build                      # catches SSR-only failures dev never shows
+npx nuxt build
 ```
 
 ## Anti-patterns

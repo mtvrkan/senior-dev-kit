@@ -54,15 +54,18 @@ The rule this expands on is `rules/001-conventions.md`'s: a barrel is allowed at
 root** and nowhere else, and it must list the module's public API explicitly rather than
 star-export its internals. Anything deeper in the tree: import from the source file directly.
 
+WRONG — star-export barrel:
+
 ```typescript
-// WRONG: barrel
 export * from './UserService'
 export * from './UserRepository'
 export * from './UserController'
+```
 
-// RIGHT: explicit public API
+RIGHT — explicit public API; the other classes are private implementation details, not exported:
+
+```typescript
 export { UserService } from './UserService'
-// Other classes = private implementation detail, not exported
 ```
 
 ### Dependency direction rules
@@ -90,8 +93,6 @@ Shared kernel → Feature (shared imports feature)
 
 ## STATE MANAGEMENT ARCHITECTURE
 
-<!-- reviewed: 2026-08 -->
-
 ### Decision matrix
 
 | Need | Solution |
@@ -107,20 +108,25 @@ Shared kernel → Feature (shared imports feature)
 
 ### Zustand store shape
 
+GOOD — action-first, no getters that derive from state:
+
 ```typescript
-// GOOD: action-first, no getters that derive from state
 interface AuthStore {
   user: User | null
   token: string | null
   login: (credentials: Credentials) => Promise<void>
   logout: () => void
 }
+```
 
-// BAD: derived state in store (use selectors instead)
+BAD — derived state in the store; `isLoggedIn` should be the selector `(state) => !!state.user`, and
+`fullName` should be a selector too:
+
+```typescript
 interface BadStore {
   user: User | null
-  isLoggedIn: boolean  // ← should be selector: (state) => !!state.user
-  fullName: string     // ← should be selector
+  isLoggedIn: boolean
+  fullName: string
 }
 ```
 
@@ -151,18 +157,28 @@ Never: createUser · onOrderPlace · handlePayment
 
 ```typescript
 interface DomainEvent<T = unknown> {
-  id: string          // UUID — idempotency key
-  type: string        // 'user.created'
-  occurredAt: string  // ISO 8601
-  version: number     // schema version — start at 1
+  id: string
+  type: string
+  occurredAt: string
+  version: number
   payload: T
   metadata?: {
-    correlationId: string   // trace across services
-    causationId: string     // which event caused this
-    userId?: string         // who triggered it
+    correlationId: string
+    causationId: string
+    userId?: string
   }
 }
 ```
+
+| Field | Meaning |
+| --- | --- |
+| `id` | UUID — idempotency key |
+| `type` | event name, e.g. `'user.created'` |
+| `occurredAt` | ISO 8601 |
+| `version` | schema version — start at 1 |
+| `metadata.correlationId` | trace across services |
+| `metadata.causationId` | which event caused this |
+| `metadata.userId` | who triggered it |
 
 ## MONOREPO ARCHITECTURE (Turborepo / Nx)
 
@@ -181,13 +197,13 @@ packages/
 
 ### Import boundary rules
 
-```typescript
-// apps/web → packages/ui ✓
-// apps/web → packages/shared ✓
-// apps/web → apps/api ✗ (cross-app import = coupling)
-// packages/shared → apps/web ✗ (package importing app = wrong direction)
-// packages/ui → packages/shared ✓ (package using shared types)
-```
+| Import | Allowed | Why |
+| --- | --- | --- |
+| `apps/web` → `packages/ui` | ✓ | |
+| `apps/web` → `packages/shared` | ✓ | |
+| `apps/web` → `apps/api` | ✗ | cross-app import = coupling |
+| `packages/shared` → `apps/web` | ✗ | package importing app = wrong direction |
+| `packages/ui` → `packages/shared` | ✓ | package using shared types |
 
 ### Turborepo tasks
 

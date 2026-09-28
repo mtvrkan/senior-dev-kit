@@ -33,12 +33,16 @@ Flag `PERF:` when a change likely violates these. Do not block — flag and cont
 | Single dependency added | < 30 KB gzip — if larger, justify or find alternative |
 | CSS bundle (gzip) | < 50 KB |
 
-```bash
-# Size of a package before adding it — npm built-in, no extra install
-npm view <package>@<version> dist.unpackedSize
-# Gzipped cost in a real bundle: https://bundlephobia.com/package/<package>
+Size of a package before adding it — npm built-in, no extra install. For its gzipped cost in a
+real bundle, see `https://bundlephobia.com/package/<package>`:
 
-# Analyze an existing bundle
+```bash
+npm view <package>@<version> dist.unpackedSize
+```
+
+Analyze an existing bundle:
+
+```bash
 next experimental-analyze
 ANALYZE=true next build --webpack
 $env:ANALYZE=1; next build --webpack
@@ -94,14 +98,18 @@ latency-budget framing above.
 | List > 50 items (web/Flutter; RN > 20 — see `400-mobile.md`) without virtualization | Use `FlashList` (RN) / `List` from react-window v2 or `@tanstack/react-virtual` (web) / `ListView.builder` (Flutter) |
 | `useEffect` with no deps or wrong deps | Causes infinite render loop |
 
+WRONG — expensive computation in render, the sort is recalculated on every render:
+
 ```typescript
-// WRONG — expensive computation in render (runs on every render):
 function Component({ items }) {
-  const sorted = items.sort((a, b) => b.score - a.score) // ← recalculated every render
+  const sorted = items.sort((a, b) => b.score - a.score)
   return <List data={sorted} />
 }
+```
 
-// RIGHT — memoized:
+RIGHT — memoized:
+
+```typescript
 function Component({ items }) {
   const sorted = useMemo(() => [...items].sort((a, b) => b.score - a.score), [items])
   return <List data={sorted} />
@@ -110,12 +118,17 @@ function Component({ items }) {
 
 ## LOAD PERFORMANCE (images + fonts)
 
-CLS prevention — mandatory on every `<img>`:
+CLS prevention — mandatory on every `<img>`.
+
+ALWAYS — explicit width + height:
 
 ```html
-<!-- ALWAYS: explicit width + height OR aspect-ratio CSS -->
 <img src="..." width="800" height="600" alt="..." />
-<!-- or -->
+```
+
+Or an aspect-ratio box:
+
+```html
 <div style="aspect-ratio: 4/3"><img src="..." /></div>
 ```
 
@@ -125,24 +138,30 @@ Never: `font-display: block` for body text (invisible text = bad UX + CLS).
 ```css
 @font-face {
   src: url('/fonts/Inter.woff2') format('woff2');
-  font-display: swap; /* or optional */
+  font-display: swap;
 }
 ```
+
+`optional` is the other acceptable value in place of `swap`.
 
 ## MEMORY / RESOURCE LEAKS
 
 Signal: event listener or interval added without cleanup.
 
-```typescript
-// WRONG — leak:
-useEffect(() => {
-  window.addEventListener('resize', handler)
-}, []) // missing cleanup
+WRONG — leak, the cleanup function is missing:
 
-// RIGHT:
+```typescript
 useEffect(() => {
   window.addEventListener('resize', handler)
-  return () => window.removeEventListener('resize', handler) // ← cleanup
+}, [])
+```
+
+RIGHT — the returned function is the cleanup:
+
+```typescript
+useEffect(() => {
+  window.addEventListener('resize', handler)
+  return () => window.removeEventListener('resize', handler)
 }, [])
 ```
 
@@ -154,15 +173,20 @@ Same pattern for: WebSocket connections, `setInterval`, `setTimeout` chains, Sub
 
 Serial awaits that could be parallel:
 
+WRONG — sequential, total time = A + B + C:
+
 ```typescript
-// WRONG — sequential (total time = A + B + C):
 const a = await fetchA()
 const b = await fetchB()
 const c = await fetchC()
-
-// RIGHT — parallel (total time = max(A, B, C)):
-const [a, b, c] = await Promise.all([fetchA(), fetchB(), fetchC()])
-// Guard: only use Promise.all when A, B, C are independent (no shared write target)
 ```
+
+RIGHT — parallel, total time = max(A, B, C):
+
+```typescript
+const [a, b, c] = await Promise.all([fetchA(), fetchB(), fetchC()])
+```
+
+Guard: only use `Promise.all` when A, B, C are independent (no shared write target).
 
 `PERF: serial await — [file:line] — [N] independent fetches could be Promise.all()`

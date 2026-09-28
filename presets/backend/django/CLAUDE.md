@@ -8,19 +8,20 @@
 - Fat models are fine for query logic (managers, `QuerySet` methods); side effects belong in
   services.
 
+`apps/users/views.py`:
+
 ```python
-# apps/users/views.py
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class   = UserSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
     def get_queryset(self):
-        # Scope by the requesting user — this is the authorization boundary
         return User.objects.filter(organization=self.request.user.organization)
 ```
 
-`get_queryset` scoping is what prevents IDOR. A `permission_classes` entry alone does not stop
-user A from fetching user B's object by id.
+Scoping `get_queryset` by the requesting user is the authorization boundary — it is what
+prevents IDOR. A `permission_classes` entry alone does not stop user A from fetching user B's
+object by id.
 
 ## Settings are the protected area
 
@@ -34,16 +35,24 @@ Tier 3 — plan first.
 
 ## ORM — N+1 and query count
 
+WRONG — one query per row:
+
 ```python
-# WRONG — one query per row
 for order in Order.objects.all():
     print(order.customer.name)
+```
 
-# RIGHT
-Order.objects.select_related("customer")            # FK / OneToOne — SQL JOIN
-Article.objects.prefetch_related("tags")            # M2M / reverse FK — second query
+RIGHT — `select_related` for FK / OneToOne (SQL JOIN), `prefetch_related` for M2M / reverse FK
+(a second query):
 
-# Only the columns needed
+```python
+Order.objects.select_related("customer")
+Article.objects.prefetch_related("tags")
+```
+
+Fetch only the columns needed:
+
+```python
 User.objects.only("id", "email")
 User.objects.values("id", "email")
 ```
@@ -65,10 +74,11 @@ renaming, or dropping requires the expand → backfill → contract sequence acr
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model  = User
-        fields = ["id", "email", "name"]          # explicit allowlist
-        # NEVER fields = "__all__" — it leaks new columns automatically
+        fields = ["id", "email", "name"]
         read_only_fields = ["id"]
 ```
+
+`fields` is an explicit allowlist. NEVER `fields = "__all__"` — it leaks new columns automatically.
 
 Validation belongs in `validate_<field>` / `validate`, not in the view.
 
@@ -79,13 +89,17 @@ request. Tasks are idempotent and take ids, not model instances.
 
 ## Verification
 
+- Targeted test run — `manage.py test`, or `pytest` if the project uses pytest-django.
+- `check --deploy` audits production settings.
+- `makemigrations --check --dry-run` fails if models drifted from migrations.
+
 ```bash
-python manage.py test apps.users.tests.TestUserAPI   # targeted
-pytest apps/users -x -q                              # if pytest-django
+python manage.py test apps.users.tests.TestUserAPI
+pytest apps/users -x -q
 ruff check .
 mypy apps/
-python manage.py check --deploy                      # production settings audit
-python manage.py makemigrations --check --dry-run    # fails if models drifted from migrations
+python manage.py check --deploy
+python manage.py makemigrations --check --dry-run
 ```
 
 ## Anti-patterns

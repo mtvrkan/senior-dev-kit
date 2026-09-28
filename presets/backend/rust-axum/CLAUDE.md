@@ -17,7 +17,7 @@ async fn create_user(
     State(state): State<AppState>,
     Json(body): Json<CreateUser>,
 ) -> Result<(StatusCode, Json<UserResponse>), AppError> {
-    body.validate()?;                                  // validator crate
+    body.validate()?;
     let user = state.users.create(body).await?;
     Ok((StatusCode::CREATED, Json(user.into())))
 }
@@ -28,6 +28,8 @@ let app = Router::new()
     .layer(TraceLayer::new_for_http())
     .with_state(state);
 ```
+
+`body.validate()` comes from the `validator` crate.
 
 ## Errors — one enum, `?` everywhere
 
@@ -45,7 +47,7 @@ impl IntoResponse for AppError {
             AppError::NotFound  => (StatusCode::NOT_FOUND,  "not found"),
             AppError::Forbidden => (StatusCode::FORBIDDEN,  "forbidden"),
             AppError::Db(e) => {
-                tracing::error!(error = %e, "db failure");        // detail stays in the log
+                tracing::error!(error = %e, "db failure");
                 (StatusCode::INTERNAL_SERVER_ERROR, "internal error")
             }
         };
@@ -54,7 +56,8 @@ impl IntoResponse for AppError {
 }
 ```
 
-Log the internal error, return a generic message. `sqlx::Error` text can name columns.
+Log the internal error, return a generic message — the detail stays in the log. `sqlx::Error`
+text can name columns.
 
 ## `unwrap` policy
 
@@ -72,14 +75,15 @@ remote denial of service — use `?` or an explicit match.
 
 ## Database — sqlx
 
+`query_as!` is compile-time checked and parameterized:
+
 ```rust
-// Compile-time checked and parameterized
 let user = sqlx::query_as!(User, "SELECT id, email FROM users WHERE email = $1", email)
     .fetch_optional(&state.db)
     .await?;
-
-// NEVER: format!("SELECT * FROM users WHERE email = '{email}'")
 ```
+
+NEVER build SQL with `format!("SELECT * FROM users WHERE email = '{email}'")`.
 
 Transactions with `pool.begin()`; commit explicitly — a dropped transaction rolls back silently.
 
@@ -92,19 +96,25 @@ FFI.
 ## Observability
 
 ```rust
-tracing::info!(user_id = %user.id, "user.created");   // structured fields, not format strings
+tracing::info!(user_id = %user.id, "user.created");
 ```
 
-`tracing-subscriber` with JSON output in production. Never log tokens or password hashes.
+Structured fields, not format strings. `tracing-subscriber` with JSON output in production. Never log tokens or password hashes.
 
 ## Verification
 
+- `cargo test <name>` — targeted.
+- `cargo clippy -- -D warnings` — lint, with warnings as errors.
+- `cargo fmt --check` — style.
+- `cargo build` — or `cargo check` for a fast type pass.
+- `cargo deny check advisories` — CVE / license audit.
+
 ```bash
-cargo test users::create_user        # targeted
-cargo clippy -- -D warnings          # lint — warnings are errors
-cargo fmt --check                    # style
-cargo build                          # or `cargo check` for a fast type pass
-cargo deny check advisories          # CVE / license audit
+cargo test users::create_user
+cargo clippy -- -D warnings
+cargo fmt --check
+cargo build
+cargo deny check advisories
 ```
 
 ## Anti-patterns

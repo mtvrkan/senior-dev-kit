@@ -13,8 +13,9 @@
 - TanStack Query for server state, Zustand (or Context for genuinely small cases) for client
   state. Do not keep server data in `useState`.
 
+`features/users/hooks/useUser.ts`:
+
 ```tsx
-// features/users/hooks/useUser.ts
 export function useUser(id: string) {
   return useQuery({
     queryKey: ['user', id],
@@ -22,8 +23,11 @@ export function useUser(id: string) {
     staleTime: 30_000,
   })
 }
+```
 
-// app/users/[id].tsx
+`app/users/[id].tsx`:
+
+```tsx
 export default function UserScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { data, isPending, error, refetch } = useUser(id)
@@ -46,10 +50,11 @@ Loading, error-with-retry and empty are three required states, not optional poli
 
 ## Platform differences are explicit
 
+Prefer a `.native.tsx` / `.ios.tsx` / `.android.tsx` file split over sprinkled conditionals. For
+the safe area use `useSafeAreaInsets()` — never a hardcoded status-bar height.
+
 ```tsx
-// Prefer a .native.tsx / .ios.tsx / .android.tsx file split over sprinkled conditionals
 Platform.select({ ios: 44, android: 56 })
-// Safe area: useSafeAreaInsets() — never a hardcoded status-bar height
 ```
 
 ## Storage and secrets
@@ -80,11 +85,13 @@ eas build --profile development --platform ios
 
 ## Verification
 
+Targeted test, type check, lint, and `expo-doctor` for config/dependency sanity:
+
 ```bash
-npx jest features/users/__tests__/useUser.test.ts   # targeted
-npx tsc --noEmit                                    # type check
-npx eslint .                                        # lint
-npx expo-doctor                                     # config/dependency sanity
+npx jest features/users/__tests__/useUser.test.ts
+npx tsc --noEmit
+npx eslint .
+npx expo-doctor
 ```
 
 ## Anti-patterns

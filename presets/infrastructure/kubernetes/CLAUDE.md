@@ -12,11 +12,17 @@ Deployment must declare before it ships, and the runtime failure each declaratio
 
 ## Every workload declares these or it doesn't ship
 
+- `replicas` >1, with a PodDisruptionBudget, or a node drain is an outage.
+- The image is pinned by digest, not `:latest` — a tag is mutable.
+- Scheduling depends on the resource requests. Memory limit yes; CPU limit usually no.
+- The liveness probe restarts a hung process; the readiness probe gates traffic and is a
+  different check; the startup probe covers a slow boot and protects liveness from killing it.
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 spec:
-  replicas: 3                          # >1, with a PodDisruptionBudget, or a node drain is an outage
+  replicas: 3
   template:
     spec:
       securityContext:
@@ -26,20 +32,20 @@ spec:
         seccompProfile: { type: RuntimeDefault }
       containers:
         - name: api
-          image: registry/api@sha256:...     # digest, not `:latest` — a tag is mutable
+          image: registry/api@sha256:...
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities: { drop: ["ALL"] }
           resources:
-            requests: { cpu: 100m, memory: 128Mi }   # scheduling depends on these
-            limits:   { memory: 512Mi }              # memory limit yes; CPU limit usually no
-          livenessProbe:                              # restarts a hung process
+            requests: { cpu: 100m, memory: 128Mi }
+            limits:   { memory: 512Mi }
+          livenessProbe:
             httpGet: { path: /health, port: 8080 }
             initialDelaySeconds: 10
-          readinessProbe:                             # gates traffic — different check
+          readinessProbe:
             httpGet: { path: /health/ready, port: 8080 }
-          startupProbe:                               # slow boot: protects liveness from killing it
+          startupProbe:
             httpGet: { path: /health, port: 8080 }
             failureThreshold: 30
 ```
@@ -79,12 +85,17 @@ spec:
 
 ## Verification
 
+- `apply --dry-run=server` validates against the real API + admission.
+- `kubeconform` is the schema check in CI; pipe `helm template .` into it for charts.
+- `kubectl diff` shows what would actually change.
+- `trivy config` is the misconfiguration scan.
+
 ```bash
-kubectl apply --dry-run=server -f manifests/   # validates against the real API + admission
-kubeconform -strict -summary manifests/        # schema check in CI
-kubectl diff -f manifests/                     # what would actually change
-helm template . | kubeconform -strict -         # for charts
-trivy config manifests/                         # misconfiguration scan
+kubectl apply --dry-run=server -f manifests/
+kubeconform -strict -summary manifests/
+kubectl diff -f manifests/
+helm template . | kubeconform -strict -
+trivy config manifests/
 kubectl rollout status deploy/api --timeout=120s
 ```
 

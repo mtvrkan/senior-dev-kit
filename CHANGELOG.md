@@ -37,6 +37,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
   ran for an older kit version. [2026-09-28]
 - SHIPPED SOURCE IS PUBLIC is now part of CODE STYLE: no comments in any file, not only
   browser-served ones. The single exception is Rust's `SAFETY:` note. [2026-09-28]
+- Code examples in rules, presets and agent docs no longer carry comments. They get copied into
+  projects word for word, and each one taught the habit the kit forbids. Explanations now sit in
+  the surrounding prose, and counter-examples are labelled with a `WRONG:` line above their own
+  fence. A new gate check fails on any comment inside a fenced example. [2026-09-28]
+- Review dates, the toolchain-pin digest, the never-log field list and the forbidden example
+  shapes moved out of HTML comments into `scripts/lib/doc-ledger.json`. The gate reads them from
+  there, and it now fails on any HTML comment in shipped markdown. [2026-09-28]
 - New always-loaded rule: SHIPPED SOURCE IS PUBLIC. Anything the browser receives as-is — HTML,
   CSS, client JS, SVG, static dirs, and their translations — carries no comments, because View
   Source is not a private channel. The rationale goes in the commit, the changelog or a doc.
@@ -50,6 +57,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 
 ### Fixed
 
+- The idempotency middleware example overrode `res.json` with an `async` function, which returned
+  a Promise and broke Express chaining. It is synchronous now, and the lock is released after the
+  cache write settles. [2026-09-28]
+- Examples that did not work as written:
+  - The upload check used an undefined `allowedExtension` and never enforced its own size cap.
+  - The Pact provider step called a `pact verify` command that does not exist.
+  - The Vitest snapshot flag was wrong; it is `-u`.
+  - The JSON-LD note had lost its `\u003c` escape. [2026-09-28]
 - Review and gate skills block the turn again. Since Claude Code 2.1.218 a `context: fork` skill
   runs in the background by default, so release-gate, migration-review, security-review,
   code-review and the other gates returned before their verdict; they now set

@@ -32,6 +32,8 @@ import {
 import { parseArgs, resolveComponents, COMPONENTS } from './lib/install-core.mjs'
 import { CHECK_STEPS } from './run-checks.ts'
 import { AB_SUITE_FILES, evalContextDigest } from './lib/eval-context.ts'
+import { loadLedger, monthsSince, LEDGER_PATH } from './lib/doc-ledger.ts'
+import { findExampleComments, proseVerdict } from './lib/example-comments.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = process.env.CONSISTENCY_ROOT ?? join(__dirname, '..')
@@ -1758,23 +1760,13 @@ const PINNED_REF = /^(?:[0-9a-f]{40}|\[SHA\])$/i
 // to all six example directories with no code change here.
 interface ForbiddenShape { pattern: RegExp; reason: string; source: string }
 const forbiddenShapes: ForbiddenShape[] = []
-for (const ruleFile of existsSync(join(ROOT, 'rules')) ? readdirSync(join(ROOT, 'rules')).filter(f => f.endsWith('.md')) : []) {
-  const rel = `rules/${ruleFile}`
-  const block = read(rel).match(/<!--\s*forbidden-in-examples\s*\n([\s\S]*?)-->/)
-  if (!block) continue
-  for (const raw of block[1].split('\n')) {
-    const line = raw.trim()
-    if (!line) continue
-    const sep = line.indexOf(' :: ')
-    if (sep === -1) {
-      errors.push(`${rel}: forbidden-in-examples entry "${line}" is missing the \` :: \` separator between pattern and reason`)
-      continue
-    }
-    try {
-      forbiddenShapes.push({ pattern: new RegExp(line.slice(0, sep)), reason: line.slice(sep + 4).trim(), source: rel })
-    } catch (e) {
-      errors.push(`${rel}: forbidden-in-examples pattern \`${line.slice(0, sep)}\` is not a valid regex — ${e instanceof Error ? e.message : String(e)}`)
-    }
+const { ledger, errors: ledgerErrors } = loadLedger(ROOT)
+errors.push(...ledgerErrors)
+for (const shape of ledger?.forbiddenInExamples ?? []) {
+  try {
+    forbiddenShapes.push({ pattern: new RegExp(shape.pattern), reason: shape.reason, source: shape.source })
+  } catch (e) {
+    errors.push(`${LEDGER_PATH}: forbidden example pattern \`${shape.pattern}\` from ${shape.source} is not a valid regex — ${e instanceof Error ? e.message : String(e)}`)
   }
 }
 
@@ -1784,18 +1776,9 @@ for (const ruleFile of existsSync(join(ROOT, 'rules')) ? readdirSync(join(ROOT, 
 let shapeLinesGraded = 0
 let logLinesGraded = 0
 let actionLinesGraded = 0
-const observabilityRule = join(ROOT, 'rules/700-observability.md')
-let bannedLogFields: string[] = []
-if (existsSync(observabilityRule)) {
-  const marker = readFileSync(observabilityRule, 'utf8').match(/<!--\s*never-log-fields:([\s\S]*?)-->/)
-  if (!marker) {
-    errors.push(
-      'rules/700-observability.md no longer carries the `never-log-fields:` marker that check 25 ' +
-        'grades the kit\'s own log examples against — restore it, or drop check 25 deliberately rather than by deletion'
-    )
-  } else {
-    bannedLogFields = marker[1].split(/[\s,]+/).filter(Boolean)
-  }
+const bannedLogFields: string[] = ledger?.neverLogFields?.fields ?? []
+if (ledger && bannedLogFields.length === 0) {
+  errors.push(`${LEDGER_PATH} has no neverLogFields list — check 25 would grade the kit's log examples against nothing`)
 }
 
 if (bannedLogFields.length > 0 || forbiddenShapes.length > 0) {
@@ -1810,17 +1793,21 @@ if (bannedLogFields.length > 0 || forbiddenShapes.length > 0) {
 
         let inFence = false
         let exemplary = true
+        let lastProse = ''
         // Depth of the log call currently open, so a multi-line `logger.info({ … })` is graded on
         // every one of its lines, not just the one naming the function.
         let logDepth = 0
         readFileSync(join(ROOT, child), 'utf8').split('\n').forEach((line, i) => {
           if (line.trimStart().startsWith('```')) {
             inFence = !inFence
-            exemplary = true
+            exemplary = inFence ? proseVerdict(lastProse) !== 'negative' : true
             logDepth = 0
             return
           }
-          if (!inFence) return
+          if (!inFence) {
+            if (line.trim() !== '') lastProse = line
+            return
+          }
           const marker = line.match(EXAMPLE_MARKER)
           if (marker) {
             exemplary = MARKER_IS_POSITIVE.test(marker[1])
@@ -1853,7 +1840,7 @@ if (bannedLogFields.length > 0 || forbiddenShapes.length > 0) {
               `${child}:${i + 1} is exemplary code matching a shape \`${shape.source}\` declares forbidden ` +
                 `(\`${shape.pattern.source}\`): ${shape.reason}. ` +
                 `An example is copied verbatim, so a broken one outweighs the prose around it — fix the example, ` +
-                `or mark the block \`// WRONG\` if it is meant to demonstrate the mistake`
+                `or put a \`WRONG:\` line directly above the fence if it is meant to demonstrate the mistake`
             )
           }
 
@@ -1863,7 +1850,7 @@ if (bannedLogFields.length > 0 || forbiddenShapes.length > 0) {
             if (hit) {
               errors.push(
                 `${child}:${i + 1} is an exemplary log call that logs \`${hit[1]}\` — ` +
-                  `rules/700-observability.md's never-log-fields marker forbids it and global-CLAUDE.md forbids PII in logs outright. ` +
+                  `the never-log list (${LEDGER_PATH}, sourced from rules/700-observability.md) forbids it and global-CLAUDE.md forbids PII in logs outright. ` +
                   `An example is copied verbatim, so it outweighs the prose bullet that contradicts it`
               )
             }
@@ -1876,7 +1863,7 @@ if (bannedLogFields.length > 0 || forbiddenShapes.length > 0) {
               errors.push(
                 `${child}:${i + 1} is an exemplary workflow step pinning \`${uses[1]}\` to \`@${uses[2]}\` — ` +
                   `rules/600-devops.md requires an immutable 40-hex SHA (or the \`@[SHA]\` placeholder). ` +
-                  `Mark the block \`# WRONG\` if it is meant to demonstrate the mistake`
+                  `Put a \`WRONG:\` line directly above the fence if it is meant to demonstrate the mistake`
               )
             }
           }
@@ -1899,7 +1886,7 @@ if (bannedLogFields.length > 0 || forbiddenShapes.length > 0) {
 // against upstream. Move a pin without moving the date and the gate stops you. The check cannot
 // tell you a version is old, but it guarantees no pin changes without someone re-dating the claim,
 // and it prints the age so a stale review is visible in every run instead of only in an audit.
-const PIN_FILE = 'rules/600-devops.md'
+const PIN_FILE = ledger?.toolchainPins?.file ?? 'rules/600-devops.md'
 // Pinned-version lines. Round-39 audit: the first version of this pattern enumerated the SHAPES it
 // had noticed — `FROM image:tag`, the `- Platform: \`image:tag\`` bullets, `<lang>-version: 'x.y'`
 // — and was described in the marker as covering "every version-pinned example in this file". It
@@ -1929,22 +1916,20 @@ if (existsSync(join(ROOT, PIN_FILE))) {
   const body = readFileSync(join(ROOT, PIN_FILE), 'utf8')
   const pins = body.split('\n').map((l) => l.trim()).filter((l) => TOOLCHAIN_PIN.test(l))
   const digest = createHash('sha256').update(pins.join('\n')).digest('hex').slice(0, 12)
-  const marker = body.match(/<!--\s*toolchain-pins reviewed:\s*(\d{4})-(\d{2})\s+digest:\s*(\S+)/)
-  if (!marker) {
+  const record = ledger?.toolchainPins
+  if (!record?.reviewed || !record.digest) {
     errors.push(
-      `${PIN_FILE} has ${pins.length} pinned-version example(s) but no \`toolchain-pins reviewed: YYYY-MM digest: …\` marker — ` +
+      `${PIN_FILE} has ${pins.length} pinned-version example(s) but ${LEDGER_PATH} has no toolchainPins { reviewed, digest } — ` +
         `add one with digest \`${digest}\` after verifying the pins against upstream`
     )
-  } else if (marker[3] !== digest) {
+  } else if (record.digest !== digest) {
     errors.push(
-      `${PIN_FILE}: the pinned versions changed since they were last reviewed (${marker[1]}-${marker[2]}). ` +
-        `Verify all ${pins.length} pin(s) against upstream, then set the marker to \`reviewed: <this month> digest: ${digest}\`. ` +
+      `${PIN_FILE}: the pinned versions changed since they were last reviewed (${record.reviewed}). ` +
+        `Verify all ${pins.length} pin(s) against upstream, then set ${LEDGER_PATH} toolchainPins to \`reviewed: <this month>, digest: ${digest}\`. ` +
         `Round 37 bumped Python to a release that was already superseded; re-dating without re-checking is the failure this catches`
     )
   } else {
-    const months =
-      (new Date().getFullYear() - Number(marker[1])) * 12 + (new Date().getMonth() + 1 - Number(marker[2]))
-    pinReviewAge = `${pins.length} pinned-version example(s), last verified against upstream ${marker[1]}-${marker[2]} (${months} month(s) ago)`
+    pinReviewAge = `${pins.length} pinned-version example(s), last verified against upstream ${record.reviewed} (${monthsSince(record.reviewed, new Date())} month(s) ago)`
   }
 }
 
@@ -2022,12 +2007,37 @@ const BARE_YEAR = /\((20\d{2})\)/g
 // idiom and command in it; "reviewed: 2026-08 — Rails 7/8 version line" vouches for what was
 // actually re-checked. A marker whose scope is implicit is re-dated blindly, which is the round-37
 // failure check 26 already records.
-const REVIEWED_MARKER =
-  /<!--\s*(?:(reviewed)|upstream-assumption\s+(verified)):\s*(\d{4})-(\d{2})\s*(?:—[^>]*)?-->/g
 const now = new Date()
 let freshnessMarkers = 0
+const SHIPPED_MARKDOWN_ROOTS = [...FRESHNESS_DIRS, 'global-CLAUDE.md']
+const isShippedMarkdown = (rel: string): boolean => SHIPPED_MARKDOWN_ROOTS.some(root => rel === root || rel.startsWith(`${root}/`))
+for (const [kind, claims] of [['reviewed', ledger?.reviewed ?? []], ['verified', ledger?.upstreamAssumptions ?? []]] as const) {
+  for (const claim of claims) {
+    freshnessMarkers++
+    const months = monthsSince(claim.date, now)
+    if (months > FRESHNESS_MAX_MONTHS) {
+      errors.push(
+        `${claim.file} was last ${kind} ${claim.date}, ${months} months ago (limit ${FRESHNESS_MAX_MONTHS}) — ${claim.note}. ` +
+          `Re-check the claim against upstream and then move the date in ${LEDGER_PATH}. ` +
+          `Moving the date without re-checking defeats the only thing this record does`
+      )
+    }
+  }
+}
 const scanFreshness = (rel: string): void => {
   const body = read(rel)
+  if (isShippedMarkdown(rel)) {
+    let fenced = false
+    body.split('\n').forEach((line, i) => {
+      if (/^\s*(```|~~~)/.test(line)) fenced = !fenced
+      if (!fenced && line.includes('<!--')) {
+        errors.push(
+          `${rel}:${i + 1} carries an HTML comment. Shipped markdown is loaded into sessions and read as-is; ` +
+            `a dated claim, pin digest or machine-readable list goes in ${LEDGER_PATH}, a contributor note in CONTRIBUTING.md`
+        )
+      }
+    })
+  }
   for (const m of body.matchAll(BARE_YEAR)) {
     const before = body.slice(Math.max(0, m.index - 60), m.index)
     if (YEAR_IS_A_FACT.test(before)) continue
@@ -2035,21 +2045,9 @@ const scanFreshness = (rel: string): void => {
     errors.push(
       `${rel}:${line} carries a bare freshness label "${m[0]}" — a year in parentheses tells the reader ` +
         `the content is current as of that year while nothing keeps it so. Replace it with ` +
-        `\`<!-- reviewed: YYYY-MM -->\`, which this check ages out after ${FRESHNESS_MAX_MONTHS} months, ` +
+        `a \`reviewed\` entry in ${LEDGER_PATH}, which this check ages out after ${FRESHNESS_MAX_MONTHS} months, ` +
         `or reword so the year names a published thing (a spec edition, a CVE, a dated incident), which is exempt`
     )
-  }
-  for (const m of body.matchAll(REVIEWED_MARKER)) {
-    freshnessMarkers++
-    const months = (now.getFullYear() - Number(m[3])) * 12 + (now.getMonth() + 1 - Number(m[4]))
-    if (months > FRESHNESS_MAX_MONTHS) {
-      const line = body.slice(0, m.index).split('\n').length
-      errors.push(
-        `${rel}:${line} was last ${m[1] ? 'reviewed' : 'verified'} ${m[3]}-${m[4]}, ${months} months ago ` +
-          `(limit ${FRESHNESS_MAX_MONTHS}). Re-check the claim against upstream and then move the date. ` +
-          `Moving the date without re-checking defeats the only thing this marker does`
-      )
-    }
   }
 }
 const walkFreshness = (rel: string): void => {
@@ -2425,8 +2423,8 @@ collectMarkdown('presets', presetFiles)
 // say something its `CLAUDE.md` already says.
 const presetDir = (f: string): string => f.slice(0, f.lastIndexOf('/'))
 const reviewedDirs = new Set<string>()
-for (const f of presetFiles) {
-  if (/<!--\s*reviewed:\s*\d{4}-\d{2}/.test(read(f))) reviewedDirs.add(presetDir(f))
+for (const claim of ledger?.reviewed ?? []) {
+  if (claim.file.startsWith('presets/')) reviewedDirs.add(presetDir(claim.file))
 }
 
 // Connectors that survive tokenising an H1 ("Ruby on Rails") and generic catalogue nouns. Without
@@ -2458,8 +2456,8 @@ for (const presetFile of presetFiles) {
       versionedPresets++
       if (!reviewed) {
         errors.push(
-          `${presetFile} names a specific version in its heading (${h1.trim()}) but carries no ` +
-            `\`<!-- reviewed: YYYY-MM — what was checked -->\` marker. A version claim is the one thing in a preset ` +
+          `${presetFile} names a specific version in its heading (${h1.trim()}) but has no ` +
+            `\`reviewed\` entry (date + what was checked) in ${LEDGER_PATH}. A version claim is the one thing in a preset ` +
             `that upstream can falsify while the file sits unchanged; date it so check 29 can age it out`
         )
       }
@@ -2474,9 +2472,9 @@ for (const presetFile of presetFiles) {
     const hit = BODY_VERSION_CLAIM.exec(lines[i])
     if (!hit) continue
     errors.push(
-      `${presetFile}:${i + 1} states "${hit[0]}" but its preset carries no ` +
-        `\`<!-- reviewed: YYYY-MM — what was checked -->\` marker. A version in the body ages exactly like one ` +
-        `in the heading; put the marker in the preset's CLAUDE.md`
+      `${presetFile}:${i + 1} states "${hit[0]}" but its preset has no ` +
+        `\`reviewed\` entry in ${LEDGER_PATH}. A version in the body ages exactly like one ` +
+        `in the heading; add an entry for the preset's CLAUDE.md`
     )
     break
   }
@@ -2595,9 +2593,38 @@ if (existsSync(join(ROOT, 'rules'))) {
 // reasoning as check 22's "parsed 0 patterns" guard and check 28's scan-nothing message.
 if (forbiddenShapes.length > 0 && shapeLinesGraded === 0) {
   errors.push(
-    `${forbiddenShapes.length} forbidden-in-examples shape(s) are declared by rule files, but the fence/marker ` +
-      `scan graded 0 exemplary line(s) against them — the declaration is inert. Either the marker block moved ` +
+    `${forbiddenShapes.length} forbidden example shape(s) are declared in ${LEDGER_PATH}, but the fence/marker ` +
+      `scan graded 0 exemplary line(s) against them — the declaration is inert. Either the ledger entry moved ` +
       `or the fence scan broke; a shape nobody is graded against is not a rule`
+  )
+}
+
+let exampleFencesScanned = 0
+const exampleCommentHits: string[] = []
+const scanExampleComments = (rel: string): void => {
+  const body = read(rel)
+  exampleFencesScanned += (body.match(/^\s*(?:```|~~~)/gm) ?? []).length / 2
+  for (const hit of findExampleComments(body)) exampleCommentHits.push(`${rel}:${hit.line}  ${hit.text.slice(0, 100)}`)
+}
+const walkExamples = (rel: string): void => {
+  for (const entry of readdirSync(join(ROOT, rel), { withFileTypes: true })) {
+    const child = `${rel}/${entry.name}`
+    if (entry.isDirectory()) walkExamples(child)
+    else if (entry.name.endsWith('.md')) scanExampleComments(child)
+  }
+}
+for (const dir of EXAMPLE_DIRS) if (existsSync(join(ROOT, dir))) walkExamples(dir)
+if (existsSync(join(ROOT, 'global-CLAUDE.md'))) scanExampleComments('global-CLAUDE.md')
+if (exampleFencesScanned === 0) {
+  errors.push('check 40 scanned 0 fenced examples — the fence parser or the directory list broke, so the no-comment rule is enforced on nothing')
+}
+if (exampleCommentHits.length > 0) {
+  errors.push(
+    `${exampleCommentHits.length} comment line(s) inside fenced examples. The kit's CODE STYLE forbids comments and examples are ` +
+      `copied verbatim, so a commented example teaches the habit the rule forbids. Move the explanation into prose around the fence ` +
+      `and a WRONG:/RIGHT: label onto the line above it (only a Rust \`// SAFETY:\` note stays):\n      ` +
+      exampleCommentHits.slice(0, 40).join('\n      ') +
+      (exampleCommentHits.length > 40 ? `\n      … and ${exampleCommentHits.length - 40} more` : '')
   )
 }
 

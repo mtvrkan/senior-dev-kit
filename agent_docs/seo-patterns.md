@@ -12,12 +12,14 @@ AI assistants (ChatGPT, Gemini, Claude, Perplexity) now answer questions directl
 4. **Confidence signals**: cite sources, dates, specifics — AI cites confident, well-sourced content
 5. **Question-answer format**: use FAQ sections with explicit questions as headings
 
+AEO-optimized page structure — the `<h1>` answers the query directly, the first `<p>` is the direct
+answer, and the first `<h2>` opens the structured detail:
+
 ```tsx
-// AEO-optimized page structure:
-<h1>How to Reset Your Password</h1>   {/* answers query directly */}
+<h1>How to Reset Your Password</h1>
 <p>To reset your password, click "Forgot Password" on the login page, 
-   enter your email, and follow the link sent to your inbox.</p>  {/* direct answer */}
-<h2>Step-by-step instructions</h2>    {/* structured detail */}
+   enter your email, and follow the link sent to your inbox.</p>
+<h2>Step-by-step instructions</h2>
 <ol>
   <li>Navigate to example.com/login</li>
   <li>Click "Forgot Password"</li>
@@ -30,11 +32,12 @@ AI assistants (ChatGPT, Gemini, Claude, Perplexity) now answer questions directl
 
 ## METADATA — Next.js App Router
 
+`app/page.tsx` — root page; `template` is applied to all child pages:
+
 ```typescript
-// app/page.tsx — root page
 export const metadata: Metadata = {
   title: {
-    template: '%s | Brand Name',  // applied to all child pages
+    template: '%s | Brand Name',
     default: 'Brand Name — Tagline Under 60 Characters'
   },
   description: 'Under 160 chars, includes primary keyword, value proposition.',
@@ -57,15 +60,18 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
   },
 }
+```
 
-// app/blog/[slug]/page.tsx — dynamic page
-// Next.js 16+: params/searchParams are Promises — must be awaited before use
+`app/blog/[slug]/page.tsx` — dynamic page. Next.js 16+: `params`/`searchParams` are Promises and
+must be awaited before use. The template appends `' | Brand Name'` to `post.title`:
+
+```typescript
 type Props = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const post = await getPost(slug)
   return {
-    title: post.title,  // template appends ' | Brand Name'
+    title: post.title,
     description: post.excerpt,
     openGraph: {
       type: 'article',
@@ -91,8 +97,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 Add structured data to help search engines and AI extract facts:
 
+`app/blog/[slug]/page.tsx`:
+
 ```tsx
-// app/blog/[slug]/page.tsx
 export default async function BlogPost({ params }: Props) {
   const { slug } = await params
   const post = await getPost(slug)
@@ -123,13 +130,13 @@ export default async function BlogPost({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
-      {/* page content */}
+      <h1>{post.title}</h1>
     </>
   )
 }
 ```
 
-`JSON.stringify` does not escape `<`, so a `</script>` inside a CMS title or description would close the tag and run whatever follows. Replacing every `<` with the JSON escape `<` keeps the JSON valid and makes that impossible.
+`JSON.stringify` does not escape `<`, so a `</script>` inside a CMS title or description would close the tag and run whatever follows. Replacing every `<` with the JSON escape `\u003c` keeps the JSON valid and makes that impossible.
 
 Common schema types:
 
@@ -142,8 +149,9 @@ Common schema types:
 - `SoftwareApplication` — app stores, SaaS
 - `Review` / `AggregateRating` — product reviews
 
+FAQPage schema (great for AEO):
+
 ```tsx
-// FAQPage schema (great for AEO)
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
@@ -165,11 +173,15 @@ const faqJsonLd = {
 
 ### LCP optimization
 
-```tsx
-// 1. Preload hero image (above the fold)
-<link rel="preload" href="/hero.webp" as="image" fetchPriority="high" />
+Preload the hero image (above the fold):
 
-// 2. Next.js Image component — auto-preload, WebP, correct sizing
+```tsx
+<link rel="preload" href="/hero.webp" as="image" fetchPriority="high" />
+```
+
+Next.js Image component — auto-preload, WebP, correct sizing:
+
+```tsx
 <Image
   src="/hero.jpg"
   alt="Hero"
@@ -178,33 +190,44 @@ const faqJsonLd = {
   preload
   sizes="(max-width: 768px) 100vw, 1200px"
 />
-
-// 3. Avoid render-blocking resources
-// Move non-critical CSS to lazy load
-// Defer non-critical JS: <script defer>
 ```
+
+Avoid render-blocking resources: move non-critical CSS to lazy load, and defer non-critical JS with
+`<script defer>`.
 
 Next.js 16 deprecated the `next/image` `priority` prop in favour of `preload`; on Next 15 and earlier the same prop is still spelled `priority`.
 
 ### CLS prevention
 
-```css
-/* WRONG: image without dimensions — causes layout shift when loads */
-<img src="/photo.jpg" alt="...">
+WRONG — image without dimensions, causes layout shift when it loads:
 
-/* RIGHT: reserve space before image loads */
-<img src="/photo.jpg" alt="..." width="800" height="400">
-/* or */
-aspect-ratio: 16 / 9;  /* CSS aspect-ratio reserves space */
+```html
+<img src="/photo.jpg" alt="...">
 ```
 
-```tsx
-// Font CLS prevention (next/font auto-handles this):
-import { Inter } from 'next/font/google'
-const inter = Inter({ subsets: ['latin'] })  // inlines font CSS, zero layout shift
-// Never: <link> to Google Fonts (FOUT causes CLS)
+RIGHT — reserve space before the image loads:
 
-// Dynamic content: reserve height
+```html
+<img src="/photo.jpg" alt="..." width="800" height="400">
+```
+
+Or reserve the space with CSS `aspect-ratio`:
+
+```css
+aspect-ratio: 16 / 9;
+```
+
+Font CLS prevention — `next/font` auto-handles this; it inlines the font CSS, zero layout shift.
+Never `<link>` to Google Fonts (FOUT causes CLS).
+
+```tsx
+import { Inter } from 'next/font/google'
+const inter = Inter({ subsets: ['latin'] })
+```
+
+Dynamic content — reserve height:
+
+```tsx
 <div style={{ minHeight: '200px' }}>
   {isLoaded ? <Content /> : <Skeleton />}
 </div>
@@ -212,23 +235,31 @@ const inter = Inter({ subsets: ['latin'] })  // inlines font CSS, zero layout sh
 
 ### INP optimization
 
+WRONG — one long task, blocks the main thread for its whole duration:
+
 ```typescript
-// WRONG: one long task, blocks the main thread for its whole duration
 function heavyProcessing(items: Item[]) {
   return items.map(expensiveOperation)
 }
+```
 
-// RIGHT: yield to the browser between chunks so input stays responsive
+RIGHT — yield to the browser between chunks so input stays responsive. `scheduler.yield()` is
+Chrome 129+; feature-detect it or fall back to `setTimeout(0)`:
+
+```typescript
 async function heavyProcessing(items: Item[]) {
   const results: Result[] = []
   for (const batch of chunk(items, 50)) {
-    await scheduler.yield()  // Chrome 129+; feature-detect or fall back to setTimeout(0)
+    await scheduler.yield()
     results.push(...batch.map(expensiveOperation))
   }
   return results
 }
+```
 
-// Or use Web Workers for CPU-intensive work
+Or use Web Workers for CPU-intensive work:
+
+```typescript
 const worker = new Worker(new URL('./worker.ts', import.meta.url))
 worker.postMessage({ items })
 worker.onmessage = (e) => setResults(e.data.results)
@@ -236,8 +267,9 @@ worker.onmessage = (e) => setResults(e.data.results)
 
 ## SITEMAP GENERATION
 
+`app/sitemap.ts` (Next.js App Router):
+
 ```typescript
-// app/sitemap.ts (Next.js App Router)
 import { MetadataRoute } from 'next'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -271,8 +303,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 ## ROBOTS.TXT
 
+`app/robots.ts` (Next.js):
+
 ```typescript
-// app/robots.ts (Next.js)
 import { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
@@ -287,8 +320,9 @@ export default function robots(): MetadataRoute.Robots {
 
 ## INTERNATIONAL SEO (hreflang)
 
+For multilingual sites — tell search engines about language variants:
+
 ```tsx
-// For multilingual sites — tell search engines about language variants
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   return {

@@ -2471,6 +2471,13 @@ describe('check-consistency.ts drift detection', () => {
     writeFileSync(join(root, 'global-CLAUDE.md'), alwaysLoadedBody)
     writeFileSync(join(root, 'rules', '000-security.md'), alwaysLoadedBody)
     writeFileSync(join(root, 'rules', '001-conventions.md'), alwaysLoadedBody)
+    mkdirSync(join(root, 'scripts', 'lib'), { recursive: true })
+    writeFileSync(
+      join(root, 'scripts', 'lib', 'doc-ledger.json'),
+      JSON.stringify({ reviewed: [], upstreamAssumptions: [], forbiddenInExamples: [], neverLogFields: { source: 'global-CLAUDE.md', fields: ['password'] } })
+    )
+    mkdirSync(join(root, 'agent_docs'), { recursive: true })
+    writeFileSync(join(root, 'agent_docs', 'example.md'), 'Run it:\n\n```bash\nnpm test\n```\n')
     return root
   }
 

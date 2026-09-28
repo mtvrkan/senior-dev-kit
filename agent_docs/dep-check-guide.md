@@ -139,15 +139,26 @@ cargo outdated
 
 ## Bundle size check (JS/TS only)
 
-```bash
-# Size of a package before adding it — npm built-in, no extra install
-npm view [package]@[version] dist.unpackedSize
-# Gzipped cost in a real bundle: https://bundlephobia.com/package/[package]
+Size of a package before adding it — npm built-in, no extra install:
 
-# Analyze an existing bundle
-ANALYZE=true next build          # Next.js — next.config must be wrapped in withBundleAnalyzer
-$env:ANALYZE=1; next build       # same, PowerShell — it has no inline env-var prefix
-npx vite-bundle-visualizer       # Vite
+```bash
+npm view [package]@[version] dist.unpackedSize
+```
+
+Gzipped cost in a real bundle: `https://bundlephobia.com/package/[package]`.
+
+Analyze an existing bundle. Next.js — `next.config` must be wrapped in `withBundleAnalyzer`; the
+second line is the same command for PowerShell, which has no inline env-var prefix:
+
+```bash
+ANALYZE=true next build
+$env:ANALYZE=1; next build
+```
+
+Vite:
+
+```bash
+npx vite-bundle-visualizer
 ```
 
 Next.js 16 builds with Turbopack by default, and `@next/bundle-analyzer` only hooks the webpack

@@ -56,14 +56,18 @@ are Tier 3: plan first.
 
 ## EF Core — N+1, tracking, transactions
 
-```csharp
-// WRONG — N+1
-foreach (var o in db.Orders.ToList()) Console.WriteLine(o.Customer.Name);
+WRONG — N+1:
 
-// RIGHT — projection (best) or Include
+```csharp
+foreach (var o in db.Orders.ToList()) Console.WriteLine(o.Customer.Name);
+```
+
+RIGHT — projection (best) or `Include`; the `Select` fetches only the columns needed:
+
+```csharp
 var rows = await db.Orders
     .Where(o => o.Status == status)
-    .Select(o => new OrderRow(o.Id, o.Customer.Name))   // only the columns needed
+    .Select(o => new OrderRow(o.Id, o.Customer.Name))
     .AsNoTracking()
     .ToListAsync(ct);
 ```
@@ -75,11 +79,11 @@ var rows = await db.Orders
 ## Errors — one place, ProblemDetails out
 
 ```csharp
-app.UseExceptionHandler();                   // + AddProblemDetails()
-// Domain failures: return typed results, not exceptions, for expected paths.
+app.UseExceptionHandler();
 ```
 
-Never return `ex.ToString()`. `DeveloperExceptionPage` is development-only.
+Pair it with `AddProblemDetails()`. Domain failures: return typed results, not exceptions, for
+expected paths. Never return `ex.ToString()`. `DeveloperExceptionPage` is development-only.
 
 ## Async
 
@@ -90,19 +94,21 @@ Never return `ex.ToString()`. `DeveloperExceptionPage` is development-only.
 ## Logging
 
 ```csharp
-logger.LogInformation("User created {UserId}", user.Id);   // structured template
+logger.LogInformation("User created {UserId}", user.Id);
 ```
 
-Never interpolate into the message template (defeats structured logging), and never log tokens,
+Use a structured template. Never interpolate into the message template (defeats structured logging), and never log tokens,
 passwords, connection strings or full request bodies.
 
 ## Verification
 
+Targeted test, compile check, style check, then confirm migration state:
+
 ```bash
-dotnet test --filter "FullyQualifiedName~UserServiceTests"   # targeted
-dotnet build                                                  # compile check
-dotnet format --verify-no-changes                             # style
-dotnet ef migrations list                                     # confirm migration state
+dotnet test --filter "FullyQualifiedName~UserServiceTests"
+dotnet build
+dotnet format --verify-no-changes
+dotnet ef migrations list
 ```
 
 ## Anti-patterns
