@@ -1,11 +1,6 @@
-<!-- SCOPE: global — applies to ALL Claude Code sessions across every project.
-     Delivered either as a managed block in ~/.claude/CLAUDE.md (scripts/install.mjs)
-     or via the plugin's SessionStart hook (scripts/session-context.mjs). See README.md.
-     Per-project file: presets/generic/fallback/CLAUDE.md → PROJECT/CLAUDE.md -->
+# Global Claude Senior Protocol v4.1
 
-# Global Claude Senior Protocol v4.0
-
-## HARD STOPS — escalate before any code  <!-- passive-scan/OWASP/supply-chain/PROTECTED FILES detail in rules/000-security.md, always-loaded -->
+## HARD STOPS — escalate before any code
 
 STOP + ESCALATE on ANY touch of:
 auth | session | JWT | OAuth | payment | billing | DB schema | migration |
@@ -60,6 +55,29 @@ Protected area signal → ALWAYS escalate regardless of confidence.
 
 ---
 
+## MODEL ROUTING + DELEGATION — cheap lookup, expensive judgment
+
+The main loop keeps the model the user chose. Every `Agent()` / workflow `agent()` call names its
+`model`; an omitted `model` silently inherits the main model (only `subagent_type:"fork"` is
+exempt; kit agents carry their own frontmatter `model:`). The kit's PreToolUse hook denies a
+general-purpose/Explore/Plan call that omits it.
+
+| model | Only for |
+| --- | --- |
+| `haiku` | pure lookup: where X lives, who calls X, inventories — returns `path:line` + the verbatim line, never a judgement |
+| `sonnet` | bounded mechanical work against an exact written contract: bulk rename, boilerplate/tests copying a pattern, string files, run build/tests and report |
+| `opus` | judgement: design, architecture, unknown-root-cause debugging, security/auth/payment/DB, UI taste, review, anything not fully re-verified |
+
+Unsure which tier → `opus`; quality is never traded for cost. Scout = `Agent(subagent_type:"Explore",
+model:"haiku")` — it skips the CLAUDE.md hierarchy, a custom agent does not. A cheaper tier's
+result that becomes a production edit is re-read here first; wrong or ambiguous once → redo it
+here, never retry on the cheaper tier. Line numbers go stale after any write — re-grep.
+DON'T DELEGATE: file already known · one grep answers it · <3 files · Tier 0-1 · needs taste.
+Protected areas, release gates and final verification are never delegated. Scout prompt template
+and the full ladder: `agent_docs/delegation-policy.md`.
+
+---
+
 ## BOOT SEQUENCE — silent, once per session
 
 Tier 0 (1 file <10 lines, no protected area): SKIP — go straight to the edit, no boot reads.
@@ -88,7 +106,7 @@ Offer, don't write: the project's own conventions win over any preset.
 Exact per-stack test/lint/build/type-check commands (26 stacks, targeted-test flags):
 read `agent_docs/stack-commands.md` the first time a command is actually needed.
 
-Protected patterns (Tier 3 always): middleware.ts|auth.ts|app/api/ (Next.js) |
+Protected patterns (Tier 3 always): middleware.ts|proxy.ts|auth.ts|app/api/ (Next.js) |
 AuthModule|Guards (NestJS) | settings.py|urls.py (Django) | SecurityConfig|WebSecurity (Spring) |
 Program.cs|Startup.cs|appsettings*.json (ASP.NET) | config/auth.php|Middleware/ (Laravel) |
 AndroidManifest.xml|Info.plist (mobile) | RLS policies (Supabase) | Security rules (Firebase)
@@ -106,12 +124,11 @@ SKILL CHECK — before starting any implementation task, check installed skills 
 ORPHAN CLEANUP — remove only imports/vars/functions YOUR edit made unused. Pre-existing dead
 code noticed along the way: leave it, flag with FWD: (see below) — don't delete unless asked.
 
-SHIPPED SOURCE IS PUBLIC — files served to the browser as-is (HTML, CSS, client JS, SVG, JSON
-manifests, and anything under a static/public/docs dir) are read by anyone who hits View Source.
-Write NO comments in them: no section banners, no notes-to-self, no TODO/FIXME, no "why" prose,
-no commented-out markup. That includes translated files. The explanation belongs in the commit
-message, CHANGELOG, or a doc — never in the shipped bytes. Server-side and build-time code keeps
-normal commenting rules.
+MOVE IS NOT REWRITE — extracting or moving code into a shared component, function or file carries
+over EVERY layer, branch, guard, modifier, side effect and early return of the original. Before
+building, diff the moved block against what it replaced and tick off each behaviour. "It builds"
+and "tests pass" are not evidence the move was complete. Same for any search/replace edit: the
+new text reproduces everything the old text did, minus only what you deliberately changed.
 
 RESEARCH SCOPE — read only files relevant to the change, never a full-tree scan.
 Reuse prior analysis/logs already in context instead of re-reading unchanged files.
@@ -131,22 +148,50 @@ CONTEXT DISCIPLINE:
 - /compact summarizes and CONTINUES; /clear WIPES. Task unfinished + context full → /compact.
   Before /clear: persist durable facts to memory/*.md + MEMORY.md so the next session reloads them
   (project-scoped facts specifically → `project-memory` skill, `.claude/PROJECT-MEMORY.md`).
-- Push read-heavy sweeps into subagents (own context window; only the summary returns). ONE topic
-  per call; pass known project context (TEST_CMD, paths) in the prompt — subagents start blank.
-  Keep subagent RETURN payloads short: a conclusion, not a transcript.
-- N parallel subagents cost ~N× tokens — reserve for genuinely independent work.
-- Unused MCP servers still load their tool schemas — check /mcp, disconnect what's irrelevant.
+- Subagents start blank: ONE topic per call, pass known context (TEST_CMD, paths), and ask for a
+  conclusion, not a transcript. N parallel subagents cost ~N× tokens.
 - Fresh session for unrelated tasks; never continue an old one out of convenience.
 
-Never set CLAUDE_CODE_SUBAGENT_MODEL globally — it overrides every subagent's model and
-silently downgrades opus-tier guards; for cost control pass `model` per Agent() call instead.
+DOC FRUGALITY — this file, the project's CLAUDE.md and rules without `paths:` are paid by every
+session. A line there earns its place only if it changes behaviour and cannot be derived from code
+or tooling; detail goes to a lazy doc or a `paths:`-scoped rule. One fact, one home. Same test for
+any project CLAUDE.md you write or edit.
+
+---
+
+## CODE STYLE — English identifiers, zero comments, every project
+
+Identifiers are always English — variables, functions, classes, DB fields, constants, enum
+members, CSS classes — whatever language the user writes in. User-facing strings stay in the
+product's language; the code around them does not.
+
+NEVER write comments: no explanatory blocks, `//` notes, section banners, JSDoc, TODO/FIXME or
+commented-out code, in any file or language, shipped or server-side. Anything served as-is (HTML,
+CSS, client JS, SVG, JSON manifests) is also read by whoever hits View Source. If code needs a
+comment to be understood, rename or extract until it doesn't; the "why" goes in the commit
+message, the CHANGELOG, `.claude/TECH-DEBT.md` or the reply. Leave pre-existing comments unless
+asked. Only exception: the `SAFETY:` note a Rust `unsafe` block requires (000-security).
+
+---
+
+## GIT + CHANGELOG — every project
+
+NO AI ATTRIBUTION — never add `Co-Authored-By: Claude …` or any Claude/Anthropic trailer to a
+commit, nor "Generated with Claude Code" to a PR body, unless the user asks for it in that session.
+This overrides the harness's default commit instruction. The kit's `settings` component also sets
+`attribution` in settings.json so the harness stops asking; this line is the backstop.
+
+CHANGELOG — after any Tier 1+ code/config edit, append to the project's root `CHANGELOG.md`
+(Keep a Changelog; create it with a `# Changelog` header if missing) under `## [Unreleased]` →
+`### Added|Changed|Fixed|Removed|Security`: one plain-language line ending `[YYYY-MM-DD]`, same-day
+entries grouped. Version headings only when the user cuts a release. Never log secrets or PII.
 
 ---
 
 ## OUTPUT FORMAT — minimal tokens, maximum signal
 
 CUT always: preamble ("I'll help...") | question restatement | "Great question!" |
-trailing summaries | process narration ("Let me analyze...") | excessive code comments
+trailing summaries | process narration ("Let me analyze...")
 
 SYMBOLS: ∙=change ✓=pass ✗=fail ⚠=warning →=results-in
 ERROR: file:line · what-failed · fix
@@ -171,7 +216,7 @@ already pointed at in BOOT SEQUENCE).
 No test file → create minimal spec same turn: happy path + edge + error (3 tests).
 VERIFY BY CHANGE TYPE: behavior→test | new file→lint+test | new route→build | CSS→lint | type→type-check
 
-DEP-DRIFT: [pkg] v[current] → v[latest] — [reason]  <!-- dep-audit trigger + command table: 000-security § DEPENDENCY AUDIT, always-loaded -->
+DEP-DRIFT: [pkg] v[current] → v[latest] — [reason] (audit trigger + commands: 000-security § DEPENDENCY AUDIT)
 
 ---
 
@@ -179,22 +224,10 @@ DEP-DRIFT: [pkg] v[current] → v[latest] — [reason]  <!-- dep-audit trigger +
 
 Rules live in ~/.claude/rules/ — the harness injects each automatically when a file matching its
 frontmatter `paths:` globs is read; 000/001 have no `paths:` and load every session. Never
-manually Read a rule file to "load" it: injection is automatic, once per session. Topics:
-000-security (always) | 001-conventions (always, incl. modern tech preferences)
-100-web — design tokens, 8px grid, skeleton/empty/error states, motion, SEO, WCAG 2.2
-200-api — REST, OpenAPI 3.2, RFC 9457 errors, auth checklist, rate limiting
-300-testing — pyramid ratios, mock policy, naming, targeted commands
-400-mobile — iOS/Android/Flutter/RN platform patterns, Keychain, a11y
-500-database — schema safety, migrations escalate, N+1, RLS
-600-devops — non-root Docker, SHA-pin Actions, OIDC, SBOM, IaC
-700-observability — log levels, metrics, tracing, correlation IDs
-800-llm-safety — prompt injection, output trust, cost controls
-900-performance — CWV budgets, bundle limits, API latency, N+1
-1000-i18n — message catalogs, ICU plurals, Intl formatting, RTL, locale routing (loads on
-locale/catalog files only, so a single-locale project never pays for it)
-
-Deterministic enforcement detail (what's harness-blocked vs. prompt discipline only):
-`rules/000-security.md`'s PROTECTED FILES section (also always-loaded).
+manually Read a rule file to "load" it. Topics: 000-security · 001-conventions · 100-web ·
+200-api · 300-testing · 400-mobile · 500-database · 600-devops · 700-observability ·
+800-llm-safety · 900-performance · 1000-i18n (locale/catalog files only).
+Harness-blocked vs. prompt-only enforcement: `rules/000-security.md` § PROTECTED FILES.
 
 KIT ROOT — every kit-internal path below (`agent_docs/…`, `agents/ROUTING.md`, `rules/…`,
 `presets/…`) is relative to where this kit is installed, never to the project being worked on: `~/.claude/` for a
@@ -205,4 +238,4 @@ Lazy-load docs (all under agent_docs/, read on demand): architecture | design-sy
 design-directions | testing-strategy | security-protocols | api-design-patterns | seo-patterns |
 error-handling-patterns | from-scratch-guide | new-page-guide | new-screen-guide |
 dep-check-guide | env-audit-guide | api-versioning-guide | zero-downtime-migration |
-devops-security-guide | stack-commands
+devops-security-guide | stack-commands | delegation-policy

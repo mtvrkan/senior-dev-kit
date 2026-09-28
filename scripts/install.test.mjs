@@ -22,15 +22,25 @@ import {
   BLOCK_END,
   backupStamp,
   classifyFileAction,
+  isEmptySkeleton,
   legacyCopyLine,
   mergeDenyRules,
+  mergeHookGroups,
+  mergeSettingsLeaves,
   parseArgs,
+  pluginEnabled,
   protocolAnchor,
   removeManagedBlock,
+  removeStaleDenyRules,
   resolveComponents,
+  settingsLeaves,
   spliceManagedBlock,
   unmergeDenyRules,
+  unmergeHookGroups,
+  unmergeSettingsLeaves,
 } from './lib/install-core.mjs'
+import { decide as decideAgentModel } from './hooks/require-agent-model.mjs'
+import { render as renderStatusLine } from './statusline.mjs'
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const INSTALLER = join(REPO_ROOT, 'scripts', 'install.mjs')
@@ -221,6 +231,14 @@ describe('parseArgs', () => {
     strictEqual(o.dryRun, true)
   })
 
+  it('refuses a --target with no directory instead of falling back to ~/.claude', () => {
+    deepStrictEqual(parseArgs(['--target']).unknown, ['--target (missing directory)'])
+    const swallowed = parseArgs(['--target', '--yes'])
+    strictEqual(swallowed.target, null)
+    strictEqual(swallowed.yes, true)
+    deepStrictEqual(parseArgs(['--target=']).unknown, ['--target= (missing directory)'])
+  })
+
   it('reports a typo instead of silently doing a real install', () => {
     // The whole point of the installer is that nothing happens by surprise;
     // `--dryrun` must not fall through to a live write.
@@ -239,6 +257,134 @@ describe('resolveComponents', () => {
 
   it('rejects an unknown component', () => {
     deepStrictEqual(resolveComponents(['rules', 'nope']).invalid, ['nope'])
+  })
+
+  it('leaves the opt-in statusline out of the default set', () => {
+    const { selected } = resolveComponents(null)
+    ok(selected.includes('settings'))
+    ok(!selected.includes('statusline'))
+    deepStrictEqual(resolveComponents(['statusline']).selected, ['statusline'])
+  })
+
+  it('defaults a plugin user to the parts a plugin cannot carry', () => {
+    deepStrictEqual(resolveComponents(null, { pluginEnabled: true }).selected, ['rules', 'deny-rules', 'settings'])
+  })
+})
+
+describe('settings leaves', () => {
+  const leaves = settingsLeaves({ attribution: { commit: '', pr: '', sessionUrl: false }, permissions: { deny: ['x'] } })
+
+  it('reads only the attribution leaves from the template', () => {
+    deepStrictEqual(
+      leaves.map(l => l.path.join('.')),
+      ['attribution.commit', 'attribution.pr', 'attribution.sessionUrl']
+    )
+  })
+
+  it('sets absent leaves and never overwrites a value the user chose', () => {
+    const { settings, added, conflicts } = mergeSettingsLeaves({ attribution: { pr: 'mine' }, model: 'opus' }, leaves)
+    deepStrictEqual(settings.attribution, { pr: 'mine', commit: '', sessionUrl: false })
+    strictEqual(settings.model, 'opus')
+    deepStrictEqual(added.map(l => l.path.join('.')), ['attribution.commit', 'attribution.sessionUrl'])
+    deepStrictEqual(conflicts, [{ path: ['attribution', 'pr'], current: 'mine' }])
+  })
+
+  it('treats attribution:false as the user already hiding it', () => {
+    const { settings, added, conflicts } = mergeSettingsLeaves({ attribution: false }, leaves)
+    strictEqual(settings.attribution, false)
+    deepStrictEqual(added, [])
+    strictEqual(conflicts.length, 3)
+  })
+
+  it('removes only leaves still holding the value the kit wrote, then empty parents', () => {
+    const { settings } = mergeSettingsLeaves({}, leaves)
+    settings.attribution.pr = 'changed by user'
+    const { settings: after, removed } = unmergeSettingsLeaves(settings, leaves)
+    deepStrictEqual(after, { attribution: { pr: 'changed by user' } })
+    strictEqual(removed.length, 2)
+    deepStrictEqual(unmergeSettingsLeaves(mergeSettingsLeaves({}, leaves).settings, leaves).settings, {})
+  })
+})
+
+describe('hook groups', () => {
+  const groups = [{ event: 'PreToolUse', group: { matcher: 'Agent|Task', hooks: [{ type: 'command', command: 'node "a.mjs"' }] } }]
+
+  it('appends next to the user hooks and is idempotent', () => {
+    const mine = { matcher: 'Bash', hooks: [{ type: 'command', command: 'mine' }] }
+    const first = mergeHookGroups({ hooks: { PreToolUse: [mine] } }, groups)
+    deepStrictEqual(first.settings.hooks.PreToolUse, [mine, groups[0].group])
+    strictEqual(mergeHookGroups(first.settings, groups).added.length, 0)
+  })
+
+  it('removes only its own group and drops event keys it emptied', () => {
+    const mine = { matcher: 'Bash', hooks: [{ type: 'command', command: 'mine' }] }
+    const merged = mergeHookGroups({ hooks: { PreToolUse: [mine] } }, groups).settings
+    deepStrictEqual(unmergeHookGroups(merged, groups).settings, { hooks: { PreToolUse: [mine] } })
+    deepStrictEqual(unmergeHookGroups(mergeHookGroups({}, groups).settings, groups).settings, {})
+  })
+
+  it('refuses to merge into a hooks value that is not an object', () => {
+    strictEqual(mergeHookGroups({ hooks: 'broken' }, groups).blocked, true)
+  })
+})
+
+describe('upgrade reconciliation', () => {
+  it('removes deny rules a previous install added that the template no longer ships', () => {
+    const { settings, removed } = removeStaleDenyRules({ permissions: { deny: ['mine', 'old', 'kept'] } }, ['old', 'kept'], ['kept'])
+    deepStrictEqual(settings.permissions.deny, ['mine', 'kept'])
+    deepStrictEqual(removed, ['old'])
+  })
+
+  it('recognises the empty skeleton a created settings.json leaves behind', () => {
+    ok(isEmptySkeleton({ permissions: { deny: [] } }))
+    ok(isEmptySkeleton({}))
+    ok(!isEmptySkeleton({ permissions: { deny: ['mine'] } }))
+    ok(!isEmptySkeleton({ model: 'opus' }))
+  })
+
+  it('detects the plugin by name, not by marketplace', () => {
+    ok(pluginEnabled({ enabledPlugins: { 'senior-dev-kit@any-market': true } }))
+    ok(!pluginEnabled({ enabledPlugins: { 'senior-dev-kit@any-market': false } }))
+    ok(!pluginEnabled({ enabledPlugins: { 'other@x': true } }))
+  })
+})
+
+describe('require-agent-model hook', () => {
+  it('denies an inheriting agent call with no model', () => {
+    const decision = decideAgentModel({ tool_input: { subagent_type: 'Explore', prompt: 'x' } })
+    strictEqual(decision.hookSpecificOutput.permissionDecision, 'deny')
+    strictEqual(decision.hookSpecificOutput.hookEventName, 'PreToolUse')
+    ok(decideAgentModel({ tool_input: { prompt: 'x' } }), 'omitted subagent_type is general-purpose')
+  })
+
+  it('stays silent when a model is named, for forks, and for custom agents', () => {
+    strictEqual(decideAgentModel({ tool_input: { subagent_type: 'Explore', model: 'haiku' } }), null)
+    strictEqual(decideAgentModel({ tool_input: { subagent_type: 'fork' } }), null)
+    strictEqual(decideAgentModel({ tool_input: { subagent_type: 'db-guard' } }), null)
+  })
+
+  it('never throws on a malformed payload', () => {
+    ok(decideAgentModel(null))
+    ok(decideAgentModel({}))
+  })
+})
+
+describe('statusline', () => {
+  it('lights the active model family and shows folder, branch and context', () => {
+    const line = renderStatusLine(
+      { model: { id: 'claude-opus-5-5' }, workspace: { current_dir: '/work/kit' }, context_window: { used_percentage: 83.7 } },
+      'main'
+    )
+    ok(line.includes('● Opus'))
+    ok(line.includes('○ Haiku'))
+    ok(line.includes('kit') && line.includes('main'))
+    ok(line.includes('\u001b[31mctx 83%'))
+  })
+
+  it('omits the parts the status payload does not carry', () => {
+    const line = renderStatusLine({ model: { id: 'x' } }, '')
+    ok(!line.includes('ctx'))
+    ok(!line.includes('|'))
   })
 })
 
@@ -479,5 +625,94 @@ describe('installer CLI (end to end)', () => {
     strictEqual(res.status, 0, res.stderr)
     ok(res.stdout.includes('not valid JSON'), res.stdout)
     strictEqual(readFileSync(join(target, 'settings.json'), 'utf8'), '{ not json')
+  })
+
+  it('settings: hides attribution, wires the model hook, and uninstall restores the file byte for byte', () => {
+    const target = makeTarget()
+    const original = `${JSON.stringify({ model: 'opus', hooks: { Stop: [{ hooks: [{ type: 'command', command: 'mine' }] }] } }, null, 2)}\n`
+    writeFileSync(join(target, 'settings.json'), original, 'utf8')
+    strictEqual(run(['--yes', '--only', 'settings'], target).status, 0)
+
+    const installed = JSON.parse(readFileSync(join(target, 'settings.json'), 'utf8'))
+    deepStrictEqual(installed.attribution, { commit: '', pr: '', sessionUrl: false })
+    const hook = installed.hooks.PreToolUse[0]
+    strictEqual(hook.matcher, 'Agent|Task')
+    ok(hook.hooks[0].command.includes('scripts/senior-dev-kit/hooks/require-agent-model.mjs'), hook.hooks[0].command)
+    ok(!hook.hooks[0].command.includes('\\'), 'forward slashes only, so the command runs under every shell')
+    ok(existsSync(join(target, 'scripts', 'senior-dev-kit', 'hooks', 'require-agent-model.mjs')))
+    deepStrictEqual(installed.hooks.Stop, [{ hooks: [{ type: 'command', command: 'mine' }] }])
+
+    strictEqual(run(['--check'], target).status, 0)
+    strictEqual(run(['--uninstall', '--yes'], target).status, 0)
+    strictEqual(readFileSync(join(target, 'settings.json'), 'utf8'), original)
+    ok(!existsSync(join(target, 'scripts')), 'the kit-created scripts directory is pruned')
+  })
+
+  it('settings: deletes a settings.json it created once nothing of the user is left in it', () => {
+    const target = makeTarget()
+    strictEqual(run(['--yes', '--only', 'deny-rules,settings'], target).status, 0)
+    ok(existsSync(join(target, 'settings.json')))
+    strictEqual(run(['--uninstall', '--yes'], target).status, 0)
+    ok(!existsSync(join(target, 'settings.json')))
+  })
+
+  it('settings: a plugin user gets attribution but no second copy of the plugin hook', () => {
+    const target = makeTarget()
+    writeFileSync(join(target, 'settings.json'), JSON.stringify({ enabledPlugins: { 'senior-dev-kit@m': true } }), 'utf8')
+    const res = run(['--yes'], target)
+    strictEqual(res.status, 0, res.stderr)
+    ok(res.stdout.includes('plugin is enabled'), res.stdout)
+    const installed = JSON.parse(readFileSync(join(target, 'settings.json'), 'utf8'))
+    deepStrictEqual(installed.attribution, { commit: '', pr: '', sessionUrl: false })
+    strictEqual(installed.hooks, undefined)
+    ok(!existsSync(join(target, 'agents')), 'agents come from the plugin')
+    ok(existsSync(join(target, 'rules', '000-security.md')))
+  })
+
+  it('statusline: opt-in, and never replaces a statusLine the user already has', () => {
+    const target = makeTarget()
+    const mine = { type: 'command', command: 'my-line' }
+    writeFileSync(join(target, 'settings.json'), JSON.stringify({ statusLine: mine }), 'utf8')
+    strictEqual(run(['--yes'], target).status, 0)
+    ok(!existsSync(join(target, 'scripts', 'senior-dev-kit', 'statusline.mjs')), 'not part of the default set')
+
+    const res = run(['--yes', '--only', 'statusline'], target)
+    strictEqual(res.status, 0, res.stderr)
+    ok(res.stdout.includes('yours wins'), res.stdout)
+    deepStrictEqual(JSON.parse(readFileSync(join(target, 'settings.json'), 'utf8')).statusLine, mine)
+  })
+
+  it('upgrade: removes a file the kit stopped shipping, keeps one the user edited', () => {
+    const target = makeTarget()
+    strictEqual(run(['--yes', '--only', 'rules'], target).status, 0)
+    const manifestPath = join(target, '.senior-dev-kit', 'manifest.json')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    const retiredBody = 'retired rule\n'
+    const editedBody = 'edited by user\n'
+    writeFileSync(join(target, 'rules', '999-retired.md'), retiredBody, 'utf8')
+    writeFileSync(join(target, 'rules', '998-edited.md'), editedBody, 'utf8')
+    manifest.files.push({ path: 'rules/999-retired.md', sha: createHash('sha256').update(retiredBody).digest('hex') })
+    manifest.files.push({ path: 'rules/998-edited.md', sha: 'not-the-current-sha' })
+    writeFileSync(manifestPath, JSON.stringify(manifest), 'utf8')
+
+    const drift = run(['--check'], target)
+    strictEqual(drift.status, 1)
+    ok(drift.stderr.includes('retired  rules/999-retired.md'), drift.stderr)
+
+    strictEqual(run(['--yes', '--only', 'rules'], target).status, 0)
+    ok(!existsSync(join(target, 'rules', '999-retired.md')))
+    strictEqual(readFileSync(join(target, 'rules', '998-edited.md'), 'utf8'), editedBody)
+    const after = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    ok(!after.files.some(f => f.path.startsWith('rules/99')), 'neither is the kit’s any more')
+  })
+
+  it('uninstall refuses rather than forgetting what it added when settings.json is broken', () => {
+    const target = makeTarget()
+    strictEqual(run(['--yes', '--only', 'deny-rules'], target).status, 0)
+    writeFileSync(join(target, 'settings.json'), '{ broken', 'utf8')
+    const res = run(['--uninstall', '--yes'], target)
+    strictEqual(res.status, 1)
+    ok(res.stderr.includes('not valid JSON'), res.stderr)
+    ok(existsSync(join(target, '.senior-dev-kit', 'manifest.json')), 'the record of added rules survives')
   })
 })

@@ -6,8 +6,33 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 
 ## [Unreleased]
 
+### Added
+
+- Installer `settings` component: sets `attribution` so commits and PRs carry no Claude trailer
+  (Claude stops appearing in GitHub contributor lists), and adds a PreToolUse hook that sends any
+  general-purpose/Explore/Plan subagent call without an explicit `model` back with the
+  haiku/sonnet/opus table. The plugin ships the same hook; `/kit-setup` now installs the
+  attribution setting too. Values the user already set are never overwritten. [2026-09-28]
+- Opt-in `statusline` component: a cross-platform status line showing model, folder, branch and
+  context use. It never replaces a status line the user already has. [2026-09-28]
+- `/context-audit` command, `agent_docs/delegation-policy.md` (scout template, zero-loss rules)
+  and ROUTING Step 3.6, which sends pure lookups to a haiku `Explore` scout. [2026-09-28]
+- Always-loaded rules for every project: MODEL ROUTING + DELEGATION, MOVE IS NOT REWRITE,
+  CODE STYLE (English identifiers, no comments), NO AI ATTRIBUTION, CHANGELOG and DOC
+  FRUGALITY. [2026-09-28]
+
 ### Changed
 
+- Upgrades now reconcile instead of only adding: a file, deny rule, setting or hook the kit no
+  longer ships is removed on the next install. Files you edited are kept, and `--check` reports
+  retired entries as drift. [2026-09-28]
+- With the plugin enabled, a bare `node scripts/install.mjs` installs only what a plugin cannot
+  carry (rules, deny rules, settings) instead of duplicating every agent and skill. [2026-09-28]
+- The plugin's SessionStart hook no longer stacks the protocol on an older unmarked copy in
+  `~/.claude/CLAUDE.md`. It also names a missing attribution setting and says when `/kit-setup`
+  ran for an older kit version. [2026-09-28]
+- SHIPPED SOURCE IS PUBLIC is now part of CODE STYLE: no comments in any file, not only
+  browser-served ones. The single exception is Rust's `SAFETY:` note. [2026-09-28]
 - New always-loaded rule: SHIPPED SOURCE IS PUBLIC. Anything the browser receives as-is — HTML,
   CSS, client JS, SVG, static dirs, and their translations — carries no comments, because View
   Source is not a private channel. The rationale goes in the commit, the changelog or a doc.
@@ -21,6 +46,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 
 ### Fixed
 
+- Uninstall refuses when settings.json no longer parses, instead of deleting the manifest and
+  losing the record of which deny rules it added. A settings.json the installer created is deleted
+  on uninstall once nothing of the user's is left in it. [2026-09-28]
+- `--target` with no directory, or followed by another flag, is an error instead of silently
+  installing into `~/.claude`. [2026-09-28]
+- `check-plugin` now validates `hooks/hooks.json` and every script it references. It was skipped
+  whenever the manifest omitted the optional `hooks` field, which it always does. [2026-09-28]
+- Bumped the markdownlint toolchain past a high-severity smol-toml advisory. [2026-09-28]
 - The landing page is indexed on its clean URL, not on `tr.html`. GitHub Pages answers both
   `senior.mtvrkan.com/tr` and `senior.mtvrkan.com/tr.html` with 200, and every canonical, hreflang
   pair, sitemap entry and language link named the `.html` one — so that is the URL Google indexed

@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A Claude Code configuration kit that makes the assistant behave like a senior engineering team
-instead of an eager junior: **8 agents, 25 skills, 12 rules, 6 commands, 28 presets**.
+instead of an eager junior: **8 agents, 25 skills, 12 rules, 7 commands, 28 presets**.
 
 🇹🇷 [Türkçe README](README.tr.md)
 
@@ -24,7 +24,7 @@ This kit adds the three things a senior teammate has and a fresh model does not:
 - **A procedure per task shape.** "Fix this bug," "add a page," "review this migration" each
   have a written discipline the model follows instead of improvising. 25 of them.
 - **A context budget.** Only three files load on every turn (capped at 500 lines, enforced by a
-  script). Everything else — 12 rule files, 17 reference docs — loads lazily when a matching
+  script). Everything else — 12 rule files, 18 reference docs — loads lazily when a matching
   file is read or a skill actually needs it.
 
 Everything the kit claims about itself is verified by `npm run check`, not by hand.
@@ -93,16 +93,23 @@ what you can type — is [`docs/usage.md`](docs/usage.md).
 | Agent | 8 | 4 are read-only guards (db, security, devops, performance) |
 | Skill | 25 | Most auto-trigger on task shape; a few are slash-command only |
 | Rule | 12 | `000`/`001` load every session; the other 10 load on a `paths:` glob match |
-| Command | 6 | `/agents-guide`, `/skills-guide`, `/seo-check`, `/design-check`, `/arch-check`, `/a11y-check` |
+| Command | 7 | `/agents-guide`, `/skills-guide`, `/seo-check`, `/design-check`, `/arch-check`, `/a11y-check`, `/context-audit` |
 | Preset | 28 | web: nextjs-saas, react-vite, nuxt, sveltekit, astro, angular · backend: node-express, nestjs, fastapi, django, laravel, rails, spring-boot, dotnet, go-api, rust-axum · mobile: flutter, react-native, swiftui · orm: prisma, drizzle · db: postgres, mongodb, supabase · infra: docker, kubernetes, terraform · generic: fallback |
-| agent_docs | 17 | Deep reference pages, read on demand |
+| agent_docs | 18 | Deep reference pages, read on demand |
 
-In short: 8 agents, 25 skills, 12 rules, 6 commands, 28 presets.
+In short: 8 agents, 25 skills, 12 rules, 7 commands, 28 presets.
 
 Plus a guardrail layer: ~400 deny rules in `settings-template.json` that block reads of secret
 files, destructive shell commands, and zero-prompt remote package runners. Coverage and its
 known gaps are documented honestly in [`SECURITY.md`](SECURITY.md) — including what it does
 **not** block.
+
+The installer (or `/kit-setup`) also merges two settings, never overwriting a value you set:
+`attribution` is hidden, so commits and PRs carry no `Co-Authored-By: Claude` trailer and Claude
+never shows up in your GitHub contributors; and a PreToolUse hook sends any subagent call that
+omits `model` back with the haiku/sonnet/opus table, so a lookup never silently runs at your main
+model’s price. An opt-in status line (`--only statusline`) shows model, folder, branch and context
+use.
 
 ---
 

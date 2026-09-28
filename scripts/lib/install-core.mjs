@@ -165,9 +165,173 @@ export function unmergeDenyRules(existing, addedRules) {
   const currentDeny = Array.isArray(permissions.deny) ? permissions.deny : []
   const toRemove = new Set(addedRules)
   const removed = currentDeny.filter(rule => toRemove.has(rule))
+  if (removed.length === 0) return { settings, removed }
   permissions.deny = currentDeny.filter(rule => !toRemove.has(rule))
   settings.permissions = permissions
   return { settings, removed }
+}
+
+export function removeStaleDenyRules(existing, previouslyAdded, kitDenyRules) {
+  const current = new Set(kitDenyRules)
+  const stale = (previouslyAdded ?? []).filter(rule => !current.has(rule))
+  const { settings, removed } = unmergeDenyRules(existing, stale)
+  return { settings, removed, stale }
+}
+
+const isPlainObject = value => value !== null && typeof value === 'object' && !Array.isArray(value)
+
+export function deepEqual(a, b) {
+  if (a === b) return true
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((item, i) => deepEqual(item, b[i]))
+  if (isPlainObject(a) && isPlainObject(b)) {
+    const keys = Object.keys(a)
+    return keys.length === Object.keys(b).length && keys.every(key => Object.hasOwn(b, key) && deepEqual(a[key], b[key]))
+  }
+  return false
+}
+
+function readPath(root, path) {
+  let node = root
+  for (const key of path) {
+    if (!isPlainObject(node) || !Object.hasOwn(node, key)) return { found: false, blocked: node !== undefined && !isPlainObject(node) }
+    node = node[key]
+  }
+  return { found: true, value: node }
+}
+
+export function settingsLeaves(template) {
+  const leaves = []
+  const walk = (node, path) => {
+    for (const [key, value] of Object.entries(node)) {
+      if (isPlainObject(value)) walk(value, [...path, key])
+      else leaves.push({ path: [...path, key], value })
+    }
+  }
+  if (isPlainObject(template?.attribution)) walk({ attribution: template.attribution }, [])
+  return leaves
+}
+
+export function mergeSettingsLeaves(existing, leaves) {
+  const settings = isPlainObject(existing) ? structuredClone(existing) : {}
+  const added = []
+  const conflicts = []
+  for (const leaf of leaves) {
+    const probe = readPath(settings, leaf.path)
+    if (probe.found) {
+      if (!deepEqual(probe.value, leaf.value)) conflicts.push({ path: leaf.path, current: probe.value })
+      continue
+    }
+    let node = settings
+    let blocked = false
+    for (const key of leaf.path.slice(0, -1)) {
+      if (!Object.hasOwn(node, key)) node[key] = {}
+      if (!isPlainObject(node[key])) {
+        blocked = true
+        break
+      }
+      node = node[key]
+    }
+    if (blocked) {
+      conflicts.push({ path: leaf.path, current: readPath(settings, leaf.path.slice(0, 1)).value })
+      continue
+    }
+    node[leaf.path.at(-1)] = structuredClone(leaf.value)
+    added.push({ path: leaf.path, value: structuredClone(leaf.value) })
+  }
+  return { settings, added, conflicts }
+}
+
+export function unmergeSettingsLeaves(existing, ownedLeaves) {
+  const settings = isPlainObject(existing) ? structuredClone(existing) : {}
+  const removed = []
+  for (const leaf of ownedLeaves ?? []) {
+    const probe = readPath(settings, leaf.path)
+    if (!probe.found || !deepEqual(probe.value, leaf.value)) continue
+    const parents = [settings]
+    for (const key of leaf.path.slice(0, -1)) parents.push(parents.at(-1)[key])
+    delete parents.at(-1)[leaf.path.at(-1)]
+    for (let depth = leaf.path.length - 1; depth > 0; depth--) {
+      if (Object.keys(parents[depth]).length > 0) break
+      delete parents[depth - 1][leaf.path[depth - 1]]
+    }
+    removed.push(leaf)
+  }
+  return { settings, removed }
+}
+
+export function mergeHookGroups(existing, groups) {
+  const settings = isPlainObject(existing) ? structuredClone(existing) : {}
+  const added = []
+  if (groups.length === 0) return { settings, added, blocked: false }
+  if (Object.hasOwn(settings, 'hooks') && !isPlainObject(settings.hooks)) return { settings, added, blocked: true }
+  settings.hooks = isPlainObject(settings.hooks) ? settings.hooks : {}
+  for (const { event, group } of groups) {
+    const current = Array.isArray(settings.hooks[event]) ? settings.hooks[event] : []
+    if (current.some(entry => deepEqual(entry, group))) continue
+    settings.hooks[event] = [...current, structuredClone(group)]
+    added.push({ event, group: structuredClone(group) })
+  }
+  return { settings, added, blocked: false }
+}
+
+export function unmergeHookGroups(existing, ownedGroups) {
+  const settings = isPlainObject(existing) ? structuredClone(existing) : {}
+  const removed = []
+  if (!isPlainObject(settings.hooks)) return { settings, removed }
+  for (const { event, group } of ownedGroups ?? []) {
+    const current = settings.hooks[event]
+    if (!Array.isArray(current)) continue
+    const index = current.findIndex(entry => deepEqual(entry, group))
+    if (index === -1) continue
+    current.splice(index, 1)
+    if (current.length === 0) delete settings.hooks[event]
+    removed.push({ event, group })
+  }
+  if (Object.keys(settings.hooks).length === 0) delete settings.hooks
+  return { settings, removed }
+}
+
+export function withoutOwned(owned, desired, equals) {
+  return (owned ?? []).filter(entry => !desired.some(candidate => equals(entry, candidate)))
+}
+
+export function isEmptySkeleton(settings) {
+  if (!isPlainObject(settings)) return false
+  const keys = Object.keys(settings).filter(key => key !== '$schema')
+  if (keys.length === 0) return true
+  if (keys.length !== 1 || keys[0] !== 'permissions' || !isPlainObject(settings.permissions)) return false
+  return Object.values(settings.permissions).every(value => Array.isArray(value) && value.length === 0)
+}
+
+export function tidyPermissions(settings) {
+  if (!isPlainObject(settings?.permissions)) return settings
+  const permissions = { ...settings.permissions }
+  if (Array.isArray(permissions.deny) && permissions.deny.length === 0) delete permissions.deny
+  const next = { ...settings, permissions }
+  if (Object.keys(permissions).length === 0) delete next.permissions
+  return next
+}
+
+export function hookCommand(scriptPath) {
+  return `node "${scriptPath.replace(/\\/g, '/')}"`
+}
+
+export function kitHookGroups(scriptPath) {
+  return [
+    {
+      event: 'PreToolUse',
+      group: { matcher: 'Agent|Task', hooks: [{ type: 'command', command: hookCommand(scriptPath), timeout: 10 }] },
+    },
+  ]
+}
+
+export function kitStatusLineLeaf(scriptPath) {
+  return { path: ['statusLine'], value: { type: 'command', command: hookCommand(scriptPath), padding: 0 } }
+}
+
+export function pluginEnabled(settings) {
+  const plugins = isPlainObject(settings?.enabledPlugins) ? settings.enabledPlugins : {}
+  return Object.entries(plugins).some(([key, on]) => on === true && key.split('@')[0] === 'senior-dev-kit')
 }
 
 /**
@@ -226,8 +390,16 @@ export function parseArgs(argv) {
     }
     else if (arg === '--allow-duplicate-protocol') opts.allowDuplicateProtocol = true
     else if (arg === '--help' || arg === '-h') opts.help = true
-    else if (arg === '--target') opts.target = argv[++i] ?? null
-    else if (arg.startsWith('--target=')) opts.target = arg.slice('--target='.length)
+    else if (arg === '--target') {
+      const value = argv[i + 1]
+      if (value === undefined || value === '' || value.startsWith('-')) opts.unknown.push('--target (missing directory)')
+      else opts.target = argv[++i]
+    }
+    else if (arg.startsWith('--target=')) {
+      const value = arg.slice('--target='.length)
+      if (value === '') opts.unknown.push('--target= (missing directory)')
+      else opts.target = value
+    }
     else if (arg === '--only') opts.components = (argv[++i] ?? '').split(',').filter(Boolean)
     else if (arg.startsWith('--only=')) opts.components = arg.slice('--only='.length).split(',').filter(Boolean)
     else opts.unknown.push(arg)
@@ -236,14 +408,22 @@ export function parseArgs(argv) {
 }
 
 /** Component names accepted by `--only`, in install order. */
-export const COMPONENTS = ['agents', 'skills', 'commands', 'rules', 'agent_docs', 'presets', 'protocol', 'deny-rules']
+export const COMPONENTS = ['agents', 'skills', 'commands', 'rules', 'agent_docs', 'presets', 'protocol', 'deny-rules', 'settings', 'statusline']
+
+export const OPT_IN_COMPONENTS = ['statusline']
+
+export const PLUGIN_COMPANION_COMPONENTS = ['rules', 'deny-rules', 'settings']
 
 /**
  * @param {string[] | null} requested
+ * @param {{ pluginEnabled?: boolean }} [context]
  * @returns {{ selected: string[], invalid: string[] }}
  */
-export function resolveComponents(requested) {
-  if (!requested) return { selected: [...COMPONENTS], invalid: [] }
+export function resolveComponents(requested, context = {}) {
+  if (!requested) {
+    const defaults = context.pluginEnabled ? PLUGIN_COMPANION_COMPONENTS : COMPONENTS.filter(c => !OPT_IN_COMPONENTS.includes(c))
+    return { selected: [...defaults], invalid: [] }
+  }
   const invalid = requested.filter(c => !COMPONENTS.includes(c))
   return { selected: COMPONENTS.filter(c => requested.includes(c)), invalid }
 }

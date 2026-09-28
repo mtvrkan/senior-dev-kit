@@ -2,7 +2,7 @@
 
 Highest-priority signal wins. Read top-to-bottom; stop at the first match.
 
-**Precedence order (memorize this line):** live-incident signal (Step 0) > guard-area noun (Steps 1 and 3) > stack trace (Step 2) > too-small-to-delegate (Step 3.5) > task-type verb (Step 4). Step 0 outranks everything else because it doesn't pick an agent — it decides whether Steps 1-3 run as one coordinated, parallel dispatch instead of a single sequential match. A guard-area noun outranks every other remaining signal whenever the request **changes that guarded surface** — "fix CSS in the login form" is security-guard territory, not ui-fixer. A request that only *references* a guarded area without touching its code (writing tests against it, documenting it, researching it) routes by task type instead. Ties between two guard areas are resolved by blast radius (see "Multiple guard signals"); ties between non-guard signals by the [Conflict resolution](#conflict-resolution--when-two-signals-match) table.
+**Precedence order (memorize this line):** live-incident signal (Step 0) > guard-area noun (Steps 1 and 3) > stack trace (Step 2) > too-small-to-delegate (Step 3.5) > pure-lookup (Step 3.6) > task-type verb (Step 4). Step 0 outranks everything else because it doesn't pick an agent — it decides whether Steps 1-3 run as one coordinated, parallel dispatch instead of a single sequential match. A guard-area noun outranks every other remaining signal whenever the request **changes that guarded surface** — "fix CSS in the login form" is security-guard territory, not ui-fixer. A request that only *references* a guarded area without touching its code (writing tests against it, documenting it, researching it) routes by task type instead. Ties between two guard areas are resolved by blast radius (see "Multiple guard signals"); ties between non-guard signals by the [Conflict resolution](#conflict-resolution--when-two-signals-match) table.
 
 ---
 
@@ -114,6 +114,24 @@ This gate runs before the task-type table below, not after it. "Copy / CSS → u
 *once the work is big enough to delegate at all* — a one-word label change in one named file is
 Tier 0 and stops here. Steps 0-3 always override this one: a one-line edit to `auth.ts` is a
 guard's call however small it is.
+
+---
+
+## Step 3.6 — Is it just a lookup?
+
+The work is big enough to delegate, but the question is *where something is*, not *what to do
+about it* — locate a symbol/route/string, list who imports or calls X, inventory keys across many
+files, confirm a pattern repo-wide.
+
+```text
+YES → Agent(subagent_type: "Explore", model: "haiku") — read-only, skips the CLAUDE.md hierarchy,
+      returns path:line + verbatim lines. Protocol and prompt template: agent_docs/delegation-policy.md
+      The caller (not the scout) decides what the findings mean and re-reads before editing.
+NO  → Step 4
+```
+
+Never send a lookup to a custom kit agent: those load the whole CLAUDE.md hierarchy per spawn and
+buy nothing a scout needs. Never send a decision to a scout.
 
 ---
 

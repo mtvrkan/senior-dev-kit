@@ -70,7 +70,7 @@ many deny rules would be added, before anything is written.
 | Your file | What happens |
 | --- | --- |
 | `~/.claude/CLAUDE.md` | The kit's protocol is inserted between `<!-- BEGIN senior-dev-kit -->` markers. Anything you wrote outside those markers is preserved, and reinstalling replaces only the marked block. |
-| `~/.claude/settings.json` | The deny rules are merged into `permissions.deny`. Your `allow`, `ask`, env vars and every other key are untouched. |
+| `~/.claude/settings.json` | The deny rules are merged into `permissions.deny`; `attribution` is set to hide the Claude commit/PR trailer; a PreToolUse hook that makes every subagent call name its `model` is added next to your own hooks. A key you already set is never overwritten — the dry run says "yours wins". Your `allow`, `ask`, env vars and every other key are untouched, and `--uninstall` removes only the entries the kit added. |
 | Any other file it overwrites | Copied into `~/.claude/.senior-dev-kit/backups/<timestamp>/` first. |
 
 ### Flags
@@ -80,7 +80,7 @@ many deny rules would be added, before anything is written.
 | `-n`, `--dry-run` | Show what would change; write nothing |
 | `-y`, `--yes` | Skip the confirmation prompt (CI and scripted setups) |
 | `--target DIR` | Install into `DIR` instead of `~/.claude` / `$CLAUDE_CONFIG_DIR` |
-| `--only LIST` | Install a subset: `agents,skills,commands,rules,agent_docs,presets,protocol,deny-rules` |
+| `--only LIST` | Install a subset: `agents,skills,commands,rules,agent_docs,presets,protocol,deny-rules,settings,statusline`. `statusline` (model · folder · branch · context %) is opt-in and never replaces a `statusLine` you already have |
 | `--uninstall` | Remove everything a previous run wrote |
 | `--allow-duplicate-protocol` | Override the duplicate-protocol guard — see [Troubleshooting](troubleshooting.md) |
 | `-h`, `--help` | The same list, from the installer itself |
@@ -119,10 +119,11 @@ project you are about to build rather than installing this kit's own agents.
 
 Installing the plugin **and** running a full Option 2 install gives you every agent, skill and
 command twice — once from the plugin, once from `~/.claude`. With the plugin installed, the only
-part you still need is the part a plugin cannot deliver:
+part you still need is the part a plugin cannot deliver — the installer detects an enabled plugin
+and defaults to exactly that:
 
 ```bash
-node scripts/install.mjs --only rules,deny-rules
+node scripts/install.mjs --only rules,deny-rules,settings
 ```
 
 which is exactly what `/kit-setup` runs for you.

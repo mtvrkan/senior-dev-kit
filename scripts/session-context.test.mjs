@@ -74,7 +74,7 @@ describe('SessionStart hook', () => {
     const shipped = JSON.parse(readFileSync(join(REPO_ROOT, 'settings-template.json'), 'utf8'))
     writeFileSync(
       join(configDir, 'settings.json'),
-      JSON.stringify({ permissions: { deny: shipped.permissions.deny } }),
+      JSON.stringify({ attribution: shipped.attribution, permissions: { deny: shipped.permissions.deny } }),
       'utf8'
     )
   }
@@ -101,6 +101,33 @@ describe('SessionStart hook', () => {
     installDenyRules(configDir)
     const context = JSON.parse(runHook(configDir).stdout).hookSpecificOutput.additionalContext
     ok(!context.includes('/kit-setup'), 'no nudge once setup has genuinely run')
+  })
+
+  it('names the missing attribution setting on its own', () => {
+    const configDir = makeConfigDir()
+    installRules(configDir)
+    const shipped = JSON.parse(readFileSync(join(REPO_ROOT, 'settings-template.json'), 'utf8'))
+    writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ permissions: { deny: shipped.permissions.deny } }), 'utf8')
+    const context = JSON.parse(runHook(configDir).stdout).hookSpecificOutput.additionalContext
+    ok(context.includes('`attribution` setting'), context)
+  })
+
+  it('does not stack the protocol on an unmarked older copy in the user CLAUDE.md', () => {
+    const configDir = makeConfigDir()
+    writeFileSync(join(configDir, 'CLAUDE.md'), '# Global Claude Senior Protocol v3.9\nold body\n', 'utf8')
+    const context = JSON.parse(runHook(configDir).stdout).hookSpecificOutput.additionalContext
+    ok(!context.includes('## HARD STOPS'), 'the protocol body is not injected a second time')
+    ok(context.includes('older, unmarked copy'), context)
+  })
+
+  it('says when /kit-setup ran for an older kit version than the plugin', () => {
+    const configDir = makeConfigDir()
+    installRules(configDir)
+    installDenyRules(configDir)
+    mkdirSync(join(configDir, '.senior-dev-kit'), { recursive: true })
+    writeFileSync(join(configDir, '.senior-dev-kit', 'manifest.json'), JSON.stringify({ version: '0.0.1' }), 'utf8')
+    const context = JSON.parse(runHook(configDir).stdout).hookSpecificOutput.additionalContext
+    ok(context.includes('from kit 0.0.1'), context)
   })
 
   it('exits quietly instead of failing the session when the kit is missing', () => {

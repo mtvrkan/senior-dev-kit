@@ -2364,7 +2364,7 @@ for (const suiteFile of AB_SUITE_FILES) {
 // A command is user-entry-only when its whole purpose is to be typed — the guides that list what
 // is installed have no upstream caller by construction. Everything else must be reachable from
 // something that runs on its own.
-const USER_ENTRY_COMMANDS = new Set(['agents-guide', 'skills-guide'])
+const USER_ENTRY_COMMANDS = new Set(['agents-guide', 'skills-guide', 'context-audit'])
 const COMMAND_CALLERS = ['skills', 'agents', 'agent_docs', 'rules']
 const callerCorpus: string[] = []
 for (const dir of COMMAND_CALLERS) collectMarkdown(dir, callerCorpus)

@@ -30,7 +30,7 @@ Fix: remove the `~/.claude` copy and keep the plugin.
 
 ```bash
 node scripts/install.mjs --uninstall
-node scripts/install.mjs --only rules,deny-rules
+node scripts/install.mjs --only rules,deny-rules,settings
 ```
 
 The first line removes everything the installer wrote; the second puts back only the part the

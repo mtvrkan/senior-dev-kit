@@ -157,7 +157,7 @@ own however well a request matches — they run only when you type the slash com
 | `/deep-research` | Manually invoke for multi-source factual research, competitive analysis, technology comparison, or market research. | main loop |
 | `/env-audit` | Manually invoke when setting up a new environment, debugging "undefined env var" errors, onboarding, or before a production deployment. | `devops-guard` |
 | `/kit-doctor` | Manually invoke when the kit misbehaves after an install or upgrade — verifies what is actually on disk instead of guessing. | main loop |
-| `/kit-setup` | Run once after installing the plugin, or when /kit-doctor reports the rules are missing. | main loop |
+| `/kit-setup` | Run once after installing the plugin, after a plugin update, or when /kit-doctor reports the rules or settings are missing. | main loop |
 
 ---
 
@@ -191,6 +191,7 @@ pays for the REST-API rules.
 | `/a11y-check` | Audit built UI against WCAG 2.2 AA — keyboard, focus, contrast, state announcement, targets, reflow. | "[page, screen, flow, or component — optional]" |
 | `/agents-guide` | List all installed Senior Dev Kit agents and when to use each one. | — |
 | `/arch-check` | Audit architecture integrity — boundary violations, dependency direction, mixed patterns, contract drift. | "[directory, package, or feature — optional]" |
+| `/context-audit` | Measure what every session pays before it starts — always-loaded files, their size, and what could move to a lazy doc without losing a rule. | "[project dir — optional, defaults to the current one]" |
 | `/design-check` | Audit built UI for design-direction adherence, generic-output tells, and layout monotony. | "[page, screen, or route — optional]" |
 | `/seo-check` | Audit the project for SEO, AEO, Core Web Vitals, and technical SEO issues. | "[page or route — optional]" |
 | `/skills-guide` | List all installed Senior Dev Kit skills and when each one auto-triggers. | — |

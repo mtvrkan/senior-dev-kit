@@ -144,7 +144,7 @@ try { await riskyOperation() } catch (e) {
 }
 ```
 
-## ALERT THRESHOLDS (document in code comments when setting)
+## ALERT THRESHOLDS (record the reasoning in the alert's own description/runbook, never in code comments)
 
 | Signal | Threshold | Urgency |
 | --- | --- | --- |

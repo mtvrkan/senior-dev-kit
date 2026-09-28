@@ -34,7 +34,7 @@ Tier 2 minimum because the blast radius is every consumer.
 Module boundary rules:
 
 - Barrel files (`index.ts`) ONLY at module root — never nested (breaks tree-shaking)
-- Export only public API; prefix internals with `_` or mark `/* @internal */`
+- Export only public API; keep internals unexported, or prefix them with `_` where the language needs it
 - Circular imports: detect with `madge --circular src/` (TS) | `pylint --enable=cyclic-import` (Python)
 - God service >300 lines: flag `FWD: split recommended — [reason]`
 

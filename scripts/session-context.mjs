@@ -24,7 +24,31 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const BLOCK_BEGIN = '<!-- BEGIN senior-dev-kit -->'
+import { BLOCK_BEGIN, protocolAnchor } from './lib/install-core.mjs'
+
+function readJson(path) {
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+function attributionHidden(configDir) {
+  const settings = readJson(join(configDir, 'settings.json'))
+  if (settings === null) return false
+  const attribution = settings.attribution
+  if (attribution === false) return true
+  if (settings.includeCoAuthoredBy === false && attribution === undefined) return true
+  return attribution !== null && typeof attribution === 'object' && attribution.commit === '' && attribution.pr === ''
+}
+
+function staleSetup(kitRoot, configDir) {
+  const manifest = readJson(join(configDir, '.senior-dev-kit', 'manifest.json'))
+  const kit = readJson(join(kitRoot, 'package.json'))
+  if (!manifest?.version || !kit?.version) return null
+  return manifest.version === kit.version ? null : { installed: manifest.version, current: kit.version }
+}
 
 /**
  * Has the kit's deny list been merged into the user's settings.json?
@@ -62,11 +86,27 @@ function main() {
 
   const configDir = process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude')
   const userClaudeMd = join(configDir, 'CLAUDE.md')
-  if (existsSync(userClaudeMd) && readFileSync(userClaudeMd, 'utf8').includes(BLOCK_BEGIN)) {
+  const protocol = readFileSync(protocolPath, 'utf8')
+  const userInstructions = existsSync(userClaudeMd) ? readFileSync(userClaudeMd, 'utf8') : ''
+  if (userInstructions.includes(BLOCK_BEGIN)) {
     return // already loaded from ~/.claude/CLAUDE.md — do not duplicate it
   }
-
-  const protocol = readFileSync(protocolPath, 'utf8')
+  const anchor = protocolAnchor(protocol)
+  if (anchor && userInstructions.includes(anchor)) {
+    process.stdout.write(
+      JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: 'SessionStart',
+          additionalContext:
+            `Senior Dev Kit is active as a plugin. KIT_ROOT = ${kitRoot}\n\n` +
+            `The user's ${userClaudeMd} holds an older, unmarked copy of the kit protocol, so this ` +
+            'plugin did not inject the current one on top of it. Tell the user once: delete that old ' +
+            'copy (keep anything they wrote themselves) so the current protocol loads.',
+        },
+      })
+    )
+    return
+  }
   const parts = [
     `Senior Dev Kit is active as a plugin. KIT_ROOT = ${kitRoot}`,
     '',
@@ -91,12 +131,23 @@ function main() {
   if (!denyRulesInstalled(kitRoot, configDir)) {
     missing.push('the deny rules (the kit\'s only tool-layer block on reading credential files)')
   }
+  if (!attributionHidden(configDir)) {
+    missing.push('the `attribution` setting (without it Claude Code adds a Co-Authored-By trailer to every commit)')
+  }
   if (missing.length > 0) {
     parts.push(
       '',
-      `NOT installed: ${missing.join(' · ')}. A plugin cannot write either into the user's` +
+      `NOT installed: ${missing.join(' · ')}. A plugin cannot write these into the user's` +
         ' settings directory. Tell the user they can install them with `/kit-setup`' +
         ' (one-time, backs up anything it touches).'
+    )
+  }
+  const stale = staleSetup(kitRoot, configDir)
+  if (stale) {
+    parts.push(
+      '',
+      `The rules and settings /kit-setup installed are from kit ${stale.installed}; the plugin is now ` +
+        `${stale.current}. Tell the user to rerun \`/kit-setup\` so they match.`
     )
   }
 

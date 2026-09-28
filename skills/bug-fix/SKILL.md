@@ -11,7 +11,7 @@ argument-hint: "[error message, stack trace, or failing test]"
 Read error → root cause → smallest fix → test → done.
 
 1. Read stack trace / error / failing test first. Open ONLY files in the stack trace or directly symptom-related.
-2. Fix the smallest responsible code path. Run targeted test — no test exists → add 1 regression test. Non-obvious fix → one-line comment explaining why.
+2. Fix the smallest responsible code path. Run targeted test — no test exists → add 1 regression test. Non-obvious fix → the why goes in the ROOT line and the commit message, never a code comment.
 3. Escalate immediately: auth/session/token/payment → security-guard | DB corruption/schema/migration → db-guard.
 
 Deep reference: `agent_docs/error-handling-patterns.md` — typed error hierarchies, boundary handling, retry/fallback patterns.

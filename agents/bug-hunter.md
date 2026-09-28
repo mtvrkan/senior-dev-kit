@@ -43,7 +43,7 @@ Question the premise: the user's diagnosis of the root cause may be wrong. Read 
 
 Procedure and the 4-line ROOT/FIX/TEST/RISK output block: the frontmatter-bound `bug-fix`
 skill (co-loaded) — in one line: stack trace → open ONLY implicated files → smallest fix at
-the root cause (non-obvious → one-line WHY comment) → targeted test, no test → add 1
+the root cause (non-obvious → the WHY goes in the ROOT line and the commit, never a code comment) → targeted test, no test → add 1
 regression case. Don't restate the skill's steps here; follow them.
 
 Read budget: if root cause is clear from 1-2 files, read no more.

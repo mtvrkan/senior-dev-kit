@@ -10,8 +10,8 @@
  * Design rule: never destroy anything the user already had.
  *   - `~/.claude/CLAUDE.md` gets a marker-delimited managed block appended;
  *     content outside the markers is preserved verbatim.
- *   - `~/.claude/settings.json` gets the kit's deny rules merged in; every
- *     other key, and every deny rule the user wrote, is left alone.
+ *   - `~/.claude/settings.json` gets the kit's deny rules, attribution and
+ *     hook entries merged in; a key the user already set is never overwritten.
  *   - Any other file that would be overwritten is copied into
  *     `<target>/.senior-dev-kit/backups/<timestamp>/` first.
  *   - A manifest records exactly what was written, so `--uninstall` removes
@@ -44,13 +44,25 @@ import { fileURLToPath } from 'node:url'
 import {
   backupStamp,
   classifyFileAction,
+  deepEqual,
+  isEmptySkeleton,
+  kitHookGroups,
+  kitStatusLineLeaf,
   legacyCopyLine,
   mergeDenyRules,
+  mergeHookGroups,
+  mergeSettingsLeaves,
   parseArgs,
+  pluginEnabled,
   removeManagedBlock,
+  removeStaleDenyRules,
   resolveComponents,
+  settingsLeaves,
   spliceManagedBlock,
+  tidyPermissions,
   unmergeDenyRules,
+  unmergeHookGroups,
+  unmergeSettingsLeaves,
 } from './lib/install-core.mjs'
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -70,7 +82,23 @@ const DIR_COMPONENTS = {
   // them out made `presets/<category>/<stack>/CLAUDE.md` a path that resolved under one delivery
   // path and not the other — exactly the bug CLAUDE.md's dual-delivery rule exists to prevent.
   presets: { from: 'presets', to: 'presets', filter: name => name.endsWith('.md') },
+  settings: { from: 'scripts/hooks', to: 'scripts/senior-dev-kit/hooks', filter: name => name.endsWith('.mjs') },
+  statusline: { from: 'scripts', to: 'scripts/senior-dev-kit', filter: name => name === 'statusline.mjs' },
 }
+
+const HOOK_SCRIPT_REL = 'scripts/senior-dev-kit/hooks/require-agent-model.mjs'
+const STATUSLINE_SCRIPT_REL = 'scripts/senior-dev-kit/statusline.mjs'
+
+function ownerComponent(relPath) {
+  let owner = null
+  for (const [name, spec] of Object.entries(DIR_COMPONENTS)) {
+    if (relPath.startsWith(`${spec.to}/`) && (!owner || spec.to.length > DIR_COMPONENTS[owner].to.length)) owner = name
+  }
+  return owner
+}
+
+const sameLeaf = (a, b) => deepEqual(a.path, b.path) && deepEqual(a.value, b.value)
+const sameHook = (a, b) => a.event === b.event && deepEqual(a.group, b.group)
 
 const sha256 = buf => createHash('sha256').update(buf).digest('hex')
 const readIfExists = path => (existsSync(path) ? readFileSync(path, 'utf8') : null)
@@ -100,7 +128,13 @@ Options:
   -y, --yes         Skip the confirmation prompt (for CI and scripted setups).
       --target DIR  Install into DIR instead of ~/.claude (or $CLAUDE_CONFIG_DIR).
       --only LIST   Comma-separated subset of:
-                    agents,skills,commands,rules,agent_docs,presets,protocol,deny-rules
+                    agents,skills,commands,rules,agent_docs,presets,protocol,
+                    deny-rules,settings,statusline
+                    settings   = hide Claude's commit/PR attribution + the hook that
+                                 makes every Agent() call name its model
+                    statusline = model/folder/branch/context-% status line
+                                 (opt-in: never part of the default set, and never
+                                 replaces a statusLine you already have)
       --check       Report whether the installed copy still matches this
                     checkout; exit 1 if it drifted. Writes nothing. Part of
                     \`npm run check\`; skips loudly when there is no install.
@@ -114,12 +148,79 @@ Nothing is overwritten without a backup. Your own content in ~/.claude/CLAUDE.md
 and your own entries in ~/.claude/settings.json are preserved.
 
 If you installed the kit as a Claude Code plugin, the agents, skills, and
-commands already come from the plugin — the useful subset here is:
-  node scripts/install.mjs --only rules,deny-rules
+commands already come from the plugin — the installer detects that and
+defaults to the subset a plugin cannot carry:
+  node scripts/install.mjs --only rules,deny-rules,settings
 `)
 }
 
 // --- plan building ----------------------------------------------------------
+
+function readSettings(target) {
+  const path = join(target, 'settings.json')
+  const raw = readIfExists(path)
+  if (raw === null) return { path, raw, parsed: null }
+  try {
+    return { path, raw, parsed: JSON.parse(raw) }
+  } catch {
+    return { path, raw, error: true }
+  }
+}
+
+function planSettings(target, selected, manifest, current) {
+  const wantsDeny = selected.includes('deny-rules')
+  const wantsSettings = selected.includes('settings')
+  const wantsStatusLine = selected.includes('statusline')
+  if (!wantsDeny && !wantsSettings && !wantsStatusLine) return null
+  if (current.error) return { error: current.path }
+
+  const template = JSON.parse(readFileSync(join(REPO_ROOT, 'settings-template.json'), 'utf8'))
+  const plugin = pluginEnabled(current.parsed)
+  let settings = current.parsed ?? {}
+
+  let denyAdded = []
+  let denyRemoved = []
+  const kitDeny = template.permissions?.deny ?? []
+  if (wantsDeny) {
+    const stale = removeStaleDenyRules(settings, manifest?.denyAdded, kitDeny)
+    const merged = mergeDenyRules(stale.settings, kitDeny)
+    settings = merged.settings
+    denyAdded = merged.added
+    denyRemoved = stale.removed
+  }
+
+  const desiredLeaves = []
+  if (wantsSettings) desiredLeaves.push(...settingsLeaves(template).map(leaf => ({ ...leaf, component: 'settings' })))
+  if (wantsStatusLine) desiredLeaves.push({ ...kitStatusLineLeaf(join(target, STATUSLINE_SCRIPT_REL)), component: 'statusline' })
+  const ownedLeaves = manifest?.settingsLeaves ?? []
+  const staleLeaves = ownedLeaves.filter(o => selected.includes(o.component) && !desiredLeaves.some(d => sameLeaf(o, d)))
+  const unmergedLeaves = unmergeSettingsLeaves(settings, staleLeaves)
+  const mergedLeaves = mergeSettingsLeaves(unmergedLeaves.settings, desiredLeaves)
+  settings = mergedLeaves.settings
+  const leavesAdded = mergedLeaves.added.map(leaf => ({
+    ...leaf,
+    component: desiredLeaves.find(d => deepEqual(d.path, leaf.path)).component,
+  }))
+
+  const desiredHooks = wantsSettings && !plugin ? kitHookGroups(join(target, HOOK_SCRIPT_REL)) : []
+  const ownedHooks = manifest?.hookGroups ?? []
+  const staleHooks = wantsSettings ? ownedHooks.filter(o => !desiredHooks.some(d => sameHook(o, d))) : []
+  const unmergedHooks = unmergeHookGroups(settings, staleHooks)
+  const mergedHooks = mergeHookGroups(unmergedHooks.settings, desiredHooks)
+  settings = mergedHooks.settings
+
+  const baseline = current.parsed ?? {}
+  return {
+    path: current.path,
+    existed: current.raw !== null,
+    plugin,
+    settings,
+    changed: !deepEqual(settings, baseline) && !(current.raw === null && deepEqual(settings, {})),
+    deny: wantsDeny ? { added: denyAdded, removed: denyRemoved, total: kitDeny.length } : null,
+    leaves: { added: leavesAdded, removed: unmergedLeaves.removed, conflicts: mergedLeaves.conflicts },
+    hooks: { added: mergedHooks.added, removed: unmergedHooks.removed, blocked: mergedHooks.blocked },
+  }
+}
 
 function buildPlan(target, selected, manifest) {
   // What a previous run of this installer put there, keyed by relative path.
@@ -129,12 +230,15 @@ function buildPlan(target, selected, manifest) {
   // copy of the previous version's ~60 files and the backups directory would
   // grow without bound while containing nothing the user ever wrote.
   const priorShas = new Map((manifest?.files ?? []).map(f => [f.path, f.sha]))
+  const currentSettings = readSettings(target)
+  const plugin = !currentSettings.error && pluginEnabled(currentSettings.parsed)
 
   /** @type {{kind:'file',from:string,to:string,rel:string,action:string,ours:boolean}[]} */
   const files = []
   for (const name of selected) {
     const spec = DIR_COMPONENTS[name]
     if (!spec) continue
+    if (name === 'settings' && plugin) continue
     const sourceDir = join(REPO_ROOT, spec.from)
     if (!existsSync(sourceDir)) continue
     for (const rel of walkFiles(sourceDir)) {
@@ -172,27 +276,21 @@ function buildPlan(target, selected, manifest) {
     }
   }
 
-  let deny = null
-  if (selected.includes('deny-rules')) {
-    const template = JSON.parse(readFileSync(join(REPO_ROOT, 'settings-template.json'), 'utf8'))
-    const kitDeny = template.permissions?.deny ?? []
-    const settingsPath = join(target, 'settings.json')
-    const raw = readIfExists(settingsPath)
-    let existing = null
-    if (raw !== null) {
-      try {
-        existing = JSON.parse(raw)
-      } catch {
-        // A settings.json we cannot parse is the one case where merging is
-        // impossible without guessing. Refuse rather than clobber it.
-        return { files, protocol, deny: { error: settingsPath } }
-      }
+  const planned = new Set(files.map(f => f.rel))
+  const orphans = []
+  for (const entry of manifest?.files ?? []) {
+    if (planned.has(entry.path)) continue
+    const owner = ownerComponent(entry.path)
+    if (!owner || !selected.includes(owner)) continue
+    const abs = join(target, entry.path)
+    if (!existsSync(abs)) {
+      orphans.push({ rel: entry.path, abs, action: 'gone' })
+      continue
     }
-    const { settings, added } = mergeDenyRules(existing, kitDeny)
-    deny = { path: settingsPath, settings, added, total: kitDeny.length, existed: raw !== null }
+    orphans.push({ rel: entry.path, abs, action: sha256(readFileSync(abs)) === entry.sha ? 'remove' : 'keep' })
   }
 
-  return { files, protocol, deny }
+  return { files, protocol, orphans, settings: planSettings(target, selected, manifest, currentSettings) }
 }
 
 function describePlan(plan, target) {
@@ -216,16 +314,34 @@ function describePlan(plan, target) {
     }[plan.protocol.mode]
     lines.push('', `Protocol: ${plan.protocol.changed ? verb : 'CLAUDE.md protocol block already current'}`)
   }
-  if (plan.deny) {
-    if (plan.deny.error) {
-      lines.push('', `Deny rules: SKIPPED — ${plan.deny.error} is not valid JSON; fix or move it and rerun`)
-    } else {
+  const removable = plan.orphans.filter(o => o.action === 'remove')
+  const kept = plan.orphans.filter(o => o.action === 'keep')
+  if (removable.length > 0 || kept.length > 0) {
+    lines.push('', `Retired files: remove ${removable.length} the kit no longer ships, keep ${kept.length} you edited`)
+    for (const o of [...removable, ...kept].slice(0, 10)) lines.push(`    ${o.action === 'remove' ? 'remove' : 'keep  '}  ${o.rel}`)
+  }
+
+  const s = plan.settings
+  if (s?.error) {
+    lines.push('', `settings.json: SKIPPED — ${s.error} is not valid JSON; fix or move it and rerun`)
+  } else if (s) {
+    lines.push('')
+    if (s.plugin) lines.push('settings.json: senior-dev-kit plugin is enabled — its hooks come from the plugin, not from here')
+    if (s.deny) {
       lines.push(
-        '',
-        `Deny rules: add ${plan.deny.added.length} of ${plan.deny.total} to settings.json ` +
-          `(${plan.deny.total - plan.deny.added.length} already present; your allow/ask rules untouched)`
+        `Deny rules: add ${s.deny.added.length} of ${s.deny.total} to settings.json ` +
+          `(${s.deny.total - s.deny.added.length} already present; your allow/ask rules untouched)` +
+          (s.deny.removed.length > 0 ? `; remove ${s.deny.removed.length} the kit no longer ships` : '')
       )
     }
+    for (const leaf of s.leaves.added) lines.push(`Setting: set ${leaf.path.join('.')} = ${JSON.stringify(leaf.value)}`)
+    for (const leaf of s.leaves.removed) lines.push(`Setting: remove retired ${leaf.path.join('.')}`)
+    for (const conflict of s.leaves.conflicts) {
+      lines.push(`Setting: keep your ${conflict.path.join('.')} = ${JSON.stringify(conflict.current)} (the kit would set it; yours wins)`)
+    }
+    for (const hook of s.hooks.added) lines.push(`Hook: add ${hook.event} ${hook.group.matcher} → ${hook.group.hooks[0].command}`)
+    for (const hook of s.hooks.removed) lines.push(`Hook: remove retired ${hook.event} ${hook.group.matcher}`)
+    if (s.hooks.blocked) lines.push('Hook: SKIPPED — settings.json "hooks" is not an object')
   }
   return lines.join('\n')
 }
@@ -277,17 +393,34 @@ function applyPlan(plan, target, stamp) {
     protocolInstalled = true
   }
 
-  let denyAdded = []
-  if (plan.deny && !plan.deny.error) {
-    if (plan.deny.added.length > 0) {
-      backup(plan.deny.path)
-      mkdirSync(dirname(plan.deny.path), { recursive: true })
-      writeFileSync(plan.deny.path, `${JSON.stringify(plan.deny.settings, null, 2)}\n`, 'utf8')
-    }
-    denyAdded = plan.deny.added
+  const retired = []
+  for (const o of plan.orphans) {
+    if (o.action === 'remove') rmSync(o.abs, { force: true })
+    retired.push(o.rel)
+  }
+  if (retired.length > 0) {
+    for (const { to } of Object.values(DIR_COMPONENTS)) pruneEmptyDirs(join(target, to))
   }
 
-  return { backupDir, backedUp, written, restores, protocolInstalled, denyAdded }
+  const s = plan.settings
+  let settingsCreated = false
+  if (s && !s.error && s.changed) {
+    backup(s.path)
+    mkdirSync(dirname(s.path), { recursive: true })
+    writeFileSync(s.path, `${JSON.stringify(s.settings, null, 2)}\n`, 'utf8')
+    settingsCreated = !s.existed
+  }
+
+  return {
+    backupDir,
+    backedUp,
+    written,
+    restores,
+    retired,
+    protocolInstalled,
+    settingsCreated,
+    settings: s && !s.error ? s : null,
+  }
 }
 
 function readManifest(target) {
@@ -308,7 +441,19 @@ function writeManifest(target, result, selected) {
   // entry means a file left behind forever).
   const previous = readManifest(target)
   const byPath = new Map((previous?.files ?? []).map(f => [f.path, f]))
+  for (const rel of result.retired) byPath.delete(rel)
   for (const f of result.written) byPath.set(f.path, f)
+  const s = result.settings
+  const denyRemoved = new Set(s?.deny?.removed ?? [])
+  const denyAdded = [...new Set([...(previous?.denyAdded ?? []).filter(rule => !denyRemoved.has(rule)), ...(s?.deny?.added ?? [])])]
+  const settingsLeavesOwned = [
+    ...(previous?.settingsLeaves ?? []).filter(o => !(s?.leaves.removed ?? []).some(r => sameLeaf(o, r))),
+    ...(s?.leaves.added ?? []),
+  ]
+  const hookGroupsOwned = [
+    ...(previous?.hookGroups ?? []).filter(o => !(s?.hooks.removed ?? []).some(r => sameHook(o, r))),
+    ...(s?.hooks.added ?? []),
+  ]
   // First write wins, deliberately: the earliest backup of a path is the
   // user's genuine original. A later one would only ever be a kit version we
   // installed ourselves, so overwriting the entry would point uninstall at the
@@ -322,7 +467,10 @@ function writeManifest(target, result, selected) {
     files: [...byPath.values()].sort((a, b) => a.path.localeCompare(b.path)),
     restores: [...restores.values()].sort((a, b) => a.path.localeCompare(b.path)),
     protocolBlock: result.protocolInstalled || Boolean(previous?.protocolBlock),
-    denyAdded: [...new Set([...(previous?.denyAdded ?? []), ...result.denyAdded])],
+    denyAdded,
+    settingsLeaves: settingsLeavesOwned,
+    hookGroups: hookGroupsOwned,
+    settingsCreated: result.settingsCreated || Boolean(previous?.settingsCreated),
     lastBackupDir: relative(target, result.backupDir).split(sep).join('/'),
   }
   mkdirSync(dirname(manifestPath), { recursive: true })
@@ -354,19 +502,29 @@ function planUninstall(target) {
     .map(r => ({ path: r.path, from: join(target, r.backup), to: join(target, r.path) }))
   const claudeMdPath = join(target, 'CLAUDE.md')
   const claudeMd = manifest.protocolBlock ? removeManagedBlock(readIfExists(claudeMdPath)) : { removed: false }
-  const settingsPath = join(target, 'settings.json')
-  let deny = null
-  if (manifest.denyAdded?.length) {
-    const raw = readIfExists(settingsPath)
-    if (raw !== null) {
-      try {
-        deny = { path: settingsPath, ...unmergeDenyRules(JSON.parse(raw), manifest.denyAdded) }
-      } catch {
-        deny = { path: settingsPath, error: true }
+  let settings = null
+  const ownsSettings = Boolean(manifest.denyAdded?.length || manifest.settingsLeaves?.length || manifest.hookGroups?.length)
+  if (ownsSettings) {
+    const current = readSettings(target)
+    if (current.error) return { error: `${current.path} is not valid JSON — fix it first, otherwise the kit's settings entries could never be removed` }
+    if (current.raw !== null) {
+      const deny = unmergeDenyRules(current.parsed, manifest.denyAdded ?? [])
+      const leaves = unmergeSettingsLeaves(deny.settings, manifest.settingsLeaves ?? [])
+      const hooks = unmergeHookGroups(leaves.settings, manifest.hookGroups ?? [])
+      let next = hooks.settings
+      if (manifest.settingsCreated) next = tidyPermissions(next)
+      settings = {
+        path: current.path,
+        settings: next,
+        deleteFile: Boolean(manifest.settingsCreated) && isEmptySkeleton(next),
+        changed: !deepEqual(next, current.parsed),
+        denyRemoved: deny.removed,
+        leavesRemoved: leaves.removed,
+        hooksRemoved: hooks.removed,
       }
     }
   }
-  return { manifest, manifestPath, remove, modified, restore, claudeMdPath, claudeMd, deny }
+  return { manifest, manifestPath, remove, modified, restore, claudeMdPath, claudeMd, settings }
 }
 
 function applyUninstall(target, plan) {
@@ -385,12 +543,14 @@ function applyUninstall(target, plan) {
   for (const { to } of Object.values(DIR_COMPONENTS)) {
     pruneEmptyDirs(join(target, to))
   }
+  pruneEmptyDirs(join(target, 'scripts'))
   if (plan.claudeMd.removed) {
     if (plan.claudeMd.text === '') rmSync(plan.claudeMdPath, { force: true })
     else writeFileSync(plan.claudeMdPath, plan.claudeMd.text, 'utf8')
   }
-  if (plan.deny && !plan.deny.error && plan.deny.removed.length > 0) {
-    writeFileSync(plan.deny.path, `${JSON.stringify(plan.deny.settings, null, 2)}\n`, 'utf8')
+  if (plan.settings?.deleteFile) rmSync(plan.settings.path, { force: true })
+  else if (plan.settings?.changed) {
+    writeFileSync(plan.settings.path, `${JSON.stringify(plan.settings.settings, null, 2)}\n`, 'utf8')
   }
   rmSync(plan.manifestPath, { force: true })
 }
@@ -439,10 +599,14 @@ function reportDrift(target) {
   const plan = buildPlan(target, selected, manifest)
 
   const stale = plan.files.filter(f => f.action !== 'unchanged')
+  const retired = plan.orphans.filter(o => o.action === 'remove')
   const protocolStale = Boolean(plan.protocol?.changed)
-  const denyMissing = plan.deny && !plan.deny.error ? plan.deny.added.length : 0
+  const s = plan.settings && !plan.settings.error ? plan.settings : null
+  const denyMissing = s?.deny ? s.deny.added.length : 0
+  const denyStale = s?.deny ? s.deny.removed.length : 0
+  const settingsDrift = s ? s.leaves.added.length + s.leaves.removed.length + s.hooks.added.length + s.hooks.removed.length : 0
 
-  if (stale.length === 0 && !protocolStale && denyMissing === 0) {
+  if (stale.length === 0 && retired.length === 0 && !protocolStale && denyMissing === 0 && denyStale === 0 && settingsDrift === 0) {
     console.log(`✓ ${target} matches this checkout (${plan.files.length} files, components: ${selected.join(', ')}).`)
     return
   }
@@ -450,8 +614,11 @@ function reportDrift(target) {
   console.error(`✗ ${target} is out of date with this checkout — installed sessions are running older content.`)
   for (const f of stale.slice(0, 15)) console.error(`    ${f.action === 'create' ? 'missing  ' : 'stale    '}${f.rel}`)
   if (stale.length > 15) console.error(`    … and ${stale.length - 15} more`)
+  for (const o of retired.slice(0, 10)) console.error(`    retired  ${o.rel}`)
   if (protocolStale) console.error('    stale    CLAUDE.md (kit protocol block)')
   if (denyMissing > 0) console.error(`    missing  ${denyMissing} deny rule(s) in settings.json`)
+  if (denyStale > 0) console.error(`    retired  ${denyStale} deny rule(s) still in settings.json`)
+  if (settingsDrift > 0) console.error(`    stale    ${settingsDrift} kit setting/hook entr(y/ies) in settings.json`)
   console.error('\n  Fix: node scripts/install.mjs --yes')
   process.exitCode = 1
 }
@@ -489,7 +656,7 @@ async function main() {
   if (opts.uninstall) {
     const plan = planUninstall(target)
     if (plan.error) {
-      console.error(`Nothing to uninstall: ${plan.error}`)
+      console.error(`Cannot uninstall: ${plan.error}`)
       process.exitCode = 1
       return
     }
@@ -504,7 +671,10 @@ async function main() {
       for (const r of plan.restore.slice(0, 10)) console.log(`           ${r.path}`)
     }
     if (plan.claudeMd.removed) console.log('  remove the kit protocol block from CLAUDE.md (your content stays)')
-    if (plan.deny?.removed?.length) console.log(`  remove ${plan.deny.removed.length} deny rule(s) this installer added`)
+    if (plan.settings?.denyRemoved.length) console.log(`  remove ${plan.settings.denyRemoved.length} deny rule(s) this installer added`)
+    for (const leaf of plan.settings?.leavesRemoved ?? []) console.log(`  remove setting ${leaf.path.join('.')} this installer set`)
+    for (const hook of plan.settings?.hooksRemoved ?? []) console.log(`  remove ${hook.event} ${hook.group.matcher} hook this installer added`)
+    if (plan.settings?.deleteFile) console.log('  delete settings.json (the installer created it and nothing of yours is in it)')
     if (opts.dryRun) return console.log('\nDry run — nothing was changed.')
     const answer = await confirm('\nProceed?', opts.yes)
     if (answer === NO_TTY) {
@@ -522,11 +692,19 @@ async function main() {
     return
   }
 
-  const { selected, invalid } = resolveComponents(opts.components)
+  const probe = readSettings(target)
+  const pluginOn = !probe.error && pluginEnabled(probe.parsed)
+  const { selected, invalid } = resolveComponents(opts.components, { pluginEnabled: pluginOn })
   if (invalid.length > 0) {
     console.error(`Unknown component(s) for --only: ${invalid.join(', ')}`)
     process.exitCode = 2
     return
+  }
+  if (pluginOn && !opts.components) {
+    console.log(
+      'The senior-dev-kit plugin is enabled, so its agents, skills, commands and protocol already load from it.\n' +
+        `Installing only what a plugin cannot carry: ${selected.join(', ')}. Pass --only to override.\n`
+    )
   }
 
   const plan = buildPlan(target, selected, readManifest(target))
@@ -555,8 +733,9 @@ async function main() {
 
   const hasWork =
     plan.files.some(f => f.action !== 'unchanged') ||
+    plan.orphans.length > 0 ||
     plan.protocol?.changed ||
-    (plan.deny && !plan.deny.error && plan.deny.added.length > 0)
+    (plan.settings && !plan.settings.error && plan.settings.changed)
   if (!hasWork) return console.log('\nAlready up to date — nothing to do.')
   if (opts.dryRun) return console.log('\nDry run — nothing was changed.')
   const answer = await confirm('\nProceed?', opts.yes)

@@ -167,7 +167,8 @@ if (plugin) {
   }
 
   // --- 3. hooks resolve ----------------------------------------------------
-  const hooksPath = typeof plugin.hooks === 'string' ? plugin.hooks : null
+  const hooksPath =
+    typeof plugin.hooks === 'string' ? plugin.hooks : existsSync(join(ROOT, STANDARD_HOOKS_FILE)) ? STANDARD_HOOKS_FILE : null
   if (hooksPath && existsSync(join(ROOT, hooksPath))) {
     try {
       const hooksConfig = JSON.parse(read(hooksPath)) as { hooks?: Record<string, unknown[]> }

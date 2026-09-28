@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Claude Code'u hevesli bir junior yerine kıdemli bir mühendislik takımı gibi davrandıran
-konfigürasyon kiti: **8 agent, 25 skill, 12 rule, 6 komut, 28 preset**.
+konfigürasyon kiti: **8 agent, 25 skill, 12 rule, 7 komut, 28 preset**.
 
 🇬🇧 [English README](README.md) — kanonik sürüm; bu dosya onun çevirisidir.
 
@@ -24,7 +24,7 @@ Bu kit, kıdemli bir takım arkadaşında olan ama modelde olmayan üç şeyi ek
 - **Her iş tipi için bir prosedür.** "Şu bug'ı düzelt", "sayfa ekle", "bu migration'ı incele" —
   her birinin doğaçlama yerine izlenen yazılı bir disiplini var. Toplam 25 tane.
 - **Context bütçesi.** Her turda yalnızca üç dosya yükleniyor (500 satır üst sınır, script'le
-  denetleniyor). Geri kalan her şey — 12 rule dosyası, 17 referans doküman — eşleşen bir dosya
+  denetleniyor). Geri kalan her şey — 12 rule dosyası, 18 referans doküman — eşleşen bir dosya
   okununca veya bir skill gerçekten ihtiyaç duyunca lazy yükleniyor.
 
 Kitin kendisi hakkındaki her iddia elle değil, `npm run check` ile doğrulanır.
@@ -93,16 +93,23 @@ yazabileceğiniz komutlar — [`docs/usage.md`](docs/usage.md) içinde.
 | Agent | 8 | 4'ü salt-okunur guard (db, security, devops, performance) |
 | Skill | 25 | Çoğu iş tipine göre otomatik tetiklenir; birkaçı yalnızca slash komutuyla |
 | Rule | 12 | `000`/`001` her oturumda yüklenir; kalan 10'u `paths:` glob eşleşmesiyle |
-| Komut | 6 | `/agents-guide`, `/skills-guide`, `/seo-check`, `/design-check`, `/arch-check`, `/a11y-check` |
+| Komut | 7 | `/agents-guide`, `/skills-guide`, `/seo-check`, `/design-check`, `/arch-check`, `/a11y-check`, `/context-audit` |
 | Preset | 28 | web: nextjs-saas, react-vite, nuxt, sveltekit, astro, angular · backend: node-express, nestjs, fastapi, django, laravel, rails, spring-boot, dotnet, go-api, rust-axum · mobile: flutter, react-native, swiftui · orm: prisma, drizzle · db: postgres, mongodb, supabase · infra: docker, kubernetes, terraform · generic: fallback |
-| agent_docs | 17 | Talep üzerine okunan derin referans sayfaları |
+| agent_docs | 18 | Talep üzerine okunan derin referans sayfaları |
 
-Kısaca: 8 agent, 25 skill, 12 rule, 6 komut, 28 preset.
+Kısaca: 8 agent, 25 skill, 12 rule, 7 komut, 28 preset.
 
 Ayrıca bir guardrail katmanı: `settings-template.json` içinde ~400 deny kuralı — secret dosya
 okumalarını, yıkıcı shell komutlarını ve onaysız uzak paket çalıştırıcılarını engeller. Kapsam ve
 bilinen boşluklar [`SECURITY.md`](SECURITY.md) içinde dürüstçe belgelenmiştir — **engellemediği**
 şeyler dahil.
+
+Kurulum (ya da `/kit-setup`) iki ayarı da, senin koyduğun hiçbir değeri ezmeden ekler:
+`attribution` gizlenir — commit ve PR’lara `Co-Authored-By: Claude` satırı eklenmez, Claude GitHub
+contributor listende görünmez; ve bir PreToolUse hook’u, `model` belirtmeyen her subagent çağrısını
+haiku/sonnet/opus tablosuyla geri çevirir — basit bir arama asla ana modelin fiyatıyla sessizce
+çalışmaz. İsteğe bağlı durum satırı (`--only statusline`) model, klasör, branch ve context
+kullanımını gösterir.
 
 ---
 
