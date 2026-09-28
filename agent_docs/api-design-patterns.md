@@ -153,8 +153,8 @@ PATCH /users/batch
 // Cursor pagination (Prisma)
 const users = await db.user.findMany({
   take: pageSize + 1,  // +1 to check if more pages exist
-  cursor: cursor ? { id: cursor } : undefined,
-  orderBy: { createdAt: 'desc' },
+  ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
 })
 
 const hasMore = users.length > pageSize
@@ -183,37 +183,54 @@ Only version on MAJOR breaks. Minor/patch: add without versioning.
 async function idempotencyMiddleware(req, res, next) {
   const key = req.headers['idempotency-key']
   if (!key) return next()
-  
-  const cached = await redis.get(`idempotency:${key}`)
+
+  const cacheKey = `idempotency:${req.user.id}:${req.method}:${req.path}:${key}`
+  const lockKey = `${cacheKey}:lock`
+  const bodyHash = crypto.createHash('sha256').update(JSON.stringify(req.body ?? {})).digest('hex')
+
+  const acquired = await redis.set(lockKey, '1', 'EX', 60, 'NX')
+  if (!acquired) {
+    return res.status(409).json({ title: 'A request with this Idempotency-Key is still being processed' })
+  }
+
+  const cached = await redis.get(cacheKey)
   if (cached) {
-    const { status, body } = JSON.parse(cached)
+    await redis.del(lockKey)
+    const { hash, status, body } = JSON.parse(cached)
+    if (hash !== bodyHash) {
+      return res.status(422).json({ title: 'Idempotency-Key reused with a different request body' })
+    }
     return res.status(status).json(body)
   }
-  
-  // Wrap response to capture it
-  const originalSend = res.json.bind(res)
-  res.json = (body) => {
-    if (res.statusCode < 500) {
-      // Cache for 24 hours
-      redis.setex(`idempotency:${key}`, 86400, JSON.stringify({ status: res.statusCode, body }))
+
+  const originalJson = res.json.bind(res)
+  res.json = async (body) => {
+    try {
+      if (res.statusCode < 500) {
+        await redis.set(cacheKey, JSON.stringify({ hash: bodyHash, status: res.statusCode, body }), 'EX', 86400)
+      }
+    } finally {
+      await redis.del(lockKey)
     }
-    return originalSend(body)
+    return originalJson(body)
   }
-  
+
   next()
 }
 ```
+
+The key is scoped by principal, method and route, so one user can never replay another user's key and read their response. The stored body hash turns a reused key with a different payload into a 422 instead of a silent replay, and the `SET NX` lock (60s TTL, so a crashed request cannot hold it forever) answers a concurrent retry with 409 while the first attempt is still running. Taking the lock before reading the cache closes the window where two retries both miss the cache and both execute.
 
 ## WEBHOOK DESIGN
 
 ```typescript
 // Sending webhooks (producer)
 async function sendWebhook(url: string, event: WebhookEvent) {
-  const timestamp = Math.floor(Date.now() / 1000)
-  const payload = JSON.stringify({ ...event, timestamp })
+  const timestamp = Math.floor(Date.now() / 1000).toString()
+  const payload = JSON.stringify(event)
   const signature = crypto
     .createHmac('sha256', webhookSecret)
-    .update(payload)
+    .update(`${timestamp}.${payload}`)
     .digest('hex')
   
   await fetch(url, {
@@ -221,7 +238,7 @@ async function sendWebhook(url: string, event: WebhookEvent) {
     headers: {
       'Content-Type': 'application/json',
       'X-Webhook-Signature': `sha256=${signature}`,
-      'X-Webhook-Timestamp': timestamp.toString(),
+      'X-Webhook-Timestamp': timestamp,
     },
     body: payload,
   })
@@ -230,16 +247,22 @@ async function sendWebhook(url: string, event: WebhookEvent) {
 // Receiving webhooks (consumer)
 function verifyWebhook(payload: string, signature: string, timestamp: string) {
   // 1. Verify timestamp to prevent replay attacks (5 minute window)
-  const webhookTime = parseInt(timestamp) * 1000
-  if (Math.abs(Date.now() - webhookTime) > 5 * 60 * 1000) throw new Error('Stale webhook')
+  const webhookTime = Number(timestamp) * 1000
+  if (!Number.isFinite(webhookTime) || Math.abs(Date.now() - webhookTime) > 5 * 60 * 1000) {
+    throw new Error('Stale webhook')
+  }
   
   // 2. Verify signature
-  const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex')
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(`sha256=${expected}`))) {
+  const digest = crypto.createHmac('sha256', secret).update(`${timestamp}.${payload}`).digest('hex')
+  const expected = Buffer.from(`sha256=${digest}`)
+  const received = Buffer.from(signature)
+  if (received.length !== expected.length || !crypto.timingSafeEqual(received, expected)) {
     throw new Error('Invalid signature')
   }
 }
 ```
+
+The signature covers `timestamp.payload`, so the timestamp header cannot be swapped for a fresh one to replay an old body — the 5-minute window only means something because the timestamp is signed. `payload` must be the raw request body bytes, not re-serialized JSON. The length check comes first because `crypto.timingSafeEqual` throws a `RangeError` on buffers of different lengths.
 
 Retry strategy for webhook delivery:
 

@@ -40,8 +40,8 @@ background: #6366F1;
 color: rgb(239, 68, 68);
 
 /* RIGHT */
-background: hsl(var(--primary));
-color: hsl(var(--destructive));
+background: var(--primary);
+color: var(--destructive);
 ```
 
 ## SPACING — see rules/100-web.md's SPACING section (canonical) — don't restate
@@ -222,9 +222,12 @@ className="bg-white text-gray-900"         // ← WRONG: no dark mode
 shadcn/ui CSS variables auto-switch:
 
 ```css
-:root { --background: 0 0% 100%; }  /* light */
-.dark { --background: 222.2 84% 4.9%; }  /* dark */
+:root { --background: oklch(1 0 0); }  /* light */
+.dark { --background: oklch(0.145 0 0); }  /* dark */
+@theme inline { --color-background: var(--background); }
 ```
+
+Tailwind v4 and current shadcn/ui store complete OKLCH colors in the variables and map them to utilities with `@theme inline`. The older Tailwind v3 setup stored bare HSL channels (`0 0% 100%`) and wrapped them in `hsl(var(--background))`; do not mix the two.
 
 ## INTERACTION STATES — every interactive element
 
@@ -232,13 +235,15 @@ shadcn/ui CSS variables auto-switch:
 // Button: hover + active + focus + disabled
 className="
   bg-primary text-primary-foreground
-  hover:bg-primary/90                          /* hover: slight opacity */
-  active:scale-[0.97]                          /* active: slight compress — matches rules/100-web.md button-press scale */
-  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  /* focus ring */
-  disabled:pointer-events-none disabled:opacity-50  /* disabled */
-  transition-all duration-100                  /* matches rules/100-web.md button-press: scale(0.97) 100ms */
+  hover:bg-primary/90
+  active:scale-[0.97]
+  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+  disabled:pointer-events-none disabled:opacity-50
+  transition-all duration-100
 "
 ```
+
+`hover:bg-primary/90` is a slight opacity drop; `active:scale-[0.97]` with `duration-100` is the button-press from rules/100-web.md. Keep notes out of the className string — anything inside the quotes becomes a class token.
 
 **Every button, link, input, card-with-click must have these 4 states.**
 Never `outline: none` without providing an alternative visible focus indicator (WCAG 2.4.11).
@@ -358,7 +363,7 @@ Existing critical requirements:
 ✗ outline: none without visible alternative
 ✗ Spinner for list/card/table loading (use skeleton)
 ✗ Empty state without icon + title + description + CTA
-✗ Single font (display + body pairing required)
+✗ Three or more font families (one or two is fine — see rules/100-web.md)
 ✗ Navigation chrome re-created inside page component
 ✗ Missing loading/empty/error state (all 3 required)
 ✗ alert() or window.confirm() in React (use dialog)

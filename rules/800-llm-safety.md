@@ -7,6 +7,9 @@ paths:
   - "**/anthropic/**"
   - "**/claude/**"
   - "**/agents/**/*.{ts,tsx,js,jsx,py,go}"
+  - "**/*{openai,anthropic}*.{ts,tsx,js,jsx,py,go}"
+  - "**/{llm,prompt,prompts}.{ts,js,py,go}"
+  - "**/{llm,prompt,prompts}[._-]*.{ts,js,py,go}"
 ---
 
 <!-- forbidden-in-examples
@@ -116,7 +119,7 @@ logger.info({
 
 | Use case | Model | Why |
 | --- | --- | --- |
-| Simple classification, extraction, summarization | Haiku | 75% cheaper, sufficient quality |
+| Simple classification, extraction, summarization | Haiku | ~67% cheaper than Sonnet on input, sufficient quality |
 | Code generation, reasoning, multi-step | Sonnet | Balance of cost + quality |
 | Architecture decisions, complex analysis, judgment | Opus | Max quality when cost is secondary |
 

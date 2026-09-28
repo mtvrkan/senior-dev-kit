@@ -8,11 +8,12 @@ obsolete-`version:`-key guidance describes current behaviour. -->
 
 The Dockerfile hardening checklist — multi-stage, version-pinned base, non-root user,
 `HEALTHCHECK`, no baked secrets, `.dockerignore`, image scan — lives in `rules/600-devops.md`,
-which auto-loads for every `Dockerfile*` / `docker-compose*` file. Follow it there. This preset
+which auto-loads for every `Dockerfile*` / `docker-compose*` / `compose.yaml` / `compose.yml` file. Follow it there. This preset
 covers what 600 doesn't: Compose topology, and the runtime behaviour of the containers.
 
-`docker-compose.yml` and `docker-compose.override.yml` are protected — do not modify unless the
-change was explicitly requested.
+The Compose files are protected — `compose.yaml` / `compose.yml` (the current default names) and
+the legacy `docker-compose.yml`, plus their `.override` variants. Do not modify unless the change
+was explicitly requested.
 
 ## Compose
 

@@ -39,14 +39,11 @@ async def get_user(
 ## Request / response schemas — Pydantic v2
 
 ```python
-from typing import Literal
-
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 class CreateUserRequest(BaseModel):
     email: EmailStr
     name:  str = Field(min_length=1, max_length=100)
-    role:  Literal["user", "admin"] = "user"
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)  # ORM mode (v2)
@@ -57,6 +54,10 @@ class UserResponse(BaseModel):
 ```
 
 FastAPI validates all `CreateUserRequest` bodies automatically — validation errors return 422 with field-level details.
+
+Never put `role`, `is_admin` or any privilege field on a create/register schema — a client-settable
+role means anyone can sign up as admin. The service assigns the default role; changing a role is a
+separate endpoint guarded by an admin-only dependency.
 
 ## Authorization — ownership check
 
@@ -86,10 +87,19 @@ async def list_users(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User))
     return result.scalars().all()
 
-# For CPU-heavy work — run in thread pool
+# Blocking I/O with no async client — run in thread pool
 from fastapi.concurrency import run_in_threadpool
-result = await run_in_threadpool(heavy_cpu_function, data)
+result = await run_in_threadpool(legacy_sync_client.fetch, data)
+
+import asyncio
+loop = asyncio.get_running_loop()
+result = await loop.run_in_executor(process_pool, heavy_cpu_function, data)
 ```
+
+The thread pool is for blocking I/O only: CPU-bound Python in a thread gains no parallelism under
+the GIL and competes with the event loop for it. Send CPU-bound work to a process pool instead —
+`process_pool` is a `concurrent.futures.ProcessPoolExecutor` created once at startup (lifespan) and
+shut down on exit. Long or retryable jobs belong in a task queue (Celery, RQ, arq), not the request.
 
 ## Database — SQLAlchemy async + parameterized
 
@@ -105,13 +115,19 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
 await db.execute(f"SELECT * FROM users WHERE email = '{email}'")  # SQL injection!
 
 # Transactions for multi-step writes
-async def transfer(db: AsyncSession, from_id: str, to_id: str, amount: float):
+async def transfer(db: AsyncSession, from_id: str, to_id: str, amount: Decimal):
     async with db.begin():  # auto-commit or rollback
-        from_acct = await db.get(Account, from_id)
-        to_acct   = await db.get(Account, to_id)
+        from_acct = await db.get(Account, from_id, with_for_update=True)
+        to_acct   = await db.get(Account, to_id, with_for_update=True)
+        if from_acct.balance < amount:
+            raise HTTPException(status_code=409, detail="Insufficient funds")
         from_acct.balance -= amount
         to_acct.balance   += amount
 ```
+
+Money is `Decimal` (column `Numeric`) or integer minor units — never `float`. The row locks
+(`SELECT ... FOR UPDATE`) inside one transaction stop two concurrent transfers from both reading the
+old balance; lock rows in a consistent order (e.g. by id) to avoid deadlocks.
 
 ## Error handling — global exception handlers
 
@@ -154,7 +170,8 @@ logger.error("payment_failed", error=str(exc), user_id=user_id)
 ```bash
 pytest tests/test_users.py -x -q       # targeted
 pytest --cov=app -q                    # with coverage
-ruff check .                           # lint + format check
+ruff check .                           # lint
+ruff format --check .                  # format check
 mypy app/                              # type check
 uvicorn app.main:app --reload          # startup smoke check
 ```

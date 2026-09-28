@@ -213,7 +213,7 @@ Sentry.init({
 })
 
 // Add context to errors:
-Sentry.setUser({ id: user.id, email: user.email })
+Sentry.setUser({ id: user.id })
 Sentry.addBreadcrumb({ message: 'User clicked checkout', category: 'ui' })
 
 // Manual capture with context:
@@ -302,19 +302,26 @@ sealed class UiState<out T> {
 fun loadUser(id: String) {
   viewModelScope.launch {
     _uiState.update { UiState.Loading }
-    runCatching { repository.getUser(id) }
-      .onSuccess { user -> _uiState.update { UiState.Success(user) } }
-      .onFailure { error -> _uiState.update { UiState.Error(error.localizedMessage ?: "Unknown error", error) } }
+    try {
+      val user = repository.getUser(id)
+      _uiState.update { UiState.Success(user) }
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      _uiState.update { UiState.Error(e.localizedMessage ?: "Unknown error", e) }
+    }
   }
 }
 ```
+
+Avoid `runCatching` inside a coroutine: it catches `CancellationException` too, so a cancelled `viewModelScope` job turns into an error state instead of stopping. Rethrow cancellation, or catch only the specific exceptions the repository throws.
 
 ## USER-FACING ERROR MESSAGES
 
 ```typescript
 // Machine error → human message mapping
 const userMessages: Record<string, string> = {
-  'USER_NOT_FOUND': 'We couldn\'t find that account. Check the email and try again.',
+  'USER_NOT_FOUND': 'Incorrect email or password.',
   'INVALID_CREDENTIALS': 'Incorrect email or password.',
   'ACCOUNT_LOCKED': 'Too many failed attempts. Try again in 30 minutes.',
   'EMAIL_ALREADY_EXISTS': 'An account with this email already exists.',

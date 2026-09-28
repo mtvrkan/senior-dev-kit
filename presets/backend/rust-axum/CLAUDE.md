@@ -59,7 +59,8 @@ Log the internal error, return a generic message. `sqlx::Error` text can name co
 ## `unwrap` policy
 
 `unwrap()` / `expect()` / `panic!` are acceptable only in `main`, in tests, and on invariants
-that are genuinely impossible (with a comment saying why). Anywhere on a request path they are a
+that are genuinely impossible — and there it is `expect("...")` whose message states the invariant
+(`expect("regex literal is valid")`), not a bare `unwrap()`. Anywhere on a request path they are a
 remote denial of service — use `?` or an explicit match.
 
 ## Async — tokio

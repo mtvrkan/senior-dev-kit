@@ -117,6 +117,10 @@ const CASES: Array<[string, string, boolean]> = [
   ['100-web.md', 'app/views/users/index.html.erb', true],
   ['100-web.md', 'src/app/features/user/user.component.ts', true],
   ['100-web.md', 'src/app/user.service.ts', false],
+
+  ['500-database.md', 'src/graphql/schema/user.graphql', false],
+  ['800-llm-safety.md', 'src/components/PromptDialog.tsx', false],
+  ['1000-i18n.md', 'app/(dashboard)/messages/page.tsx', false],
 ]
 
 // Concrete files each rule MUST match, checked as a set rather than one-by-one: the
@@ -124,13 +128,21 @@ const CASES: Array<[string, string, boolean]> = [
 // lucky glob, which is exactly how 600-devops shipped a kubernetes preset while matching no
 // real manifest layout. A rule listed here has to cover every path in its list.
 const MUST_COVER: Record<string, string[]> = {
-  '600-devops.md': ['Dockerfile', '.github/workflows/ci.yml', 'infra/main.tf', 'k8s/deployment.yaml', 'charts/api/templates/deployment.yaml'],
+  '600-devops.md': [
+    'Dockerfile', '.github/workflows/ci.yml', 'infra/main.tf', 'k8s/deployment.yaml', 'charts/api/templates/deployment.yaml',
+    'compose.yaml', 'compose.yml', 'compose.override.yaml', 'Containerfile', 'infra/main.tofu',
+  ],
+  '800-llm-safety.md': [
+    'src/lib/openai.ts', 'lib/llm.ts', 'src/ai/prompt.ts', 'app/services/anthropic_client.py', 'llm_client.py',
+  ],
   '100-web.md': ['src/App.tsx', 'components/Foo.vue', 'src/routes/+page.svelte', 'resources/views/home.blade.php', 'app/views/home.html.erb'],
   '300-testing.md': ['src/user.test.ts', 'tests/test_user.py', 'apps/users/tests.py', 'src/test/java/UserTest.java', 'UserTests.cs'],
   '200-api.md': ['api/users.ts', 'app/Http/Controllers/UserController.php', 'Controllers/UsersController.cs', 'app/routers/users.py', 'apps/users/views.py'],
   '500-database.md': [
     'prisma/schema.prisma', 'database/migrations/2024_01_01_create_users.php', 'app/Models/User.php',
     'src/main/resources/db/migration/V1__init.sql', 'Data/AppDbContext.cs',
+    'db/migrate/20240101000000_create_users.rb', 'apps/users/models.py', 'Migrations/20240101_Init.cs',
+    'alembic/versions/3f2a_add.py', 'drizzle/0001_init.sql', 'src/db/schema/users.ts',
   ],
   // All three platforms the description names must still reach the rule after `.kts` was dropped
   // from the glob — the narrowing is only allowed to cost build files, not source files.

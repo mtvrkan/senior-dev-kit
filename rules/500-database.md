@@ -16,6 +16,12 @@ paths:
   - "**/*.entity.*"
   - "**/*DbContext.cs"
   - "**/db/{migration,changelog}/**"
+  - "**/db/migrate/**"
+  - "**/Migrations/**"
+  - "**/alembic/versions/**"
+  - "**/drizzle/**/*.sql"
+  - "**/db/schema/**"
+  - "**/models.py"
 ---
 
 > **Scope decision (round-21 audit, accepted — do not re-flag as an oversight):** `**/schema.*` and
@@ -70,7 +76,7 @@ RIGHT: db.post.findMany({ where: { userId: { in: userIds } } })
 
 Prisma: use `include` / `select` — never implicit relation access inside loop
 Drizzle: `leftJoin` or separate batched query
-TypeORM: `QueryBuilder.leftJoinAndSelect` or `@Eager` on relation
+TypeORM: `QueryBuilder.leftJoinAndSelect` or the `{ eager: true }` relation option
 SQLAlchemy: `selectinload` / `joinedload` options
 ActiveRecord: `.includes(:relation)` or `.preload`
 
@@ -126,7 +132,7 @@ RLS (Row Level Security): EVERY table must have RLS policies. No exceptions.
 -- Required on every table:
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can only see their own posts"
-  ON posts FOR SELECT USING (auth.uid() = user_id);
+  ON posts FOR SELECT USING ((select auth.uid()) = user_id);
 ```
 
 Never disable RLS to "fix a bug" — always write the correct policy.
@@ -138,7 +144,9 @@ NEVER trust client-provided user ID in Firestore rules or Cloud Functions.
 The correct field to check depends on the verb — there's no existing document yet on `create`, so
 that's the one case `request.resource.data` is actually correct; `update`/`delete` must check the
 existing `resource.data` instead, or a client can rewrite the ownership field in the same write that's
-supposed to be validated against it.
+supposed to be validated against it. `update` also has to pin the ownership field itself
+(`request.resource.data.userId == resource.data.userId`) — checking only the existing doc still lets
+the owner hand the document to another user.
 Security rules must be reviewed by security-guard before deploy.
 
 ```text
@@ -147,7 +155,8 @@ allow update: if request.resource.data.userId == request.auth.uid;
 
 // RIGHT:
 allow create: if request.resource.data.userId == request.auth.uid;  // no existing doc yet — check the incoming one
-allow update: if resource.data.userId == request.auth.uid;          // check the EXISTING doc, not the incoming write
+allow update: if resource.data.userId == request.auth.uid
+              && request.resource.data.userId == resource.data.userId;
 allow delete: if resource.data.userId == request.auth.uid;          // same — existing doc only
 ```
 

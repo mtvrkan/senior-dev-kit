@@ -4,7 +4,11 @@ paths:
   - "**/Dockerfile*"
   - "**/.github/**"
   - "**/*.tf"
+  - "**/*.tofu"
   - "**/docker-compose*"
+  - "**/compose.{yaml,yml}"
+  - "**/compose.*.{yaml,yml}"
+  - "**/Containerfile*"
   - "**/kubernetes/**"
   - "**/*.k8s.*"
   - "**/helm/**"
@@ -44,27 +48,39 @@ workflow YAML, no "here is roughly what it would look like".
 
 ## DOCKERFILE SECURITY CHECKLIST
 
+Pattern — multi-stage, non-root, pinned, health-checked:
+
 ```dockerfile
-# PATTERN: multi-stage, non-root, pinned, health-checked
-FROM node:24-alpine AS builder          # ✓ Specific version tag
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci                              # ✓ ALL deps — build tools (tsc/vite/webpack) live in devDependencies
+RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:24-alpine AS runner           # ✓ Multi-stage: discard build tools + devDependencies
+FROM node:24-alpine AS runner
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force  # ✓ production deps only in the final image (--omit=dev, not the deprecated --only=production)
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup  # ✓ Non-root user
+RUN npm ci --omit=dev && npm cache clean --force
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 COPY --from=builder /app/dist ./dist
-USER appuser                            # ✓ Run as non-root
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \     # ✓ Health check
+USER appuser
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
   CMD wget -qO- http://localhost:3000/health || exit 1
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
 ```
+
+Why each line is there (Dockerfile has no trailing comments — a `#` after an instruction is part of
+its arguments, and after a `\` it breaks the continuation):
+
+- Both `FROM` lines name a specific version tag, never `:latest`.
+- Builder `npm ci` installs ALL deps — build tools (tsc/vite/webpack) live in devDependencies.
+- The `runner` stage is the multi-stage split: build tools and devDependencies stay behind.
+- `npm ci --omit=dev` — production deps only in the final image (`--omit=dev`, not the deprecated
+  `--only=production`).
+- `adduser` + `USER appuser` — the process runs as non-root.
+- `HEALTHCHECK` — the orchestrator can tell a hung process from a live one.
 
 Checklist:
 
@@ -79,7 +95,7 @@ Checklist:
 
 Platform-specific base images:
 
-<!-- toolchain-pins reviewed: 2026-08 digest: e9df2df5910e
+<!-- toolchain-pins reviewed: 2026-08 digest: 924ec165278b
      Every pinned version in this file is covered by that digest: image tags (`name:tag`), pip pins
      (`name==x.y`), and `version:` action inputs — wherever they appear, prose or fence.
      `scripts/check-consistency.ts` check 26 recomputes it: change a pin without moving the review
@@ -94,7 +110,7 @@ Platform-specific base images:
 - Python: `python:3.14-slim`
 - Go: `gcr.io/distroless/static-debian12` (final stage, zero shell)
 - Java: `eclipse-temurin:21-jre-alpine` (21 and 25 are both LTS — match the project's toolchain)
-- .NET: `mcr.microsoft.com/dotnet/runtime:10.0-alpine`
+- .NET: `mcr.microsoft.com/dotnet/aspnet:10.0-alpine` for ASP.NET Core (`dotnet/runtime` lacks the ASP.NET Core shared framework — console/worker apps only)
 
 ## GITHUB ACTIONS SECURITY
 
@@ -176,7 +192,7 @@ Slow (CI only, never pre-commit): Semgrep full ruleset (~30-60s) · CodeQL (minu
 
 Recommended stack for .pre-commit-config.yaml:
 
-- gitleaks/gitleaks (secret scan, full git history)
+- gitleaks/gitleaks (secret scan of staged changes only — `gitleaks git --staged`, which the upstream hook already runs; the full-history scan belongs in CI)
 - Yelp/detect-secrets (baseline-managed)
 - hadolint/hadolint (Dockerfile lint, if present)
 - PyCQA/bandit (Python security, if Python project)
@@ -194,7 +210,7 @@ tfsec is deprecated (merged into Trivy). Terrascan is archived — do not add ei
 # that updates independently of the Action's release tag.
 - name: Run Checkov
   uses: bridgecrewio/checkov-action@[SHA]
-  with: { directory: '.', soft_fail: false, version: '3.3.x' }
+  with: { directory: '.', soft_fail: false, version: '3.3.20' }
 ```
 
 Terraform checklist:

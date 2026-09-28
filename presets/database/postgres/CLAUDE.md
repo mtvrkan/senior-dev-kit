@@ -35,7 +35,7 @@ ALTER TABLE users ADD COLUMN status text;                          -- 1. nullabl
 -- 2. backfill in batches, then:
 ALTER TABLE users ADD CONSTRAINT users_status_nn
   CHECK (status IS NOT NULL) NOT VALID;                            -- 3. instant, no scan
-ALTER TABLE users VALIDATE CONSTRAINT users_status_nn;             -- 4. scans, but SHARE lock
+ALTER TABLE users VALIDATE CONSTRAINT users_status_nn;             -- 4. scans; SHARE UPDATE EXCLUSIVE, writes continue
 ALTER TABLE users ALTER COLUMN status SET NOT NULL;                -- 5. cheap: constraint proves it
 
 -- Indexes on a live table:
@@ -46,8 +46,9 @@ CREATE INDEX CONCURRENTLY idx_users_org ON users (org_id);
 
 - Foreign keys added the same way: `ADD CONSTRAINT ... NOT VALID`, then `VALIDATE CONSTRAINT`.
 - A rename or a drop is expand → backfill → contract across deploys, never a single migration.
-- `ADD COLUMN ... DEFAULT <constant>` is instant on PG 11+; a *volatile* default (`now()`,
-  `gen_random_uuid()`) still rewrites the table.
+- `ADD COLUMN ... DEFAULT <non-volatile expr>` is metadata-only on PG 11+. That includes `now()`,
+  which is STABLE: it is evaluated once and every existing row gets the migration's timestamp. A
+  *volatile* default (`gen_random_uuid()`, `clock_timestamp()`, `random()`) still rewrites the table.
 
 ## Queries and indexes
 

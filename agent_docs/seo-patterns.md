@@ -121,13 +121,15 @@ export default async function BlogPost({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
       {/* page content */}
     </>
   )
 }
 ```
+
+`JSON.stringify` does not escape `<`, so a `</script>` inside a CMS title or description would close the tag and run whatever follows. Replacing every `<` with the JSON escape `<` keeps the JSON valid and makes that impossible.
 
 Common schema types:
 
@@ -173,7 +175,7 @@ const faqJsonLd = {
   alt="Hero"
   width={1200}
   height={600}
-  priority                // ← preloads this image
+  preload
   sizes="(max-width: 768px) 100vw, 1200px"
 />
 
@@ -181,6 +183,8 @@ const faqJsonLd = {
 // Move non-critical CSS to lazy load
 // Defer non-critical JS: <script defer>
 ```
+
+Next.js 16 deprecated the `next/image` `priority` prop in favour of `preload`; on Next 15 and earlier the same prop is still spelled `priority`.
 
 ### CLS prevention
 

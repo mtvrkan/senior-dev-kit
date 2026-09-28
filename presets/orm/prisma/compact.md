@@ -1,8 +1,8 @@
 - Never edit `schema.prisma` unless DB change is explicitly routed through the db-guard agent
-- Migrations: `prisma migrate dev` (dev) / `prisma migrate deploy` (prod) — never `db push` in production
+- Migrations: `prisma migrate dev` (dev) / `prisma migrate deploy` (prod) — never `db push` in production · a rename is emitted as DROP + ADD (data loss) — `--create-only`, rewrite the SQL as a rename, then apply
 - Queries: use `select`/`include` to fetch only needed fields — never implicit full-object loads
 - N+1: use `include: { relation: true }` or separate batched query — never `.relation` access inside a loop
-- Transactions: `prisma.$transaction([...])` for multi-step atomic writes; handle `P2002` (unique) and `P2025` (not found) errors
+- Transactions: interactive `prisma.$transaction(async (tx) => { ... })` for multi-step writes — use `tx`, never `prisma`, inside; throwing rolls back; handle `P2002` (unique) and `P2025` (not found) errors
 - Never modify generated Prisma client files (`node_modules/.prisma`) — they are overwritten on generate
 - Validation: validate input before passing to Prisma calls; Prisma trusts what you give it
 - Additive changes: new nullable column or new model is safe; NOT NULL column on existing table requires default or migration steps

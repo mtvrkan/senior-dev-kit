@@ -19,7 +19,7 @@ scope. -->
   selector: 'app-user',
   standalone: true,
   imports: [UserCardComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,   // required, not optional
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (vm().loading) { <app-skeleton /> }
     @else if (vm().error) { <app-error (retry)="reload()" /> }
@@ -55,7 +55,8 @@ is the root cause of most "Angular is slow" reports.
 - New control flow (`@if` / `@for` / `@switch`), not the structural directives.
 - `@for` **requires** `track` — `track item.id`, never `track $index` for a list that reorders.
 - No function calls in a template binding: it re-evaluates on every change-detection cycle. Use a
-  `computed()` or a pure pipe.
+  `computed()` or a pure pipe. Signal reads (`vm()`, `id()`) are the exception — reading a signal
+  is cheap and is how the template tracks it.
 - `async` pipe over manual `subscribe()` — it unsubscribes for you.
 
 ## Subscriptions leak by default
@@ -77,7 +78,8 @@ a status code. Provide `HttpClient` with `withFetch()` and `withInterceptors([..
 ## Security
 
 - Angular escapes interpolation by default. `bypassSecurityTrustHtml` disables that — every use
-  needs a comment justifying it, and never with user content.
+  needs its justification in the PR or commit message (not a code comment), and never with user
+  content.
 - Route guards are UX, not security: the API enforces authorization. A `CanActivate` that hides a
   route does not protect the data behind it.
 - Tokens in memory or an httpOnly cookie; `localStorage` is readable by any injected script.

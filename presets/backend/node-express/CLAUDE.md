@@ -21,16 +21,15 @@ Validate all input before it reaches service layer:
 import { z } from "zod"
 
 const CreateUserSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   name:  z.string().min(1).max(100),
-  role:  z.enum(["user", "admin"]).default("user"),
 })
 
 // Express
 app.post("/users", async (req, res, next) => {
   const result = CreateUserSchema.safeParse(req.body)
   if (!result.success) {
-    return res.status(422).json({ errors: result.error.flatten() })
+    return res.status(422).json({ errors: z.flattenError(result.error) })
   }
   const user = await userService.create(result.data)
   res.status(201).json(user)
@@ -53,6 +52,13 @@ fastify.post("/users", {
   return reply.status(201).send(user)
 })
 ```
+
+The schema above is Zod 4 (`z.email()`, `z.flattenError()`); on Zod 3 the equivalents are
+`z.string().email()` and `result.error.flatten()`. Check the installed major before copying.
+
+Never put `role`, `isAdmin` or any privilege field on a create/register schema — a client-settable
+role lets anyone sign up as admin. The service assigns the default role; role changes go through a
+separate endpoint behind an admin-only authorization check.
 
 **NEVER:** trust `req.body.userId` for authorization — use `req.user.id` from the verified JWT/session middleware.
 
@@ -129,7 +135,7 @@ logger.error({ err, userId: req.user?.id }, "Payment failed")
 ## Async patterns
 
 ```typescript
-// WRONG — unhandled rejection crashes the process
+// Express 4: WRONG — unhandled rejection crashes the process · Express 5: fine, goes to error middleware
 app.get("/users", async (req, res) => {
   const users = await userService.list()  // if this throws, no handler catches it
   res.json(users)

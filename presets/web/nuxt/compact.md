@@ -1,4 +1,4 @@
-- File routing `pages/`, layouts `layouts/`, server routes `server/api/` · auto-imports on (no hand-written imports for composables/components/Vue APIs) · `<script setup lang="ts">` always, never Options API
+- Nuxt 4: `app/pages/`, `app/layouts/`, `app/composables/` (Nuxt 3: same dirs at root — follow what's on disk) · server routes in root `server/api/` · auto-imports on (no hand-written imports for composables/components/Vue APIs) · `<script setup lang="ts">` always, never Options API
 - Three required states in every template: `pending` skeleton, `error` with `@retry="refresh"`, empty
 - Fetching: `useFetch`/`useAsyncData` for page data (SSR, deduped, hydrated) · `$fetch` ONLY in event handlers · `$fetch` in `setup` double-fires and breaks hydration — the most common Nuxt bug
 - Always give `useAsyncData` a stable `key`

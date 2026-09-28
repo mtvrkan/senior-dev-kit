@@ -76,7 +76,7 @@ If recommending a paid lib/service (Clerk, Auth0, AG Grid Enterprise, etc.):
 | Syncfusion / Telerik / DevExtreme | shadcn/ui DataTable, Mantine, Ant Design | free, well-maintained |
 | `node-cron` | BullMQ scheduler | persistent, retryable |
 | `passport` (complex setup) | Better Auth, Auth.js | modern, simpler, type-safe — not Lucia (deprecated Mar 2025) |
-| `class-transformer` + `class-validator` | Zod | simpler, type-safe, one package |
+| `class-transformer` + `class-validator` (outside NestJS) | Zod | simpler, type-safe, one package — NestJS projects keep class-validator: it is what the framework's `ValidationPipe` runs |
 | `jsonwebtoken` alone | Better Auth (handles session + refresh) | full auth solution |
 | `nodemailer` (complex setup) | Resend SDK | simpler API, better DX |
 | `bcryptjs` | `argon2` | more secure for passwords |
@@ -95,7 +95,11 @@ the two silently drift the next time a package manager changes its CLI).
 Supply-chain checks on every dep add/update (moved here from 000-security for the same reason
 — they only ever fire together with this table):
 
-- Review lockfile `resolved` / `integrity` field changes in PRs (lockfile injection vector)
+- Check lockfile changes in PRs (lockfile injection vector) without opening the file — the kit's
+  deny rules block reading `*.lock` / lockfiles: `git diff --stat` to confirm only the expected
+  lockfile moved, `npm audit signatures` for registry signatures and provenance, and
+  `npx lockfile-lint --path package-lock.json --type npm --allowed-hosts npm --validate-https`
+  to reject `resolved` URLs pointing off the registry
 - New packages published <7 days ago: verify before adding
 - Socket.dev: use for npm supply chain malware detection when available
 
@@ -145,6 +149,10 @@ ANALYZE=true next build          # Next.js — next.config must be wrapped in wi
 $env:ANALYZE=1; next build       # same, PowerShell — it has no inline env-var prefix
 npx vite-bundle-visualizer       # Vite
 ```
+
+Next.js 16 builds with Turbopack by default, and `@next/bundle-analyzer` only hooks the webpack
+build: on 16 either run `next experimental-analyze` (Turbopack's built-in analyzer, 16.1+) or add
+`--webpack` to the `ANALYZE` build above.
 
 `bundlephobia` and `@next/bundle-analyzer` are **not** runnable with `npx`: the first publishes
 no `bin`, and the second is a config wrapper, not a CLI. Both were recommended that way here

@@ -1,5 +1,9 @@
 # Project Preset — Laravel
 
+<!-- reviewed: 2026-09 — the Laravel 11+ claims only: the slim base Controller without
+`AuthorizesRequests` (hence `Gate::authorize()`), and exception handling moved from
+`app/Exceptions/Handler.php` to `withExceptions()` in `bootstrap/app.php`. Both hold on 12. -->
+
 ## Architecture
 
 - Controllers stay thin: validate via a Form Request → call an action/service → return a Resource.
@@ -19,7 +23,7 @@ class UserController extends Controller
 
     public function show(User $user): UserResource   // route-model binding
     {
-        $this->authorize('view', $user);             // policy — never skip
+        Gate::authorize('view', $user);              // policy — never skip
         return new UserResource($user);
     }
 }
@@ -35,7 +39,6 @@ class StoreUserRequest extends FormRequest
         return [
             'email' => ['required', 'email', 'max:255', Rule::unique('users')],
             'name'  => ['required', 'string', 'min:1', 'max:100'],
-            'role'  => ['required', Rule::in(['user', 'admin'])],
         ];
     }
 }
@@ -43,6 +46,10 @@ class StoreUserRequest extends FormRequest
 
 `$request->validated()` returns only the validated keys — that is the mass-assignment allowlist.
 Never pass `$request->all()` into `create()` or `update()`.
+
+Never accept `role`, `is_admin` or any privilege field in a create/register request — a
+client-settable role lets anyone sign up as admin. The action assigns the default role; role
+changes go through a separate endpoint authorized by an admin-only policy or gate.
 
 ## Authorization — policies, on every resource read
 
@@ -53,11 +60,15 @@ public function view(User $user, Post $post): bool
     return $post->user_id === $user->id;
 }
 
-// Controller: $this->authorize('view', $post);
+// Controller: Gate::authorize('view', $post);
 // Blade:      @can('view', $post) ... @endcan
 ```
 
 A `findOrFail($id)` with no policy check is an IDOR. Route-model binding does not authorize.
+
+Since Laravel 11 the base `Controller` no longer uses the `AuthorizesRequests` trait, so
+`$this->authorize()` is undefined unless the project re-adds that trait. `Gate::authorize()` works
+on every version; follow whichever the existing controllers already use.
 
 ## Eloquent — N+1 and raw SQL
 
@@ -101,16 +112,19 @@ deploy as the code that stops using it. `down()` must actually reverse `up()`.
 ## Errors and logging
 
 ```php
-// app/Exceptions/Handler.php — never leak stack traces
-public function register(): void
-{
-    $this->renderable(fn (DomainException $e) => response()->json(
+// bootstrap/app.php — never leak stack traces
+->withExceptions(function (Exceptions $exceptions) {
+    $exceptions->render(fn (DomainException $e) => response()->json(
         ['message' => $e->getMessage()], 422
     ));
-}
+})
 
 Log::info('user.created', ['user_id' => $user->id]);   // context array, no PII
 ```
+
+Laravel 11+ has no `app/Exceptions/Handler.php`; exception rendering and reporting are configured in
+`bootstrap/app.php` as above. A project upgraded from 10 may still carry the old Handler — edit
+whichever one it actually has.
 
 `APP_DEBUG=false` in production, always. `.env` is never committed and never read by tooling.
 

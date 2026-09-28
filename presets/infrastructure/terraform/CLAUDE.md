@@ -5,8 +5,11 @@
 
 ## State is the thing that can actually ruin your day
 
-- Remote backend with locking from day one: S3 + DynamoDB, GCS, or Terraform/HCP Cloud. Local
-  state on one laptop means two people applying at once silently corrupt it.
+- Remote backend with locking from day one: S3 with native locking (`use_lockfile = true`), GCS,
+  or Terraform/HCP Cloud. Local state on one laptop means two people applying at once silently
+  corrupt it. The S3 backend's DynamoDB locking (`dynamodb_table`) is deprecated since Terraform
+  1.11; a project still using it migrates by enabling `use_lockfile` alongside it, then dropping
+  the table.
 - **State contains secrets in plaintext** — every database password and generated key the
   providers returned. Encrypt the bucket, restrict read access, and never commit `*.tfstate` or
   `*.tfstate.backup`.
@@ -27,12 +30,17 @@ modules/<name>/                    # main.tf · variables.tf · outputs.tf · ve
 
 ```hcl
 terraform {
-  required_version = "~> 1.13"
+  required_version = ">= 1.10"
   required_providers {
     aws = { source = "hashicorp/aws", version = "~> 6.0" }
   }
 }
 ```
+
+`required_version` is a floor, not `~>`: Terraform and OpenTofu version independently, so a
+pessimistic constraint on a recent Terraform minor rejects every current OpenTofu release. 1.10 is
+the oldest line where both support S3 native locking; raise the floor to the oldest version the
+team actually runs.
 
 ## Variables and outputs
 

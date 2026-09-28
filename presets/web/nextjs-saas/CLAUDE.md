@@ -16,7 +16,7 @@ pointer into rules/100-web.md still names the line this preset targets. -->
 
 - Validate all server-side inputs.
 - Enforce subscription, permission, quota, and ownership rules server-side.
-- Do not modify auth, middleware, payment, database, migrations, or server actions unless requested.
+- Do not modify auth, middleware (`middleware.ts`, renamed `proxy.ts` in Next.js 16 — protect whichever exists), payment, database, migrations, or server actions unless requested.
 - Avoid leaking stack traces, tokens, database errors, or secrets to the client.
 
 ## Performance
@@ -62,7 +62,7 @@ Never build a raw flex/grid layout from scratch when a shell already exists.
 | Need | Component |
 | --- | --- |
 | Data list / records | `<DataTable>` with TanStack Table — never build a custom table |
-| Form | `<Form>` + `<FormField>` + react-hook-form + zod schema |
+| Form | `<Field>` + `<FieldLabel>` + `<FieldError>` (current shadcn) with react-hook-form `<Controller>` + zod schema — older projects use `<Form>` + `<FormField>`; match what exists |
 | Modal/dialog | `<Dialog>` + `<DialogContent>` + `<DialogHeader>` |
 | Confirm destructive action | `<AlertDialog>` |
 | Status pill / badge | `<Badge variant="...">` |
@@ -130,9 +130,9 @@ Always include:
 Always include:
 
 - `const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) })`
-- `<Form {...form}>` wrapper with `<form onSubmit={form.handleSubmit(onSubmit)}>`
-- `<FormField>` for every input — never a raw `<input>`
-- `<FormMessage />` inside each `<FormItem>` for inline validation errors
+- `<form onSubmit={form.handleSubmit(onSubmit)}>` as the wrapper
+- Every input wrapped in a `<Field>` (or `<FormField>` in a project still on the older `<Form>` components) — never a bare `<input>` with no label or error slot
+- `<FieldError />` (older: `<FormMessage />`) inside each field for inline validation errors
 - Submit button shows a loading state while pending: `<Button disabled={isLoading}>{isLoading ? "Saving..." : "Save"}</Button>`
 - After submit: `toast.success("Saved")` on success, `toast.error("...")` on error (Sonner)
 
@@ -144,9 +144,11 @@ Always include:
     <h1 className="text-2xl font-bold tracking-tight">[Page Title]</h1>
     <p className="text-sm text-muted-foreground">[Description]</p>
   </div>
-  <Button>[Primary Action]</Button>   {/* only if page has one */}
+  <Button>[Primary Action]</Button>
 </div>
 ```
+
+The primary-action button is there only when the page has one; drop it otherwise.
 
 ### New page checklist — run through this before writing any code
 

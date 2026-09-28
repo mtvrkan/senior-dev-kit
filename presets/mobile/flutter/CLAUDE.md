@@ -70,9 +70,11 @@ Map transport errors to domain failures at the repository edge. A widget should 
 
 ## Security
 
-- Secrets never live in Dart constants or `pubspec.yaml` — they ship inside the binary. Use
-  `--dart-define` at build time plus platform secure storage (`flutter_secure_storage`, backed by
-  Keychain/Keystore) for tokens.
+- No real secret ships in the client at all — Dart constants, `pubspec.yaml` and `--dart-define`
+  values all end up inside the binary, where they can be extracted. `--dart-define` is for
+  non-secret build config (API base URL, flavor, public keys); anything secret stays server-side
+  behind your API. Per-user tokens the app receives at runtime go in platform secure storage
+  (`flutter_secure_storage`, backed by Keychain/Keystore).
 - Certificate pinning for anything financial. No cleartext HTTP.
 - Deep links are untrusted input — validate every parameter before routing.
 

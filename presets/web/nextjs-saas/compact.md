@@ -1,10 +1,10 @@
 - Server Components default; `use client` only for browser state/events/DOM APIs
 - Enforce subscription, permission, quota, ownership rules server-side — never UI-only
-- Validate all server-side inputs · never leak stack traces/tokens/DB errors/secrets to the client
+- Never touch auth, `middleware.ts`/`proxy.ts` (Next 16 name), payment, DB or migrations unless asked · validate all server-side inputs · never leak stack traces/tokens/DB errors/secrets to the client
 - Keep server-only code out of client components; avoid unnecessary `use client`
 - Anti: full page as Client Component, business limits in UI only, new packages for small UI
 - NEW PAGE: find similar page first → use existing shell/layout → build in order: shell → header → loading skeleton → data → populated → empty state → error state
-- Components: DataTable (TanStack), Form+zod+react-hook-form, Dialog/AlertDialog, Badge, Skeleton, Alert, DropdownMenu, Sonner's toast() — never raw table or alert()
+- Components: DataTable (TanStack), Field (older: Form/FormField)+zod+react-hook-form, Dialog/AlertDialog, Badge, Skeleton, Alert, DropdownMenu, Sonner's toast() — never raw table or alert()
 - Spacing: space-y-4/6, gap-2/4/6, p-4/6 — never arbitrary values
 - Colors: semantic tokens only (text-foreground, text-muted-foreground, bg-card, text-primary, text-destructive) — never raw Tailwind colors
 - Typography: page title `text-2xl font-bold tracking-tight`, description `text-sm text-muted-foreground`

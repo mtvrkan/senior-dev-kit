@@ -34,26 +34,28 @@ grep -r "\${.*}" --include="*.java" --include="*.kt" --include="*.properties" --
 
 ## .env.example entry format
 
+`.env.example` holds only `KEY=placeholder` lines — no comment lines — grouped by concern with a
+blank line between groups. A placeholder is a safe shape hint, never a real value.
+
 ```bash
-# [Required|Optional] — [what this var controls]
-# Example: [safe placeholder — never real value]
-KEY_NAME=
-
-# Required — JWT signing secret for auth tokens
-# Generate: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 JWT_SECRET=
-
-# Optional — enables AI features, degraded without it
-# Get from: https://console.anthropic.com/
-ANTHROPIC_API_KEY=sk-ant-YOUR-KEY-HERE
-
-# Required — PostgreSQL connection string
-# Format: postgresql://user:password@host:5432/dbname
 DATABASE_URL=postgresql://
 
-# Optional — defaults to "development" if not set
+ANTHROPIC_API_KEY=sk-ant-YOUR-KEY-HERE
+
 NODE_ENV=production
 ```
+
+Everything a comment used to carry goes in one table in the project's README (or `docs/ENV.md`
+when the list is long), one row per variable. The audit checks the table and `.env.example`
+against each other: every key in one must appear in the other.
+
+| Variable | Required | Purpose | Format / example |
+| --- | --- | --- | --- |
+| `JWT_SECRET` | Required | JWT signing secret for auth tokens | 64 random bytes as hex: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` |
+| `DATABASE_URL` | Required | PostgreSQL connection string | `postgresql://user:password@host:5432/dbname` |
+| `ANTHROPIC_API_KEY` | Optional | Enables AI features; they degrade without it | `sk-ant-...` from <https://console.anthropic.com/> |
+| `NODE_ENV` | Optional | Runtime mode | defaults to `development` if not set |
 
 ---
 

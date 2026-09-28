@@ -26,7 +26,7 @@ class PostsController < ApplicationController
     if @post.persisted?
       redirect_to @post, notice: "Post created"
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -37,6 +37,9 @@ class PostsController < ApplicationController
   end
 end
 ```
+
+`:unprocessable_content` is the 422 symbol since Rack 3.1, which deprecated `:unprocessable_entity`;
+an app still on Rack < 3.1 keeps `:unprocessable_entity`.
 
 `Post.find(params[:id])` instead of `current_user.posts.find(...)` is an IDOR. Scope through the
 association, always.
@@ -68,7 +71,8 @@ Post.includes(:author).each { |p| puts p.author.name }
 `rails db:migrate` on production data is a Tier 3 change: reversible `change` (or explicit
 `up`/`down`), `null: false` only after a backfill, and `disable_ddl_transaction!` +
 `algorithm: :concurrently` for indexes on a large table so the migration doesn't lock writes.
-Add the FK index — Rails creates the foreign key, not the index.
+`t.references` / `add_reference` add the index by default; a bare `add_foreign_key` creates the
+constraint only, so add its index yourself.
 
 ## Background jobs
 
@@ -78,7 +82,8 @@ ids, never AR objects, and are idempotent — retries happen.
 ## Security
 
 - `credentials.yml.enc` + `master.key` for secrets; `master.key` is never committed.
-- CSRF protection stays on for session-based apps; skipping it needs a comment saying why.
+- CSRF protection stays on for session-based apps; skipping it needs the reason in the commit
+  message or PR, not a code comment.
 - `html_safe` / `raw` on user content is XSS. ERB escapes by default — leave it that way.
 - `strong_migrations` and `brakeman` in CI catch most of the above mechanically.
 

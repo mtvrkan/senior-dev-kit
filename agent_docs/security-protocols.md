@@ -75,12 +75,14 @@ session({
   cookie: {
     httpOnly: true,     // prevents XSS cookie theft
     secure: true,       // HTTPS only
-    sameSite: 'strict', // prevents CSRF
+    sameSite: 'lax',
     maxAge: 60 * 60 * 1000  // 1 hour
   },
   store: new RedisStore({ client })  // never MemoryStore in prod
 })
 ```
+
+`Lax` is the session default: `Strict` also drops the cookie on inbound top-level navigation, so a user following a link from email or another site lands logged out. Reserve `Strict` for a separate cookie that gates high-value flows (payments, account deletion, credential changes).
 
 ### Password hashing
 
@@ -98,19 +100,32 @@ const hashed = await bcrypt.hash(password, 12)  // min cost 10, prefer 12
 ## CSRF PROTECTION
 
 ```typescript
-// SameSite=Strict cookies (modern, preferred)
-cookie: { sameSite: 'strict' }  // browser won't send on cross-site requests
+cookie: { sameSite: 'lax' }
 
 // Double Submit Cookie (for SPAs with cross-origin)
-// 1. Set CSRF token in cookie (readable by JS)
-// 2. Client reads cookie, sends in X-CSRF-Token header
-// 3. Server compares cookie value and header value
-// Only an attacker-controlled page can't read the cookie
+function issueCsrfToken(sessionId: string): string {
+  const nonce = crypto.randomBytes(32).toString('hex')
+  const message = `${sessionId.length}!${sessionId}!${nonce.length}!${nonce}`
+  const mac = crypto.createHmac('sha256', CSRF_SECRET).update(message).digest('hex')
+  return `${mac}.${nonce}`
+}
+
+function isValidCsrfToken(sessionId: string, cookieToken: string, headerToken: string): boolean {
+  if (!cookieToken || cookieToken !== headerToken) return false
+  const [mac, nonce] = headerToken.split('.')
+  if (!mac || !nonce) return false
+  const message = `${sessionId.length}!${sessionId}!${nonce.length}!${nonce}`
+  const expected = Buffer.from(crypto.createHmac('sha256', CSRF_SECRET).update(message).digest('hex'))
+  const received = Buffer.from(mac)
+  return received.length === expected.length && crypto.timingSafeEqual(received, expected)
+}
 
 // Verify both origin and referer for extra protection:
 const origin = req.headers.origin || req.headers.referer
 if (!allowedOrigins.includes(new URL(origin).origin)) throw new ForbiddenError()
 ```
+
+`SameSite=Lax` blocks cross-site POSTs but not same-site subdomains or unsafe GETs, so pair it with a token. Use the signed double-submit pattern above (OWASP's recommendation): the token is an HMAC bound to the session ID, set in a JS-readable cookie and echoed in an `X-CSRF-Token` header. A plain random double-submit value is weaker — anyone who can plant a cookie (a sibling subdomain, a MITM on HTTP) can plant a matching pair.
 
 ## RATE LIMITING STRATEGY
 
@@ -151,15 +166,16 @@ Never combine layers. Never skip Layer 1 (type coercion first, always).
 ```typescript
 // Zod validation at API boundary:
 const CreateUserSchema = z.object({
-  email: z.string().email().max(255),
+  email: z.email().max(255),
   password: z.string().min(12).max(128),
-  role: z.enum(['user', 'admin']),  // whitelist, never trust freeform role strings
 })
 
 const body = CreateUserSchema.safeParse(req.body)
 if (!body.success) return res.status(400).json(formatZodError(body.error))
 // body.data is now typed and validated — safe to use
 ```
+
+`role` is deliberately absent: on self-registration the server assigns it (`role: 'user'`), and changing it belongs to a separate admin-only endpoint with its own authorization check. Even an enum-restricted `role` in a client DTO lets anyone sign up as `admin`.
 
 ## SQL INJECTION PREVENTION
 

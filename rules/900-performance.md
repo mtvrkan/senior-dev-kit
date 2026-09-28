@@ -39,10 +39,16 @@ npm view <package>@<version> dist.unpackedSize
 # Gzipped cost in a real bundle: https://bundlephobia.com/package/<package>
 
 # Analyze an existing bundle
-ANALYZE=true next build          # Next.js: needs next.config wrapped in withBundleAnalyzer
-$env:ANALYZE=1; next build       # same, PowerShell — it has no inline env-var prefix
-npx vite-bundle-visualizer       # Vite
+next experimental-analyze
+ANALYZE=true next build --webpack
+$env:ANALYZE=1; next build --webpack
+npx vite-bundle-visualizer
 ```
+
+Next.js 16 builds with Turbopack, which `@next/bundle-analyzer` (a webpack plugin) never sees: use
+`next experimental-analyze`, or build with `--webpack` and wrap `next.config` in
+`withBundleAnalyzer` (the `$env:` line is the PowerShell form — it has no inline env-var prefix).
+`vite-bundle-visualizer` is the Vite equivalent.
 
 `PERF: bundle risk — [package] adds [N]KB gzip to initial bundle`
 
@@ -85,7 +91,7 @@ latency-budget framing above.
 | --- | --- |
 | Component re-renders >2× per user interaction | Needs `memo` / `useMemo` / `useCallback` |
 | Derived value recomputed in render body | Move to `useMemo` / `computed` |
-| List > 50 items (web/Flutter; RN > 20 — see `400-mobile.md`) without virtualization | Use `FlashList` (RN) / `FixedSizeList` (web) / `ListView.builder` (Flutter) |
+| List > 50 items (web/Flutter; RN > 20 — see `400-mobile.md`) without virtualization | Use `FlashList` (RN) / `List` from react-window v2 or `@tanstack/react-virtual` (web) / `ListView.builder` (Flutter) |
 | `useEffect` with no deps or wrong deps | Causes infinite render loop |
 
 ```typescript

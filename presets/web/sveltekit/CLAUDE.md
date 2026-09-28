@@ -52,12 +52,14 @@ export const actions = {
   create: async ({ request, locals }) => {
     const data = await request.formData()
     const parsed = schema.safeParse(Object.fromEntries(data))
-    if (!parsed.success) return fail(400, { errors: parsed.error.flatten() })
+    if (!parsed.success) return fail(400, { errors: z.flattenError(parsed.error) })
     await db.createUser(parsed.data, locals.user.id)
     return { success: true }
   },
 }
 ```
+
+`z.flattenError()` is Zod 4; on Zod 3 it is `parsed.error.flatten()`.
 
 Form actions work without JavaScript and give progressive enhancement free via `use:enhance`.
 A hand-rolled `fetch` POST throws that away.

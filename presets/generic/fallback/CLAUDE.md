@@ -35,10 +35,12 @@ Does NOT trigger: pure UI, CSS, layout, docs, config.
 Run targeted test file only — never full suite:
 
 ```text
-Jest/Vitest: jest [file].spec.ts --no-coverage --passWithNoTests
+Jest/Vitest: jest [file].spec.ts --no-coverage
 Go: go test ./pkg/... -run TestFnName
 Pytest: pytest path/test_x.py -x -q
 ```
+
+No `--passWithNoTests` on a targeted run: a mistyped path then reports green instead of failing.
 
 If no test file: write 3 inline tests (happy + edge + error) in same diff. Never ask.
 

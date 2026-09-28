@@ -1,8 +1,8 @@
 - Tier 3 (devops-guard) on every change, Tier 4 when the plan contains a destroy — the plan output IS the review artifact
-- Remote backend with locking from day one (S3+DynamoDB, GCS, HCP) — local state means two concurrent applies corrupt it silently
+- Remote backend with locking from day one (S3 with `use_lockfile = true`, GCS, HCP; S3+DynamoDB locking is deprecated since TF 1.11) — local state means two concurrent applies corrupt it silently
 - STATE CONTAINS SECRETS IN PLAINTEXT (every provider-returned password/key): encrypt the bucket, restrict reads, never commit `*.tfstate`
 - Separate state per environment — one state spanning dev and prod lets a dev mistake plan a prod destroy
-- Pin everything: `required_version`, provider constraints, module `ref` on a tag/commit not a branch · commit the lock file
+- Pin everything: `required_version` as a floor (`>= 1.10`, not `~>` — OpenTofu versions separately), provider constraints, module `ref` on a tag/commit not a branch · commit the lock file
 - Variables get `type` + `description` + `validation`; no defaults for environment names or account ids · `sensitive = true` hides CLI output only, state is still plaintext · secrets from a secret manager, never a committed `.tfvars`
 - `for_each` over `count` — `count` is index-addressed, so removing a middle element re-creates everything after it · `moved` blocks to restructure without destroy/create
 - `lifecycle { prevent_destroy = true }` on databases, data buckets, anything whose replacement is an incident

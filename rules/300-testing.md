@@ -71,18 +71,20 @@ Never: `it('works')` · `it('test1')` · `it('should work correctly')`
 
 ## AAA PATTERN — mandatory structure
 
+Every test body is three blocks separated by a blank line, in this order: **arrange** (set up data
+and dependencies), **act** (call the unit under test once), **assert** (verify the outcome). The
+blank lines carry the structure — no `// Arrange` labels needed.
+
+The example is a service-layer unit test, so it mocks the repository INTERFACE (a dependency
+boundary), not the DB itself; `UserRepo`'s own test suite still runs against a real test DB per the
+mock policy above.
+
 ```typescript
-// Unit test for the service layer — mocks the repository INTERFACE (a
-// dependency boundary), not the DB itself. UserRepo's own test suite still
-// runs against a real test DB per the mock policy above.
-// Arrange — set up data and dependencies
 const user = { id: '1', email: 'test@example.com' }
 mockUserRepo.findById.mockResolvedValue(user)
 
-// Act — call the unit under test
 const result = await userService.getById('1')
 
-// Assert — verify the outcome
 expect(result.email).toBe('test@example.com')
 ```
 
@@ -105,14 +107,13 @@ Add `data-testid` to interactive elements when writing UI tests — do not query
 
 ## MINIMAL SPEC (when creating new tests)
 
-Minimum 3 cases: happy path + edge case + error case
+Minimum 3 cases: happy path (expected input → expected output) + edge case (boundary condition) +
+error case (failure mode). The `it(...)` name states which one it is — the input and the outcome —
+so no label is needed above it:
 
 ```typescript
-// Happy path: expected input → expected output
 it('returns user when found', async () => { ... })
-// Edge case: boundary condition
 it('returns null when id is empty string', async () => { ... })
-// Error case: failure mode
 it('throws DatabaseError when connection fails', async () => { ... })
 ```
 

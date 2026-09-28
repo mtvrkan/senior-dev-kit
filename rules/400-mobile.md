@@ -24,7 +24,7 @@ paths:
 | `Package.swift` / `*.xcodeproj` | iOS/Swift | SwiftUI + Swift Concurrency |
 | `app/build.gradle` / `build.gradle.kts` | Android/Kotlin | Jetpack Compose + Coroutines |
 | `pubspec.yaml` | Flutter/Dart | Riverpod + flutter_test |
-| `app.json` / `expo.json` / `*.tsx` in `screens/` | React Native/Expo | Expo Router v6 |
+| `app.json` / `app.config.{js,ts}` / `*.tsx` in `screens/` | React Native/Expo | Expo Router v6 |
 
 **Known over-match (accepted):** `**/*.{swift,kt}` also fires for server-side Kotlin (Ktor,
 Spring Boot), where the Compose/Keychain sections below do not apply. Narrowing it to
@@ -51,7 +51,7 @@ platform-detection table above), not path-based auto-load.
 
 Performance:
 
-- NO heavy computation on main/UI thread — use background thread (Kotlin coroutine `Dispatchers.IO`, Swift `Task {}`, Dart `compute()`, RN worker)
+- NO heavy computation on main/UI thread — use background thread (Kotlin coroutine `Dispatchers.Default` for CPU work, `Dispatchers.IO` for blocking I/O; Swift `Task.detached` or an `@concurrent` async function (a plain `nonisolated async` function also runs off-main before Swift 6.2's nonisolated-nonsending default) — a plain `Task {}` inherits the caller's actor, which is the MainActor inside a view; Dart `compute()`; RN worker)
 - Images: WebP/AVIF format · never uncompressed PNG/JPG for assets
 - Lists: avoid re-rendering entire list on state update · virtualize long lists
 - Network: handle offline state · show meaningful error (not generic "Network error")
@@ -116,7 +116,7 @@ Anti-patterns (never):
 - `force try!` (crashes on failure) → use `do { try } catch { }`
 - `force unwrap!` on optionals → use `guard let` or `if let`
 - Sync network call on main thread → always async
-- Hard-coded strings → use `Localizable.strings`
+- Hard-coded strings → use a String Catalog (`Localizable.xcstrings`)
 
 ## ANDROID / KOTLIN / COMPOSE
 
@@ -148,7 +148,9 @@ Patterns:
 - Hilt for dependency injection
 - Room for local DB · WorkManager for background tasks
 
-`derivedStateOf` for expensive `remember` computations.
+`derivedStateOf` only when a value derived from fast-changing state (scroll offset, text input) changes
+less often than its input — it cuts recompositions, it is not a general memo. For an expensive
+calculation use `remember(key) { ... }`.
 Never: `Thread.sleep()` · sync network on main thread · `GlobalScope.launch` (use `viewModelScope`)
 
 ## FLUTTER / DART

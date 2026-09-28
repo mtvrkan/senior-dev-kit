@@ -6,10 +6,12 @@ pass; re-check them before widening this marker's scope. -->
 
 ## Architecture
 
-- File-based routing in `pages/`, layouts in `layouts/`, server routes in `server/api/`.
+- Nuxt 4 source lives under `app/` (the default `srcDir`): routing in `app/pages/`, layouts in
+  `app/layouts/`, plus `app/components/` and `app/composables/`. Nuxt 3 (or a project that opted
+  out) keeps them at the root — follow the layout on disk. Server routes stay in root `server/api/`.
 - Auto-imports are on: don't hand-write imports for `composables/`, `components/` or Vue APIs.
 - Composition API with `<script setup lang="ts">` everywhere. Options API is not used in new code.
-- Shared logic goes in `composables/useX.ts`; anything that touches a secret goes in
+- Shared logic goes in `app/composables/useX.ts` (Nuxt 3: `composables/`); anything that touches a secret goes in
   `server/` instead.
 
 ```vue

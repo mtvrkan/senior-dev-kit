@@ -40,7 +40,7 @@ Use this section when building a new admin page. Always run the 5-step checklist
 
 | Installed | Component system |
 | --- | --- |
-| `@shadcn/ui` / `shadcn-ui` | shadcn/ui + Radix |
+| `components.json` at the project root | shadcn/ui + Radix |
 | `@radix-ui/*` only | Radix primitives + custom |
 | `antd` | Ant Design |
 | `@mui/material` | Material UI |
@@ -48,7 +48,9 @@ Use this section when building a new admin page. Always run the 5-step checklist
 | `react-bootstrap` | Bootstrap |
 | none | plain Tailwind / CSS Modules |
 
-Read package.json first — never assume which library is installed.
+Read package.json first — never assume which library is installed. shadcn/ui is the exception: it
+copies component source into the repo instead of installing a package, so detect it by its
+`components.json` file, not by a dependency.
 
 ### Pre-code checklist (all 5 required)
 

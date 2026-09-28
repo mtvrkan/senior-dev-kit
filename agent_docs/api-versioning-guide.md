@@ -31,12 +31,14 @@ export async function getUserV2(req: Request, res: Response) {
 ```typescript
 // Middleware applied to all v1 routes
 app.use('/api/v1', (req, res, next) => {
-  res.set('Deprecation', 'Wed, 01 Jul 2026 00:00:00 GMT')  // RFC 9745: an HTTP-date, not the literal string "true"
+  res.set('Deprecation', '@1782864000')
   res.set('Sunset', 'Sat, 01 Jan 2027 00:00:00 GMT')  // 6 months from v2 launch
   res.set('Link', '<https://api.example.com/v2>; rel="successor-version"')
   next()
 })
 ```
+
+The two headers use different date formats. `Deprecation` (RFC 9745) is a Structured Field Date — `@` followed by Unix seconds, here 2026-07-01T00:00:00Z — never an HTTP-date and never the literal `true`. `Sunset` (RFC 8594) is an HTTP-date.
 
 ---
 

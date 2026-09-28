@@ -44,15 +44,17 @@ record CreateUserRequest(
 
 ## Security — the protected area
 
-Anything under `SecurityConfig` / `WebSecurityConfigurerAdapter`, JWT parsing, or
-`@PreAuthorize` rules is Tier 3: plan first, no silent edits.
+Anything under `SecurityConfig` / its `SecurityFilterChain` bean, JWT parsing, or
+`@PreAuthorize` rules is Tier 3: plan first, no silent edits. `WebSecurityConfigurerAdapter` was
+removed in Spring Security 6 — it only appears in legacy code; new config is a
+`SecurityFilterChain` `@Bean`.
 
 - Authorization is an ownership check in the service, not only a role check at the edge.
   `hasRole('USER')` does not stop user A reading user B's record.
 - `BCryptPasswordEncoder` (or Argon2) for passwords — never MD5/SHA, never plain `equals` on a
   hash.
 - CSRF stays on for cookie-session apps; disabling it is only correct for a stateless
-  token API, and should say so in a comment.
+  token API, and the reason goes in the commit message or PR, not a code comment.
 
 ## JPA — N+1, lazy loading, transactions
 

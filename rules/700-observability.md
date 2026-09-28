@@ -66,12 +66,15 @@ When adding or changing a service or background job, add these:
 
 | Metric | Type | Labels |
 | --- | --- | --- |
-| Request count | Counter | method, path, status |
-| Request duration | Histogram | method, path |
-| Error count | Counter | method, path, error_type |
+| Request count | Counter | method, route, status |
+| Request duration | Histogram | method, route |
+| Error count | Counter | method, route, error_type |
 | Active jobs | Gauge | queue, worker |
 | Queue depth | Gauge | queue |
 | External call duration | Histogram | service, endpoint |
+
+`route` is the route template (`/users/:id`), never the raw path: every distinct ID in a raw path
+becomes its own time series — the same cardinality blowup as an unvalidated correlation ID.
 
 ```typescript
 // Node.js (prom-client)
@@ -84,13 +87,13 @@ const httpRequestDuration = new Histogram({
 
 // Python (prometheus_client)
 REQUEST_DURATION = Histogram('http_request_duration_seconds', 'HTTP request duration',
-  ['method', 'path', 'status'])
+  ['method', 'route', 'status'])
 
 // Go
 requestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
   Name: "http_request_duration_seconds",
   Buckets: prometheus.DefBuckets,
-}, []string{"method", "path", "status"})
+}, []string{"method", "route", "status"})
 ```
 
 **OBS flag — auto-trigger:**
@@ -111,16 +114,25 @@ GET /health/ready    → 503 { status: "degraded", db: "error" } (dependency dow
 
 When adding cross-service calls or async jobs:
 
-- Propagate `traceparent` header (W3C Trace Context) on every HTTP call
+- Propagate W3C Trace Context (`traceparent`) on every HTTP call through the tracer's propagator —
+  never copy the inbound header onto the outgoing request. The outgoing call is a child span: same
+  trace-id, new span-id. OpenTelemetry's HTTP/fetch auto-instrumentation does this with no code;
+  the manual form is below
 - Pass `correlationId` in queue message payload (not just headers)
 - Log span start + end with duration for any call >50ms
 
 ```typescript
-// Outgoing HTTP — pass trace headers
-const response = await fetch(url, {
-  headers: {
-    'traceparent': req.headers['traceparent'],
-    'x-correlation-id': req.correlationId,
+import { context, propagation, SpanKind, trace } from '@opentelemetry/api'
+
+const tracer = trace.getTracer('orders-service')
+
+const response = await tracer.startActiveSpan('GET /users', { kind: SpanKind.CLIENT }, async (span) => {
+  const headers: Record<string, string> = { 'x-correlation-id': req.correlationId }
+  propagation.inject(context.active(), headers)
+  try {
+    return await fetch(url, { headers })
+  } finally {
+    span.end()
   }
 })
 ```

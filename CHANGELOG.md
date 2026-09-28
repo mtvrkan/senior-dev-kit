@@ -73,6 +73,34 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
   [2026-09-28]
 - security-guard pins JWT algorithms and checks `iss`/`aud`. It answers another user's resource
   with 404 instead of 403, so IDs cannot be enumerated. [2026-09-28]
+- Rule globs missed real layouts. 500-database now loads for Rails `db/migrate`, Django
+  `models.py`, EF `Migrations/`, Alembic, Drizzle SQL and `db/schema`. 600-devops loads for
+  `compose.yaml`, `Containerfile` and `*.tofu`. 800-llm-safety loads for `openai`/`anthropic`/`llm`
+  source files. 1000-i18n no longer loads for a chat feature's `messages/` route. Every glob change
+  has glob tests. [2026-09-28]
+- Security examples that were copied verbatim and were wrong:
+  - Webhooks sign `timestamp.payload` and length-check before `timingSafeEqual`.
+  - Idempotency keys are scoped to the user and route, and locked while in flight.
+  - Presets no longer accept a client-set `role` on sign-up.
+  - Firestore owners can no longer rewrite `userId`.
+  - JSON-LD escapes `<`.
+  - Sentry gets the user id, not the email.
+  - Login errors don't reveal whether an account exists.
+  - CSRF uses the signed double-submit cookie.
+  - Sessions default to `SameSite=Lax`. [2026-09-28]
+- Stale or wrong platform facts:
+  - Framework APIs: Laravel 11 authorization and exception handling, Next 16 `proxy.ts` and
+    Turbopack bundle analysis, Nuxt 4 `app/` layout, shadcn detection via `components.json`, Zod 4.
+  - Language behaviour: Swift `Task` inheriting the caller's actor, SwiftUI task cancellation,
+    FastAPI CPU work (process pool, not thread pool), and money as `Decimal` with row locks.
+  - Postgres: lock levels and `now()` volatility.
+  - Infrastructure: S3 native Terraform locking, the ASP.NET base image, a valid Dockerfile
+    example, and pre-commit gitleaks on staged changes only.
+  - Protocols: the RFC 9745 date format.
+  - Each preset's `compact.md` matches its `CLAUDE.md` again. [2026-09-28]
+- `.env.example` holds only `KEY=placeholder` lines; each variable's description moves to a README
+  or `docs/ENV.md` table, so the kit's no-comment rule applies there too. The testing rule shows the
+  AAA structure with blank lines instead of `// Arrange` comments. [2026-09-28]
 - Uninstall refuses when settings.json no longer parses, instead of deleting the manifest and
   losing the record of which deny rules it added. A settings.json the installer created is deleted
   on uninstall once nothing of the user's is left in it. [2026-09-28]

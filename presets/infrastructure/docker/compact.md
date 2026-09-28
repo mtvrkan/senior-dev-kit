@@ -2,6 +2,6 @@
 - Compose: keep service definitions minimal and reproducible; named volumes for persistent data — no bind mounts for prod data; dev/prod configs separate (override files or profiles)
 - Networking: internal Docker networks; expose only ports that must be public; never expose DB ports to host in production
 - Secrets: runtime env vars or Docker secrets — never hardcode in Dockerfile/Compose; `.env` files are local-dev only, document required prod vars
-- `docker-compose.yml` is protected — do not modify unless explicitly requested
+- Compose files are protected (`compose.yaml`/`compose.yml`, legacy `docker-compose.yml`, and `.override` variants) — do not modify unless explicitly requested
 - Verification: `docker compose config` → `docker compose build` → `docker scout cves <image>` or `trivy image <image>`
 - Anti: bind-mounting source in production; DB ports exposed publicly; privileged containers without a documented reason

@@ -53,7 +53,8 @@ Loading, error-with-retry and empty are three required states.
   `DispatchQueue.main.async` to hop threads — annotate `@MainActor` instead.
 - UI state mutation is `@MainActor`. A view model that touches published state off the main actor
   is a data race the compiler will now reject.
-- `Task { }` inside a view is cancelled when the view disappears — use `.task { }` so
+- An unstructured `Task { }` started from a view is NOT cancelled when the view disappears — it
+  keeps running until it finishes. Use the `.task { }` modifier, which cancels on disappear, so
   cancellation is wired for you.
 - `async let` / `TaskGroup` for independent work; sequential `await` only on a dependency.
 
@@ -94,11 +95,14 @@ containers); check VoiceOver on a real flow before calling a screen done.
 ## Verification
 
 ```bash
-xcodebuild test -scheme App -destination 'platform=iOS Simulator,name=iPhone 15' \
+xcodebuild test -scheme App -destination 'platform=iOS Simulator,name=<installed iPhone>' \
   -only-testing:AppTests/UserViewModelTests
 swiftlint
 xcodebuild build -scheme App
 ```
+
+Pick the simulator name from `xcrun simctl list devices available` — a hard-coded model name
+breaks as soon as the installed Xcode stops shipping that runtime.
 
 ## Anti-patterns
 
