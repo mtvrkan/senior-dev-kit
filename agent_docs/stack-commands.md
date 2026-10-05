@@ -36,3 +36,8 @@ never the full suite for a 1-file change.
 
 This table is the canonical targeted-test reference — `rules/300-testing.md`'s TARGETED TEST
 COMMAND section points here and restates only the Go/XCTest filter syntax.
+
+## DETECTION — BOOT SEQUENCE step 1
+
+PKG_MANAGER: bun.lock/bun.lockb=bun | pnpm-lock.yaml=pnpm | yarn.lock=yarn | package-lock.json=npm | uv.lock=uv | Pipfile.lock=pipenv | composer.lock=composer | Gemfile.lock=bundler | gradle=Gradle | pom.xml=Maven | *.csproj=NuGet
+Runtime override: deno.json=Deno | pubspec.yaml=Flutter | app.json+metro.config.*=React Native | *.csproj=.NET | Package.swift=Swift | build.gradle.kts+no android/=Kotlin JVM (not mobile)

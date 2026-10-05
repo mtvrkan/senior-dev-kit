@@ -78,18 +78,11 @@ the change) and fixing failures — don't report success on unverified changes.
   counts drift as the file grows). Enforcing it mechanically would
   penalize explanatory comments (`scripts/check-consistency.ts` is long largely because each check
   documents the drift it was written to catch) as much as real bloat.
+- `scripts/` is the one place global-CLAUDE.md's no-comments CODE STYLE yields (RULE PRECEDENCE:
+  project beats the global protocol): every check keeps the comment naming the drift it catches,
+  and a new check gets one. Everything the kit ships as markdown follows CODE STYLE.
 
-## Effort strategy
+## Context budget
 
-Default effort follows the account setting. For work in this repo specifically: keep effort
-low for mechanical edits (typo fixes, single-line doc corrections, changelog entries); use
-`/effort xhigh` for routing-table changes or anything touching `scripts/lib/` that other
-validators depend on.
-
-## Context budget (this dev's environment only)
-
-This maintainer's personal Claude Code install runs with the 1M context window enabled —
-don't assume that for other contributors or for the shipped `global-CLAUDE.md`/preset
-templates. Locally it means `npm run check`'s full output, multi-file `Explore` passes across
-`rules/`, `agents/`, `skills/`, and `presets/`, and reading several preset `CLAUDE.md` +
-`compact.md` pairs side by side all fit comfortably without triggering early auto-compact.
+The maintainer runs a 1M window; never assume one for other contributors or in the shipped
+`global-CLAUDE.md`/preset templates.

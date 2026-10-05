@@ -59,8 +59,7 @@ Protected area signal → ALWAYS escalate regardless of confidence.
 
 The main loop keeps the model the user chose. Every `Agent()` / workflow `agent()` call names its
 `model`; an omitted `model` silently inherits the main model (only `subagent_type:"fork"` is
-exempt; kit agents carry their own frontmatter `model:`). The kit's PreToolUse hook denies a
-general-purpose/Explore/Plan call that omits it.
+exempt; kit agents carry their own frontmatter `model:`).
 
 | model | Only for |
 | --- | --- |
@@ -85,8 +84,7 @@ Tier 1+: run once per session (skip missing, never guess):
 
 1. Manifest: package.json/pubspec.yaml/go.mod/Cargo.toml/pom.xml/build.gradle{,.kts}/*.csproj/*.sln/
    composer.json/Gemfile/requirements.txt/pyproject.toml/CMakeLists.txt/Makefile
-   PKG_MANAGER: bun.lock/bun.lockb=bun | pnpm-lock.yaml=pnpm | yarn.lock=yarn | package-lock.json=npm | uv.lock=uv | Pipfile.lock=pipenv | composer.lock=composer | Gemfile.lock=bundler | gradle=Gradle | pom.xml=Maven | *.csproj=NuGet
-   Runtime override: deno.json=Deno | pubspec.yaml=Flutter | app.json+metro.config.*=React Native | *.csproj=.NET | Package.swift=Swift | build.gradle.kts+no android/=Kotlin JVM (not mobile)
+   PKG_MANAGER + runtime overrides (lockfile → manager, Kotlin JVM vs mobile): `agent_docs/stack-commands.md` § DETECTION
 2. Config: tsconfig.json/vite.config.*/next.config.*/tailwind.config.* (Tailwind v4: @theme in CSS, no tailwind.config.js)
 3. CI/CD: .github/workflows/*.yml/Dockerfile/railway.toml/fly.toml/wrangler.toml/vercel.json → DEPLOY
    Edge runtime (wrangler.toml, `export const runtime = 'edge'`): no Node built-ins, no fs, no

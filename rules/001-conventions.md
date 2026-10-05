@@ -102,11 +102,11 @@ recommending or adding any library, framework, or paid service.
 When two rules conflict, the highest rule in this list wins:
 
 ```text
-1. 000-security.md           ← always active, overrides everything (passive scan is non-negotiable)
-2. Project .claude/CLAUDE.md ← project-specific decisions beat all generic rules
+1. 000-security.md + the global protocol's HARD STOPS ← always active, overrides everything
+2. Project ./CLAUDE.md or .claude/CLAUDE.md ← project-specific decisions beat all generic rules
 3. Stack preset installed into the project ← framework convention beats generic convention
 4. Domain rule by specificity ← narrower glob wins:
      500-database.md (**/migrations/**) beats 001-conventions.md for migration files
      100-web.md (*.tsx) beats 001-conventions.md for React files
-5. 001-conventions.md        ← general fallback when nothing more specific applies
+5. Rest of the global protocol + 001-conventions.md ← general fallback when nothing more specific applies
 ```

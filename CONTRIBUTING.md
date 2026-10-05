@@ -162,6 +162,13 @@ Accepted overlaps. Do not re-flag these as duplication:
 - Never commit secrets, `.env` files, or transcript output. `.gitignore` and the gitleaks CI
   job both guard this, but the first line of defense is you.
 
+## Effort strategy
+
+Default effort follows the account setting. For work in this repo specifically: keep effort
+low for mechanical edits (typo fixes, single-line doc corrections, changelog entries); use
+`/effort xhigh` for routing-table changes or anything touching `scripts/lib/` that other
+validators depend on.
+
 ## Security issues
 
 Do not open a public issue for a vulnerability. See [SECURITY.md](SECURITY.md) for the

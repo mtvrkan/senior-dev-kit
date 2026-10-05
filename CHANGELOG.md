@@ -32,6 +32,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 
 ### Changed
 
+- Every session loads less: the package-manager and runtime-override map moved from the
+  protocol's BOOT SEQUENCE into `agent_docs/stack-commands.md`, and a line the subagent-model
+  hook already says itself is gone. RULE PRECEDENCE now names the global protocol (its HARD
+  STOPS rank with 000-security) and a project's root `CLAUDE.md`. [2026-10-05]
 - Upgrades now reconcile instead of only adding: a file, deny rule, setting or hook the kit no
   longer ships is removed on the next install. Files you edited are kept, and `--check` reports
   retired entries as drift. [2026-09-28]
