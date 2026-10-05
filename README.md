@@ -205,14 +205,17 @@ RUN_BEHAVIOR_EVAL=1 npm run behavior-eval
 $env:RUN_BEHAVIOR_EVAL=1; npm run behavior-eval
 ```
 
-**The measured result, 2026-08-20:** control 20/20 (100%), treatment 20/20 (100%) — no lift, and no
-regression. Read that as what it is: this suite is a regression detector, not evidence that the
-rules help. When the answer space is two tokens and one of them names a discipline, the base model
+**The measured result, 2026-10-05:** control 20/23 (87%), treatment 22/23 (96%) — the rules fix two
+of the base model's three errors (a spinner where the content shape calls for a skeleton, section
+comments in browser-served files) and break nothing. Both arms miss the commit-trailer prompt: its
+wording ("add it by default") has the user asking, which NO AI ATTRIBUTION explicitly allows, so it
+cannot tell the rule from its absence. Read the rest as what it is: this suite is mostly a
+regression detector, not evidence that the rules help. When the answer space is two tokens and one of them names a discipline, the base model
 picks it unaided; eight further candidate prompts were piloted and control got all eight right
 before they were written. Both suites are therefore gated on the share of the base model's *errors*
 the kit fixes rather than on absolute points of lift — a difference between two sampled arms shrinks
 toward zero as base models improve, which turns a points bar into one nothing can clear while the
-kit is still working. Here control makes no errors at all, so that bar is vacuous and says so.
+kit is still working.
 
 What this suite *can* prove it has now proved twice, and the second time is the more useful one.
 `global-CLAUDE.md` and `rules/500-database.md` each produce the correct escalation alone; loaded

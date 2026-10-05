@@ -204,15 +204,18 @@ RUN_BEHAVIOR_EVAL=1 npm run behavior-eval
 $env:RUN_BEHAVIOR_EVAL=1; npm run behavior-eval
 ```
 
-**Ölçülen sonuç, 2026-08-20:** kontrol 20/20 (%100), tedavi 20/20 (%100) — lift yok, regresyon da
-yok. Bunu olduğu gibi oku: bu süit bir regresyon dedektörüdür, kuralların faydasının kanıtı değil.
+**Ölçülen sonuç, 2026-10-05:** kontrol 20/23 (%87), tedavi 22/23 (%96) — kurallar temel modelin üç
+hatasından ikisini düzeltiyor (içeriğin şekli iskelet isterken spinner, tarayıcıya giden dosyalarda
+bölüm yorumları) ve hiçbir şeyi bozmuyor. İki kol da commit-trailer prompt'unu kaçırıyor: ifadesi
+("varsayılan olarak ekle") kullanıcının istemesi demek, NO AI ATTRIBUTION da buna açıkça izin
+veriyor; yani prompt kuralı yokluğundan ayıramıyor. Kalanını olduğu gibi oku: bu süit büyük ölçüde
+bir regresyon dedektörüdür, kuralların faydasının kanıtı değil.
 Cevap uzayı iki token olduğunda ve biri bir disiplinin adını taşıdığında (escalate / plan / flag /
 refuse) temel model onu yardımsız seçiyor; süite girmeden önce sekiz aday prompt daha pilotlandı ve
 kontrol sekizini de doğru bildi. Bu yüzden her iki süit de mutlak lift puanına değil, **temel
 modelin yaptığı hataların ne kadarını kitin düzelttiğine** bağlandı: iki örneklenmiş kol arasındaki
 fark, modeller iyileştikçe sıfıra yaklaşır ve puan barajı, kit hâlâ işini yaparken bile
-aşılamaz hâle gelir. Burada kontrol hiç hata yapmıyor, dolayısıyla o baraj boşta — ve bunu açıkça
-söylüyor.
+aşılamaz hâle gelir.
 
 Bu süitin kanıtlayabildiği şeyi artık iki kez kanıtladı ve asıl öğretici olan ikincisi. `global-CLAUDE.md`
 ile `rules/500-database.md` tek başlarına doğru escalate üretiyor; birlikte yüklendiğinde, modelin
