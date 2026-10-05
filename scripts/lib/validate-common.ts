@@ -60,7 +60,7 @@ export function checkEffort(rel: string, effort: string, counts: Counts): void {
 // not a YAML list. Catches copy/paste typos (e.g. "Wrte") that would otherwise silently
 // pass since these fields are free-text as far as the frontmatter parser is concerned.
 // Update this set when Claude Code adds or renames tools.
-export const VALID_TOOLS = new Set(['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash', 'Agent', 'WebFetch', 'WebSearch'])
+export const VALID_TOOLS = new Set(['Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash', 'Agent', 'Skill', 'WebFetch', 'WebSearch'])
 
 export function validateToolList(rel: string, source: string, value: string, counts: Counts): void {
   for (const tool of value.split(',').map(t => t.trim()).filter(Boolean)) {

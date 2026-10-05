@@ -11,7 +11,9 @@ effort: high
 
 # deep-research
 
-Research question: $ARGUMENTS or derive from context.
+Research question: $ARGUMENTS
+
+This fork has no conversation to derive a question from: no argument → stop and ask for the research question, nothing else.
 
 1. Clarify the question in one sentence; break into sub-questions if ambiguous. Fan out — search 3+ different angles or phrasings.
 2. Fetch and read primary sources directly — don't rely on search snippet summaries. Cross-verify key claims across 2+ independent sources.

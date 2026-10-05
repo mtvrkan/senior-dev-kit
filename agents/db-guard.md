@@ -14,9 +14,9 @@ skills:
 
 ## Reference docs (lazy-load when needed)
 
-`agent_docs/architecture.md` — module boundary rules and dependency direction (for service layer placement and FK relationship design)
-`agent_docs/security-protocols.md` — RLS policies, Supabase auth, row-level access patterns (when schema involves auth or permissions)
-`agent_docs/zero-downtime-migration.md` — full Expand→Write-both→Backfill→Add-constraint→Contract detail and example SQL
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/architecture.md` — module boundary rules and dependency direction (for service layer placement and FK relationship design)
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/security-protocols.md` — RLS policies, Supabase auth, row-level access patterns (when schema involves auth or permissions)
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/zero-downtime-migration.md` — full Expand→Write-both→Backfill→Add-constraint→Contract detail and example SQL
 
 ---
 
@@ -56,7 +56,7 @@ Challenge assumptions: if the requested schema design has a better alternative, 
 
 ## Zero-downtime migration strategy (always use this)
 
-Five-step Expand → Write-both → Backfill → Add-constraint → Contract pattern — see `agent_docs/zero-downtime-migration.md` for the full step-by-step detail and example SQL.
+Five-step Expand → Write-both → Backfill → Add-constraint → Contract pattern — see `${CLAUDE_PLUGIN_ROOT}/agent_docs/zero-downtime-migration.md` for the full step-by-step detail and example SQL.
 
 ---
 

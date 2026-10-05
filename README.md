@@ -44,18 +44,20 @@ Three lines, all typed inside Claude Code:
 The third line is a one-time step, and it exists for a structural reason: Claude Code loads
 path-scoped rules and permission rules only from your settings directory, and a plugin is not
 allowed to write there. `/kit-setup` shows you exactly what it will do, waits for a yes, and
-backs up anything it touches. Then restart Claude Code and run `/kit-doctor` to confirm.
+backs up anything it touches. Then restart Claude Code and run `/kit-doctor` to confirm. The
+plugin's hooks run `node`, so it too needs **Node.js 18+** on your `PATH`.
 
-That's the whole install. Updates come from `/plugin marketplace update`.
+That's the whole install. Updates come from `/plugin marketplace update`; run `/kit-setup` again
+afterwards, because the rules and settings it copied do not update with the plugin.
 
 Prefer the files in your own settings directory, or want to edit them? Requires **Node.js 18+**,
-no dependencies:
+no dependencies. The `--dry-run` line shows exactly what would change; the last line does it:
 
 ```bash
 git clone https://github.com/mtvrkan/senior-dev-kit.git
 cd senior-dev-kit
-node scripts/install.mjs --dry-run   # see exactly what would change
-node scripts/install.mjs             # then do it
+node scripts/install.mjs --dry-run
+node scripts/install.mjs
 ```
 
 Nothing you already had is destroyed: your `~/.claude/CLAUDE.md` gets the protocol inside
@@ -99,15 +101,16 @@ what you can type — is [`docs/usage.md`](docs/usage.md).
 
 In short: 8 agents, 28 skills, 12 rules, 7 commands, 28 presets.
 
-Plus a guardrail layer: ~400 deny rules in `settings-template.json` that block reads of secret
+Plus a guardrail layer: several hundred deny rules in `settings-template.json` that block reads of secret
 files, destructive shell commands, and zero-prompt remote package runners. Coverage and its
 known gaps are documented honestly in [`SECURITY.md`](SECURITY.md) — including what it does
 **not** block.
 
 The installer (or `/kit-setup`) also merges two settings, never overwriting a value you set:
 `attribution` is hidden, so commits and PRs carry no `Co-Authored-By: Claude` trailer and Claude
-never shows up in your GitHub contributors; and a PreToolUse hook sends any subagent call that
-omits `model` back with the haiku/sonnet/opus table, so a lookup never silently runs at your main
+never shows up in your GitHub contributors; and a PreToolUse hook sends any subagent call of a
+built-in type (general-purpose, Explore, Plan, claude, or untyped) that omits `model` back with the
+haiku/sonnet/opus table, so a lookup never silently runs at your main
 model’s price. An opt-in status line (`--only statusline`) shows model, folder, branch and context
 use.
 
@@ -121,8 +124,8 @@ use.
 2. **As files are read**, the rules matching their type activate — open a `.tsx` and `100-web`
    loads; open a migration and `500-database` loads.
 3. **When a task shape matches**, the corresponding skill fires. If the request touches a
-   guarded area, it escalates to a guard agent, which is read-only by tool grant, not by
-   convention.
+   guarded area, it escalates to a guard agent. Guards have no Edit or Write tool; their Bash is
+   limited by the deny rules and by the agent's own read-only instruction.
 
 ---
 
@@ -135,20 +138,21 @@ from disk by the test suite. One command:
 npm run check
 ```
 
-Currently: 433/433 tests passing (66 suites). `routing-eval` pins 31 realistic requests against
+Currently: 461/461 tests passing (70 suites). `routing-eval` pins 34 realistic requests against
 the routing table, `check-consistency` re-derives every hand-written number in this file, and
 `check-plugin` verifies the plugin manifests still match the components on disk.
 
-**What that does and does not prove.** Be clear-eyed about it: those 433 tests are *internal
+**What that does and does not prove.** Be clear-eyed about it: those 461 tests are *internal
 consistency* tests. They prove the documentation matches the files on disk — that no count is
 stale, no path is dead, no rule is claimed in one place and missing in another. **They do not
 measure whether the kit improves the model's output.** Nothing that ships green in CI does.
 
-Two steps measure behavior instead, and both are opt-in because they cost API credits:
+Two steps measure behavior instead, and both are opt-in because they cost API credits. The first
+line is the bash form; the second is PowerShell, which has no inline prefix form:
 
-```bash
-RUN_ROUTING_EVAL=1 npm run routing-eval          # bash
-$env:RUN_ROUTING_EVAL=1; npm run routing-eval    # PowerShell — no inline prefix form
+```text
+RUN_ROUTING_EVAL=1 npm run routing-eval
+$env:RUN_ROUTING_EVAL=1; npm run routing-eval
 ```
 
 It runs an A/B over the golden prompts — two CLI calls each: a **control** arm
@@ -192,9 +196,11 @@ if one is not: four of them shipped unmeasured for two rounds while the suite re
 score, because "the prompts that exist all pass" and "the rules that ship are all measured" are
 different claims and only the first had a check.
 
-```bash
-RUN_BEHAVIOR_EVAL=1 npm run behavior-eval          # bash
-$env:RUN_BEHAVIOR_EVAL=1; npm run behavior-eval    # PowerShell
+Again bash first, PowerShell second:
+
+```text
+RUN_BEHAVIOR_EVAL=1 npm run behavior-eval
+$env:RUN_BEHAVIOR_EVAL=1; npm run behavior-eval
 ```
 
 **The measured result, 2026-08-20:** control 20/20 (100%), treatment 20/20 (100%) — no lift, and no

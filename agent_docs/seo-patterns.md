@@ -32,7 +32,9 @@ answer, and the first `<h2>` opens the structured detail:
 
 ## METADATA — Next.js App Router
 
-`app/page.tsx` — root page; `template` is applied to all child pages:
+`app/layout.tsx` — root layout. `title.template` applies to the segments below the layout that
+defines it, so it belongs here; in a `page.tsx` it does nothing, because a page is always the last
+segment:
 
 ```typescript
 export const metadata: Metadata = {
@@ -51,13 +53,21 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     creator: '@handle',
   },
-  alternates: {
-    canonical: 'https://example.com',
-  },
   robots: {
     index: true,
     follow: true,
     googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
+  },
+}
+```
+
+`app/page.tsx` — the home page sets its own canonical. A canonical in the root layout would be
+inherited by every page that forgets to set one, pointing it at the home page:
+
+```typescript
+export const metadata: Metadata = {
+  alternates: {
+    canonical: 'https://example.com',
   },
 }
 ```
@@ -247,10 +257,15 @@ RIGHT — yield to the browser between chunks so input stays responsive. `schedu
 Chrome 129+; feature-detect it or fall back to `setTimeout(0)`:
 
 ```typescript
+function yieldToMain(): Promise<void> {
+  if (globalThis.scheduler?.yield) return globalThis.scheduler.yield()
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 async function heavyProcessing(items: Item[]) {
   const results: Result[] = []
   for (const batch of chunk(items, 50)) {
-    await scheduler.yield()
+    await yieldToMain()
     results.push(...batch.map(expensiveOperation))
   }
   return results

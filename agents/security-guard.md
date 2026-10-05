@@ -14,8 +14,8 @@ skills:
 
 ## Reference docs (lazy-load when needed)
 
-`agent_docs/security-protocols.md` — detailed checklists for OAuth flows, JWT rotation, RLS policies, Supabase auth
-`agent_docs/architecture.md` — module boundary rules and dependency direction (for auth middleware placement)
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/security-protocols.md` — detailed checklists for OAuth flows, JWT rotation, RLS policies, Supabase auth
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/architecture.md` — module boundary rules and dependency direction (for auth middleware placement)
 
 ---
 
@@ -93,7 +93,7 @@ This agent is READ-ONLY by default. After plan approval, the plan is routed to s
 
 ### OWASP 2025 specific
 
-- [ ] A03 / A10 triggers: per `rules/000-security.md`'s OWASP table (always loaded — don't
+- [ ] A03 / A10 triggers: per `${CLAUDE_PLUGIN_ROOT}/rules/000-security.md`'s OWASP table (always loaded — don't
       restate) · A03 additionally: dep audit wired into CI, not just local
 
 ---
@@ -107,7 +107,7 @@ tooling sequence instead of a manual code review:
   if one is missing, recommend the exact tool + install command briefly.
 - Do not run broad scans for low-risk UI-only tasks.
 - Dependency vulnerability → report exact package + version + CVE (audit command per runtime:
-  agent_docs/dep-check-guide.md § Audit commands by runtime).
+  ${CLAUDE_PLUGIN_ROOT}/agent_docs/dep-check-guide.md § Audit commands by runtime).
 - Secrets found in code → report file:line only, REDACT the value, escalate to the user.
 - Treat scanner output as evidence, not a guarantee; summarize findings by severity with
   actionable next steps, then continue with the code-level review below if findings are critical.

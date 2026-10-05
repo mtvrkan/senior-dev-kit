@@ -28,6 +28,11 @@ paths:
   # `*.tfvars` is not matched by `*.tf`, and it is the file that carries environment values.
   - "**/*.tfvars"
   - "**/.gitlab-ci.yml"
+  - "**/Jenkinsfile*"
+  - "**/.circleci/**"
+  - "**/azure-pipelines*.{yaml,yml}"
+  - "**/bitbucket-pipelines.yml"
+  - "**/.dockerignore"
   - "**/railway.toml"
   - "**/fly.toml"
   - "**/.pre-commit-config.yaml"
@@ -35,7 +40,8 @@ paths:
 
 ## HARD RULE — all CI/CD/IaC changes escalate
 
-ANY change to Dockerfile, GitHub Actions, GitLab CI, Terraform, K8s manifests, Helm charts →
+ANY change to Dockerfile, GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure Pipelines, Bitbucket
+Pipelines, Terraform, K8s manifests, Helm charts →
 `ESCALATE TO: devops-guard — infrastructure/CI change detected`
 
 devops-guard runs the checklist below and approves before implementation.
@@ -195,14 +201,14 @@ Tools: Checkov (Terraform + K8s + ARM) — preferred, pin to a specific released
 Trivy `--scanners config` for K8s — pin the container tag to a specific release (e.g. `aquasec/trivy:0.73.x`), not `:latest`.
 tfsec is deprecated (merged into Trivy). Terrascan is archived — do not add either to a new pipeline.
 
-CI: scan before plan — the Action is pinned to a full SHA per the rule above, and Checkov's own
-version is pinned separately, since the Action wraps a pip package that updates independently of
-the Action's release tag.
+CI: scan before plan, with the Action pinned to a full SHA per the rule above. The Action is a
+Docker action whose image tag is fixed in its own `action.yml` (`checkov:3.3.20` at the time of
+review), so the SHA pin also pins Checkov — it has no `version` input.
 
 ```yaml
 - name: Run Checkov
   uses: bridgecrewio/checkov-action@[SHA]
-  with: { directory: '.', soft_fail: false, version: '3.3.20' }
+  with: { directory: '.', soft_fail: false }
 ```
 
 Terraform checklist:

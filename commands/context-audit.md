@@ -10,13 +10,16 @@ which of it is not earning its place?** Report first, change nothing until the u
 
 ## 1. Measure
 
-Always loaded in full at session start: the kit's `CLAUDE.md`, the project's `CLAUDE.md` (plus any
-nested ones for files actually read), and `rules/*.md` whose frontmatter has no `paths:`. Everything
-under `agent_docs/`, `paths:`-scoped rules and skill bodies load on demand — they are not part of
-the fixed cost.
+Always loaded in full at session start: the kit's protocol (`~/.claude/CLAUDE.md` for a copy
+install; `${CLAUDE_PLUGIN_ROOT}/global-CLAUDE.md` when the plugin is active, injected by its
+SessionStart hook), the project's `./CLAUDE.md` and `./.claude/CLAUDE.md` (plus any nested ones
+for files actually read), and `rules/*.md` whose frontmatter has no `paths:`. Everything under
+`agent_docs/`, `paths:`-scoped rules and skill bodies load on demand — they are not part of the
+fixed cost.
 
 ```bash
-for f in ~/.claude/CLAUDE.md ./CLAUDE.md ~/.claude/rules/*.md; do
+for f in ~/.claude/CLAUDE.md "${CLAUDE_PLUGIN_ROOT}/global-CLAUDE.md" ./CLAUDE.md ./.claude/CLAUDE.md ~/.claude/rules/*.md; do
+  [ -f "$f" ] || continue
   head -5 "$f" | grep -q '^paths:' && continue
   printf "%-40s lines=%-5s ~tokens=%s\n" "$f" "$(grep -c '' "$f")" "$(( $(wc -c < "$f") / 4 ))"
 done
@@ -37,7 +40,7 @@ Only relevant on an explicit trigger phrase          → lazy doc; the stub name
 ## 3. Contradictions
 
 Two always-loaded lines that disagree cost more than either saves. Report every pair found, with
-`path:line` for both, and which one RULE PRECEDENCE (`rules/001-conventions.md`) makes the winner.
+`path:line` for both, and which one RULE PRECEDENCE (`${CLAUDE_PLUGIN_ROOT}/rules/001-conventions.md`) makes the winner.
 
 ## 4. Output
 

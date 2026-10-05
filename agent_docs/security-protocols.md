@@ -135,11 +135,23 @@ function isValidCsrfToken(sessionId: string, cookieToken: string, headerToken: s
 }
 ```
 
-Verify both origin and referer for extra protection:
+Check the request's origin as extra protection — the `Origin` header, falling back to `Referer`
+when a browser omits it. A request carrying neither, or a value that does not parse, is rejected
+rather than allowed through or left to throw:
 
 ```typescript
-const origin = req.headers.origin || req.headers.referer
-if (!allowedOrigins.includes(new URL(origin).origin)) throw new ForbiddenError()
+function requestOrigin(req: Request): string | null {
+  const source = req.headers.origin ?? req.headers.referer
+  if (!source) return null
+  try {
+    return new URL(source).origin
+  } catch {
+    return null
+  }
+}
+
+const origin = requestOrigin(req)
+if (!origin || !allowedOrigins.includes(origin)) throw new ForbiddenError()
 ```
 
 `SameSite=Lax` blocks cross-site POSTs but not same-site subdomains or unsafe GETs, so pair it with a token. Use the signed double-submit pattern above (OWASP's recommendation): the token is an HMAC bound to the session ID, set in a JS-readable cookie and echoed in an `X-CSRF-Token` header. A plain random double-submit value is weaker — anyone who can plant a cookie (a sibling subdomain, a MITM on HTTP) can plant a matching pair.
@@ -266,25 +278,46 @@ Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: camera=(), microphone=(), geolocation=()
 ```
 
-Helmet.js (Node) — `helmet()` sets all of the above with secure defaults:
+Helmet.js (Node) — `helmet()` alone does not produce the list above: its defaults are HSTS
+without `preload`, `Referrer-Policy: no-referrer`, `X-Frame-Options: SAMEORIGIN`, and no
+`Permissions-Policy` header at all. Pass the options you want and set `Permissions-Policy` yourself:
 
 ```typescript
 import helmet from 'helmet'
-app.use(helmet())
+app.use(helmet({
+  strictTransportSecurity: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  xFrameOptions: { action: 'deny' },
+}))
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  next()
+})
 ```
 
-Custom CSP — `'unsafe-inline'` is acceptable for CSS (`styleSrc`) only:
+Custom CSP — `'unsafe-inline'` is acceptable for CSS (`styleSrc`) only. The nonce must be new on
+every response: a value computed once at module scope is the same for every visitor, so an
+injected script can simply reuse it. Generate it per request and hand Helmet a function, which it
+calls with the request and response:
 
 ```typescript
+import crypto from 'node:crypto'
+
+app.use((req, res, next) => {
+  res.locals.cspNonce = crypto.randomBytes(32).toString('hex')
+  next()
+})
 app.use(helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", `'nonce-${nonce}'`],
+    scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
     styleSrc: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", 'data:', 'https:'],
   }
 }))
 ```
+
+Render the same `res.locals.cspNonce` into each inline `<script nonce="...">` tag.
 
 ## FILE UPLOAD SECURITY
 

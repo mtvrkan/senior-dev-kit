@@ -120,14 +120,16 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 }
 ```
 
-ERROR — actionable, never just "Something went wrong":
+ERROR — actionable, never just "Something went wrong". The text comes from `toUserMessage`, the
+error-code → human-message map in `error-handling-patterns.md` (USER-FACING ERROR MESSAGES); a raw
+`error.message` is written for developers and can leak internals:
 
 ```tsx
-function ErrorState({ error, onRetry }: { error: Error; onRetry: () => void }) {
+function ErrorState({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 py-12">
       <AlertCircle className="h-10 w-10 text-destructive" />
-      <p className="text-sm text-destructive">{error.message}</p>
+      <p className="text-sm text-destructive">{toUserMessage(error)}</p>
       <Button variant="outline" onClick={onRetry}>Try again</Button>
     </div>
   )

@@ -127,12 +127,12 @@ logger.info({
 
 | Use case | Model | Why |
 | --- | --- | --- |
-| Simple classification, extraction, summarization | Haiku | ~67% cheaper than Sonnet on input, sufficient quality |
+| Simple classification, extraction, summarization | Haiku | ~50% cheaper than Sonnet on input, sufficient quality |
 | Code generation, reasoning, multi-step | Sonnet | Balance of cost + quality |
 | Architecture decisions, complex analysis, judgment | Opus | Max quality when cost is secondary |
 
 **Size the tier to the request volume, and re-check the prices before you rely on them.** Per Mtok
-in/out as of 2026-08: `claude-haiku-4-5` $1/$5 · `claude-sonnet-5` $3/$15 · `claude-opus-5` $5/$25.
+in/out as of 2026-09: `claude-haiku-4-5` $1/$5 · `claude-sonnet-5` $2/$10 · `claude-opus-5` $5/$25.
 Opus is roughly 5× Haiku, not the ~15× that older guidance (including an earlier revision of this
 file) assumed — that figure came from a prior Opus generation and has been wrong since. Treat every
 number here the same way: verify against current pricing rather than trusting a rule file.

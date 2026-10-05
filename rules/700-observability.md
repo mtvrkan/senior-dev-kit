@@ -4,9 +4,8 @@ paths:
   - "**/*.{ts,tsx,js,jsx,mjs,py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}"
 ---
 
-> Related: [`900-performance.md`](900-performance.md) co-loads on the same glob — intentional, not a conflict: 700 governs what to log, 900 governs latency/bundle budgets; apply both in full. Keep tool/version recommendations in sync across both.
->
-> **Scope decision (round-9 audit, accepted — do not re-flag as an oversight):** the bare-extension glob is deliberate — observability hygiene applies to any code file, and directory-scoping (`**/api/**`, `**/services/**`, …) would silently skip files outside conventional folders (repo-root sources, Go `cmd`/`internal`, .NET layouts). Alternatives evaluated and rejected: git history, round 9.
+`900-performance.md` co-loads on the same files: 700 governs what to log, 900 the latency and
+bundle budgets. Apply both.
 
 ## LOGGING RULES — zero console.log in production
 
@@ -79,7 +78,7 @@ Node.js (`prom-client`):
 const httpRequestDuration = new Histogram({
   name: 'http_request_duration_seconds',
   help: 'HTTP request duration',
-  labelNames: ['method', 'route', 'status_code'],
+  labelNames: ['method', 'route', 'status'],
   buckets: [0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 5],
 })
 ```

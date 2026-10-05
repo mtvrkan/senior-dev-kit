@@ -15,8 +15,11 @@ was explicitly requested.
 
 In this file: the database port is published host-local ONLY (see the port note below); data
 lives in a named volume, not a bind mount; the api reaches the database by service name, not
-`localhost`; the secret is mounted at `/run/secrets/db_password` and its source file is never
-committed.
+`localhost`; the secret is mounted at `/run/secrets/db_password` in both containers and its source
+file is never committed. The postgres image refuses to initialise an empty volume without
+`POSTGRES_PASSWORD` or `POSTGRES_PASSWORD_FILE`, and creates the `app` role and database from
+`POSTGRES_USER` / `POSTGRES_DB` only on that first start; the api reads the same file and adds the
+password to the `DATABASE_URL` it connects with, so the credential never sits in `environment:`.
 
 ```yaml
 services:
@@ -24,8 +27,13 @@ services:
     image: postgres:17-alpine
     ports: ["127.0.0.1:5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app"]
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -41,6 +49,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://app@db:5432/app
+      DATABASE_PASSWORD_FILE: /run/secrets/db_password
     secrets: [db_password]
     deploy:
       resources:

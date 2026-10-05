@@ -11,9 +11,9 @@ Highest-priority signal wins. Read top-to-bottom; stop at the first match.
 "Prod is down" / "P1" / "outage" / "5xx spike" / "users can't log in right now" — anything reporting
 a *live* incident rather than a routine bug, even one carrying a stack trace or an obvious guard-area
 noun — routes to the `incident-response` skill first, not straight to bug-hunter or a single guard.
-It has no `Agent` tool, so it triages severity/blast-radius and produces a dispatch plan for the
-same Step 1/3 guards below; the calling agent/orchestrator then actually invokes them (in parallel
-where safe) and keeps one timeline for the postmortem. This check runs *before* Step 1 because it
+It runs inline in the main loop and plans the dispatch — severity, blast radius, which of the
+same Step 1/3 guards below; the main loop then invokes the guards (in parallel where safe) and
+keeps one timeline for the postmortem. This check runs *before* Step 1 because it
 doesn't compete with the hard-stop/guard-area/stack-trace signals below — it decides whether they
 run as one coordinated dispatch instead of picking among them.
 
@@ -143,8 +143,8 @@ No guard area matched and the work is big enough to hand off. What kind of task 
 CSS / button / modal / copy / animation / layout    → ui-fixer   (sonnet, Tier 2; Tier 0-1 stopped at Step 3.5)
 Bug / error in specific file, no guard area         → bug-hunter (sonnet, Tier 2; a stack trace already routed at Step 2)
 Flaky / intermittent / no trace / cause unknown     → main loop, `systematic-debug` skill (Tier 2)
-Upgrade a dependency major / migrate a library      → senior-engineer, `dep-upgrade` skill (Tier 2; build/CI/auth
-                                                      libraries → their guard first)
+Upgrade a dependency major / migrate a library      → main loop, `dep-upgrade` skill (Tier 2; it needs WebFetch for
+                                                      the migration guide; build/CI/auth libraries → their guard first)
 New flow taking input, money or access, pre-build   → security-guard, `threat-model` skill (Tier 2-3)
 Add test / update spec / regression coverage        → senior-engineer, `test-writer` skill (Tier 1-2)
 Review a diff / PR / recent change                  → main loop, `code-review` skill (Tier 1-2)
@@ -193,7 +193,7 @@ two copies can't drift). Stack trace present → bug-hunter, no clarification ne
 | "Review my auth/payment/DB/CI code" (review verb + guard-area noun) | The matching Step 3 guard, not `code-review` | Guard-area nouns always outrank the generic "review/check" verb — `code-review` is for diffs with no guard-area signal |
 | "Design the API contract" for one feature/service | senior-engineer (no full plan cycle) | `feature-plan` is for system-wide / multi-system design; a single service's API contract and versioning is Tier 2-3 engineering |
 | New page that also needs backend (upload, API, DB) | senior-engineer (not ui-fixer) | ui-fixer is UI-only — anything requiring server/state work starts at senior-engineer instead of escalating mid-task |
-| First page/screen of a project — no `DESIGN-SPEC.md` and nothing to match | design-lead (not ui-fixer) | Choosing a design direction is a decision made *with the user*; ui-fixer runs at low effort with a 6-turn cap and a match-what-exists rule, so routing it there silently ships the default look. Once the spec exists, construction goes back to ui-fixer |
+| First page/screen of a project — no `DESIGN-SPEC.md` and nothing to match | design-lead (not ui-fixer) | Choosing a design direction is a decision made *with the user*; ui-fixer runs at low effort with a match-what-exists rule, so routing it there silently ships the default look. Once the spec exists, construction goes back to ui-fixer |
 | "Make this modal / page nicer, more modern, more impressive" — ONE existing surface | ui-fixer (not design-lead) | Restyling something that already exists is an edit against its neighbours, whatever words the request uses. With a `DESIGN-SPEC.md` the direction is already decided and re-opening it is the drift the spec prevents; without one, the surrounding pages *are* the spec. design-lead enters only when there is nothing to match or the whole project is being re-decided |
 | Refactor with no behavior change | senior-engineer (not bug-hunter) | Nothing is broken — bug-hunter needs an error/regression signal; behavior-preserving restructuring is normal engineering |
 | Write tests for auth/payment/DB code | senior-engineer with `test-writer` (not the guard) | Tests exercise existing behavior without changing the guarded surface — escalate to the guard only if the tests expose a vulnerability |
@@ -224,17 +224,20 @@ ui-fixer
 An **agent** (`agents/<name>.md`) is a persona: it owns a tool grant, a model tier, a turn
 budget, and (for guards) escalation authority. A **skill** (`skills/<name>/SKILL.md`) is a
 reusable procedure any agent can run. `allowed-tools:` only pre-approves tools; it does not
-remove any. A skill that must never edit says so with `disallowed-tools:`.
+remove any. A skill that must never edit says so with `disallowed-tools:`, which also strips those
+tools from the rest of the turn — so an auto-triggered planning skill (`db-change`, `api-design`)
+says "no code edits" in its body instead.
 
 Most guard-style agents are bound 1:1 (or 1:few) to a same-purpose skill — the agent is *who*
 handles the request (persona, tools, escalation), the skill is *how* (the procedure it
 follows). Skills with no agent row below never run inside a kit agent: `docs-update`,
-`feature-plan` (native plan mode) and `incident-response` run inline in the main loop, and
-`code-review` forks an isolated read-only subagent that the turn waits for (`background: false`).
-Flow skills that DO have a row (`bug-fix`, `api-design`,
-`db-change`, `ui-change`, `new-page`, `new-screen`, …) are dual-mode: invoked directly they
-run in the main loop; when their bound agent is dispatched, the agent follows them as its
-procedure.
+`feature-plan` (native plan mode), `from-scratch`, `incident-response`, `systematic-debug` and
+`dep-upgrade` run inline in the main loop, and `code-review` forks an isolated read-only
+subagent that the turn waits for (`background: false`). `api-design` and `project-memory` run in
+the main loop, or inside `senior-engineer` when it calls them through its Skill tool. Flow skills
+that DO have a row (`bug-fix`, `db-change`, `ui-change`, `new-page`, `new-screen`, …) are
+dual-mode: invoked directly they run in the main loop; when their bound agent is dispatched, the
+agent follows them as its procedure.
 
 ### Manual-only skills — routing never reaches these
 
@@ -251,21 +254,21 @@ own. `npm run validate` enforces that convention: a manual-only skill named in t
 gate. (Bare-name mentions were how the previous release ended up promising automatic routing to
 a skill the model is structurally unable to invoke.)
 
-| Agent (who) | Bound skill(s) (how) | Verb reflects |
-| --- | --- | --- |
-| `bug-hunter` | `bug-fix` | fixing bugs |
-| `performance-guard` | `performance-check` | checking perf |
-| `security-guard` | `security-review`, `security-scan` | reviewing / scanning |
-| `db-guard` | `db-change`, `migration-review` | changing schema / reviewing migrations |
-| `devops-guard` | `release-gate`, `security-scan` (`/env-audit` forks into it; a manual-only skill cannot be preloaded) | gating a release |
-| `ui-fixer` | `ui-change`, `new-page`, `new-screen` | building UI to a design that is already decided |
-| `design-lead` | `new-page`, `new-screen` | deciding the design itself — direction, tokens, signature — then handing construction to `ui-fixer` |
-| `senior-engineer` | `feature-build`, `refactor-safe`, `test-writer`, `codebase-overview`, `api-design`, `from-scratch`, `project-memory` | general implementation — bound to more skills than the others because it's the default implementer, not a specialist |
+| Agent (who) | Preloaded (`skills:`) | Forks into it (`agent:`) | Verb reflects |
+| --- | --- | --- | --- |
+| `bug-hunter` | `bug-fix` | — | fixing bugs |
+| `performance-guard` | `performance-check` | `performance-check` | checking perf |
+| `security-guard` | `security-review`, `security-scan` | `security-review`, `security-scan`, `threat-model` | reviewing / scanning / threat-modelling |
+| `db-guard` | `db-change`, `migration-review` | `migration-review` | changing schema / reviewing migrations |
+| `devops-guard` | `release-gate`, `security-scan` | `release-gate`, `/env-audit` (a manual-only skill cannot be preloaded) | gating a release |
+| `ui-fixer` | `ui-change`, `new-page`, `new-screen` | — | building UI to a design that is already decided |
+| `design-lead` | `new-page`, `new-screen` | — | deciding the design itself — direction, tokens, signature — then handing construction to `ui-fixer` |
+| `senior-engineer` | `feature-build`, `refactor-safe`, `test-writer` | `test-writer`, `codebase-overview` | general implementation — the default implementer, not a specialist |
 
-This table mirrors each agent's `skills:` frontmatter, which `npm run validate` already
-cross-references against real skill directories — if this table goes stale relative to that,
-it's a documentation nit, not a broken reference (the frontmatter binding is the enforced
-source of truth).
+The two middle columns mirror each agent's `skills:` frontmatter and each skill's `agent:`
+frontmatter, which `npm run validate` cross-references against real skill directories and agent
+files — if this table goes stale relative to them, it's a documentation nit, not a broken
+reference (the frontmatter bindings are the enforced source of truth).
 
 ---
 

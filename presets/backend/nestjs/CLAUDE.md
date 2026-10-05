@@ -51,6 +51,21 @@ DTO class. Never skip `whitelist: true` — it prevents mass assignment.
 
 Thin controllers only. One responsibility: map HTTP → service → HTTP response.
 
+The response is a DTO, never the entity. A `User` entity carries the password hash, and returning
+it serializes every column to the client. `user-response.dto.ts`:
+
+```typescript
+export class UserResponseDto {
+  id: string
+  email: string
+  name?: string
+
+  static from(user: User): UserResponseDto {
+    return { id: user.id, email: user.email, name: user.name }
+  }
+}
+```
+
 ```typescript
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -59,18 +74,22 @@ export class UsersController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto)
+  async create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
+    return UserResponseDto.from(await this.usersService.create(dto))
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
-    return this.usersService.findOneOrFail(id, req.user.id)
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req): Promise<UserResponseDto> {
+    return UserResponseDto.from(await this.usersService.findOneOrFail(id, req.user.id))
   }
 
   @Patch(':id')
-  async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUserDto, @Request() req) {
-    return this.usersService.update(id, dto, req.user.id)
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserDto,
+    @Request() req,
+  ): Promise<UserResponseDto> {
+    return UserResponseDto.from(await this.usersService.update(id, dto, req.user.id))
   }
 }
 ```

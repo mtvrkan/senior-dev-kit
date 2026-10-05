@@ -5,9 +5,9 @@ Two supported ways in. Pick one — **not both** (see [Don't mix the two](#dont-
 | | Plugin | `~/.claude` |
 | --- | --- | --- |
 | Steps | 3 lines, all inside Claude Code | clone + one command |
-| Updates | `/plugin marketplace update` | `git pull` + rerun |
+| Updates | `/plugin marketplace update`, then `/kit-setup` again | `git pull` + rerun |
 | Needs a terminal | no | yes |
-| Needs Node | no (except the one-time `/kit-setup`) | yes, 18+ |
+| Needs Node | yes, 18+ on `PATH` — the plugin's hooks run `node` | yes, 18+ |
 | Best for | almost everyone | you want the files in your own settings dir, or you want to edit them |
 
 ---
@@ -32,13 +32,21 @@ is not allowed to write there.
 1. Run the installer in dry-run mode and show you the output verbatim.
 2. State exactly what it is about to write, and wait for you to say yes. It never proceeds on
    silence.
-3. Copy `rules/*.md` into `~/.claude/rules/` and merge the deny rules into
-   `~/.claude/settings.json` — merge, not replace: your own `allow`, `ask` and every other key
-   are left alone.
+3. Copy `rules/*.md` into `~/.claude/rules/`, merge the deny rules into
+   `~/.claude/settings.json`, and set `attribution` so commits and PRs carry no Claude trailer —
+   merge, not replace: your own `allow`, `ask`, any `attribution` you already set, and every other
+   key are left alone.
 4. Tell you the backup directory it wrote to.
 
 Then restart Claude Code (or `/reload-plugins`) so the new rules load, and run `/kit-doctor` to
 confirm.
+
+The plugin also needs **Node.js 18 or newer** on your `PATH`: it registers a `SessionStart` hook
+that loads the kit's protocol into every session and a `PreToolUse` hook that runs on every
+`Agent`/`Task` call, and both are `node` scripts.
+
+After a plugin update, run `/kit-setup` again: the rules and settings it copied into your settings
+directory do not update with the plugin.
 
 ### Verify it worked
 
@@ -53,13 +61,14 @@ It reports what is actually on disk rather than what should be. `/agents-guide` 
 
 ## Option 2 — install into `~/.claude`
 
-Requires **Node.js 18 or newer**. There are no dependencies to install.
+Requires **Node.js 18 or newer**. There are no dependencies to install. The `--dry-run` line
+prints every file it would touch and writes nothing; the last line is the same run, for real:
 
 ```bash
 git clone https://github.com/mtvrkan/senior-dev-kit.git
 cd senior-dev-kit
-node scripts/install.mjs --dry-run   # prints every file it would touch, writes nothing
-node scripts/install.mjs             # same run, for real
+node scripts/install.mjs --dry-run
+node scripts/install.mjs
 ```
 
 The dry run is not decoration — read it. It prints the target directory, the file count, and how
@@ -81,6 +90,7 @@ many deny rules would be added, before anything is written.
 | `-y`, `--yes` | Skip the confirmation prompt (CI and scripted setups) |
 | `--target DIR` | Install into `DIR` instead of `~/.claude` / `$CLAUDE_CONFIG_DIR` |
 | `--only LIST` | Install a subset: `agents,skills,commands,rules,agent_docs,presets,protocol,deny-rules,settings,statusline`. `statusline` (model · folder · branch · context %) is opt-in and never replaces a `statusLine` you already have |
+| `--check` | Report whether the installed copy still matches this checkout; exit 1 if it drifted. Writes nothing |
 | `--uninstall` | Remove everything a previous run wrote |
 | `--allow-duplicate-protocol` | Override the duplicate-protocol guard — see [Troubleshooting](troubleshooting.md) |
 | `-h`, `--help` | The same list, from the installer itself |
@@ -140,11 +150,18 @@ Removes the files the installer wrote, strips the marked protocol block out of
 `~/.claude/CLAUDE.md`, and removes the deny rules it added — leaving anything you wrote yourself
 in place. Backups stay in `~/.claude/.senior-dev-kit/backups/` until you delete them.
 
-For a plugin install, remove it the way you added it, from inside Claude Code:
+For a plugin install where you also ran `/kit-setup`, undo that first, while the plugin is still
+installed: those rules and settings live in your settings directory, not in the plugin, and the
+installer that removes them ships inside the plugin. `/kit-doctor` prints the plugin's absolute
+root (it sits under `~/.claude/plugins/`); run the installer from there:
+
+```bash
+node "<plugin root>/scripts/install.mjs" --uninstall
+```
+
+If the plugin is already gone, clone the repository and run `node scripts/install.mjs --uninstall`
+from the clone instead. Then remove the plugin the way you added it, from inside Claude Code:
 
 ```text
 /plugin
 ```
-
-Then run the `--uninstall` command above if you also ran `/kit-setup`, since those rules live in
-your settings directory rather than in the plugin.

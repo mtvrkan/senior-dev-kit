@@ -8,7 +8,7 @@ argument-hint: "[screen name]"
 
 # new-screen
 
-New mobile screen from scratch. Follow this protocol — do not skip steps. See `agent_docs/new-screen-guide.md` for UiState patterns, component palettes, platform tokens, and the quality gate checklist.
+New mobile screen from scratch. Follow this protocol — do not skip steps. See `${CLAUDE_PLUGIN_ROOT}/agent_docs/new-screen-guide.md` for UiState patterns, component palettes, platform tokens, and the quality gate checklist.
 
 1. Detect platform: build.gradle(.kts) → Kotlin/Compose | pubspec.yaml → Flutter | .xcodeproj/.swift → Swift/SwiftUI.
 2. Find a similar existing screen and read it fully — extract navigation/routing pattern, state management, component structure.

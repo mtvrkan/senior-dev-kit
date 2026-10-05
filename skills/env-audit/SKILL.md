@@ -13,16 +13,17 @@ effort: medium
 
 # env-audit
 
-Map all environment variables, find gaps, ensure .env.example is complete. See `agent_docs/env-audit-guide.md` for grep commands by language, .env.example format, and the var classification table.
+Map all environment variables, find gaps, ensure .env.example is complete. See `${CLAUDE_PLUGIN_ROOT}/agent_docs/env-audit-guide.md` for grep commands by language, .env.example format, and the var classification table.
 
 1. Grep all source files for env var access (process.env, os.getenv, os.Getenv, dotenv, etc.). Read `.env.example` / `.env.template` / `.env.sample`.
 2. Build SET A (used in code) vs SET B (declared in .env.example). A-B = missing, B-A = unused. Classify each: REQUIRED | OPTIONAL_DEFAULT | OPTIONAL_FEATURE | UNUSED | SECRET.
-3. Report missing vars with the exact line to add: `# [Required|Optional] — [what it does]\nKEY=`. Flag exposure risks: NEXT_PUBLIC_/VITE_ secrets, hardcoded secrets, console.log(process.env), .env in git. devops-guard is read-only — hand the `.env.example` write to senior-engineer.
+3. Report missing vars with the exact line to add — `KEY=placeholder`, no comment line — plus its row for the README / `docs/ENV.md` variable table (Variable · Required · Purpose · Format); cross-check that table against `.env.example`, every key in one appearing in the other. Flag exposure risks: NEXT_PUBLIC_/VITE_ secrets, hardcoded secrets, console.log(process.env), .env in git. devops-guard is read-only — hand the `.env.example` write to senior-engineer.
 
 ## Output
 
 ```text
 MISSING from .env.example: KEY_NAME — [file:line] — [REQUIRED|OPTIONAL]
+ENV TABLE DRIFT: KEY_NAME — [in .env.example only | in the README/ENV.md table only]
 UNUSED in .env.example: KEY_NAME — [consider removing]
 SECURITY RISKS: ⚠ [pattern — risk — fix]
 SUMMARY: Used:[N] Documented:[N] Missing:[N] Unused:[N] Risks:[N]

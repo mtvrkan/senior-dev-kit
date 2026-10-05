@@ -30,7 +30,7 @@ const UNLABELLED: Syntax = {
   trailing: [/\s\/\/\s/, /<!--.*-->/],
 }
 
-const SKIP_LANGS = new Set(['text', 'txt', 'plaintext', 'diff', 'http', 'json', 'csv', 'mermaid', 'output', 'log'])
+const SKIP_LANGS = new Set(['diff', 'http', 'json', 'csv', 'mermaid', 'output', 'log'])
 
 const DIRECTIVES = [
   /^\/\/\s*SAFETY:/,
@@ -64,7 +64,7 @@ function isDirective(trimmed: string): boolean {
 
 function syntaxesFor(info: string): Syntax[] | null {
   const lang = info.trim().split(/[\s{]/)[0].toLowerCase()
-  if (lang === '') return [UNLABELLED]
+  if (lang === '' || lang === 'text' || lang === 'txt' || lang === 'plaintext') return [UNLABELLED]
   if (SKIP_LANGS.has(lang)) return null
   return SYNTAX_BY_LANG[lang] ?? null
 }

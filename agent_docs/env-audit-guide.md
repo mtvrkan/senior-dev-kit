@@ -9,44 +9,44 @@ Reference for `/env-audit` skill — grep commands by language and .env.example 
 Node.js / TypeScript / JavaScript:
 
 ```bash
-grep -r "process\.env\." --include="*.ts" --include="*.js" --include="*.tsx" --include="*.jsx" . \
-  | grep -v node_modules | grep -v ".next" | grep -v dist | grep -v ".git"
+grep -r --exclude-dir={node_modules,.next,dist,.git} "process\.env\." \
+  --include="*.ts" --include="*.js" --include="*.tsx" --include="*.jsx" .
 ```
 
 Python:
 
 ```bash
-grep -r "os\.environ\|os\.getenv\|settings\." --include="*.py" . | grep -v __pycache__ | grep -v ".git"
+grep -r --exclude-dir={__pycache__,.git} "os\.environ\|os\.getenv\|settings\." --include="*.py" .
 ```
 
 Go:
 
 ```bash
-grep -r "os\.Getenv\|os\.LookupEnv" --include="*.go" . | grep -v ".git"
+grep -r --exclude-dir=.git "os\.Getenv\|os\.LookupEnv" --include="*.go" .
 ```
 
 Dart / Flutter:
 
 ```bash
-grep -r "const String.fromEnvironment\|dotenv\." --include="*.dart" . | grep -v ".git"
+grep -r --exclude-dir=.git "const String.fromEnvironment\|dotenv\." --include="*.dart" .
 ```
 
 Ruby / Rails:
 
 ```bash
-grep -r "ENV\[" --include="*.rb" . | grep -v ".git"
+grep -r --exclude-dir=.git "ENV\[" --include="*.rb" .
 ```
 
 PHP / Laravel:
 
 ```bash
-grep -r "env(" --include="*.php" . | grep -v ".git"
+grep -r --exclude-dir=.git "env(" --include="*.php" .
 ```
 
 Java / Kotlin (Spring):
 
 ```bash
-grep -r "\${.*}" --include="*.java" --include="*.kt" --include="*.properties" --include="*.yml" . | grep -v ".git"
+grep -r --exclude-dir=.git "\${.*}" --include="*.java" --include="*.kt" --include="*.properties" --include="*.yml" .
 ```
 
 ---

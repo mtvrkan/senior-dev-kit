@@ -42,13 +42,18 @@ common Nuxt bug. Always give `useAsyncData` a stable `key`.
 
 ## Server routes and secrets
 
-`server/api/users/[id].get.ts` — private keys only exist in the server-side `useRuntimeConfig()`:
+`server/api/users/[id].get.ts` — private keys only exist in the server-side `useRuntimeConfig()`.
+A server route is a public endpoint: it resolves the caller first and checks that the caller owns
+what the id points at, or any visitor can read any user by changing the URL. `requireUserSession`
+is `nuxt-auth-utils`; use the project's own session helper if it has another:
 
 ```ts
 export default defineEventHandler(async (event) => {
+  const { user } = await requireUserSession(event)
   const config = useRuntimeConfig()
   const id = getRouterParam(event, 'id')
   if (!id) throw createError({ statusCode: 400, statusMessage: 'id required' })
+  if (id !== user.id) throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   return await db.user(id, config.apiSecret)
 })
 ```

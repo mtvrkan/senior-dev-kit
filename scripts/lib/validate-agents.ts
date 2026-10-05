@@ -57,6 +57,7 @@ const AGENT_BODY_MAX_LINES = 150
 // same cap as a skill's, and until round 45 it had no cap at all while the skill next to
 // it had one. Same number, one declaration — see lib/counts.ts.
 const AGENT_DESCRIPTION_BUDGET_CHARS = TRIGGER_TEXT_BUDGET_CHARS
+export const VALID_AGENT_COLORS = new Set(['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'])
 
 export interface AgentValidationResult extends Counts {
   checked: number
@@ -91,6 +92,11 @@ export function validateAgentFrontmatter(agentsDir: string): AgentValidationResu
       const before = result.errors
       checkEffort(`agents/${file}`, fm.effort, result)
       if (result.errors > before) agentOk = false
+    }
+    if (fm.color && !VALID_AGENT_COLORS.has(fm.color)) {
+      console.error(`  ✗ agents/${file} — unsupported color: '${fm.color}' (valid: ${[...VALID_AGENT_COLORS].join(', ')})`)
+      result.errors++
+      agentOk = false
     }
     if (fm.tools) {
       const before = result.errors

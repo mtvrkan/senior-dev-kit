@@ -35,12 +35,15 @@ class UserController {
 ```java
 record CreateUserRequest(
     @NotBlank @Email  @Size(max = 255) String email,
-    @NotBlank @Size(min = 1, max = 100) String name,
-    @NotNull Role role
+    @NotBlank @Size(min = 1, max = 100) String name
 ) {}
 ```
 
 `@Valid` on the parameter is what actually triggers it — without it the annotations are inert.
+
+Never put `role`, `isAdmin` or any privilege field on a create/register DTO — a client-settable
+role lets anyone sign up as admin. The service assigns the default role; role changes go through a
+separate endpoint behind an admin-only `@PreAuthorize` check.
 
 ## Security — the protected area
 

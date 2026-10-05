@@ -22,11 +22,11 @@ a dependency, not only during a security-scan pass.
 | Build | Vite, Turbopack | Create React App (deprecated), Webpack (new) |
 | Testing JS | Vitest + Testing Library, Playwright | Jasmine, Karma, Mocha (new) |
 | ORM (TS) | Prisma, Drizzle | Sequelize, TypeORM (new) |
-| Auth | Better Auth, Auth.js | Passport.js (new), Lucia (deprecated Mar 2025 — maintainer stopped shipping it as a library) |
+| Auth | Better Auth (Auth.js for existing projects only — security-patch mode since Sep 2025, maintained by the Better Auth team) | Passport.js (new), Lucia (deprecated Mar 2025 — maintainer stopped shipping it as a library) |
 | Email | Resend, Nodemailer | — |
 | Analytics | PostHog (self-host), Plausible | Google Analytics |
 | RN lists | FlashList | FlatList (long lists) |
-| RN nav | Expo Router v6 | React Navigation alone (if Expo) |
+| RN nav | Expo Router | React Navigation alone (if Expo) |
 | Android UI | Material 3 (Compose) | Material 2, XML layouts (new) |
 | iOS UI | SwiftUI | UIKit (new screens) |
 | Flutter state | Riverpod | Provider (new) |
@@ -75,7 +75,7 @@ If recommending a paid lib/service (Clerk, Auth0, AG Grid Enterprise, etc.):
 | AG Grid Enterprise | TanStack Table v8 (free, headless) | free, composable |
 | Syncfusion / Telerik / DevExtreme | shadcn/ui DataTable, Mantine, Ant Design | free, well-maintained |
 | `node-cron` | BullMQ scheduler | persistent, retryable |
-| `passport` (complex setup) | Better Auth, Auth.js | modern, simpler, type-safe — not Lucia (deprecated Mar 2025) |
+| `passport` (complex setup) | Better Auth (Auth.js only where already in use) | modern, simpler, type-safe — not Lucia (deprecated Mar 2025) |
 | `class-transformer` + `class-validator` (outside NestJS) | Zod | simpler, type-safe, one package — NestJS projects keep class-validator: it is what the framework's `ValidationPipe` runs |
 | `jsonwebtoken` alone | Better Auth (handles session + refresh) | full auth solution |
 | `nodemailer` (complex setup) | Resend SDK | simpler API, better DX |

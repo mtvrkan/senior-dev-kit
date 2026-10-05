@@ -810,10 +810,17 @@ for (const file of kitRefFiles) {
   const text = read(file)
   // Only inside backticks: prose like "the agent_docs/ directory" and this
   // very comment's wording must not be mistaken for a file reference.
-  for (const m of text.matchAll(/`(agent_docs\/[a-z0-9-]+\.md|rules\/\d{3}-[a-z-]+\.md)`/g)) {
+  for (const m of text.matchAll(/`(\$\{CLAUDE_PLUGIN_ROOT\}\/)?(agent_docs\/[a-z0-9-]+\.md|rules\/\d{3}-[a-z-]+\.md)`/g)) {
     kitRefsChecked++
-    if (!existsSync(join(ROOT, m[1]))) {
-      errors.push(`${file} references \`${m[1]}\`, which does not exist on disk`)
+    if (!existsSync(join(ROOT, m[2]))) {
+      errors.push(`${file} references \`${m[2]}\`, which does not exist on disk`)
+    }
+    if (!m[1]) {
+      errors.push(
+        `${file} references \`${m[2]}\` without the \`\${CLAUDE_PLUGIN_ROOT}/\` prefix. A subagent never sees the ` +
+          `session's KIT ROOT, so a bare kit path does not resolve for it; the prefix is substituted on the plugin path ` +
+          `and by the copy installer`
+      )
     }
   }
   // `rules` is deliberately absent from this list. `~/.claude/rules/` is the
@@ -965,13 +972,14 @@ if (existsSync(join(ROOT, 'package.json'))) {
 // Installer flags and --only components, checked against the parser itself
 // rather than a second list — the failure this closes is a renamed flag whose
 // old name survives in four documents and one skill.
+const INSTALLER_VALUE_FLAGS = new Set(['--target', '--only'])
 const installerDocs = REPO_DOC_GLOBS.filter(f => read(f).includes('install.mjs'))
 for (const file of installerDocs) {
   for (const line of read(file).split('\n')) {
     if (!line.includes('install.mjs')) continue
     for (const flag of line.match(/--[a-z][a-z-]*/g) ?? []) {
       executableClaimCount++
-      if (parseArgs([flag]).unknown.length > 0) {
+      if (parseArgs(INSTALLER_VALUE_FLAGS.has(flag) ? [flag, 'value'] : [flag]).unknown.length > 0) {
         errors.push(`${file} passes \`${flag}\` to scripts/install.mjs, which the installer rejects as unknown`)
       }
     }

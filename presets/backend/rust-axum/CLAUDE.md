@@ -29,7 +29,8 @@ let app = Router::new()
     .with_state(state);
 ```
 
-`body.validate()` comes from the `validator` crate.
+`body.validate()` comes from the `validator` crate; its `?` compiles because `AppError` has a
+`#[from] validator::ValidationErrors` variant (below).
 
 ## Errors — one enum, `?` everywhere
 
@@ -38,6 +39,7 @@ let app = Router::new()
 enum AppError {
     #[error("not found")]            NotFound,
     #[error("forbidden")]            Forbidden,
+    #[error("validation failed")]    Validation(#[from] validator::ValidationErrors),
     #[error(transparent)]            Db(#[from] sqlx::Error),
 }
 
@@ -46,6 +48,7 @@ impl IntoResponse for AppError {
         let (status, public) = match &self {
             AppError::NotFound  => (StatusCode::NOT_FOUND,  "not found"),
             AppError::Forbidden => (StatusCode::FORBIDDEN,  "forbidden"),
+            AppError::Validation(_) => (StatusCode::UNPROCESSABLE_ENTITY, "validation failed"),
             AppError::Db(e) => {
                 tracing::error!(error = %e, "db failure");
                 (StatusCode::INTERNAL_SERVER_ERROR, "internal error")

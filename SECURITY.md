@@ -22,17 +22,22 @@ copies files into `~/.claude/` or a project's `.claude/`, either through
 `scripts/install.mjs` or through the Claude Code plugin (see `README.md`). The main attack
 surfaces are:
 
-- **`settings-template.json` deny rules** — rules that are too permissive could allow unintended tool calls inside Claude Code. There is no PreToolUse/PostToolUse hook in this kit — protected-path handling (auth/payment/DB migration/CI/IaC/secrets) is prompt discipline (`global-CLAUDE.md` HARD STOPS + guard-agent routing) backed by the Read-tool deny rules, the `Edit(...)` denies on credential material, and the narrow Bash/PowerShell read-verb denies described below. Bash/PowerShell *writes* into any protected path, and reads via verbs outside the enumerated list, are still not deterministically blocked.
+- **`settings-template.json` deny rules** — rules that are too permissive could allow unintended tool calls inside Claude Code. No hook in this kit guards a protected path — protected-path handling (auth/payment/DB migration/CI/IaC/secrets) is prompt discipline (`global-CLAUDE.md` HARD STOPS + guard-agent routing) backed by the Read-tool deny rules, the `Edit(...)` denies on credential material, and the narrow Bash/PowerShell read-verb denies described below. Bash/PowerShell *writes* into any protected path, and reads via verbs outside the enumerated list, are still not deterministically blocked.
 - **`global-CLAUDE.md` / agent definitions** — prompt injection via malicious content in routed tasks
-- **Code this kit executes on your machine.** Two scripts run outside the model's control, and
-  both are plain, dependency-free JavaScript so they can be read end to end before you trust
-  them. `scripts/install.mjs` runs only when you invoke it, and writes only to the target
-  settings directory. `scripts/session-context.mjs` is a `SessionStart` hook that the **plugin**
-  install registers, so it runs at the start of every session, unsandboxed, at the same trust
-  level as any other Claude Code hook — it reads two files and writes JSON to stdout, and never
-  writes to disk or reaches the network. There is no `PreToolUse`/`PostToolUse` hook: nothing in
-  this kit intercepts a tool call. If you install via `scripts/install.mjs` instead of the
-  plugin, no hook is registered at all.
+- **Code this kit executes on your machine.** Four scripts run outside the model's control, and
+  all are plain, dependency-free JavaScript so they can be read end to end before you trust them.
+  The hooks run unsandboxed, at the same trust level as any other Claude Code hook, and none of
+  them writes to disk or reaches the network:
+
+  | Script | Trigger | Registered by |
+  | --- | --- | --- |
+  | `scripts/install.mjs` | only when you invoke it; writes only to the target settings directory | nothing — you run it |
+  | `scripts/session-context.mjs` | `SessionStart` hook, every session: reads the protocol and a few settings files, writes JSON to stdout | the **plugin** install only; a copy install puts the protocol in `CLAUDE.md` instead |
+  | `scripts/hooks/require-agent-model.mjs` | `PreToolUse` hook on every `Agent`/`Task` call: reads the call from stdin and denies it when a built-in subagent type omits `model` | the **plugin** install, or the copy install's default `settings` component (skipped when the plugin is enabled) |
+  | `scripts/statusline.mjs` | Claude Code's status line, on every refresh: reads the session JSON from stdin and runs `git rev-parse` for the branch name | the copy install's `statusline` component only — opt-in, never part of the default set |
+
+  The `PreToolUse` hook only ever denies an `Agent`/`Task` call; nothing in this kit intercepts
+  any other tool call.
 
 Out of scope:
 
@@ -64,7 +69,7 @@ The kit enforces several defence-in-depth measures:
 
    **Case-sensitivity note:** deny-glob matching was verified empirically to be case-**in**sensitive on Windows (confirmed via differential headless sessions with `--safe-mode` isolation) — `Read(./**/.env)` also blocks `.ENV`/`.Env`. This was not re-verified on Linux; if you rely on this list on a case-sensitive filesystem, confirm the behavior for your platform before trusting it against alternate-case bypass attempts.
 
-   **Measured coverage (2026-08-14, Windows, differential).** <!-- upstream-assumption verified: 2026-08 --> A dummy `tmp-deny-probe.pem` containing the literal string `probe` was written, attacked from every vector below, and deleted. The control in every row is the identical operation on `tmp-deny-probe.txt` in the same directory, which succeeded — so each block is the pattern firing, not the sandbox root. This replaces three of the four claims that used to sit in the Assumption note as reasoning:
+   **Measured coverage (2026-08-14, Windows, differential).** A dummy `tmp-deny-probe.pem` containing the literal string `probe` was written, attacked from every vector below, and deleted. The control in every row is the identical operation on `tmp-deny-probe.txt` in the same directory, which succeeded — so each block is the pattern firing, not the sandbox root. This replaces three of the four claims that used to sit in the Assumption note as reasoning:
 
    | Vector | Result |
    | --- | --- |
@@ -79,7 +84,7 @@ The kit enforces several defence-in-depth measures:
    Two consequences worth stating plainly. First, the previous claim that *all* writes into protected paths are unguarded was wrong and too pessimistic: every PowerShell file cmdlet and shell redirection tested is intercepted. Second, the verb-free .NET file API is the one vector that gets through, in both directions, and **it is deliberately not blocked** — `npm run deny-cost` measured a namespace-wide `PowerShell(*IO.File]::*)`-style rule set at 284 of 17,565 real commands (1.62%), of which roughly 250 were legitimate encoding-sensitive file work on this machine. Worse, the rule is defeated by holding the path in a variable (`[IO.File]::ReadAllText($p)`), which no string glob can see. A rule with that false-positive rate and that bypass is worse than an honest gap.
 
    **Assumption note:** what is left is one claim about Claude Code's internal matching that this repo cannot pin down with a unit test the way `scripts/deny-cost.test.ts` pins down its own rule-matching logic. A future Claude Code release could change it silently. Treat it as due for periodic re-verification, not as settled:
-   - *"PowerShell aliases canonicalize to the same deny rule"* — superseded for `cat`/`type`/`gc`, which are now verified directly (table above) and in any case carry explicit per-alias rules since round 21. The claim still applies to any alias not explicitly enumerated (e.g. a module-qualified `Microsoft.PowerShell.Management\Get-Content`). The `verified:` marker above is checked by `scripts/check-consistency.ts`, which fails the gate once the claim ages past its re-verification window — the date is the mechanism, so move it only after actually re-running the probe, never to silence the failure.
+   - *"PowerShell aliases canonicalize to the same deny rule"* — superseded for `cat`/`type`/`gc`, which are now verified directly (table above) and in any case carry explicit per-alias rules since round 21. The claim still applies to any alias not explicitly enumerated (e.g. a module-qualified `Microsoft.PowerShell.Management\Get-Content`). The probe's date is recorded in `upstreamAssumptions` in `scripts/lib/doc-ledger.json`, which `scripts/check-consistency.ts` checks and fails the gate once the claim ages past its re-verification window — the date is the mechanism, so move it only after actually re-running the probe, never to silence the failure.
    - *"PowerShell's `Remove-Item` aliases (`rd`/`rmdir`/`del`/`ri`/`erase`) canonicalize to the same deny rule"* — same unverified status as the `Get-Content` alias claim above, for the same reason (follows from documented PowerShell alias behavior, no differential-session test behind it yet). Treat `PowerShell(Remove-Item -Recurse -Force *)` as confirmed coverage only for the literal `Remove-Item` invocation until verified.
 
    **Nesting note:** every project-relative Read deny pattern is `./**/…` (not `./…`), so a secret nested inside a monorepo subpackage (`apps/web/.env`, `packages/api/secrets/`) is denied the same as one at the repo root — a single `*` in these glob patterns does not cross a `/`, so a bare `./*.pem`-style pattern would silently miss anything not at the top level.
@@ -94,8 +99,10 @@ The kit enforces several defence-in-depth measures:
    file-writing tool regardless of what the prompt asks for. Their `permissionMode: plan`
    frontmatter adds plan-mode UI on top of that, and it is **ignored when the kit is installed
    as a plugin** — Claude Code strips `permissionMode`, `hooks`, and `mcpServers` from
-   plugin-shipped agents for security reasons. Treat the tool grant as the guarantee and
-   `permissionMode` as a convenience that is present only in `~/.claude` installs. Note that
+   plugin-shipped agents for security reasons — and also **ignored when the session runs in
+   `auto` or `bypassPermissions` mode**, whichever way the kit was installed. Treat the tool
+   grant as the guarantee and `permissionMode` as a convenience that is present only in
+   `~/.claude` installs running in a normal permission mode. Note that
    `Bash` is still granted for read-only investigation (`git log`, `grep`, test runs), so a
    guard's write-prevention is as strong as the deny rules in item 1, not stronger.
 3. **OWASP 2025 passive scan** — every code change is silently scanned for injection, IDOR, mass assignment, ReDoS, SSRF, and supply chain issues.
@@ -108,7 +115,7 @@ The deny list was not designed in one pass; it was hardened across many internal
 what those rounds found is more useful to a reader than a ledger of individual rules.
 
 **What you can and cannot verify here.** This repository was published at v1.0.0 with a squashed
-history: there is one commit, and the pre-1.0.0 development history is not in it. So the round
+history: the pre-1.0.0 development history is not in it, and `git log` starts at the v1.0.0 commit. So the round
 numbers cited throughout this file and in the `round-N` comments in `rules/`, `agents/` and
 `CLAUDE.md` are **internal shorthand for the maintainer, not citations you can follow** — `git log`
 will not resolve them, and no claim in this document should be believed on the strength of a round

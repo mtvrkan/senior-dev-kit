@@ -5,5 +5,5 @@
 - DB: SQLAlchemy 2.0 async — `await db.execute(select(User).where(User.email == email))` · NEVER f-string SQL · transactions: `async with db.begin()` + `with_for_update=True` on rows read-then-written · money is `Decimal`, never `float`
 - Errors: `@app.exception_handler(Exception)` global handler · log + return `{"detail": "Internal server error"}` · NEVER raw SQLAlchemy errors to client
 - Logging: `structlog.get_logger()` — `logger.info("event", user_id=id)` · NEVER passwords/tokens/PII
-- Verify: `pytest [file] -x -q` · `ruff check .` · `ruff format --check .` · `mypy app/` · `uvicorn app.main:app --reload` smoke check
+- Verify: `pytest [file] -x -q` · `ruff check .` · `ruff format --check .` · `mypy app/` · `python -c "import app.main"` smoke check
 - Anti: sync I/O in async route · returning ORM object · f-string SQL · logic in route function · `except: pass`

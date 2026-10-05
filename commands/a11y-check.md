@@ -13,13 +13,13 @@ Audit what was actually built for accessibility: $ARGUMENTS
 `/design-check` asks whether the UI looks like its own product and checks the accessibility
 invariants in one line. This is that line expanded into an audit, because those invariants are
 where a distinctive interface most often fails and because a keyboard user does not care how good
-the type pairing is. The requirement tables live in `rules/100-web.md` (web) and
-`rules/400-mobile.md` (mobile) — read the one that matches the platform; they are not restated
+the type pairing is. The requirement tables live in `${CLAUDE_PLUGIN_ROOT}/rules/100-web.md` (web) and
+`${CLAUDE_PLUGIN_ROOT}/rules/400-mobile.md` (mobile) — read the one that matches the platform; they are not restated
 here.
 
-Unlike the other audit commands, **findings here are fix-on-sight** (global CLAUDE.md's `A11Y:`
-line): report them, then route the fixes through `ui-change` in the same session rather than
-recording them as debt. An accessibility defect is a broken product for the people who hit it.
+Unlike the other audit commands, **findings here are fix-on-sight**, not debt: this audit cannot
+edit, so it ends with a `NEXT:` line the caller applies through `ui-change` in the same session.
+An accessibility defect is a broken product for the people who hit it.
 
 **Step 1 — Structure.** One `<h1>`; heading levels descend without skipping; landmarks present and
 unique (`<main>`, `<nav>`, `<header>`, `<footer>`); lists marked up as lists; `<button>` for
@@ -67,7 +67,7 @@ another language; captions on video and a transcript for audio; tables with real
 **Step 10 — Mobile, when it applies.** Content descriptions on every control, Dynamic Type / font
 scaling honoured (never a fixed size for body copy), touch targets 44pt/48dp, focus order sensible
 under TalkBack/VoiceOver, safe areas respected, and the reduce-motion setting obeyed —
-`rules/400-mobile.md` is canonical.
+`${CLAUDE_PLUGIN_ROOT}/rules/400-mobile.md` is canonical.
 
 **Tooling — run what the project has, and say what you could not run.** `axe` / Lighthouse
 accessibility audit, `eslint-plugin-jsx-a11y`, `@axe-core/playwright` in an e2e run, Accessibility
@@ -99,6 +99,7 @@ REFLOW:    320px [✓/✗] · 200% zoom [✓/✗] · reduced-motion [✓/✗]
 NOT VERIFIED: [what needed a device, a screen reader or a tool that was unavailable]
 
 VERDICT: [AA clean / AA with violations / blocking defects]
+NEXT: apply via ui-change — [file:line fix, one per blocker and violation | nothing to fix]
 ```
 
 Never report "not verified" as a pass. A checklist that quietly marks unrun checks green is worse

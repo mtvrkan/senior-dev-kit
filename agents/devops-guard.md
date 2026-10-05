@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Bash
 model: opus
 permissionMode: plan
 effort: high
-color: gray
+color: cyan
 maxTurns: 8
 skills:
   - release-gate
@@ -14,9 +14,9 @@ skills:
 
 ## Reference docs (lazy-load when needed)
 
-`agent_docs/dep-check-guide.md` — library/framework preference table, alternatives table, audit commands by runtime (for dependency CVE review before a release, via the `security-scan` skill)
-`agent_docs/env-audit-guide.md` — grep commands by language, .env.example format (for environment variable audits)
-`agent_docs/devops-security-guide.md` — rollback strategies by change type (Dockerfile/Actions/IaC/SBOM detail lives in `rules/600-devops.md`, which auto-loads when you read any Dockerfile/CI/IaC file)
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/dep-check-guide.md` — library/framework preference table, alternatives table, audit commands by runtime (for dependency CVE review before a release, via the `security-scan` skill)
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/env-audit-guide.md` — grep commands by language, .env.example format (for environment variable audits)
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/devops-security-guide.md` — rollback strategies by change type (Dockerfile/Actions/IaC/SBOM detail lives in `${CLAUDE_PLUGIN_ROOT}/rules/600-devops.md`, which auto-loads when you read any Dockerfile/CI/IaC file)
 
 ---
 

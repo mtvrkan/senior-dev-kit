@@ -51,7 +51,8 @@ override is `--allow-duplicate-protocol`.
 
 ## A guard keeps blocking work I want done
 
-That is the design: guards are read-only by tool grant and produce a plan instead of an edit.
+That is the design: guards have no Edit or Write tool — their Bash is limited by the deny rules
+and the agent's own read-only instruction — and produce a plan instead of an edit.
 Approving the plan ("looks good", "proceed") hands it to an implementer.
 
 If a request is being routed to a guard that shouldn't own it, the tie-break rules are in
@@ -62,7 +63,7 @@ the task verb, so "fix the CSS in the login form" is treated as auth work.
 
 ## A command I ran was denied
 
-The kit ships roughly 400 deny rules. They are enforced by Claude Code's permission layer, so a
+The kit ships several hundred deny rules. They are enforced by Claude Code's permission layer, so a
 denial is not the model being cautious — the call never happened.
 
 To see which of your own historical commands would be affected before or after adopting the list:
@@ -73,7 +74,8 @@ npm run deny-cost
 
 It replays your real transcript history against the rules and reports what would have been
 blocked, so you can tune a rule whose matches are legitimate for your workflow. On the
-development machine the figure was 20 commands out of 10,753.
+development machine the latest figure is 127 commands out of 17,565 (0.72%); the current number
+and its history are in [`../SECURITY.md`](../SECURITY.md).
 
 Individual rules live in `settings-template.json` (and, after install, in
 `~/.claude/settings.json`). Removing one is a normal thing to do; [`../SECURITY.md`](../SECURITY.md)
@@ -94,8 +96,10 @@ issue worth reporting.
 
 ## `npm run check` fails on a fresh clone
 
+Use `npm ci`, not `npm install` — the lockfile is the source of truth:
+
 ```bash
-npm ci        # not `npm install` — the lockfile is the source of truth
+npm ci
 npm run check
 ```
 

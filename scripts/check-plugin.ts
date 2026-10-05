@@ -18,6 +18,7 @@ import { existsSync, readFileSync, readdirSync } from 'fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { parseFrontmatter } from './lib/frontmatter.ts'
+import { PROTOCOL_PART_LIMIT, SESSION_CONTEXT_LIMIT, requiredSessionParts } from './lib/install-core.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = process.env.PLUGIN_ROOT ?? join(__dirname, '..')
@@ -181,6 +182,30 @@ if (plugin) {
       }
       if (!hooksConfig.hooks || Object.keys(hooksConfig.hooks).length === 0) {
         errors.push(`${hooksPath} has no "hooks" object — the file would load but register nothing`)
+      }
+      const sessionCommands = ((hooksConfig.hooks?.SessionStart ?? []) as { hooks?: { command?: string }[] }[])
+        .flatMap(group => group.hooks ?? [])
+        .map(hook => hook.command ?? '')
+        .filter(command => command.includes('session-context.mjs'))
+      const declaredParts = new Set<number>()
+      for (const command of sessionCommands) {
+        const part = Number(command.match(/--part\s+(\d+)/)?.[1])
+        if (Number.isInteger(part) && part > 0) declaredParts.add(part)
+        else errors.push(`${hooksPath} runs session-context.mjs without "--part N" — that entry emits nothing`)
+      }
+      if (existsSync(join(ROOT, 'global-CLAUDE.md'))) {
+        const needed = requiredSessionParts(read('global-CLAUDE.md'))
+        const missingParts = Array.from({ length: needed }, (_, i) => i + 1).filter(part => !declaredParts.has(part))
+        if (missingParts.length > 0) {
+          errors.push(
+            `${hooksPath} declares no SessionStart entry for session-context.mjs --part ${missingParts.join(', ')}: ` +
+              `global-CLAUDE.md needs ${needed} parts of at most ${PROTOCOL_PART_LIMIT} characters (the protocol ` +
+              `split at "## " headings, then the notices), because Claude Code replaces any additionalContext ` +
+              `over ${SESSION_CONTEXT_LIMIT} characters with a file preview — plugin users would lose the protocol`
+          )
+        } else {
+          notes.push(`SessionStart declares ${declaredParts.size} session-context parts; global-CLAUDE.md needs ${needed}`)
+        }
       }
     } catch (e) {
       errors.push(`${hooksPath} is not valid JSON: ${(e as Error).message}`)

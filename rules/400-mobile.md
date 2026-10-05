@@ -24,28 +24,10 @@ paths:
 | `Package.swift` / `*.xcodeproj` | iOS/Swift | SwiftUI + Swift Concurrency |
 | `app/build.gradle` / `build.gradle.kts` | Android/Kotlin | Jetpack Compose + Coroutines |
 | `pubspec.yaml` | Flutter/Dart | Riverpod + flutter_test |
-| `app.json` / `app.config.{js,ts}` / `*.tsx` in `screens/` | React Native/Expo | Expo Router v6 |
+| `app.json` / `app.config.{js,ts}` / `*.tsx` in `screens/` | React Native/Expo | Expo Router |
 
-**Known over-match (accepted):** `**/*.{swift,kt}` also fires for server-side Kotlin (Ktor,
-Spring Boot), where the Compose/Keychain sections below do not apply. Narrowing it to
-`**/android/**` would silently skip every Android module that lives outside a directory with that
-name, which is the worse failure. Ignore the platform sections that clearly don't match the file;
-`700-observability.md` and `900-performance.md` load for `.kt` too and carry the rules a backend
-Kotlin file actually needs.
-
-`.kts` is deliberately **not** in that glob, and the reasoning above does not extend to it: no
-Compose, SwiftUI or Keychain code lives in a `.kts` file. In practice `.kts` means
-`build.gradle.kts` / `settings.gradle.kts`, which every JVM backend has — so including it loaded
-this whole rule for a Gradle build file in projects with no mobile target at all, at zero true
-positives. Nothing is lost on the Android side either: a build file needs none of the platform
-guidance below, and the Kotlin sources beside it still match `**/*.kt`. Pinned in
-`scripts/rule-globs.test.ts`.
-
-**Known gap:** plain RN/Expo screen `.tsx`/`.jsx` files share their extension with web React —
-`paths:` can't disambiguate them from `100-web.md`'s glob without also matching every web
-`.tsx` file, so only the `.native.*`/`app.config`/`metro.config` variants above auto-load this
-rule. A plain-extension RN file relies on this rule being invoked explicitly (e.g. via the
-platform-detection table above), not path-based auto-load.
+This rule also loads for server-side Kotlin; ignore the platform sections that don't match the
+file. A plain RN/Expo screen `.tsx` does not auto-load it — apply it explicitly there.
 
 ## UNIVERSAL MOBILE RULES
 
@@ -85,13 +67,30 @@ Accessibility:
 
 ## iOS / SWIFT
 
-State management hierarchy — `@Observable` on iOS 17+ (preferred), `@StateObject` on iOS <17,
-`@ObservedObject` when the view model is passed from the parent:
+State management hierarchy. iOS 17+ (preferred): an `@Observable` class, owned by the view with
+`@State` and passed to children as a plain property:
 
 ```swift
-@Observable class ViewModel { ... }
-@StateObject var vm = ViewModel()
-@ObservedObject var vm: ViewModel
+@Observable final class ViewModel { var items: [Item] = [] }
+
+struct ListScreen: View {
+    @State private var vm = ViewModel()
+}
+```
+
+iOS <17: an `ObservableObject` class, owned with `@StateObject`, received from the parent with
+`@ObservedObject`. `@StateObject` does not accept an `@Observable` class:
+
+```swift
+final class LegacyViewModel: ObservableObject { @Published var items: [Item] = [] }
+
+struct LegacyListScreen: View {
+    @StateObject private var vm = LegacyViewModel()
+}
+
+struct LegacyRow: View {
+    @ObservedObject var vm: LegacyViewModel
+}
 ```
 
 Async/await (Swift Concurrency — always over callbacks):
@@ -227,7 +226,7 @@ import { FlashList } from "@shopify/flash-list"
 <FlashList data={items} renderItem={({ item }) => <Item item={item} />} />
 ```
 
-Expo Router v6 navigation:
+Expo Router navigation (the router is versioned with the Expo SDK):
 
 - `app/(tabs)/index.tsx` → tab route
 - `app/[id].tsx` → dynamic route
@@ -235,7 +234,7 @@ Expo Router v6 navigation:
 
 Patterns:
 
-- Expo Router v6 for ALL navigation in Expo projects
+- Expo Router for ALL navigation in Expo projects
 - FlashList over FlatList for long lists (>20 items)
 - `expo-secure-store` for secrets
 - `expo-image` over `<Image>` for performance

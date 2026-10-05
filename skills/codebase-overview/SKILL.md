@@ -11,7 +11,7 @@ effort: medium
 
 # codebase-overview
 
-1. Reuse BOOT SEQUENCE signals from this session if already known; otherwise glob top-level dirs + manifest.
+1. Glob top-level dirs + read the manifest.
 2. Map each top-level source directory to a one-line purpose (skip node_modules/dist/build/.git/.next).
 3. Trace primary data flow: entry point → routing → key components/screens → data layer (API/store/DB).
 4. Flag performance-sensitive integration points by file:line — third-party script loading, router/navigation setup, large media/asset loading, analytics init.

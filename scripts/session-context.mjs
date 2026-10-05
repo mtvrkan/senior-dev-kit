@@ -24,7 +24,7 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { BLOCK_BEGIN, protocolAnchor } from './lib/install-core.mjs'
+import { BLOCK_BEGIN, protocolAnchor, splitProtocol } from './lib/install-core.mjs'
 
 function readJson(path) {
   try {
@@ -76,7 +76,26 @@ function denyRulesInstalled(kitRoot, configDir) {
   }
 }
 
+function requestedPart(argv) {
+  const index = argv.indexOf('--part')
+  const part = index === -1 ? NaN : Number(argv[index + 1])
+  return Number.isInteger(part) && part > 0 ? part : null
+}
+
+function emit(additionalContext) {
+  process.stdout.write(
+    JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'SessionStart',
+        additionalContext,
+      },
+    })
+  )
+}
+
 function main() {
+  const part = requestedPart(process.argv.slice(2))
+  if (part === null) return
   // CLAUDE_PLUGIN_ROOT is exported to hook processes by Claude Code. Falling
   // back to the script's own location keeps `node scripts/session-context.mjs`
   // testable from a clone.
@@ -91,20 +110,22 @@ function main() {
   if (userInstructions.includes(BLOCK_BEGIN)) {
     return // already loaded from ~/.claude/CLAUDE.md — do not duplicate it
   }
+  const chunks = splitProtocol(protocol.trim())
+  const noticePart = chunks.length + 1
+  if (part > noticePart) return
   const anchor = protocolAnchor(protocol)
   if (anchor && userInstructions.includes(anchor)) {
-    process.stdout.write(
-      JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: 'SessionStart',
-          additionalContext:
-            `Senior Dev Kit is active as a plugin. KIT_ROOT = ${kitRoot}\n\n` +
-            `The user's ${userClaudeMd} holds an older, unmarked copy of the kit protocol, so this ` +
-            'plugin did not inject the current one on top of it. Tell the user once: delete that old ' +
-            'copy (keep anything they wrote themselves) so the current protocol loads.',
-        },
-      })
+    if (part !== noticePart) return
+    emit(
+      `Senior Dev Kit is active as a plugin. KIT_ROOT = ${kitRoot}\n\n` +
+        `The user's ${userClaudeMd} holds an older, unmarked copy of the kit protocol, so this ` +
+        'plugin did not inject the current one on top of it. Tell the user once: delete that old ' +
+        'copy (keep anything they wrote themselves) so the current protocol loads.'
     )
+    return
+  }
+  if (part < noticePart) {
+    emit(chunks[part - 1])
     return
   }
   const parts = [
@@ -151,16 +172,7 @@ function main() {
     )
   }
 
-  parts.push('', '---', '', protocol.trim())
-
-  process.stdout.write(
-    JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: 'SessionStart',
-        additionalContext: parts.join('\n'),
-      },
-    })
-  )
+  emit(parts.join('\n'))
 }
 
 try {

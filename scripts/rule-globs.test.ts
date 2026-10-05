@@ -77,7 +77,7 @@ const CASES: Array<[string, string, boolean]> = [
   ['500-database.md', 'src/components/Button.tsx', false],
 
   // The documented React Native gap: a plain `.tsx` screen does NOT auto-load the mobile rules.
-  // If this ever flips to true, the "Known gap" note in 400-mobile.md is stale and must change.
+  // If this ever flips to true, the RN note in CONTRIBUTING.md's rule scope decisions is stale and must change.
   ['400-mobile.md', 'app/src/main/kotlin/Main.kt', true],
   ['400-mobile.md', 'lib/features/home.dart', true],
   ['400-mobile.md', 'src/screens/Home.native.tsx', true],
@@ -92,7 +92,7 @@ const CASES: Array<[string, string, boolean]> = [
   // only ever meant a Gradle build file — loading the whole mobile rule for every JVM backend
   // (Spring Boot, Ktor) at zero true positives. Nothing is lost: a build file needs none of the
   // platform guidance, and the Kotlin sources beside it still match via `**/*.kt` (pinned above).
-  // Flipping this to true stales the note in 400-mobile.md.
+  // Flipping this to true stales the .kts note in CONTRIBUTING.md.
   ['400-mobile.md', 'build.gradle.kts', false],
   ['400-mobile.md', 'app/build.gradle.kts', false],
 
@@ -107,6 +107,11 @@ const CASES: Array<[string, string, boolean]> = [
   ['600-devops.md', 'charts/api/values.yaml', true],
   ['600-devops.md', 'infra/prod.tfvars', true],
   ['600-devops.md', 'src/user.ts', false],
+  ['600-devops.md', 'Jenkinsfile', true],
+  ['600-devops.md', '.circleci/config.yml', true],
+  ['600-devops.md', 'azure-pipelines.yml', true],
+  ['600-devops.md', 'bitbucket-pipelines.yml', true],
+  ['600-devops.md', '.dockerignore', true],
   // The reason the three new directory globs are extension-scoped: a chart component and a
   // deploy script directory full of app code must not pull in Docker/CI/IaC rules.
   ['600-devops.md', 'src/components/charts/BarChart.tsx', false],
@@ -115,6 +120,7 @@ const CASES: Array<[string, string, boolean]> = [
   // The view layer of the server-rendered presets: none of these carry a web extension.
   ['100-web.md', 'resources/views/users/index.blade.php', true],
   ['100-web.md', 'app/views/users/index.html.erb', true],
+  ['900-performance.md', 'app/views/users/index.html.erb', true],
   ['100-web.md', 'src/app/features/user/user.component.ts', true],
   ['100-web.md', 'src/app/user.service.ts', false],
 

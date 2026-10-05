@@ -34,6 +34,12 @@
       "expect": "bug-hunter"
     },
     {
+      "prompt": "the order sync test is flaky — it fails intermittently, about 1 run in 10, with no stack trace and no obvious cause",
+      "expect": "none",
+      "expectedSkill": "systematic-debug",
+      "note": "No trace and no suspect file: Step 4 sends a non-localizable cause to the main loop running systematic-debug, not to bug-hunter, whose sonnet budget and bug-fix procedure assume the evidence already points at a file"
+    },
+    {
       "prompt": "make the submit button rounded and add a hover animation",
       "expect": "ui-fixer",
       "expectedSkill": "ui-change"
@@ -104,6 +110,11 @@
       "expect": "security-guard"
     },
     {
+      "prompt": "before we build the new team-invite flow, threat-model it: invite links, accepting by email, role assignment",
+      "expect": "security-guard",
+      "expectedSkill": "threat-model"
+    },
+    {
       "prompt": "fix CSS in the login form",
       "expect": "security-guard",
       "note": "guard-area noun outranks task-type verb — ROUTING.md precedence line"
@@ -118,6 +129,12 @@
       "prompt": "bağımlılıklarda bilinen CVE var mı, tara",
       "expect": "security-guard",
       "note": "dep audit routes to security-guard since security-scanner merged into it"
+    },
+    {
+      "prompt": "upgrade date-fns to its new major version across the codebase",
+      "expect": "none",
+      "expectedSkill": "dep-upgrade",
+      "note": "A major upgrade reads the migration guide first, which needs WebFetch; senior-engineer has none, so the main loop runs dep-upgrade"
     },
     {
       "prompt": "the dashboard takes 8 seconds to load, probably an N+1 query",

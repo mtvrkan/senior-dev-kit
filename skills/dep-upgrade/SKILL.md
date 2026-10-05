@@ -11,7 +11,7 @@ effort: high
 
 `security-scan` finds what is outdated and never upgrades. This skill does the upgrade, one package family per change.
 
-1. READ FIRST: the official migration guide and changelog for every major between current and target (`deep-research` if needed). List each breaking change that applies to this codebase — grep for the renamed APIs, removed options and changed defaults before editing anything.
+1. READ FIRST: the official migration guide and changelog for every major between current and target (WebFetch the official migration guide, or ask the user to run `/deep-research`). List each breaking change that applies to this codebase — grep for the renamed APIs, removed options and changed defaults before editing anything.
 2. SCOPE: one package family per change (`react` + `react-dom` together, not with the router). Peer-dependency ranges and the runtime version (Node, Python, JDK) checked against the target.
 3. CODEMODS first when the project publishes them, then the manual list from step 1. Each fix is the smallest one the guide prescribes; no refactors on the way.
 4. LOCKFILE: regenerate with the project's package manager, never hand-edit. Then run the dependency audit per 000-security.

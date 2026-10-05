@@ -13,6 +13,7 @@ import { validatePresetClaudeMd, findPresetDirs, checkCompactMd, checkCompactToo
 import { findBrokenLinks, extractAnchors, extractLinks, slugifyHeading, isCheckable } from './lib/links.ts'
 import { extractRoutedAgent, significantWords, NO_AGENT } from './routing-eval.ts'
 import { globToRegExp as bashGlobToRegExp, pathGlobToRegExp } from './deny-cost.ts'
+import { validateAgentFrontmatter, VALID_AGENT_COLORS } from './lib/validate-agents.ts'
 
 // Temp dirs are tracked and force-removed after the suite — the rmSync at the
 // end of a test never runs when an assertion throws, which would leak the dir.
@@ -3596,5 +3597,35 @@ describe('preset compact.md CLI gate (round-31 fix)', () => {
   test('exits 0 when the compact.md pair is present and within budget', () => {
     const { threw, out } = runPresetFixture(true)
     assert.ok(!threw, `expected clean exit with a valid pair, got: ${out}`)
+  })
+})
+
+describe('agent color and Skill tool validation', () => {
+  function agentFixture(color: string, tools: string): number {
+    const dir = makeTempDir(join(tmpdir(), 'agents-color-'))
+    writeFileSync(join(dir, 'painter.md'), [
+      '---',
+      'name: painter',
+      'description: An agent with a display color',
+      `tools: ${tools}`,
+      'model: sonnet',
+      `color: ${color}`,
+      '---',
+      'body',
+    ].join('\n'))
+    return validateAgentFrontmatter(dir).errors
+  }
+
+  test('rejects a color Claude Code does not support', () => {
+    assert.equal(agentFixture('magenta', 'Read'), 1)
+    assert.equal(agentFixture('gray', 'Read'), 1)
+  })
+
+  test('accepts every supported color', () => {
+    for (const color of VALID_AGENT_COLORS) assert.equal(agentFixture(color, 'Read'), 0, color)
+  })
+
+  test('accepts Skill in an agent tool list', () => {
+    assert.equal(agentFixture('cyan', 'Read, Skill'), 0)
   })
 })

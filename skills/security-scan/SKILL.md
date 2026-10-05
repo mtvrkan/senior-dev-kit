@@ -18,7 +18,7 @@ A plain auth/DB/API code change is security-review's job, not a repo-wide scanne
 Trigger: dep add/update, auth/payment/DB/API/secrets/CI/release changes, or explicit user request. Skip for UI-only tasks.
 
 1. Dependency audit (detect package manager): `pnpm audit` | `npm audit --audit-level=moderate` | `bun audit` | `pip-audit` | `cargo audit` | `govulncheck ./...`
-2. Dependency hygiene (full audits, not single-dep adds): outdated majors (breaking risk), paid licenses (flag — never silently keep; free alternatives in `agent_docs/dep-check-guide.md`), unused/bloat.
+2. Dependency hygiene (full audits, not single-dep adds): outdated majors (breaking risk), paid licenses (flag — never silently keep; free alternatives in `${CLAUDE_PLUGIN_ROOT}/agent_docs/dep-check-guide.md`), unused/bloat.
 3. Secret scan: `gitleaks detect --source . --no-banner --redact` (missing → continue with available tools).
 4. SAST: `semgrep scan --config auto .` (missing → continue). Container/filesystem: `trivy fs .` (missing → note it).
 

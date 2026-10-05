@@ -6,8 +6,9 @@ changes is what happens next.
 ## The one-paragraph version
 
 Every request is classified before it is acted on. Work that touches auth, payments, database
-schema, CI/CD, secrets or infrastructure goes to a **guard** — an agent with no write tools at
-all, which produces a plan and stops. Everything else goes to an implementer, following a written
+schema, CI/CD, secrets or infrastructure goes to a **guard** — an agent with no Edit or Write
+tool, whose Bash is limited by the deny rules and its own read-only instruction, which produces a
+plan and stops. Everything else goes to an implementer, following a written
 procedure for that task shape instead of improvising. You approve, or you don't.
 
 ## What routing looks like in practice
@@ -46,7 +47,7 @@ migration is Tier 3 minimum even if it is a one-line change.
 
 ## Why the guards can be trusted
 
-A guard agent is read-only *by tool grant*, not by instruction. `db-guard`, `security-guard`,
+A guard agent cannot edit files *by tool grant*, not by instruction. `db-guard`, `security-guard`,
 `devops-guard` and `performance-guard` are configured with `Read, Grep, Glob, Bash` and nothing
 else — there is no Edit or Write tool in their grant to reach for, so a model that decided to
 ignore its instructions has no file-writing tool to reach for either.
@@ -68,10 +69,10 @@ because that is the cost you pay on every single turn, in every project, forever
 
 Everything else is lazy:
 
-- The other nine rule files load when you open a file matching their globs. Open a `.tsx` and the
+- The path-scoped rule files load when you open a file matching their globs. Open a `.tsx` and the
   web rules activate; open a migration and the database rules do. A Flutter project never pays
   for the REST-API rules.
-- The 16 reference documents under `agent_docs/` load only when a skill actually needs one.
+- The reference documents under `agent_docs/` load only when a skill actually needs one.
 - A skill's procedure body loads on invocation. Only its one-line trigger text is always resident.
 
 ## Things you can type
@@ -87,12 +88,13 @@ because they only make sense when *you* decide to run them:
 | `/design-check` | command | Audit built UI against its design direction: tells, monotony, signature |
 | `/arch-check` | command | Audit structure: boundaries, dependency direction, mixed patterns, drift |
 | `/a11y-check` | command | Audit against WCAG 2.2 AA: keyboard, focus, contrast, targets, reflow |
+| `/context-audit` | command | Measure what every session pays before it starts: always-loaded files, their size, what could move to a lazy doc |
 | `/deep-research` | manual-only skill | Multi-source research with cited synthesis |
 | `/env-audit` | manual-only skill | Environment-variable audit across the codebase |
 | `/kit-doctor` | manual-only skill | Diagnose an install that isn't behaving |
-| `/kit-setup` | manual-only skill | Install the rules and deny list (once, after a plugin install) |
+| `/kit-setup` | manual-only skill | Install the rules, deny list and attribution setting (after a plugin install, and again after each plugin update) |
 
-The three commands are slash commands and have always worked that way. The four skills below them
+The commands are slash commands and have always worked that way. The skills below them
 are ordinary skills that would otherwise auto-trigger, deliberately opted out with
 `disable-model-invocation: true` in their frontmatter: Claude Code will never start one on its own
 however well your request seems to match. A research sweep or a full-repo audit is expensive, and

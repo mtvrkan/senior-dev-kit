@@ -12,7 +12,7 @@ Audit what was actually built against the design direction it claims: $ARGUMENTS
 
 This is the counterpart to `/seo-check`. It does not review correctness — `/code-review` does that
 — it answers one question: *does this look like its own product, or like every other generated UI?*
-Read `agent_docs/design-directions.md` first; the direction table, the levers and the tells list
+Read `${CLAUDE_PLUGIN_ROOT}/agent_docs/design-directions.md` first; the direction table, the levers and the tells list
 below are all defined there rather than restated here.
 
 **Step 1 — Find the claim.** Read `DESIGN-SPEC.md` (project root) — the direction, the brief's

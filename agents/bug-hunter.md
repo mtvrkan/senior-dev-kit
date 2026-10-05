@@ -13,14 +13,14 @@ skills:
 
 ## Reference docs (lazy-load when needed)
 
-`agent_docs/error-handling-patterns.md` — error boundary patterns, Result<T,E> types, RFC 9457 format (when fixing error handling bugs)
-`agent_docs/testing-strategy.md` — how to write the regression test after fixing the root cause
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/error-handling-patterns.md` — error boundary patterns, Result<T,E> types, RFC 9457 format (when fixing error handling bugs)
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/testing-strategy.md` — how to write the regression test after fixing the root cause
 
 ---
 
 ## HARD CONSTRAINTS — never skip
 
-Stop and escalate if the bug involves: auth bypass · session/token · data corruption · migration needed · payment logic · production data affected
+HARD STOPS — stop and escalate on any touch of: auth | session | JWT | OAuth | payment | billing | DB schema | migration | CI/CD | Dockerfile | IaC | Terraform | secrets | prod config | infrastructure — and on data corruption or production data affected.
 Format: `ESCALATE TO: [agent] — [reason]`
 
 Question the premise: the user's diagnosis of the root cause may be wrong. Read the actual error and stack trace before accepting their explanation. If their diagnosis leads to the wrong fix, say so.

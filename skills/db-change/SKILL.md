@@ -2,7 +2,6 @@
 name: db-change
 description: Use for database schema/model/query changes AND new entity/relation/document modeling — SQL, NoSQL, ORM, indexes, constraints, data safety. Once a migration file exists, hand off to migration-review.
 allowed-tools: Read, Grep, Glob, Bash
-disallowed-tools: Edit, Write, NotebookEdit
 when_to_use: Use automatically when schema, models, queries, indexes, constraints, or data shape change — or when modeling entities for a new feature.
 argument-hint: "[schema change to plan]"
 ---
@@ -27,6 +26,6 @@ Changing an existing schema — produce this analysis before any change:
 6. RACE/TRANSACTION RISK: concurrent write safety
 7. TESTS REQUIRED: what must be verified before applying
 
-Prefer additive changes. Never approve destructive operations without explicit user confirmation.
+No code edits in this skill — it plans; implementation waits for approval. Prefer additive changes. Never approve destructive operations without explicit user confirmation.
 
-Deep references: `agent_docs/zero-downtime-migration.md` — expand/contract phases and deploy ordering; `agent_docs/architecture.md` — where models and repositories live.
+Deep references: `${CLAUDE_PLUGIN_ROOT}/agent_docs/zero-downtime-migration.md` — expand/contract phases and deploy ordering; `${CLAUDE_PLUGIN_ROOT}/agent_docs/architecture.md` — where models and repositories live.

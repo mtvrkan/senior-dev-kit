@@ -73,11 +73,41 @@ Capturing `id` directly is safe on Go 1.22+, where each loop iteration gets its 
 
 ## Database
 
-```go
-row := db.QueryRowContext(ctx, `SELECT id, email FROM users WHERE email = $1`, email)
+One row — `QueryRowContext` then `Scan`, which reports `sql.ErrNoRows` when nothing matched:
 
+```go
+var u User
+err := db.QueryRowContext(ctx, `SELECT id, email FROM users WHERE email = $1`, email).
+    Scan(&u.ID, &u.Email)
+if errors.Is(err, sql.ErrNoRows) {
+    return User{}, ErrNotFound
+}
+if err != nil {
+    return User{}, fmt.Errorf("find user by email: %w", err)
+}
+```
+
+Many rows — `QueryContext`, a `Next` loop, `Close`, then `Err`:
+
+```go
+rows, err := db.QueryContext(ctx, `SELECT id, email FROM users WHERE org_id = $1`, orgID)
+if err != nil {
+    return nil, fmt.Errorf("list users: %w", err)
+}
 defer rows.Close()
-if err := rows.Err(); err != nil { ... }
+
+var users []User
+for rows.Next() {
+    var u User
+    if err := rows.Scan(&u.ID, &u.Email); err != nil {
+        return nil, fmt.Errorf("scan user: %w", err)
+    }
+    users = append(users, u)
+}
+if err := rows.Err(); err != nil {
+    return nil, fmt.Errorf("iterate users: %w", err)
+}
+return users, nil
 ```
 
 NEVER build the query with `fmt.Sprintf("SELECT ... WHERE email = '%s'", email)`.

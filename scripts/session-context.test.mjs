@@ -7,7 +7,7 @@
  * `~/.claude/CLAUDE.md` — otherwise a user with both install paths pays for
  * ~180 lines of duplicated context on every single turn.
  */
-import { ok, strictEqual } from 'node:assert/strict'
+import { deepStrictEqual, ok, strictEqual } from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -15,7 +15,7 @@ import { dirname, join } from 'node:path'
 import { after, describe, it } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { BLOCK_BEGIN } from './lib/install-core.mjs'
+import { BLOCK_BEGIN, SESSION_CONTEXT_LIMIT, requiredSessionParts, splitProtocol } from './lib/install-core.mjs'
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const HOOK = join(REPO_ROOT, 'scripts', 'session-context.mjs')
@@ -27,11 +27,25 @@ const makeConfigDir = () => {
   return dir
 }
 
-const runHook = (configDir, pluginRoot = REPO_ROOT) =>
-  spawnSync(process.execPath, [HOOK], {
+const DECLARED_PARTS = JSON.parse(readFileSync(join(REPO_ROOT, 'hooks', 'hooks.json'), 'utf8'))
+  .hooks.SessionStart.flatMap(group => group.hooks)
+  .map(hook => hook.command.match(/session-context\.mjs"? --part (\d+)/))
+  .filter(Boolean)
+  .map(match => Number(match[1]))
+
+const runHook = (configDir, pluginRoot = REPO_ROOT, part = 1) =>
+  spawnSync(process.execPath, [HOOK, '--part', String(part)], {
     encoding: 'utf8',
     env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: pluginRoot },
   })
+
+const runParts = (configDir, pluginRoot = REPO_ROOT, parts = DECLARED_PARTS) =>
+  parts.map(part => runHook(configDir, pluginRoot, part))
+
+const contextsOf = results =>
+  results.filter(res => res.stdout !== '').map(res => JSON.parse(res.stdout).hookSpecificOutput.additionalContext)
+
+const combinedContext = configDir => contextsOf(runParts(configDir)).join('\n')
 
 describe('SessionStart hook', () => {
   after(() => {
@@ -39,26 +53,65 @@ describe('SessionStart hook', () => {
   })
 
   it('emits the protocol as SessionStart additionalContext', () => {
-    const res = runHook(makeConfigDir())
-    strictEqual(res.status, 0, res.stderr)
-    const parsed = JSON.parse(res.stdout)
-    strictEqual(parsed.hookSpecificOutput.hookEventName, 'SessionStart')
-    const context = parsed.hookSpecificOutput.additionalContext
+    const results = runParts(makeConfigDir())
+    for (const res of results) strictEqual(res.status, 0, res.stderr)
+    for (const res of results.filter(r => r.stdout !== '')) {
+      strictEqual(JSON.parse(res.stdout).hookSpecificOutput.hookEventName, 'SessionStart')
+    }
+    const context = contextsOf(results).join('\n')
     ok(context.includes('Global Claude Senior Protocol'), 'protocol body injected')
     ok(context.includes('KIT_ROOT ='), 'kit root stated so bundled doc paths resolve')
   })
 
+  it('keeps every part under the additionalContext cap and loses none of the protocol', () => {
+    const contexts = contextsOf(runParts(makeConfigDir()))
+    for (const context of contexts) ok(context.length <= SESSION_CONTEXT_LIMIT, `part is ${context.length} characters`)
+    const protocol = readFileSync(join(REPO_ROOT, 'global-CLAUDE.md'), 'utf8').trim()
+    strictEqual(contexts.slice(0, -1).join(''), protocol, 'the protocol parts concatenate back to the whole file')
+    ok(contexts.at(-1).includes('KIT_ROOT ='), 'the last part carries the notices')
+  })
+
+  it('declares a hook entry for every part the protocol needs', () => {
+    const needed = requiredSessionParts(readFileSync(join(REPO_ROOT, 'global-CLAUDE.md'), 'utf8'))
+    for (let part = 1; part <= needed; part++) ok(DECLARED_PARTS.includes(part), `hooks.json has no --part ${part}`)
+  })
+
+  it('splits a protocol of any size and emits nothing past the last part', () => {
+    const kitRoot = makeConfigDir()
+    const section = index => `## SECTION ${index}\n\n${'rule line\n'.repeat(400)}\n`
+    const sections = Array.from({ length: 8 }, (_, i) => section(i)).join('')
+    const body = `# Global Claude Senior Protocol v9\n\n${sections}## HUGE\n${'x'.repeat(25000)}\n`
+    writeFileSync(join(kitRoot, 'global-CLAUDE.md'), body, 'utf8')
+    const needed = requiredSessionParts(body)
+    const results = runParts(makeConfigDir(), kitRoot, Array.from({ length: needed + 2 }, (_, i) => i + 1))
+    const contexts = contextsOf(results)
+    strictEqual(contexts.length, needed)
+    for (const context of contexts) ok(context.length <= SESSION_CONTEXT_LIMIT, `part is ${context.length} characters`)
+    strictEqual(contexts.slice(0, -1).join(''), body.trim())
+    deepStrictEqual(splitProtocol(body.trim()), contexts.slice(0, -1))
+  })
+
+  it('emits nothing without a --part index', () => {
+    const res = spawnSync(process.execPath, [HOOK], {
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_CONFIG_DIR: makeConfigDir(), CLAUDE_PLUGIN_ROOT: REPO_ROOT },
+    })
+    strictEqual(res.status, 0)
+    strictEqual(res.stdout, '')
+  })
+
   it('tells the user how to install rules when they are missing', () => {
-    const context = JSON.parse(runHook(makeConfigDir()).stdout).hookSpecificOutput.additionalContext
+    const context = combinedContext(makeConfigDir())
     ok(context.includes('/kit-setup'), 'points at the one-time setup skill')
   })
 
   it('stays silent when the protocol is already in the user CLAUDE.md', () => {
     const configDir = makeConfigDir()
     writeFileSync(join(configDir, 'CLAUDE.md'), `${BLOCK_BEGIN}\nprotocol here\n`, 'utf8')
-    const res = runHook(configDir)
-    strictEqual(res.status, 0, res.stderr)
-    strictEqual(res.stdout, '', 'no duplicate injection when already installed')
+    for (const res of runParts(configDir)) {
+      strictEqual(res.status, 0, res.stderr)
+      strictEqual(res.stdout, '', 'no duplicate injection when already installed')
+    }
   })
 
   // The three cases below are one property split by which half is missing. Until round 45 the
@@ -82,7 +135,7 @@ describe('SessionStart hook', () => {
   it('still nudges when the rules are installed but the deny rules are not', () => {
     const configDir = makeConfigDir()
     installRules(configDir)
-    const context = JSON.parse(runHook(configDir).stdout).hookSpecificOutput.additionalContext
+    const context = combinedContext(configDir)
     ok(context.includes('/kit-setup'), 'half an install is not an install')
     ok(context.includes('deny rules'), 'names the half that is missing, not just "run setup"')
   })
@@ -90,7 +143,7 @@ describe('SessionStart hook', () => {
   it('still nudges when the deny rules are installed but the rules are not', () => {
     const configDir = makeConfigDir()
     installDenyRules(configDir)
-    const context = JSON.parse(runHook(configDir).stdout).hookSpecificOutput.additionalContext
+    const context = combinedContext(configDir)
     ok(context.includes('/kit-setup'), 'the other half, same property')
     ok(context.includes('rule files'), 'names the missing half')
   })
@@ -99,7 +152,7 @@ describe('SessionStart hook', () => {
     const configDir = makeConfigDir()
     installRules(configDir)
     installDenyRules(configDir)
-    const context = JSON.parse(runHook(configDir).stdout).hookSpecificOutput.additionalContext
+    const context = combinedContext(configDir)
     ok(!context.includes('/kit-setup'), 'no nudge once setup has genuinely run')
   })
 
@@ -108,14 +161,14 @@ describe('SessionStart hook', () => {
     installRules(configDir)
     const shipped = JSON.parse(readFileSync(join(REPO_ROOT, 'settings-template.json'), 'utf8'))
     writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ permissions: { deny: shipped.permissions.deny } }), 'utf8')
-    const context = JSON.parse(runHook(configDir).stdout).hookSpecificOutput.additionalContext
+    const context = combinedContext(configDir)
     ok(context.includes('`attribution` setting'), context)
   })
 
   it('does not stack the protocol on an unmarked older copy in the user CLAUDE.md', () => {
     const configDir = makeConfigDir()
     writeFileSync(join(configDir, 'CLAUDE.md'), '# Global Claude Senior Protocol v3.9\nold body\n', 'utf8')
-    const context = JSON.parse(runHook(configDir).stdout).hookSpecificOutput.additionalContext
+    const context = combinedContext(configDir)
     ok(!context.includes('## HARD STOPS'), 'the protocol body is not injected a second time')
     ok(context.includes('older, unmarked copy'), context)
   })
@@ -126,13 +179,14 @@ describe('SessionStart hook', () => {
     installDenyRules(configDir)
     mkdirSync(join(configDir, '.senior-dev-kit'), { recursive: true })
     writeFileSync(join(configDir, '.senior-dev-kit', 'manifest.json'), JSON.stringify({ version: '0.0.1' }), 'utf8')
-    const context = JSON.parse(runHook(configDir).stdout).hookSpecificOutput.additionalContext
+    const context = combinedContext(configDir)
     ok(context.includes('from kit 0.0.1'), context)
   })
 
   it('exits quietly instead of failing the session when the kit is missing', () => {
-    const res = runHook(makeConfigDir(), join(tmpdir(), 'definitely-not-the-kit'))
-    strictEqual(res.status, 0, 'a SessionStart hook must never block startup')
-    strictEqual(res.stdout, '')
+    for (const res of runParts(makeConfigDir(), join(tmpdir(), 'definitely-not-the-kit'))) {
+      strictEqual(res.status, 0, 'a SessionStart hook must never block startup')
+      strictEqual(res.stdout, '')
+    }
   })
 })

@@ -1,6 +1,8 @@
 ---
 description: Audit the project for SEO, AEO, Core Web Vitals, and technical SEO issues.
 argument-hint: "[page or route — optional]"
+context: fork
+background: false
 ---
 
 # /seo-check
@@ -9,9 +11,9 @@ Audit the project for SEO, AEO (AI Engine Optimization), Core Web Vitals, and te
 
 You are running an SEO and AEO audit. Analyze the codebase for SEO issues and optimization opportunities.
 Full checklists, expected metadata shape, JSON-LD schema table, and CWV risk detail are in
-`agent_docs/seo-patterns.md` — read it before auditing rather than re-deriving these from scratch.
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/seo-patterns.md` — read it before auditing rather than re-deriving these from scratch.
 
-**Step 1 — Detect framework.** Next.js (App Router vs Pages) / Nuxt / SvelteKit / Astro / Remix — each has a different metadata API; check `agent_docs/seo-patterns.md` for the framework-specific shape.
+**Step 1 — Detect framework.** Next.js (App Router vs Pages) / Nuxt / SvelteKit / Astro / Remix — each has a different metadata API; check `${CLAUDE_PLUGIN_ROOT}/agent_docs/seo-patterns.md` for the framework-specific shape.
 
 **Step 2 — Metadata audit.** Scan page/layout files against `seo-patterns.md`'s metadata checklist (title/description length, canonical, OG tags, twitter:card, duplicate metadata across pages).
 

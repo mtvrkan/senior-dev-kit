@@ -39,9 +39,11 @@ test('allows language directives and the Rust SAFETY note', () => {
   assert.deepEqual(lines(fenced('dockerfile', '# syntax=docker/dockerfile:1\nFROM node:24')), [])
 })
 
-test('skips text, diff and json fences, and treats unlabelled fences conservatively', () => {
-  assert.deepEqual(lines(fenced('text', '# not code\n// arrow')), [])
+test('skips diff and json fences, and treats unlabelled and text fences conservatively', () => {
+  assert.deepEqual(lines(fenced('diff', '# not code\n// arrow')), [])
+  assert.deepEqual(lines(fenced('json', '{ "a": "// b" }')), [])
   assert.deepEqual(lines(fenced('', '// a comment\nnpm run check --flag\n--help')), ['// a comment'])
+  assert.deepEqual(lines(fenced('text', 'allow read: if true;  // why\nGET /health -> 200')), ['allow read: if true;  // why'])
 })
 
 test('reports 1-based line numbers of the markdown file on CRLF input', () => {

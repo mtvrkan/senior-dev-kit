@@ -20,7 +20,7 @@ Mock — verifies interaction only, brittle:
 
 ```typescript
 jest.spyOn(emailService, 'send').mockResolvedValue(undefined)
-expect(emailService.send).toHaveBeenCalledWith({ to: 'user@example.com', ... })
+expect(emailService.send).toHaveBeenCalledWith(expect.objectContaining({ to: 'user@example.com' }))
 ```
 
 Fake — real behavior, robust:
@@ -87,17 +87,28 @@ Coverage 100% but mutation score 30% = tests exist but don't verify behavior.
 
 Use when: services have API contracts. Catches breaking changes before deploy.
 
-Pact (consumer-driven contract testing). The consumer (web app) defines what it expects:
+Pact (consumer-driven contract testing). The consumer (web app) defines what it expects, runs its
+own client against Pact's mock server, and the passing test writes the contract to `pacts/`:
 
 ```typescript
-const interaction = {
-  description: 'a request for user list',
-  request: { method: 'GET', path: '/users' },
-  response: {
+import { PactV3, MatchersV3 } from '@pact-foundation/pact'
+
+const { eachLike, like } = MatchersV3
+const provider = new PactV3({ consumer: 'web', provider: 'api' })
+
+provider
+  .uponReceiving('a request for user list')
+  .withRequest({ method: 'GET', path: '/users' })
+  .willRespondWith({
     status: 200,
-    body: like([{ id: like('string'), email: like('string') }])
-  }
-}
+    headers: { 'Content-Type': 'application/json' },
+    body: eachLike({ id: like('string'), email: like('string') }),
+  })
+
+await provider.executeTest(async (mockServer) => {
+  const users = await fetchUsers(mockServer.url)
+  expect(users[0].email).toBeDefined()
+})
 ```
 
 The provider (API) verifies it can fulfill the contract, in a provider-side test run against the
@@ -283,11 +294,13 @@ Areas where coverage is a waste:
 NestJS — full module integration:
 
 ```typescript
-const app = await Test.createTestingModule({ imports: [AppModule] })
+const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
   .overrideProvider(EmailService).useClass(FakeEmailService)
   .compile()
-const server = app.getHttpServer()
-await request(server).post('/users').send(userData).expect(201)
+const app = moduleRef.createNestApplication()
+await app.init()
+await request(app.getHttpServer()).post('/users').send(userData).expect(201)
+await app.close()
 ```
 
 FastAPI — TestClient:

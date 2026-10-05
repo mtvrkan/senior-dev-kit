@@ -79,7 +79,7 @@ Loading/empty/error state detail (skeleton shapes, empty-state formula) is in `r
 
 ### shadcn/ui palette (if installed)
 
-`<DataTable>` (TanStack) | `<Form>` + react-hook-form + zod | `<Dialog>` | `<AlertDialog>` | `<Badge>` | `<Skeleton>` | `<Alert>` | `<DropdownMenu>` | `<Select>` | `<Tabs>` | Sonner's `toast()` (replaced shadcn/ui's old `useToast` hook) — never `alert()`
+`<DataTable>` (TanStack) | `<Field>` + `<FieldLabel>` + `<FieldError>` (current shadcn; older projects use `<Form>` + `<FormField>` — match what exists) + react-hook-form + zod | `<Dialog>` | `<AlertDialog>` | `<Badge>` | `<Skeleton>` | `<Alert>` | `<DropdownMenu>` | `<Select>` | `<Tabs>` | Sonner's `toast()` (replaced shadcn/ui's old `useToast` hook) — never `alert()`
 
 Colors: `text-foreground`, `text-muted-foreground`, `bg-card`, `text-primary`, `text-destructive` — never raw Tailwind colors like `text-gray-500`.
 Spacing: `space-y-4/6`, `gap-2/4/6`, `p-4/6` — never arbitrary values.
@@ -89,7 +89,7 @@ Typography: page title `text-2xl font-bold tracking-tight`, desc `text-sm text-m
 
 `<Table>` | `<Form>` + `Form.Item` + `rules` | `<Modal>` | `<Drawer>` | `<Tag>` | `<Skeleton>` | `<Alert>` | `<Dropdown>` | `<Select>` | `<Tabs>` | `message.success()` / `notification.error()` — never `alert()`
 
-Use `token.colorPrimary`, `token.colorBgContainer`, `token.colorText` from `useToken()` — never hardcoded colors.
+Use `token.colorPrimary`, `token.colorBgContainer`, `token.colorText` from `theme.useToken()` — never hardcoded colors.
 
 ### Material UI palette (if installed)
 

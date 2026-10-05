@@ -99,9 +99,19 @@ interface ProblemDetail {
 ```
 
 Express global error handler — programming errors don't expose details to the client, but are
-logged fully:
+logged fully. `title` is fixed per error code, as RFC 9457 requires; the occurrence-specific text
+goes in `detail`:
 
 ```typescript
+const problemTitles: Record<string, string> = {
+  NOT_FOUND: 'Resource not found',
+  VALIDATION_ERROR: 'Validation failed',
+  UNAUTHORIZED: 'Authentication required',
+  FORBIDDEN: 'Access denied',
+  CONFLICT: 'Conflict with current state',
+  RATE_LIMITED: 'Too many requests',
+}
+
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   const requestId = req.headers['x-request-id'] || crypto.randomUUID()
   
@@ -110,7 +120,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
       .contentType('application/problem+json')
       .json({
         type: `https://api.example.com/errors/${err.code.toLowerCase().replace(/_/g, '-')}`,
-        title: err.message,
+        title: problemTitles[err.code] ?? 'Request failed',
         status: err.statusCode,
         detail: err.message,
         instance: req.path,
@@ -158,7 +168,9 @@ async function getUserById(id: string): Promise<Result<User, NotFoundError | Dat
 
 const result = await getUserById(id)
 if (!result.success) {
-  if (result.error instanceof NotFoundError) return res.status(404)...
+  if (result.error instanceof NotFoundError) {
+    return res.status(404).json({ code: result.error.code, detail: result.error.message })
+  }
   throw result.error
 }
 const user = result.data
@@ -194,7 +206,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return this.props.fallback ?? (
         <div className="flex flex-col items-center gap-3 py-12">
           <AlertCircle className="h-10 w-10 text-destructive" />
-          <p className="text-sm text-muted-foreground">Something went wrong</p>
+          <p className="text-sm text-muted-foreground">This section couldn't be loaded.</p>
           <Button variant="outline" onClick={() => this.setState({ hasError: false })}>
             Try again
           </Button>
@@ -373,7 +385,8 @@ const userMessages: Record<string, string> = {
   'DEFAULT': 'Something went wrong. Please try again.',
 }
 
-function toUserMessage(error: AppError): string {
+function toUserMessage(error: unknown): string {
+  if (!(error instanceof AppError)) return userMessages['DEFAULT']
   return userMessages[error.code] ?? userMessages['DEFAULT']
 }
 ```
@@ -396,7 +409,11 @@ async function getPersonalizedContent(userId: string) {
   try {
     return await recommendationService.getFor(userId)
   } catch (error) {
-    logger.warn({ event: 'recommendation.failed', userId, error: error.message })
+    logger.warn({
+      event: 'recommendation.failed',
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    })
     return getDefaultContent()
   }
 }
@@ -409,7 +426,7 @@ Circuit breaker pattern (with the opossum library) — it trips when a call is s
 ```typescript
 import CircuitBreaker from 'opossum'
 
-const breaker = new CircuitBreaker(recommendationService.getFor, {
+const breaker = new CircuitBreaker((userId: string) => recommendationService.getFor(userId), {
   timeout: 3000,
   errorThresholdPercentage: 50,
   resetTimeout: 30000,

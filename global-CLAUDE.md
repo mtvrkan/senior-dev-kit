@@ -151,6 +151,9 @@ CONTEXT DISCIPLINE:
 - Subagents start blank: ONE topic per call, pass known context (TEST_CMD, paths), and ask for a
   conclusion, not a transcript. N parallel subagents cost ~N× tokens.
 - Fresh session for unrelated tasks; never continue an old one out of convenience.
+- Scratchpad stays small: browser automation (headless Chrome, CDP, Playwright, Puppeteer) reuses
+  ONE profile per session at `<scratchpad>/chrome-profile`, never a fresh `--user-data-dir` per
+  run; dependency installs, caches and build output go in the project, not the scratchpad.
 
 DOC FRUGALITY — this file, the project's CLAUDE.md and rules without `paths:` are paid by every
 session. A line there earns its place only if it changes behaviour and cannot be derived from code
@@ -178,8 +181,8 @@ asked. Only exception: the `SAFETY:` note a Rust `unsafe` block requires (000-se
 
 NO AI ATTRIBUTION — never add `Co-Authored-By: Claude …` or any Claude/Anthropic trailer to a
 commit, nor "Generated with Claude Code" to a PR body, unless the user asks for it in that session.
-This overrides the harness's default commit instruction. The kit's `settings` component also sets
-`attribution` in settings.json so the harness stops asking; this line is the backstop.
+This overrides the harness's default commit instruction; the kit's `settings` component also sets
+`attribution` in settings.json.
 
 CHANGELOG — after any Tier 1+ code/config edit, append to the project's root `CHANGELOG.md`
 (Keep a Changelog; create it with a `# Changelog` header if missing) under `## [Unreleased]` →
@@ -211,12 +214,11 @@ Tier 3+:   PLAN: goal ≤8 words
 ON: service method | controller | API handler | exported function/class | shared utility | middleware
 OFF: pure CSS/styling | config/env | docs | type-only changes (no logic)
 
-TARGETED TEST ONLY — never full suite for 1-file change (per-stack command: stack-commands.md,
-already pointed at in BOOT SEQUENCE).
+TARGETED TEST ONLY — never full suite for 1-file change.
 No test file → create minimal spec same turn: happy path + edge + error (3 tests); a bug fix adds 1 regression test.
 VERIFY BY CHANGE TYPE: behavior→test | new file→lint+test | new route→build | CSS→lint | type→type-check
 
-DEP-DRIFT: [pkg] v[current] → v[latest] — [reason] (audit trigger + commands: 000-security § DEPENDENCY AUDIT)
+DEP-DRIFT: [pkg] v[current] → v[latest] — [reason] (audit commands: `agent_docs/dep-check-guide.md`)
 
 ---
 

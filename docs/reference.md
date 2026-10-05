@@ -58,7 +58,7 @@ Use for database schema changes, data modeling, ORM queries, indexes, constraint
 
 Use when a project's visual design has to be decided rather than matched — a first page or screen with no DESIGN-SPEC.md, a redesign, a brief with references or brand assets, or "make it look like its own product". Produces the direction, the tokens and the signature moment; hands construction to ui-fixer.
 
-- **Tools:** `Read`, `Grep`, `Glob`, `Write`, `Edit`, `Bash`
+- **Tools:** `Read`, `Grep`, `Glob`, `Write`, `Edit`, `Bash`, `Skill`
 - **Model / effort:** opus · high
 - **Permission mode:** `default`
 - **Turn budget:** 10
@@ -98,7 +98,7 @@ Use for auth, authorization, payment, billing, input validation, secrets, inject
 
 Use for scoped medium feature implementation or safe refactors requiring multiple files, tests, and existing project patterns. Do not use for critical protected changes without a plan.
 
-- **Tools:** `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`, `Agent`
+- **Tools:** `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`, `Agent`, `Skill`
 - **Model / effort:** sonnet · medium
 - **Permission mode:** `default`
 - **Turn budget:** 20
@@ -108,7 +108,7 @@ Use for scoped medium feature implementation or safe refactors requiring multipl
 
 Use for low-risk frontend-only UI changes — modals, buttons, layout, responsive styling, Tailwind/CSS, component polish, new pages, new screens. Do not use for backend, auth, payment, database, migrations, secrets, or CI.
 
-- **Tools:** `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`
+- **Tools:** `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`, `Skill`
 - **Model / effort:** sonnet · low
 - **Permission mode:** `default`
 - **Turn budget:** 12
@@ -172,7 +172,7 @@ pays for the REST-API rules.
 
 | Rule | Loads when | Governs |
 | --- | --- | --- |
-| [`000-security.md`](../rules/000-security.md) | **every session** — no `paths:` field | Core security rules — passive scan on every change, OWASP 2025, supply chain, protected files. No paths field: loads unconditionally every session. |
+| [`000-security.md`](../rules/000-security.md) | **every session** — no `paths:` field | Core security rules — passive scan on every change, OWASP 2025, supply chain, protected files, ask-first deletions/pushes/private files. No paths field: loads unconditionally every session. |
 | [`001-conventions.md`](../rules/001-conventions.md) | **every session** — no `paths:` field | Core development conventions — architecture patterns, holistic consistency, modern tech preferences. No paths field: loads unconditionally every session. |
 | [`100-web.md`](../rules/100-web.md) | `**/*.{tsx,jsx,vue,svelte,astro,html,css,scss}` · `**/*.blade.php` · `**/*.erb` · `**/*.component.ts` | Web UI rules — design tokens, 8px grid, skeleton loading, motion, SEO, WCAG 2.2, Tailwind v4. Auto-loads for React/Vue/Svelte/Astro/Angular/Blade/ERB/plain HTML. |
 | [`1000-i18n.md`](../rules/1000-i18n.md) | `**/locales/**` · `**/i18n/**` · `**/lang/**` · `**/messages/**/*.{json,po,xlf,xliff,arb,yaml,yml}` · `**/translations/**` · `**/*.{arb,po,pot,ftl,xliff,xlf,resx}` · `**/strings.xml` · `**/*.strings` · `**/*.xcstrings` · `**/*i18n.config.*` · `**/next-intl.config.*` | Internationalization and localization — message catalogs, ICU plurals, Intl formatting, RTL, text expansion, locale routing. Auto-loads for locale/message files in every framework the kit ships a preset for. |
@@ -180,10 +180,10 @@ pays for the REST-API rules.
 | [`300-testing.md`](../rules/300-testing.md) | `**/*.test.*` · `**/*.spec.*` · `**/test/**` · `**/__tests__/**` · `**/tests/**` · `**/*_test.*` · `**/*_spec.*` · `**/test_*.py` · `**/*Test.{java,kt,cs,swift}` · `**/*Tests.{java,kt,cs,swift}` · `**/*Spec.{java,kt,groovy}` · `**/tests.py` · `**/conftest.py` | Testing rules — pyramid ratios, mock policy, naming conventions, stability, coverage. Auto-loads for test/spec files. |
 | [`400-mobile.md`](../rules/400-mobile.md) | `**/*.{swift,kt}` · `**/lib/**/*.dart` · `**/test/**/*.dart` · `**/android/**` · `**/ios/**` · `**/*.native.{ts,tsx,js,jsx}` · `app.config.{js,ts}` · `**/apps/*/app.config.{js,ts}` · `**/packages/*/app.config.{js,ts}` · `**/metro.config.{js,cjs}` | Mobile rules — iOS Swift, Android Kotlin/Compose, Flutter/Dart, React Native. Auto-loads for mobile source files. |
 | [`500-database.md`](../rules/500-database.md) | `**/migrations/**` · `**/*.prisma` · `**/schema.*` · `**/models/**` · `**/knexfile.*` · `**/drizzle.config.*` · `**/*migration*` · `**/{Models,Entities,entities}/**` · `**/*.entity.*` · `**/*DbContext.cs` · `**/db/{migration,changelog}/**` · `**/db/migrate/**` · `**/Migrations/**` · `**/alembic/versions/**` · `**/drizzle/**/*.sql` · `**/db/schema/**` · `**/models.py` | Database rules — schema safety, migration protocol, N+1 prevention, RLS, zero-downtime patterns. Auto-loads for migration/schema/model files. |
-| [`600-devops.md`](../rules/600-devops.md) | `**/Dockerfile*` · `**/.github/**` · `**/*.tf` · `**/*.tofu` · `**/docker-compose*` · `**/compose.{yaml,yml}` · `**/compose.*.{yaml,yml}` · `**/Containerfile*` · `**/kubernetes/**` · `**/*.k8s.*` · `**/helm/**` · `**/k8s/**` · `**/charts/*/templates/**` · `**/charts/*/{Chart,values}*.{yaml,yml}` · `**/manifests/**/*.{yaml,yml}` · `**/deploy/**/*.{yaml,yml}` · `**/kustomization.{yaml,yml}` · `**/*.tfvars` · `**/.gitlab-ci.yml` · `**/railway.toml` · `**/fly.toml` · `**/.pre-commit-config.yaml` | DevOps rules — Docker security, GitHub Actions SHA pinning, OIDC, SBOM, IaC safety. Auto-loads for Dockerfile/CI/IaC files. |
+| [`600-devops.md`](../rules/600-devops.md) | `**/Dockerfile*` · `**/.github/**` · `**/*.tf` · `**/*.tofu` · `**/docker-compose*` · `**/compose.{yaml,yml}` · `**/compose.*.{yaml,yml}` · `**/Containerfile*` · `**/kubernetes/**` · `**/*.k8s.*` · `**/helm/**` · `**/k8s/**` · `**/charts/*/templates/**` · `**/charts/*/{Chart,values}*.{yaml,yml}` · `**/manifests/**/*.{yaml,yml}` · `**/deploy/**/*.{yaml,yml}` · `**/kustomization.{yaml,yml}` · `**/*.tfvars` · `**/.gitlab-ci.yml` · `**/Jenkinsfile*` · `**/.circleci/**` · `**/azure-pipelines*.{yaml,yml}` · `**/bitbucket-pipelines.yml` · `**/.dockerignore` · `**/railway.toml` · `**/fly.toml` · `**/.pre-commit-config.yaml` | DevOps rules — Docker security, GitHub Actions SHA pinning, OIDC, SBOM, IaC safety. Auto-loads for Dockerfile/CI/IaC files. |
 | [`700-observability.md`](../rules/700-observability.md) | `**/*.{ts,tsx,js,jsx,mjs,py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}` | Logging, metrics, tracing — every service and handler change |
 | [`800-llm-safety.md`](../rules/800-llm-safety.md) | `**/ai/**` · `**/llm/**` · `**/openai/**` · `**/anthropic/**` · `**/claude/**` · `**/agents/**/*.{ts,tsx,js,jsx,py,go}` · `**/*{openai,anthropic}*.{ts,tsx,js,jsx,py,go}` · `**/{llm,prompt,prompts}.{ts,js,py,go}` · `**/{llm,prompt,prompts}[._-]*.{ts,js,py,go}` | LLM/AI integration safety — prompt injection, output trust, cost controls |
-| [`900-performance.md`](../rules/900-performance.md) | `**/*.{ts,tsx,js,jsx,mjs,py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp,css,scss,vue,svelte,astro,html}` | Performance budgets — CWV, bundle size, query latency, render |
+| [`900-performance.md`](../rules/900-performance.md) | `**/*.{ts,tsx,js,jsx,mjs,py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp,css,scss,vue,svelte,astro,html,erb}` | Performance budgets — CWV, bundle size, query latency, render |
 
 ---
 

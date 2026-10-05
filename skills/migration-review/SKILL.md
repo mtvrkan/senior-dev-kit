@@ -20,4 +20,4 @@ or queries?
 
 Final output: GO / NO-GO | risk summary | required steps before applying
 
-Deep reference: `agent_docs/zero-downtime-migration.md` — expand/contract phases, batched backfills, deploy ordering.
+Deep reference: `${CLAUDE_PLUGIN_ROOT}/agent_docs/zero-downtime-migration.md` — expand/contract phases, batched backfills, deploy ordering.

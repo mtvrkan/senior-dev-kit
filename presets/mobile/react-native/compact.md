@@ -1,5 +1,5 @@
 - `.tsx` here is React Native, not web: `rules/100-web.md` auto-loads by extension but does NOT apply — no DOM, no CSS cascade, no viewport. Read `rules/400-mobile.md` for platform questions
-- Expo Router v6 for all navigation (files under `app/`) · feature folders `features/<f>/{components,hooks,api}/`
+- Expo Router for all navigation (files under `app/`) · feature folders `features/<f>/{components,hooks,api}/`
 - TanStack Query for server state, Zustand for client state — never mirror server data into `useState`/`useEffect`
 - Three required states per screen: skeleton loading, error with `refetch` retry, empty
 - `FlashList` over ~20 items · `FlatList` only for short fixed lists · NEVER `ScrollView` + `.map()` over network data · `React.memo` rows + stable `keyExtractor`

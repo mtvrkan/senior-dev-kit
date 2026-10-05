@@ -22,9 +22,8 @@ Never mix architectures. Follow what exists.
 Detected is not the same as decided. On a new project record the pattern, its boundaries, its
 dependency direction and where each seam lives (transactions, error boundary, authz) in
 `PROJECT-CONTRACTS.md`; on an existing one record what you detected the first time you detect it,
-in the project's `CLAUDE.md` or `.claude/codebase-overview.md`. A pattern only ever re-derived
-from folder shape gets derived differently by the next session, and that second answer is how one
-architecture becomes two. `/arch-check` audits the code against the record.
+in the project's `CLAUDE.md` or `.claude/codebase-overview.md`, so the next session does not
+re-derive a different one. `/arch-check` audits the code against the record.
 
 **Monorepo first** — `turbo.json` / `nx.json` / `pnpm-workspace.yaml` / `lerna.json` / Cargo or Go
 workspace: detect the architecture *per package*, not repo-wide, and re-run boot for the package
@@ -74,9 +73,7 @@ OBS: [service] no metrics — add request count + latency
 ```
 
 **A flag that is only spoken is not a flag.** Raising one means appending one line to the
-project's `.claude/TECH-DEBT.md` (create it if absent) — otherwise the finding lives in a chat
-message that ends with the session, which is why the same three issues get "flagged" every month
-and never fixed:
+project's `.claude/TECH-DEBT.md` (create it if absent); a flag left in chat ends with the session:
 
 ```text
 | 2026-08-14 | src/orders/service.ts:210 | FWD: God service >300 lines — split by responsibility | noticed while adding refund flow |
@@ -98,8 +95,6 @@ recommending or adding any library, framework, or paid service.
 
 - TypeScript first: never plain JS in new TS projects
 - `async/await` over callbacks and `.then()` chains
-- Server Components (Next.js) for initial data
-- Composition API (Vue 3) over Options API
 - Structured concurrency (Kotlin coroutines, Swift async/await, Python asyncio)
 
 ## RULE PRECEDENCE

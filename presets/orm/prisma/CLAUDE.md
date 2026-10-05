@@ -82,17 +82,48 @@ await prisma.$transaction(async (tx) => {
 - Handle the error codes explicitly rather than as a generic 500: `P2002` unique constraint,
   `P2025` record not found, `P2003` foreign key constraint failed.
 
+## Generated client — Prisma 7+ versus 6 and earlier
+
+Check the installed major before copying. On Prisma 7+ the generator is `prisma-client` and
+`output` is required; the client is generated into that directory, not `node_modules/.prisma`, and
+imported from it rather than from `@prisma/client`:
+
+```prisma
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+```
+
+On 6 and earlier the generator is `prisma-client-js`, `output` is optional, and the client lands in
+`node_modules/.prisma/client`, imported from `@prisma/client`.
+
 ## Connections
 
 Serverless and per-request instantiation exhaust the connection pool: one `PrismaClient` per
-process, cached across hot reloads in dev. Behind PgBouncer in transaction mode, the URL needs
-`pgbouncer=true` (and `connection_limit` tuned) or prepared statements collide.
+process, cached across hot reloads in dev.
+
+Prisma 7+ builds the client on a driver adapter, and the pool is the driver's: size and timeouts
+are the adapter's options (`max` for `pg`), and the `connection_limit` / `pgbouncer=true` URL
+parameters are not how it is tuned:
+
+```ts
+import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaClient } from '../generated/prisma/client'
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL, max: 10 })
+export const prisma = new PrismaClient({ adapter })
+```
+
+On 6 and earlier the pool is the query engine's: tune `connection_limit` in the URL, and behind
+PgBouncer in transaction mode add `pgbouncer=true` or prepared statements collide.
 
 ## Verification
 
 - `validate` — schema syntax + relation integrity.
 - `migrate status` — drift and pending migrations.
-- `generate` — the client must be regenerated after any schema edit.
+- `generate` — the client must be regenerated after any schema edit; on Prisma 7+ `migrate dev`
+  no longer runs it for you.
 - `tsc --noEmit` — the generated client is the type check; then the targeted test.
 
 ```bash
@@ -108,7 +139,8 @@ npx vitest run src/db/user.test.ts
 - `db push` in CI or against a shared database.
 - `migrate dev` anywhere but a developer's own machine.
 - Applying a generated migration without reading it (rename → silent DROP + ADD).
-- Editing generated client files under `node_modules/.prisma` — overwritten on every `generate`.
+- Editing generated client files — the generator's `output` directory on 7+, `node_modules/.prisma`
+  on 6 and earlier — overwritten on every `generate`.
 - Schema changes for a UI-only task.
 - `include`/`select` omitted, so every query ships every column.
 - Relation access inside a loop.

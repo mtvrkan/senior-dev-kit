@@ -124,7 +124,7 @@ Only the two rows whose filter syntax goes beyond "pass the file path" are worth
 
 ```text
 Go:      go test ./auth/... -run TestLogin -v -count=1
-XCTest:  xcodebuild test -scheme App -only-testing:AuthTests/testLogin
+XCTest:  xcodebuild test -scheme App -destination 'platform=iOS Simulator,name=iPhone 16' -only-testing:AppTests/AuthTests/testLogin
 ```
 
 ## COVERAGE GUIDANCE

@@ -129,7 +129,7 @@ Always include:
 - `<form onSubmit={form.handleSubmit(onSubmit)}>` as the wrapper
 - Every input wrapped in a `<Field>` (or `<FormField>` in a project still on the older `<Form>` components) — never a bare `<input>` with no label or error slot
 - `<FieldError />` (older: `<FormMessage />`) inside each field for inline validation errors
-- Submit button shows a loading state while pending: `<Button disabled={isLoading}>{isLoading ? "Saving..." : "Save"}</Button>`
+- Submit button shows a loading state while pending: `<Button disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? "Saving..." : "Save"}</Button>`
 - After submit: `toast.success("Saved")` on success, `toast.error("...")` on error (Sonner)
 
 ### Page header standard

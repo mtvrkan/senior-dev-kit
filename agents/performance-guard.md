@@ -13,8 +13,8 @@ skills:
 
 ## Reference docs (lazy-load when needed)
 
-`agent_docs/architecture.md` — service layer boundaries and dependency direction (to identify where caching or batching should live)
-`agent_docs/design-system.md` — skeleton/loading patterns (when performance fix involves deferring UI rendering)
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/architecture.md` — service layer boundaries and dependency direction (to identify where caching or batching should live)
+`${CLAUDE_PLUGIN_ROOT}/agent_docs/design-system.md` — skeleton/loading patterns (when performance fix involves deferring UI rendering)
 
 ---
 

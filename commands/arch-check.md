@@ -11,9 +11,9 @@ Audit the structure of what was actually built: $ARGUMENTS
 
 The third audit command, alongside `/design-check` and `/seo-check`, and the same contract: it
 does not review correctness — `/code-review` does that — it answers one question: *is this still
-one architecture, or several that grew into each other?* Read `agent_docs/architecture.md` first;
+one architecture, or several that grew into each other?* Read `${CLAUDE_PLUGIN_ROOT}/agent_docs/architecture.md` first;
 the pattern table, the dependency-direction rules, the coupling signals and the `FWD:` vocabulary
-are all defined there and in `rules/001-conventions.md` rather than restated here.
+are all defined there and in `${CLAUDE_PLUGIN_ROOT}/rules/001-conventions.md` rather than restated here.
 
 Architecture degrades the way design does: not in one bad decision, but in fifty small ones taken
 without reference to a recorded choice. So this command starts where `/design-check` starts — with
@@ -26,7 +26,7 @@ session, and two sessions that read the same folders differently produce two arc
 the de facto pattern from disk so the rest of the audit has something to measure against.
 
 **Step 2 — One architecture, not two.** Layered (`controllers/` + `services/` + `repositories/`)
-and vertical-slice (`features/x/…`) both present is the mixed case `rules/001-conventions.md`
+and vertical-slice (`features/x/…`) both present is the mixed case `${CLAUDE_PLUGIN_ROOT}/rules/001-conventions.md`
 flags. Report *which directories are on which side*, so the decision the user faces is "which one
 wins here", not "you have both".
 
@@ -51,16 +51,16 @@ the line count as context.
 
 **Step 7 — Contract drift.** Compare `PROJECT-CONTRACTS.md` (if present) with what exists: an
 endpoint that ships and was never recorded, a type renamed in one layer only, a route with no
-navigation entry. `rules/001-conventions.md`'s HOLISTIC CONSISTENCY table is the list of layers a
+navigation entry. `${CLAUDE_PLUGIN_ROOT}/rules/001-conventions.md`'s HOLISTIC CONSISTENCY table is the list of layers a
 change is supposed to reach; this step finds the ones it did not.
 
 **Step 8 — The seams that hide risk.** Where transactions begin and end, where errors convert from
-exceptions to a result type (`rules/200-api.md`), where auth is enforced, where retries live.
+exceptions to a result type (`${CLAUDE_PLUGIN_ROOT}/rules/200-api.md`), where auth is enforced, where retries live.
 Each should be at one layer, named. A boundary enforced in two places disagrees eventually; a
 boundary enforced in none is the incident.
 
 **Step 9 — Reconcile the debt ledger.** Read `.claude/TECH-DEBT.md` (the `FWD:`/`OBS:` ledger from
-`rules/001-conventions.md`). Three questions per row: does the condition still exist, is it now
+`${CLAUDE_PLUGIN_ROOT}/rules/001-conventions.md`). Three questions per row: does the condition still exist, is it now
 one of this audit's findings, and has it been quietly fixed? Delete rows whose condition is gone,
 add the findings above that are not yet recorded, and report the count of each. A ledger nobody
 reconciles becomes a file people stop reading, which is the same failure as never writing it.

@@ -24,14 +24,6 @@ paths:
   - "**/models.py"
 ---
 
-> **Scope decision (round-21 audit, accepted — do not re-flag as an oversight):** `**/schema.*` and
-> `**/models/**` deliberately also match non-DB files with the same conventional name (a Zod
-> `schema.ts`, a DDD `models/` folder) — narrowing to `**/db/...` would silently skip real schema
-> files at repo/src root. Same reasoning as `700-observability.md`/`900-performance.md`'s notes.
-> The round-34 additions extend the same accepted tradeoff: ASP.NET MVC's `Models/` holds view
-> models rather than entities, so this rule co-loads there too. Reading a schema-safety rule next
-> to a DTO costs a scroll; missing it next to a real entity costs a migration.
-
 ## HARD RULE — schema changes always escalate
 
 ANY change to DB schema (add/remove/rename field, add/remove table, add/remove index, change type) →
@@ -67,11 +59,17 @@ every instance of the old code is gone.
 
 Flag N+1 when: loop calls DB for each item in a list.
 
+WRONG — one query per user:
+
 ```typescript
-WRONG: users.map(u => db.post.findMany({ where: { userId: u.id } }))
-RIGHT: db.post.findMany({ where: { userId: { in: userIds } } })
-       -- or use ORM eager loading --
-       db.user.findMany({ include: { posts: true } })
+const posts = await Promise.all(users.map(u => db.post.findMany({ where: { userId: u.id } })))
+```
+
+RIGHT — one batched query, or the ORM's eager loading:
+
+```typescript
+const posts = await db.post.findMany({ where: { userId: { in: users.map(u => u.id) } } })
+const usersWithPosts = await db.user.findMany({ include: { posts: true } })
 ```
 
 Prisma: use `include` / `select` — never implicit relation access inside loop
@@ -137,7 +135,8 @@ CREATE POLICY "Users can only see their own posts"
 ```
 
 Never disable RLS to "fix a bug" — always write the correct policy.
-Edge Functions auth: verify `req.headers.authorization` — never trust client-sent userId.
+Edge Functions auth: verify `req.headers.get('Authorization')` (a Fetch `Request` on Deno, not a Node
+headers object) — never trust client-sent userId.
 
 ## FIREBASE / FIRESTORE
 
@@ -150,15 +149,20 @@ supposed to be validated against it. `update` also has to pin the ownership fiel
 the owner hand the document to another user.
 Security rules must be reviewed by security-guard before deploy.
 
-```text
-// WRONG — update/delete checked against the incoming (attacker-controlled) data, not the existing doc:
-allow update: if request.resource.data.userId == request.auth.uid;
+WRONG — `update` checked against the incoming (attacker-controlled) data, not the existing doc:
 
-// RIGHT:
-allow create: if request.resource.data.userId == request.auth.uid;  // no existing doc yet — check the incoming one
+```text
+allow update: if request.resource.data.userId == request.auth.uid;
+```
+
+RIGHT — `create` checks the incoming data because no document exists yet; `update` and `delete`
+check the existing document, and `update` also pins the ownership field:
+
+```text
+allow create: if request.resource.data.userId == request.auth.uid;
 allow update: if resource.data.userId == request.auth.uid
               && request.resource.data.userId == resource.data.userId;
-allow delete: if resource.data.userId == request.auth.uid;          // same — existing doc only
+allow delete: if resource.data.userId == request.auth.uid;
 ```
 
 ## MONGODB / DOCUMENT STORES
@@ -192,9 +196,9 @@ allow delete: if resource.data.userId == request.auth.uid;          // same — 
 actually lives and where every obligation attaches. A column holding personal data is a different
 kind of column, and nothing in a schema says so unless someone writes it down.
 
-- **Mark it.** A comment on the column (`COMMENT ON COLUMN users.email IS 'PII: contact'`), a
-  schema annotation, or a documented naming convention — anything a later reader and a later
-  migration can see. Unmarked, personal data spreads into analytics tables, exports, fixtures and
+- **Mark it.** Catalog metadata on the column (`COMMENT ON COLUMN users.email IS 'PII: contact'` —
+  stored in the database, not a source comment), a schema annotation, or a documented naming
+  convention — anything a later reader and a later migration can see. Unmarked, personal data spreads into analytics tables, exports, fixtures and
   seed files, and nobody can answer "where is this person's data" without reading everything.
 - **Collect what the feature needs.** A field added "because we might want it later" is
   indefinite liability for a use that never arrives. Date of birth when you need an age check is
@@ -227,11 +231,14 @@ Before any destructive operation: confirm backup exists or create one.
 
 Before DROP or TRUNCATE:
 
-- Verify the backup:
+- Verify the backup restores: restore it (or the snapshot) to a scratch database and compare row
+  counts with the live table — a count of the live table alone proves nothing about the backup:
 
   ```sql
   SELECT count(*) FROM [table];
   ```
+
+  Run it on both databases; the numbers must match.
 
 - Confirm point-in-time recovery is available.
 - If there is no backup: STOP and ask the user to create one first.

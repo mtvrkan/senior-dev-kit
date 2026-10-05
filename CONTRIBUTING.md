@@ -34,17 +34,21 @@ Narrower commands while iterating:
 | `npm run gen-site` | Renders the landing page into `site/dist/`. Needs the `site-src` branch checked out into `site/` — see below |
 | `npm run site-check` | Same render, result discarded. Runs in the site workflow, not in `npm run check` |
 | `npm run gen-og` | Regenerates the social card — one per locale — and the raster icons on the `site-src` branch. Needs Chrome; outputs are committed there |
+| `npm run check-plugin` | Plugin and marketplace manifests match the components on disk |
+| `npm run deny-cost` | Replays your own Claude Code transcripts against the deny list |
+| `npm run check-release` | Network. Verifies the published install path resolves for a stranger — run before announcing a release, not in the gate |
 
 ### The landing page lives on its own branch
 
-`main` holds the kit; the page source is on `site`; the rendered output is on `gh-pages`,
+`main` holds the kit; the page source is on `site-src`; the rendered output is on `gh-pages`,
 written only by CI. Everything in this repository is downloaded by anyone installing the
 kit, and a website is not part of a Claude Code configuration kit — that is the whole
-reason for the split.
+reason for the split. Check the `site-src` branch out into `site/`, the path the generator
+expects, then render into `site/dist/`:
 
 ```bash
-git worktree add site site-src   # the `site-src` branch, into the path the generator expects
-npm run gen-site             # writes site/dist/
+git worktree add site site-src
+npm run gen-site
 ```
 
 `site/` is git-ignored on `main`, so the worktree sits there without polluting anything.
@@ -52,9 +56,6 @@ Pushing to either branch triggers `.github/workflows/site.yml`, which checks out
 renders, and force-pushes one orphan commit to `gh-pages`. The page's numbers are still
 derived from `main` at build time; nothing about the split lets a template hard-code one,
 because consistency check 28 runs inside that build.
-| `npm run check-plugin` | Plugin and marketplace manifests match the components on disk |
-| `npm run deny-cost` | Replays your own Claude Code transcripts against the deny list |
-| `npm run check-release` | Network. Verifies the published install path resolves for a stranger — run before announcing a release, not in the gate |
 
 ## What the validators enforce
 
@@ -94,12 +95,12 @@ Most review feedback is automated. Before opening a PR, know that:
 | --- | --- |
 | Skill | Create `skills/<name>/SKILL.md`, copy an existing skill's frontmatter shape, bind it to an agent's `skills:` list if an agent should follow it |
 | Agent | Create `agents/<name>.md`, add a row to `agents/ROUTING.md`, add a golden prompt to `eval/golden-prompts.json` |
-| Rule | Create `rules/<NNN>-<topic>.md` with a `paths:` glob list, and add it to `global-CLAUDE.md`'s RULES REFERENCE topics list |
+| Rule | Create `rules/<NNN>-<topic>.md` with a `paths:` glob list, add it to `global-CLAUDE.md`'s RULES REFERENCE topics list, and add a prompt in `eval/behavior-prompts.json` naming it as context |
 | Preset | Copy the structure of an existing preset in the same category — both `CLAUDE.md` and `compact.md` |
 | Deny rule | Edit `settings-template.json`, mirror it into `.claude/settings.json`, and run `npm run deny-cost` to measure the friction it adds |
 
-Presets are added when someone actually starts a project on that stack, not speculatively — an
-unused preset is a file that drifts. See `presets/README.md`.
+Which stacks get a preset, and which are deliberately left out, is decided in
+`presets/README.md`. Read it before proposing one.
 
 ## Shipped markdown carries no comments
 
@@ -120,6 +121,26 @@ Machine-readable facts that used to live in HTML comments are recorded in
 
 Move a claim or a pin and the gate names the ledger entry to update.
 
+Rule scope decisions. A rule body is injected into the model on every matching file, so the
+reasoning behind a glob lives here instead of in the rule. Do not re-flag these:
+
+- `700-observability` and `900-performance` use bare-extension globs on purpose. Directory scoping
+  (`**/api/**`, `**/services/**`) would skip repo-root sources, Go `cmd`/`internal` and .NET
+  layouts. 900 also covers `.css`/`.scss`, `.vue/.svelte/.astro/.html/.erb`, which 700's logging
+  rules do not need, so the two globs are deliberately not identical.
+- `400-mobile`'s `**/*.{swift,kt}` also fires for server-side Kotlin (Ktor, Spring). Narrowing to
+  `**/android/**` would skip every Android module outside a directory of that name, which is the
+  worse failure. `.kts` is deliberately excluded: it means `build.gradle.kts`, which every JVM
+  backend has, and it produced no true positives. Plain RN/Expo screen `.tsx` files share their
+  extension with web React, so only the `.native.*`/`app.config`/`metro.config` variants load the
+  rule. All three are pinned in `scripts/rule-globs.test.ts`.
+- `500-database`'s `**/schema.*`, `**/models/**` and ASP.NET `Models/` also match non-DB files (a
+  Zod `schema.ts`, view models). Narrowing to `**/db/...` would skip real schema files; reading a
+  schema-safety rule next to a DTO costs less than missing it next to an entity.
+- `100-web`'s RETIRED UI APIS list is the single place a retired primitive is recorded. Check 24
+  harvests it and fails the gate if any preset, agent, skill or doc still recommends that API, so
+  add a line there when a library moves on and the presets follow.
+
 Accepted overlaps. Do not re-flag these as duplication:
 
 - `agents/security-guard.md`'s authentication checklist restates part of `rules/200-api.md`. The
@@ -134,6 +155,10 @@ Accepted overlaps. Do not re-flag these as duplication:
 - One logical change per PR. A doc fix and a validator change are two PRs.
 - Commit messages: imperative mood, present tense (`Add fastapi preset`, not `Added…`).
 - Update `CHANGELOG.md` under `## [Unreleased]` for anything a user would notice.
+- A release that changes any file the plugin ships bumps `version` in both
+  `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`. Claude Code refreshes a
+  cached plugin only when that version changes, so without the bump plugin users keep the old
+  files.
 - Never commit secrets, `.env` files, or transcript output. `.gitignore` and the gitleaks CI
   job both guard this, but the first line of defense is you.
 

@@ -44,18 +44,20 @@ Kitin kendisi hakkındaki her iddia elle değil, `npm run check` ile doğrulanı
 Üçüncü satır tek seferliktir ve yapısal bir nedenle vardır: Claude Code, dosya türüne göre
 yüklenen rule'ları ve izin kurallarını yalnızca ayar dizininizden okur; bir plugin oraya yazamaz.
 `/kit-setup` ne yapacağını önce gösterir, onayınızı bekler ve dokunduğu her şeyi yedekler. Sonra
-Claude Code'u yeniden başlatıp `/kit-doctor` ile doğrulayın.
+Claude Code'u yeniden başlatıp `/kit-doctor` ile doğrulayın. Plugin'in hook'ları `node` çalıştırır;
+bu yüzden plugin de `PATH` üzerinde **Node.js 18+** ister.
 
-Kurulumun tamamı bu. Güncellemeler `/plugin marketplace update` ile gelir.
+Kurulumun tamamı bu. Güncellemeler `/plugin marketplace update` ile gelir; ardından `/kit-setup`'ı
+yeniden çalıştırın, çünkü kopyaladığı rule'lar ve ayarlar plugin'le birlikte güncellenmez.
 
 Dosyaları kendi ayar dizininizde ister veya düzenlemek isterseniz — **Node.js 18+** gerekir,
-bağımlılık yok:
+bağımlılık yok. `--dry-run` satırı tam olarak neyin değişeceğini gösterir; son satır uygular:
 
 ```bash
 git clone https://github.com/mtvrkan/senior-dev-kit.git
 cd senior-dev-kit
-node scripts/install.mjs --dry-run   # tam olarak neyin değişeceğini göster
-node scripts/install.mjs             # sonra uygula
+node scripts/install.mjs --dry-run
+node scripts/install.mjs
 ```
 
 Mevcut hiçbir şeyiniz yok edilmez: `~/.claude/CLAUDE.md` protokolü işaretler arasında alır,
@@ -99,15 +101,16 @@ yazabileceğiniz komutlar — [`docs/usage.md`](docs/usage.md) içinde.
 
 Kısaca: 8 agent, 28 skill, 12 rule, 7 komut, 28 preset.
 
-Ayrıca bir guardrail katmanı: `settings-template.json` içinde ~400 deny kuralı — secret dosya
+Ayrıca bir guardrail katmanı: `settings-template.json` içinde birkaç yüz deny kuralı — secret dosya
 okumalarını, yıkıcı shell komutlarını ve onaysız uzak paket çalıştırıcılarını engeller. Kapsam ve
 bilinen boşluklar [`SECURITY.md`](SECURITY.md) içinde dürüstçe belgelenmiştir — **engellemediği**
 şeyler dahil.
 
 Kurulum (ya da `/kit-setup`) iki ayarı da, senin koyduğun hiçbir değeri ezmeden ekler:
 `attribution` gizlenir — commit ve PR’lara `Co-Authored-By: Claude` satırı eklenmez, Claude GitHub
-contributor listende görünmez; ve bir PreToolUse hook’u, `model` belirtmeyen her subagent çağrısını
-haiku/sonnet/opus tablosuyla geri çevirir — basit bir arama asla ana modelin fiyatıyla sessizce
+contributor listende görünmez; ve bir PreToolUse hook’u, `model` belirtmeyen her yerleşik tipteki
+subagent çağrısını (general-purpose, Explore, Plan, claude ya da tipsiz) haiku/sonnet/opus
+tablosuyla geri çevirir — basit bir arama asla ana modelin fiyatıyla sessizce
 çalışmaz. İsteğe bağlı durum satırı (`--only statusline`) model, klasör, branch ve context
 kullanımını gösterir.
 
@@ -121,7 +124,8 @@ kullanımını gösterir.
 2. **Dosyalar okundukça** türüne uyan rule'lar devreye girer — bir `.tsx` açılınca `100-web`, bir
    migration açılınca `500-database` yüklenir.
 3. **İş tipi eşleşince** ilgili skill tetiklenir. İstek korumalı bir alana dokunuyorsa guard
-   ajanına eskale edilir; guard'lar teamül gereği değil, tool grant'ı gereği salt-okunurdur.
+   ajanına eskale edilir. Guard'ların Edit ya da Write aracı yoktur; Bash'leri deny kurallarıyla ve
+   ajanın kendi salt-okuma talimatıyla sınırlıdır.
 
 ---
 
@@ -134,20 +138,21 @@ türetilir. Tek komut:
 npm run check
 ```
 
-Şu an: 433/433 test geçiyor (66 suites). `routing-eval` yönlendirme tablosunu 31 gerçekçi isteği
+Şu an: 461/461 test geçiyor (70 suites). `routing-eval` yönlendirme tablosunu 34 gerçekçi isteği
 ile sabitler, `check-consistency` bu dosyadaki elle yazılmış her sayıyı yeniden türetir,
 `check-plugin` ise plugin manifestlerinin diskteki bileşenlerle hâlâ eşleştiğini doğrular.
 
-**Bunun kanıtladığı ve kanıtlamadığı şey.** Açık olalım: bu 433 test *iç tutarlılık* testidir.
+**Bunun kanıtladığı ve kanıtlamadığı şey.** Açık olalım: bu 461 test *iç tutarlılık* testidir.
 Dokümantasyonun diskteki dosyalarla eşleştiğini kanıtlar — hiçbir sayının bayat, hiçbir yolun ölü,
 hiçbir kuralın bir yerde iddia edilip başka yerde eksik olmadığını. **Kitin modelin çıktısını
 iyileştirip iyileştirmediğini ölçmezler.** CI'da yeşil geçen hiçbir şey bunu ölçmüyor.
 
-Davranışı ölçen iki adım var ve ikisi de API kredisi harcadığı için opt-in:
+Davranışı ölçen iki adım var ve ikisi de API kredisi harcadığı için opt-in. İlk satır bash biçimi;
+ikincisi PowerShell, onda satır içi ön ek yok:
 
-```bash
-RUN_ROUTING_EVAL=1 npm run routing-eval     # bash
-$env:RUN_ROUTING_EVAL=1; npm run routing-eval   # PowerShell — satır içi ön ek yok
+```text
+RUN_ROUTING_EVAL=1 npm run routing-eval
+$env:RUN_ROUTING_EVAL=1; npm run routing-eval
 ```
 
 Golden prompt'lar üzerinde bir A/B çalıştırır — prompt başına iki CLI çağrısı: yalnızca
@@ -189,9 +194,11 @@ anılması zorunlu, anılmayan varsa kapı kırılıyor: dördü iki tur boyunca
 ve süit temiz skor verdi, çünkü "var olan prompt'ların hepsi geçiyor" ile "yayınlanan kuralların
 hepsi ölçülüyor" farklı iddialar ve yalnızca birincisinin kontrolü vardı.
 
-```bash
-RUN_BEHAVIOR_EVAL=1 npm run behavior-eval          # bash
-$env:RUN_BEHAVIOR_EVAL=1; npm run behavior-eval    # PowerShell
+Yine önce bash, sonra PowerShell:
+
+```text
+RUN_BEHAVIOR_EVAL=1 npm run behavior-eval
+$env:RUN_BEHAVIOR_EVAL=1; npm run behavior-eval
 ```
 
 **Ölçülen sonuç, 2026-08-20:** kontrol 20/20 (%100), tedavi 20/20 (%100) — lift yok, regresyon da

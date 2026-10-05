@@ -41,7 +41,7 @@ Middleware applied to all v1 routes; the `Sunset` date is 6 months from the v2 l
 ```typescript
 app.use('/api/v1', (req, res, next) => {
   res.set('Deprecation', '@1782864000')
-  res.set('Sunset', 'Sat, 01 Jan 2027 00:00:00 GMT')
+  res.set('Sunset', 'Fri, 01 Jan 2027 00:00:00 GMT')
   res.set('Link', '<https://api.example.com/v2>; rel="successor-version"')
   next()
 })

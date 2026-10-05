@@ -27,6 +27,11 @@ struct UserScreen: View {
     let id: String
     @State private var vm: UserViewModel
 
+    init(id: String, repo: UserRepository) {
+        self.id = id
+        _vm = State(initialValue: UserViewModel(repo: repo))
+    }
+
     var body: some View {
         Group {
             switch vm.state {

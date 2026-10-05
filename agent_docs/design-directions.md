@@ -177,7 +177,7 @@ drift, and if a project wants it, commit to the whole bundle rather than a dark 
 Type: mono labels, uppercase, `0.06em` tracking, 12-13px.
 Depth: GLOW — radial gradient behind the accent, no drop shadows; borders are hairlines at low opacity.
 Motion: precise and fast, 150-200ms, `ease-out`; animate `opacity`/`transform` only.
-Decoration: one radial glow per viewport at most, faint grid lines, subtle grain to kill banding.
+Decoration: one radial glow per viewport at most, subtle grain to kill banding.
 
 ### 6 — Glass Depth
 
@@ -455,6 +455,11 @@ Unfreezing the visual axes does not unfreeze correctness. Every direction, witho
 - Target size ≥24×24px, semantic HTML, one `<h1>`.
 - Semantic tokens only. A direction changes token *values* in one file; it never authorises a raw
   hex in a component.
+- No square grid or graph-paper line pattern as a background (CSS `linear-gradient` grid lines,
+  SVG grid, "blueprint" backgrounds), whatever the direction.
+- Corporate and consumer-facing products ship a light theme on the marketing site and the sign-in
+  screens. A dark direction (Dark Technical, a dark Glass) lives behind an in-app theme toggle, or
+  is the default only when the user asks for dark.
 
 ## RECORDING THE CHOICE
 

@@ -15,13 +15,16 @@
     { "file": "presets/web/angular/CLAUDE.md", "date": "2026-08", "note": "The v17+ floor in the heading only (standalone-by-default and signals). Other idioms and commands were not re-verified." },
     { "file": "presets/web/nextjs-saas/CLAUDE.md", "date": "2026-08", "note": "The \"Next.js 16 patterns\" reference in the SEO section only. 16 is the current stable major; 15 is in maintenance until October 2026." },
     { "file": "presets/web/nuxt/CLAUDE.md", "date": "2026-08", "note": "The 3/4 version claim in the heading only. Nuxt 4 is current and 3 still in wide use; idioms and commands were not re-verified." },
-    { "file": "presets/web/sveltekit/CLAUDE.md", "date": "2026-08", "note": "The Svelte 5 claim in the heading only; runes are the stable API. Idioms and commands were not re-verified." }
+    { "file": "presets/web/sveltekit/CLAUDE.md", "date": "2026-08", "note": "The Svelte 5 claim in the heading only; runes are the stable API. Idioms and commands were not re-verified." },
+    { "file": "presets/orm/prisma/CLAUDE.md", "date": "2026-09", "note": "The Prisma 7+ versus 6-and-earlier split only (body and compact.md): prisma-client generator with required output and the client generated there, not node_modules/.prisma; driver adapter owns the pool (pg max), so connection_limit/pgbouncer=true URL tuning is 6-and-earlier; migrate dev no longer runs generate. Checked against Prisma's v7 upgrade guide and connection-pool docs. 7.10.0 is the stable major; 8 is in release candidate on npm and was not reviewed." }
   ],
-  "upstreamAssumptions": [],
+  "upstreamAssumptions": [
+    { "file": "SECURITY.md", "date": "2026-08", "note": "The Measured coverage table and the Assumption note: Claude Code's deny matching probed on Windows with a dummy .pem file — Edit(...) rules cover the Write tool, Read and PowerShell gc/cat/type reads are denied, PowerShell file cmdlets and > redirection are blocked, and the verb-free [System.IO.File] API gets through. Aliases not enumerated there remain unverified." }
+  ],
   "toolchainPins": {
     "file": "rules/600-devops.md",
     "reviewed": "2026-08",
-    "digest": "924ec165278b"
+    "digest": "642d4de9679e"
   },
   "neverLogFields": {
     "source": "rules/700-observability.md",

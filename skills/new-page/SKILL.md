@@ -8,7 +8,7 @@ argument-hint: "[page name or route]"
 
 # new-page
 
-New admin page from scratch. Follow this protocol — do not skip steps. See `agent_docs/new-page-guide.md` for framework detection table, convention discovery globs, form/table patterns, and the quality gate checklist.
+New admin page from scratch. Follow this protocol — do not skip steps. See `${CLAUDE_PLUGIN_ROOT}/agent_docs/new-page-guide.md` for framework detection table, convention discovery globs, form/table patterns, and the quality gate checklist.
 
 1. Read `PROJECT-CONTRACTS.md` + `DESIGN-SPEC.md` if present (project root — written by the `from-scratch` skill; absent on projects not bootstrapped with it, skip) — they override everything below. No spec → the existing pages *are* the spec (step 3); never introduce a different design character.
 2. Detect framework (next.config.*→Next.js | vite.config.*→React+Vite | nuxt.config.*→Nuxt | angular.json→Angular | svelte.config.*→SvelteKit | artisan→Laravel | manage.py→Django | Gemfile+routes.rb→Rails).

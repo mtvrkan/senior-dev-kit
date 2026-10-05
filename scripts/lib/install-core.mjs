@@ -303,13 +303,78 @@ export function isEmptySkeleton(settings) {
   return Object.values(settings.permissions).every(value => Array.isArray(value) && value.length === 0)
 }
 
-export function tidyPermissions(settings) {
+export function permissionsShape(settings) {
+  const permissions = isPlainObject(settings) ? settings.permissions : undefined
+  return { permissions: isPlainObject(permissions), deny: isPlainObject(permissions) && Array.isArray(permissions.deny) }
+}
+
+export function tidyPermissions(settings, existedBefore = { permissions: false, deny: false }) {
   if (!isPlainObject(settings?.permissions)) return settings
   const permissions = { ...settings.permissions }
-  if (Array.isArray(permissions.deny) && permissions.deny.length === 0) delete permissions.deny
+  if (!existedBefore.deny && Array.isArray(permissions.deny) && permissions.deny.length === 0) delete permissions.deny
   const next = { ...settings, permissions }
-  if (Object.keys(permissions).length === 0) delete next.permissions
+  if (!existedBefore.permissions && Object.keys(permissions).length === 0) delete next.permissions
   return next
+}
+
+export function detectJsonStyle(raw) {
+  if (typeof raw !== 'string') return { indent: '  ', eol: '\n', finalNewline: true }
+  return {
+    indent: raw.match(/^([ \t]+)\S/m)?.[1] ?? '  ',
+    eol: raw.includes('\r\n') ? '\r\n' : '\n',
+    finalNewline: /\n$/.test(raw),
+  }
+}
+
+export function formatJson(value, style) {
+  const text = JSON.stringify(value, null, style.indent).replace(/\n/g, style.eol)
+  return style.finalNewline ? `${text}${style.eol}` : text
+}
+
+export const PLUGIN_ROOT_TOKEN = '${CLAUDE_PLUGIN_ROOT}'
+
+export function substitutePluginRoot(text, targetDir) {
+  return text.split(PLUGIN_ROOT_TOKEN).join(targetDir.replace(/\\/g, '/'))
+}
+
+export const SESSION_CONTEXT_LIMIT = 10000
+
+export const PROTOCOL_PART_LIMIT = 9500
+
+function sliceAt(text, starts) {
+  const cuts = [0, ...starts.filter(index => index > 0 && index < text.length), text.length]
+  return cuts.slice(0, -1).map((start, i) => text.slice(start, cuts[i + 1])).filter(piece => piece !== '')
+}
+
+function hardSlice(text, limit) {
+  const pieces = []
+  for (let start = 0; start < text.length; start += limit) pieces.push(text.slice(start, start + limit))
+  return pieces
+}
+
+function fitPiece(piece, limit) {
+  if (piece.length <= limit) return [piece]
+  const lines = sliceAt(piece, [...piece.matchAll(/\n/g)].map(match => match.index + 1))
+  return lines.flatMap(line => (line.length <= limit ? [line] : hardSlice(line, limit)))
+}
+
+export function splitProtocol(text, limit = PROTOCOL_PART_LIMIT) {
+  const sections = sliceAt(text, [...text.matchAll(/^## /gm)].map(match => match.index))
+  const parts = []
+  let current = ''
+  for (const piece of sections.flatMap(section => fitPiece(section, limit))) {
+    if (current !== '' && current.length + piece.length > limit) {
+      parts.push(current)
+      current = ''
+    }
+    current += piece
+  }
+  if (current !== '') parts.push(current)
+  return parts
+}
+
+export function requiredSessionParts(protocol) {
+  return splitProtocol(protocol.trim()).length + 1
 }
 
 export function hookCommand(scriptPath) {
@@ -400,8 +465,19 @@ export function parseArgs(argv) {
       if (value === '') opts.unknown.push('--target= (missing directory)')
       else opts.target = value
     }
-    else if (arg === '--only') opts.components = (argv[++i] ?? '').split(',').filter(Boolean)
-    else if (arg.startsWith('--only=')) opts.components = arg.slice('--only='.length).split(',').filter(Boolean)
+    else if (arg === '--only') {
+      const value = argv[i + 1]
+      const hasValue = value !== undefined && !value.startsWith('-')
+      const list = hasValue ? value.split(',').filter(Boolean) : []
+      if (hasValue) i++
+      if (list.length === 0) opts.unknown.push('--only (missing component list)')
+      else opts.components = list
+    }
+    else if (arg.startsWith('--only=')) {
+      const list = arg.slice('--only='.length).split(',').filter(Boolean)
+      if (list.length === 0) opts.unknown.push('--only= (missing component list)')
+      else opts.components = list
+    }
     else opts.unknown.push(arg)
   }
   return opts

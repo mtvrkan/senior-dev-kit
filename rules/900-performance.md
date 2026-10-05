@@ -1,12 +1,11 @@
 ---
 description: "Performance budgets — CWV, bundle size, query latency, render"
 paths:
-  - "**/*.{ts,tsx,js,jsx,mjs,py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp,css,scss,vue,svelte,astro,html}"
+  - "**/*.{ts,tsx,js,jsx,mjs,py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp,css,scss,vue,svelte,astro,html,erb}"
 ---
 
-> Related: [`700-observability.md`](700-observability.md) co-loads on the same glob for code files — intentional, not a conflict: 700 governs what to log, 900 governs latency/bundle budgets; apply both in full. Keep tool/version recommendations in sync across both. This glob additionally covers `.css`/`.scss` (CLS/font-display guidance) and 100-web's `.vue/.svelte/.astro/.html` (so 100-web's pointer to the budgets here always resolves), which 700's logging rules don't need — intentionally not identical.
->
-> **Scope decision (round-9 audit, accepted — do not re-flag as an oversight):** bare-extension glob is deliberate — same reasoning as `700-observability.md`'s scope-decision note.
+`700-observability.md` co-loads on the same code files: 700 governs what to log, 900 the latency
+and bundle budgets. Apply both.
 
 ## PERFORMANCE BUDGETS — hard limits
 

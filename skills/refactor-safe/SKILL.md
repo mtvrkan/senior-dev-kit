@@ -17,7 +17,7 @@ Behavior must be identical before and after. If tests don't exist: write them FI
 
 5. Refactor that moves a module boundary (extract, restructure): run `/arch-check` before and after. The point of a boundary refactor is that violations go down — unmeasured, "cleaner" is an opinion.
 
-Deep reference: `agent_docs/testing-strategy.md` (baseline coverage before refactor) · `agent_docs/architecture.md` (module boundary rules).
+Deep reference: `${CLAUDE_PLUGIN_ROOT}/agent_docs/testing-strategy.md` (baseline coverage before refactor) · `${CLAUDE_PLUGIN_ROOT}/agent_docs/architecture.md` (module boundary rules).
 
 ## Output
 

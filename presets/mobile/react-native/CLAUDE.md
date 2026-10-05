@@ -7,7 +7,7 @@
 
 ## Architecture
 
-- Expo Router v6 for all navigation. Routes are files under `app/`; no hand-rolled React
+- Expo Router for all navigation. Routes are files under `app/`; no hand-rolled React
   Navigation stack inside an Expo project.
 - Feature folders: `features/<feature>/{components,hooks,api}/`, shared UI in `components/`.
 - TanStack Query for server state, Zustand (or Context for genuinely small cases) for client
@@ -53,8 +53,21 @@ Loading, error-with-retry and empty are three required states, not optional poli
 Prefer a `.native.tsx` / `.ios.tsx` / `.android.tsx` file split over sprinkled conditionals. For
 the safe area use `useSafeAreaInsets()` — never a hardcoded status-bar height.
 
+WRONG — a guessed height, wrong on every notch, Dynamic Island and Android cutout it didn't guess:
+
 ```tsx
 Platform.select({ ios: 44, android: 56 })
+```
+
+RIGHT — the device's real insets:
+
+```tsx
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+function Header({ children }: { children: React.ReactNode }) {
+  const insets = useSafeAreaInsets()
+  return <View style={{ paddingTop: insets.top }}>{children}</View>
+}
 ```
 
 ## Storage and secrets

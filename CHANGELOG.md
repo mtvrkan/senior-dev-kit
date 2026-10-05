@@ -24,6 +24,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
   bisect, hypothesis log), `dep-upgrade` (major-version upgrades from the migration guide, one
   package family at a time) and `threat-model` (STRIDE and abuse cases for a new flow before it
   is built). The incident postmortem now has a fixed blameless shape. [2026-09-28]
+- Always-loaded ASK FIRST rules: nothing is deleted without a yes to the exact list, nothing is
+  pushed unless the user asks for that push, and AI-assistant files and working notes stay out of
+  git through the global excludes file or `.git/info/exclude`. Browser automation reuses one
+  scratchpad profile per session. Web projects default to a light marketing site and sign-in
+  screens, and grid-line backgrounds are banned in every design direction. [2026-10-05]
 
 ### Changed
 
@@ -35,8 +40,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 - The plugin's SessionStart hook no longer stacks the protocol on an older unmarked copy in
   `~/.claude/CLAUDE.md`. It also names a missing attribution setting and says when `/kit-setup`
   ran for an older kit version. [2026-09-28]
-- SHIPPED SOURCE IS PUBLIC is now part of CODE STYLE: no comments in any file, not only
-  browser-served ones. The single exception is Rust's `SAFETY:` note. [2026-09-28]
+- CODE STYLE forbids comments in every file, and absorbs the SHIPPED SOURCE IS PUBLIC rule that
+  briefly covered only browser-served files (HTML, CSS, client JS, SVG, static dirs, and their
+  translations). The rationale goes in the commit, the changelog or a doc. The single exception is
+  Rust's `SAFETY:` note. [2026-09-28]
 - Code examples in rules, presets and agent docs no longer carry comments. They get copied into
   projects word for word, and each one taught the habit the kit forbids. Explanations now sit in
   the surrounding prose, and counter-examples are labelled with a `WRONG:` line above their own
@@ -44,18 +51,76 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 - Review dates, the toolchain-pin digest, the never-log field list and the forbidden example
   shapes moved out of HTML comments into `scripts/lib/doc-ledger.json`. The gate reads them from
   there, and it now fails on any HTML comment in shipped markdown. [2026-09-28]
-- New always-loaded rule: SHIPPED SOURCE IS PUBLIC. Anything the browser receives as-is — HTML,
-  CSS, client JS, SVG, static dirs, and their translations — carries no comments, because View
-  Source is not a private channel. The rationale goes in the commit, the changelog or a doc.
-  Build-time and server-side code is unaffected. [2026-08-20]
 - The landing page's stylesheet no longer publishes its own contributor notes. `style.css` is the
   one source file the build copies verbatim, so its 58 comment blocks — art direction, abandoned
   approaches, why a breakpoint sits where it does — reached every visitor, while the HTML
   templates had been stripping theirs for a while. They stay in the source and leave at build
   time; the published stylesheet is 12 KB smaller. `site-check` now fails if either stripper
   is ever unwired. [2026-08-20]
+- Agents, skills and commands name kit docs as `${CLAUDE_PLUGIN_ROOT}/agent_docs/…`. A subagent
+  never sees the session's KIT ROOT, so bare paths did not resolve for it on a plugin install.
+  Claude Code substitutes the variable on the plugin path; the copy installer now writes the
+  install directory in its place. The gate fails on a bare kit path. [2026-09-28]
+- Implementer agents carry the HARD STOPS list themselves instead of pointing at the protocol,
+  which a subagent does not receive. They also have the `Skill` tool now, so the skill and
+  slash-command steps their instructions call for can actually run. [2026-09-28]
+- `dep-upgrade` runs in the main loop, which can fetch the migration guide. `db-change` and
+  `api-design` no longer strip Edit/Write for the rest of the turn when they auto-trigger
+  mid-implementation. `project-memory` no longer switches the main loop's model. [2026-09-28]
+- The copy install no longer ships `/kit-setup`, which only works as a plugin skill. [2026-09-28]
+- The always-loaded files are 20 lines shorter: duplicate pointers merged, rationale moved out.
+  Rule scope decisions left the rule bodies, which are injected on every matching file, and now
+  live in CONTRIBUTING. [2026-09-28]
 
 ### Fixed
+
+- Plugin installs never delivered the protocol. Claude Code caps a hook's `additionalContext` at
+  10,000 characters and the protocol was about 15,000, so it was replaced by a file path the model
+  was not told to read. The SessionStart hook now sends it in parts, each under the cap, and
+  `check-plugin` fails if the hook entries cannot carry the current file. [2026-09-28]
+- Installer:
+  - An unreadable `settings.json` made the installer report success, and `--check` then passed
+    with no deny rules installed. Both now exit non-zero.
+  - Uninstall restores `settings.json` byte for byte, including its indentation and line endings,
+    and leaves no empty `deny` array behind.
+  - A corrupt manifest is refused instead of silently forgotten.
+  - A relative `--target` is resolved.
+  - An empty `--only` is rejected.
+  - A retired file puts back the user file it had replaced. [2026-09-28]
+- The model hook no longer blocks every subagent when `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` is set,
+  and both hook scripts now run through a symlinked `~/.claude`. [2026-09-28]
+- Security examples that were wrong:
+  - The Spring Boot create DTO let a client choose its own role.
+  - The NestJS controller and a public tRPC procedure returned password hashes.
+  - The webhook sender fetched any URL a user supplied.
+  - The CSP nonce was the same for every response.
+  - The Nuxt route skipped its ownership check.
+  - `200-api` still said to answer another user's resource with 403 rather than 404, and its JWT
+    and CSRF lines were weaker than the security guard's. [2026-09-28]
+- Examples that would not run:
+  - The Docker Compose Postgres service could not start.
+  - The Go single-row query did not compile.
+  - The SwiftUI state examples mixed `@Observable` with `@StateObject`.
+  - The XCTest filter was malformed.
+  - The Checkov Action example passed a `version` input that does not exist.
+  - The Nest e2e setup was wrong, and so was the Pact consumer shape.
+  - The Supabase Edge header was read the Node way.
+  - FastAPI's smoke check never exited. [2026-09-28]
+- Stale or wrong facts:
+  - Sonnet 5 pricing is now $2/$10.
+  - The Prisma 7 client, pool and generate changes are covered.
+  - The Expo Router version is gone; it now follows the Expo SDK.
+  - Auth.js is in maintenance mode.
+  - Zero-downtime step 4 and the Postgres migration timeouts now use non-blocking forms.
+  - The backup check now compares against a restored copy.
+  - The Firestore example still carried comments, which the gate now catches inside `text`
+    fences too. [2026-09-28]
+- Docs:
+  - SECURITY.md said the kit registers no tool hook.
+  - The plugin needs Node.
+  - Run `/kit-setup` again after a plugin update.
+  - The plugin uninstall steps were in the wrong order.
+  - CONTRIBUTING's command table was broken. [2026-09-28]
 
 - The idempotency middleware example overrode `res.json` with an `async` function, which returned
   a Promise and broke Express chaining. It is synchronous now, and the lock is released after the
@@ -539,8 +604,7 @@ no upgrade path from it and no version anyone could be running. This entry descr
   reports the position it is currently stuck at, so the browser decided the target was
   already in view. It now targets a zero-size marker at the top of `<body>`, with
   `tabindex="-1"` so keyboard focus follows the scroll. [2026-08-11]
-- The generator's comment-stripping regexes required a bare `
-`, so on a CRLF checkout
+- The generator's comment-stripping regexes required a bare `\n`, so on a CRLF checkout
   they silently missed and published the templates' contributor notes into the live page.
   Found by diffing a locally built render against the one CI produced. The helpers moved
   to `scripts/lib/templates.ts` — they were untestable inside `gen-site.ts`, which reads

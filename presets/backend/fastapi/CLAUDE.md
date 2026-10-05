@@ -88,10 +88,10 @@ async def list_users():
     return requests.get(url).json()
 ```
 
-RIGHT — async I/O only:
+RIGHT — async I/O only, and the ORM rows go out through the response schema:
 
 ```python
-@router.get("/users")
+@router.get("/users", response_model=list[UserResponse])
 async def list_users(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User))
     return result.scalars().all()
@@ -159,7 +159,8 @@ from fastapi.responses import JSONResponse
 
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError):
-    return JSONResponse(status_code=422, content={"detail": str(exc)})
+    logger.warning("value_error", path=request.url.path, error=str(exc))
+    return JSONResponse(status_code=422, content={"detail": "Invalid request"})
 
 @app.exception_handler(Exception)
 async def generic_handler(request: Request, exc: Exception):
@@ -167,7 +168,9 @@ async def generic_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 ```
 
-Domain errors raise `HTTPException` with a detail, not raw exceptions:
+A `ValueError` can come from anywhere — a library, a parser, an internal invariant — so its text is
+logged, never sent. Domain errors meant for the client raise `HTTPException` with a detail, not raw
+exceptions:
 
 ```python
 raise HTTPException(status_code=409, detail="Email already registered")
@@ -191,7 +194,9 @@ session IDs, email/phone, or a full request body with sensitive fields — the c
 
 ## Verification
 
-Targeted test, coverage run, lint, format check, type check, then a startup smoke check:
+Targeted test, coverage run, lint, format check, type check, then a startup smoke check that
+exits — importing the app runs its module-level wiring without starting a server that never
+returns:
 
 ```bash
 pytest tests/test_users.py -x -q
@@ -199,7 +204,7 @@ pytest --cov=app -q
 ruff check .
 ruff format --check .
 mypy app/
-uvicorn app.main:app --reload
+python -c "import app.main"
 ```
 
 ## Anti-patterns

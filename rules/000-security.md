@@ -1,5 +1,5 @@
 ---
-description: "Core security rules — passive scan on every change, OWASP 2025, supply chain, protected files. No paths field: loads unconditionally every session."
+description: "Core security rules — passive scan on every change, OWASP 2025, supply chain, protected files, ask-first deletions/pushes/private files. No paths field: loads unconditionally every session."
 ---
 
 ## PASSIVE SCAN — every code change, zero overhead
@@ -50,20 +50,11 @@ Run silently. If any check fires: STOP → flag → propose fix → continue.
 | Ruby | `Marshal.load` · `YAML.load` (use `safe_load`) · `send`/`constantize`/`eval` on params · `permit!` · `html_safe`/`raw` on user content · interpolated `where`/`order` |
 | Mobile (Swift/Kotlin/Dart/RN) | Keychain/Keystore misuse · tokens in `UserDefaults`/`SharedPreferences`/`AsyncStorage` · hardcoded keys · cleartext HTTP · deep link without validation · WebView with JS enabled on remote content |
 
-## SUPPLY CHAIN RULES
+## SUPPLY CHAIN + DEPENDENCY AUDIT
 
-- GitHub Actions SHA-pinning, OIDC cloud auth, `npm ci` in CI: full detail + examples in
-  `rules/600-devops.md` (auto-loads for Dockerfile/CI/IaC files) — don't restate here.
-- Lockfile-integrity review, <7-day-package rule, Socket.dev: `agent_docs/dep-check-guide.md`
-  § "Audit commands by runtime" — fires only on dep add/update, lazy-loads with the audit table.
-
-## DEPENDENCY AUDIT
-
-Auto-trigger: any dep added or updated → run the platform's audit command from
-`agent_docs/dep-check-guide.md` § "Audit commands by runtime" (canonical per-runtime table —
-lazy-loaded on first dep change, kept in exactly one place).
-Pre-commit hook recommendations (gitleaks, detect-secrets, <10s budget): `rules/600-devops.md`
-§ PRE-COMMIT HOOKS — auto-loads when a `.pre-commit-config.yaml` or CI file is touched.
+Any dep added or updated → run the runtime's audit command, review the lockfile diff and apply the
+<7-day-package rule: `agent_docs/dep-check-guide.md` § "Audit commands by runtime". SHA-pinned
+Actions, OIDC, `npm ci` in CI and pre-commit hooks (gitleaks): `rules/600-devops.md`.
 
 ## PROTECTED FILES — never read, modify, or reference in output
 
@@ -79,13 +70,30 @@ so both halves are enforced (`Read(...)` + `Edit(...)` deny rules):
 
 `.env` · `.env.*` · `.secrets.baseline*` · `*.lock` · `node_modules/` · `dist/` · `.next/`
 
-Adding a variable to `.env` or regenerating a lockfile is real work; the risk in these is reading
-a secret out, which the `Read` denies already stop. Writing a private key is not real work.
-
-Terraform state holds every provider-returned password in plaintext — it is a credential file,
-not an artifact. `*.tfvars` is deliberately NOT here: it is an input file that legitimately holds
-non-secret configuration, and `rules/600-devops.md` loads for it. Secrets belong in a secret
-manager, never in a committed `.tfvars`.
+`*.tfstate` holds every provider-returned password in plaintext, so it is credential material.
+`*.tfvars` stays readable as an input file; secrets never go in a committed `.tfvars`.
 
 Prompt discipline first — deny rules are a partial backstop, not a guarantee; full enforcement
 breakdown: the kit repo's `SECURITY.md` (not installed to ~/.claude).
+
+## ASK FIRST — deletions, pushes, private files
+
+DELETE — never without the user's explicit yes in that same moment: files, folders, branches,
+stashes, tags, DB rows, artifacts, remote resources — including files you created yourself and
+temp or stray files. Covers `rm`, `Remove-Item`, `git clean`, `git branch -D`, `git stash drop`,
+`git reset --hard` and any script that removes things. List exactly what would go, ask, wait. A
+broad instruction ("clean up", "finish everything", "go ahead") is never approval for a deletion.
+
+PUSH — commit verified work as usual; push only when the user asks for a push at that moment.
+Covers `git push` in every form (force, tags, `--set-upstream`) and anything that pushes for you
+(`gh pr create`, `gh repo sync`, a script). One request covers one push; "ship it" is not one.
+
+PRIVATE FILES — AI-assistant files and working notes are never `git add`ed, committed or pushed:
+`CLAUDE.md`, `CLAUDE.local.md`, `.claude/` (TECH-DEBT, PROJECT-MEMORY, settings), `AGENTS.md`,
+`GEMINI.md`, `.codex/`, `.cursor/`, `.windsurf/`, `ROADMAP.md`, `PLAN*.md`, `NOTES*.md`,
+`PROJECT-CONTRACTS.md`, `DESIGN-SPEC.md`. Keep them out through the global excludes file
+(`core.excludesFile`, default `~/.config/git/ignore`) or the repo's `.git/info/exclude`, never the
+committed `.gitignore`. The kit rules that write these files still apply; the files stay local. A
+file the repo already tracks or deliberately publishes (a team-shared `CLAUDE.md`) is the
+project's call — ask before untracking it. Public docs (README, CHANGELOG, LICENSE, `docs/`)
+never point at a private file. Before any commit, check `git status` and unstage one that slipped in.

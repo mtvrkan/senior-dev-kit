@@ -3,7 +3,7 @@
 - Fetching: `useFetch`/`useAsyncData` for page data (SSR, deduped, hydrated) · `$fetch` ONLY in event handlers · `$fetch` in `setup` double-fires and breaks hydration — the most common Nuxt bug
 - Always give `useAsyncData` a stable `key`
 - Secrets: `runtimeConfig.public.*` ships to the browser — everything else stays in `server/` · a private config value read in a component is a leaked secret
-- Server routes throw `createError({ statusCode })`, never return a raw driver error
+- Server routes resolve the session and check ownership before returning a record by id · throw `createError({ statusCode })`, never return a raw driver error
 - State: `useState('key', init)` for SSR-safe shared state — a module-level `ref` leaks BETWEEN REQUESTS on the server (cross-user data bug) · Pinia for actions + multiple consumers · `toRefs`, never destructure a `reactive`
 - Perf: `<NuxtImg>` with explicit `width`/`height` (CLS < 0.1) · `Lazy` prefix / `defineAsyncComponent` below the fold · stable `:key` on `v-for`, never `v-if` + `v-for` on one element
 - SEO: `useSeoMeta`/`useHead` on every public page — title, description, canonical, OG

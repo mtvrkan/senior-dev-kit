@@ -32,7 +32,7 @@ never the full suite for a 1-file change.
 | C/C++ (CMake) | ctest -R TestName --output-on-failure | clang-tidy [f] | cmake --build build | — |
 | C/C++ (Make) | make check | cppcheck --enable=warning [f] | make | — |
 | Android | ./gradlew test --tests "*.Class" | ./gradlew lint | ./gradlew assembleDebug | — |
-| iOS/Swift | xcodebuild test -scheme [n] -only-testing:[C/m] | swiftlint | xcodebuild build | — |
+| iOS/Swift | xcodebuild test -scheme [n] -destination '[d]' -only-testing:[target/Class/method] | swiftlint | xcodebuild build | — |
 
 This table is the canonical targeted-test reference — `rules/300-testing.md`'s TARGETED TEST
 COMMAND section points here and restates only the Go/XCTest filter syntax.

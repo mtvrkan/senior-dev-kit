@@ -36,7 +36,7 @@ itself.
   consistency check 28 therefore run in that workflow, not in `npm run check` — check 28
   says so out loud when it scans nothing, rather than passing silently.
 - The `site-src` templates and `style.css` keep their contributor comments even though
-  global-CLAUDE.md's SHIPPED SOURCE IS PUBLIC forbids comments in browser-served files: nothing
+  global-CLAUDE.md's CODE STYLE forbids comments in every file: nothing
   on that branch is served as-is. `gen-site.ts` strips every one at build time
   (`stripTemplateNote` / `stripPartialNote` / `stripCssComments`), and `site-check` fails the
   publish if any survives into an artifact. Write the rationale in the source; the visitor never

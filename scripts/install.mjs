@@ -25,6 +25,7 @@
  * Plain JavaScript on purpose — see the note at the top of lib/install-core.mjs.
  */
 
+import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import {
   cpSync,
@@ -32,12 +33,13 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  renameSync,
   rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join, relative, sep } from 'node:path'
+import { dirname, join, relative, resolve, sep } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 
@@ -45,6 +47,8 @@ import {
   backupStamp,
   classifyFileAction,
   deepEqual,
+  detectJsonStyle,
+  formatJson,
   isEmptySkeleton,
   kitHookGroups,
   kitStatusLineLeaf,
@@ -53,12 +57,14 @@ import {
   mergeHookGroups,
   mergeSettingsLeaves,
   parseArgs,
+  permissionsShape,
   pluginEnabled,
   removeManagedBlock,
   removeStaleDenyRules,
   resolveComponents,
   settingsLeaves,
   spliceManagedBlock,
+  substitutePluginRoot,
   tidyPermissions,
   unmergeDenyRules,
   unmergeHookGroups,
@@ -72,7 +78,7 @@ const MANIFEST_NAME = 'manifest.json'
 /** Directory components: repo source dir → target subdirectory. */
 const DIR_COMPONENTS = {
   agents: { from: 'agents', to: 'agents', filter: name => name.endsWith('.md') },
-  skills: { from: 'skills', to: 'skills', filter: null },
+  skills: { from: 'skills', to: 'skills', filter: rel => !rel.startsWith('kit-setup/') },
   commands: { from: 'commands', to: 'commands', filter: name => name.endsWith('.md') },
   rules: { from: 'rules', to: 'rules', filter: name => name.endsWith('.md') },
   agent_docs: { from: 'agent_docs', to: 'agent_docs', filter: name => name.endsWith('.md') },
@@ -88,6 +94,14 @@ const DIR_COMPONENTS = {
 
 const HOOK_SCRIPT_REL = 'scripts/senior-dev-kit/hooks/require-agent-model.mjs'
 const STATUSLINE_SCRIPT_REL = 'scripts/senior-dev-kit/statusline.mjs'
+const SETTINGS_COMPONENTS = ['deny-rules', 'settings', 'statusline']
+const PLUGIN_ROOT_COMPONENTS = ['agents', 'skills', 'commands']
+
+function sourceContent(component, rel, from, target) {
+  const bytes = readFileSync(from)
+  if (!PLUGIN_ROOT_COMPONENTS.includes(component) || !rel.endsWith('.md')) return bytes
+  return Buffer.from(substitutePluginRoot(bytes.toString('utf8'), target), 'utf8')
+}
 
 function ownerComponent(relPath) {
   let owner = null
@@ -113,8 +127,8 @@ function walkFiles(dir, base = dir, out = []) {
 }
 
 function resolveTarget(opts) {
-  if (opts.target) return opts.target
-  if (process.env.CLAUDE_CONFIG_DIR) return process.env.CLAUDE_CONFIG_DIR
+  if (opts.target) return resolve(opts.target)
+  if (process.env.CLAUDE_CONFIG_DIR) return resolve(process.env.CLAUDE_CONFIG_DIR)
   return join(homedir(), '.claude')
 }
 
@@ -213,6 +227,8 @@ function planSettings(target, selected, manifest, current) {
   return {
     path: current.path,
     existed: current.raw !== null,
+    style: detectJsonStyle(current.raw),
+    permissionsBefore: permissionsShape(current.parsed),
     plugin,
     settings,
     changed: !deepEqual(settings, baseline) && !(current.raw === null && deepEqual(settings, {})),
@@ -232,10 +248,11 @@ function buildPlan(target, selected, manifest) {
   const priorShas = new Map((manifest?.files ?? []).map(f => [f.path, f.sha]))
   const currentSettings = readSettings(target)
   const plugin = !currentSettings.error && pluginEnabled(currentSettings.parsed)
+  const active = currentSettings.error ? selected.filter(name => !SETTINGS_COMPONENTS.includes(name)) : selected
 
-  /** @type {{kind:'file',from:string,to:string,rel:string,action:string,ours:boolean}[]} */
+  /** @type {{kind:'file',from:string,to:string,rel:string,content:Buffer,action:string,ours:boolean}[]} */
   const files = []
-  for (const name of selected) {
+  for (const name of active) {
     const spec = DIR_COMPONENTS[name]
     if (!spec) continue
     if (name === 'settings' && plugin) continue
@@ -246,14 +263,16 @@ function buildPlan(target, selected, manifest) {
       const from = join(sourceDir, rel)
       const to = join(target, spec.to, rel)
       const relKey = `${spec.to}/${rel}`
+      const content = sourceContent(name, rel, from, target)
       const exists = existsSync(to)
       const currentSha = exists ? sha256(readFileSync(to)) : null
-      const identical = exists && currentSha === sha256(readFileSync(from))
+      const identical = exists && currentSha === sha256(content)
       files.push({
         kind: 'file',
         from,
         to,
         rel: relKey,
+        content,
         action: classifyFileAction({ exists, identical }),
         ours: exists && priorShas.get(relKey) === currentSha,
       })
@@ -281,13 +300,20 @@ function buildPlan(target, selected, manifest) {
   for (const entry of manifest?.files ?? []) {
     if (planned.has(entry.path)) continue
     const owner = ownerComponent(entry.path)
-    if (!owner || !selected.includes(owner)) continue
+    if (!owner || !active.includes(owner)) continue
     const abs = join(target, entry.path)
     if (!existsSync(abs)) {
       orphans.push({ rel: entry.path, abs, action: 'gone' })
       continue
     }
-    orphans.push({ rel: entry.path, abs, action: sha256(readFileSync(abs)) === entry.sha ? 'remove' : 'keep' })
+    if (sha256(readFileSync(abs)) !== entry.sha) {
+      orphans.push({ rel: entry.path, abs, action: 'keep' })
+      continue
+    }
+    const displaced = (manifest?.restores ?? []).find(r => r.path === entry.path)
+    const backupAbs = displaced ? join(target, displaced.backup) : null
+    if (backupAbs && existsSync(backupAbs)) orphans.push({ rel: entry.path, abs, action: 'restore', from: backupAbs })
+    else orphans.push({ rel: entry.path, abs, action: 'remove' })
   }
 
   return { files, protocol, orphans, settings: planSettings(target, selected, manifest, currentSettings) }
@@ -315,10 +341,16 @@ function describePlan(plan, target) {
     lines.push('', `Protocol: ${plan.protocol.changed ? verb : 'CLAUDE.md protocol block already current'}`)
   }
   const removable = plan.orphans.filter(o => o.action === 'remove')
+  const restorable = plan.orphans.filter(o => o.action === 'restore')
   const kept = plan.orphans.filter(o => o.action === 'keep')
-  if (removable.length > 0 || kept.length > 0) {
-    lines.push('', `Retired files: remove ${removable.length} the kit no longer ships, keep ${kept.length} you edited`)
-    for (const o of [...removable, ...kept].slice(0, 10)) lines.push(`    ${o.action === 'remove' ? 'remove' : 'keep  '}  ${o.rel}`)
+  if (removable.length > 0 || restorable.length > 0 || kept.length > 0) {
+    lines.push(
+      '',
+      `Retired files: remove ${removable.length} the kit no longer ships, ` +
+        `put back ${restorable.length} of yours they had displaced, keep ${kept.length} you edited`
+    )
+    const label = { remove: 'remove', restore: 'restore', keep: 'keep  ' }
+    for (const o of [...removable, ...restorable, ...kept].slice(0, 10)) lines.push(`    ${label[o.action]}  ${o.rel}`)
   }
 
   const s = plan.settings
@@ -378,9 +410,8 @@ function applyPlan(plan, target, stamp) {
       if (backupPath) restores.push({ path: f.rel, backup: backupPath })
     }
     mkdirSync(dirname(f.to), { recursive: true })
-    const content = readFileSync(f.from)
-    writeFileSync(f.to, content)
-    written.push({ path: f.rel, sha: sha256(content) })
+    writeFileSync(f.to, f.content)
+    written.push({ path: f.rel, sha: sha256(f.content) })
   }
 
   let protocolInstalled = false
@@ -396,6 +427,7 @@ function applyPlan(plan, target, stamp) {
   const retired = []
   for (const o of plan.orphans) {
     if (o.action === 'remove') rmSync(o.abs, { force: true })
+    if (o.action === 'restore') cpSync(o.from, o.abs)
     retired.push(o.rel)
   }
   if (retired.length > 0) {
@@ -404,10 +436,11 @@ function applyPlan(plan, target, stamp) {
 
   const s = plan.settings
   let settingsCreated = false
+  let settingsBackup = null
   if (s && !s.error && s.changed) {
-    backup(s.path)
+    settingsBackup = backup(s.path)
     mkdirSync(dirname(s.path), { recursive: true })
-    writeFileSync(s.path, `${JSON.stringify(s.settings, null, 2)}\n`, 'utf8')
+    writeFileSync(s.path, formatJson(s.settings, s.style), 'utf8')
     settingsCreated = !s.existed
   }
 
@@ -419,19 +452,27 @@ function applyPlan(plan, target, stamp) {
     retired,
     protocolInstalled,
     settingsCreated,
+    settingsBackup,
     settings: s && !s.error ? s : null,
   }
 }
 
-function readManifest(target) {
-  const manifestPath = join(target, STATE_DIR, MANIFEST_NAME)
-  if (!existsSync(manifestPath)) return null
+function loadManifest(target) {
+  const path = join(target, STATE_DIR, MANIFEST_NAME)
+  if (!existsSync(path)) return { path, manifest: null, error: false }
   try {
-    return JSON.parse(readFileSync(manifestPath, 'utf8'))
+    const manifest = JSON.parse(readFileSync(path, 'utf8'))
+    const valid = manifest !== null && typeof manifest === 'object' && !Array.isArray(manifest)
+    return valid ? { path, manifest, error: false } : { path, manifest: null, error: true }
   } catch {
-    return null
+    return { path, manifest: null, error: true }
   }
 }
+
+const readManifest = target => loadManifest(target).manifest
+
+const ownsSettings = manifest =>
+  Boolean(manifest?.denyAdded?.length || manifest?.settingsLeaves?.length || manifest?.hookGroups?.length)
 
 function writeManifest(target, result, selected) {
   const version = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')).version
@@ -460,6 +501,8 @@ function writeManifest(target, result, selected) {
   // wrong file and silently "restore" the kit over the user's content.
   const restores = new Map((previous?.restores ?? []).map(r => [r.path, r]))
   for (const r of result.restores) if (!restores.has(r.path)) restores.set(r.path, r)
+  for (const rel of result.retired) restores.delete(rel)
+  const firstSettingsWrite = !ownsSettings(previous)
   const manifest = {
     version,
     installedAt: new Date().toISOString(),
@@ -471,19 +514,33 @@ function writeManifest(target, result, selected) {
     settingsLeaves: settingsLeavesOwned,
     hookGroups: hookGroupsOwned,
     settingsCreated: result.settingsCreated || Boolean(previous?.settingsCreated),
+    permissionsBefore: previous?.permissionsBefore ?? (firstSettingsWrite ? s?.permissionsBefore : undefined),
+    settingsBackup: previous?.settingsBackup ?? (firstSettingsWrite ? result.settingsBackup ?? undefined : undefined),
     lastBackupDir: relative(target, result.backupDir).split(sep).join('/'),
   }
   mkdirSync(dirname(manifestPath), { recursive: true })
-  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+  const tempPath = `${manifestPath}.${process.pid}.tmp`
+  writeFileSync(tempPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
+  renameSync(tempPath, manifestPath)
   return manifest
 }
 
 // --- uninstall --------------------------------------------------------------
 
+function originalSettingsBytes(target, manifest) {
+  if (!manifest.settingsBackup) return null
+  const raw = readIfExists(join(target, manifest.settingsBackup))
+  if (raw === null) return null
+  try {
+    return { raw, parsed: JSON.parse(raw) }
+  } catch {
+    return null
+  }
+}
+
 function planUninstall(target) {
-  const manifestPath = join(target, STATE_DIR, MANIFEST_NAME)
-  if (!existsSync(manifestPath)) return { error: `no install manifest at ${manifestPath}` }
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  const { path: manifestPath, manifest } = loadManifest(target)
+  if (!manifest) return { error: `no install manifest at ${manifestPath}` }
   const remove = []
   const modified = []
   for (const entry of manifest.files) {
@@ -503,8 +560,7 @@ function planUninstall(target) {
   const claudeMdPath = join(target, 'CLAUDE.md')
   const claudeMd = manifest.protocolBlock ? removeManagedBlock(readIfExists(claudeMdPath)) : { removed: false }
   let settings = null
-  const ownsSettings = Boolean(manifest.denyAdded?.length || manifest.settingsLeaves?.length || manifest.hookGroups?.length)
-  if (ownsSettings) {
+  if (ownsSettings(manifest)) {
     const current = readSettings(target)
     if (current.error) return { error: `${current.path} is not valid JSON — fix it first, otherwise the kit's settings entries could never be removed` }
     if (current.raw !== null) {
@@ -512,10 +568,14 @@ function planUninstall(target) {
       const leaves = unmergeSettingsLeaves(deny.settings, manifest.settingsLeaves ?? [])
       const hooks = unmergeHookGroups(leaves.settings, manifest.hookGroups ?? [])
       let next = hooks.settings
-      if (manifest.settingsCreated) next = tidyPermissions(next)
+      if (manifest.permissionsBefore) next = tidyPermissions(next, manifest.permissionsBefore)
+      else if (manifest.denyAdded?.length || manifest.settingsCreated) next = tidyPermissions(next)
+      const original = originalSettingsBytes(target, manifest)
+      const text = original && deepEqual(next, original.parsed) ? original.raw : formatJson(next, detectJsonStyle(current.raw))
       settings = {
         path: current.path,
         settings: next,
+        text,
         deleteFile: Boolean(manifest.settingsCreated) && isEmptySkeleton(next),
         changed: !deepEqual(next, current.parsed),
         denyRemoved: deny.removed,
@@ -550,7 +610,7 @@ function applyUninstall(target, plan) {
   }
   if (plan.settings?.deleteFile) rmSync(plan.settings.path, { force: true })
   else if (plan.settings?.changed) {
-    writeFileSync(plan.settings.path, `${JSON.stringify(plan.settings.settings, null, 2)}\n`, 'utf8')
+    writeFileSync(plan.settings.path, plan.settings.text, 'utf8')
   }
   rmSync(plan.manifestPath, { force: true })
 }
@@ -599,14 +659,23 @@ function reportDrift(target) {
   const plan = buildPlan(target, selected, manifest)
 
   const stale = plan.files.filter(f => f.action !== 'unchanged')
-  const retired = plan.orphans.filter(o => o.action === 'remove')
+  const retired = plan.orphans.filter(o => o.action === 'remove' || o.action === 'restore')
   const protocolStale = Boolean(plan.protocol?.changed)
+  const settingsBroken = Boolean(plan.settings?.error)
   const s = plan.settings && !plan.settings.error ? plan.settings : null
   const denyMissing = s?.deny ? s.deny.added.length : 0
   const denyStale = s?.deny ? s.deny.removed.length : 0
   const settingsDrift = s ? s.leaves.added.length + s.leaves.removed.length + s.hooks.added.length + s.hooks.removed.length : 0
 
-  if (stale.length === 0 && retired.length === 0 && !protocolStale && denyMissing === 0 && denyStale === 0 && settingsDrift === 0) {
+  if (
+    stale.length === 0 &&
+    retired.length === 0 &&
+    !protocolStale &&
+    !settingsBroken &&
+    denyMissing === 0 &&
+    denyStale === 0 &&
+    settingsDrift === 0
+  ) {
     console.log(`✓ ${target} matches this checkout (${plan.files.length} files, components: ${selected.join(', ')}).`)
     return
   }
@@ -616,6 +685,7 @@ function reportDrift(target) {
   if (stale.length > 15) console.error(`    … and ${stale.length - 15} more`)
   for (const o of retired.slice(0, 10)) console.error(`    retired  ${o.rel}`)
   if (protocolStale) console.error('    stale    CLAUDE.md (kit protocol block)')
+  if (settingsBroken) console.error(`    broken   ${plan.settings.error} is not valid JSON — the kit's deny rules and settings cannot be verified`)
   if (denyMissing > 0) console.error(`    missing  ${denyMissing} deny rule(s) in settings.json`)
   if (denyStale > 0) console.error(`    retired  ${denyStale} deny rule(s) still in settings.json`)
   if (settingsDrift > 0) console.error(`    stale    ${settingsDrift} kit setting/hook entr(y/ies) in settings.json`)
@@ -652,6 +722,19 @@ async function main() {
     return
   }
   const target = resolveTarget(opts)
+
+  const manifestState = loadManifest(target)
+  if (manifestState.error) {
+    console.error(
+      `${manifestState.path} is not a valid install manifest. It is the only record of which files, deny rules ` +
+        'and settings this installer wrote, so installing, uninstalling or checking without it would either ' +
+        'forget those entries or report on nothing.\n' +
+        'Restore it from a backup or fix the JSON, then rerun. Deleting it makes the installer treat the ' +
+        'target as a fresh install: --uninstall could then no longer remove what the earlier install added.'
+    )
+    process.exitCode = 1
+    return
+  }
 
   if (opts.uninstall) {
     const plan = planUninstall(target)
@@ -707,8 +790,18 @@ async function main() {
     )
   }
 
-  const plan = buildPlan(target, selected, readManifest(target))
+  const plan = buildPlan(target, selected, manifestState.manifest)
   console.log(describePlan(plan, target))
+  const skippedSettings = plan.settings?.error ? selected.filter(name => SETTINGS_COMPONENTS.includes(name)) : []
+  const installed = selected.filter(name => !skippedSettings.includes(name))
+  const failSkippedSettings = () => {
+    if (skippedSettings.length === 0) return
+    console.error(
+      `\nNot installed: ${skippedSettings.join(', ')} — ${plan.settings.error} is not valid JSON. ` +
+        'Fix or move it and rerun; everything else above was handled.'
+    )
+    process.exitCode = 1
+  }
 
   // Refuse rather than warn. Appending the managed block next to an unmarked
   // copy left by the kit's old `cp global-CLAUDE.md ~/.claude/CLAUDE.md`
@@ -736,8 +829,9 @@ async function main() {
     plan.orphans.length > 0 ||
     plan.protocol?.changed ||
     (plan.settings && !plan.settings.error && plan.settings.changed)
-  if (!hasWork) return console.log('\nAlready up to date — nothing to do.')
+  if (!hasWork && skippedSettings.length === 0) return console.log('\nAlready up to date — nothing to do.')
   if (opts.dryRun) return console.log('\nDry run — nothing was changed.')
+  if (!hasWork) return failSkippedSettings()
   const answer = await confirm('\nProceed?', opts.yes)
   if (answer === NO_TTY) {
     process.exitCode = 1
@@ -746,11 +840,12 @@ async function main() {
   if (!answer) return console.log('Aborted.')
 
   const result = applyPlan(plan, target, backupStamp(new Date()))
-  writeManifest(target, result, selected)
-  console.log(`\nInstalled to ${target}`)
+  writeManifest(target, result, installed)
+  console.log(`\n${skippedSettings.length > 0 ? 'Partly installed' : 'Installed'} to ${target}`)
   if (result.backedUp > 0) console.log(`Backed up ${result.backedUp} existing file(s) to ${result.backupDir}`)
   console.log('Undo any time with: node scripts/install.mjs --uninstall')
   console.log('Restart Claude Code (or run /reload-plugins) to pick up the changes.')
+  failSkippedSettings()
 }
 
 main().catch(err => {

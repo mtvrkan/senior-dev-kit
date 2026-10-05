@@ -13,20 +13,23 @@
 
 ### tRPC — when it shines
 
-Server (Next.js / NestJS):
+Server (Next.js / NestJS) — both procedures sit behind auth and `select` the public columns, so the
+password hash and every other internal column never reach the client:
 
 ```typescript
+const publicUserFields = { id: true, email: true, name: true } as const
+
 export const userRouter = router({
-  getById: publicProcedure
+  getById: protectedProcedure
     .input(z.string().uuid())
     .query(async ({ input, ctx }) => {
-      return ctx.db.user.findUniqueOrThrow({ where: { id: input } })
+      return ctx.db.user.findUniqueOrThrow({ where: { id: input }, select: publicUserFields })
     }),
   
   create: protectedProcedure
     .input(CreateUserSchema)
     .mutation(async ({ input, ctx }) => {
-      return ctx.db.user.create({ data: input })
+      return ctx.db.user.create({ data: input, select: publicUserFields })
     }),
 })
 ```
@@ -127,6 +130,10 @@ Or with a webhook — when the job completes, the server POSTs the result to `we
 POST /reports/generate { webhookUrl: 'https://myapp.com/hooks/report' }
 → 202 Accepted { jobId: 'abc123' }
 ```
+
+A client-supplied `webhookUrl` is an SSRF vector — the server will POST wherever it points,
+including internal services and cloud metadata endpoints. Validate it on receipt and again before
+every delivery (`assertPublicHttpsUrl` under WEBHOOK DESIGN).
 
 ### Batch operations
 
@@ -238,10 +245,42 @@ The key is scoped by principal, method and route, so one user can never replay a
 
 ## WEBHOOK DESIGN
 
-Sending webhooks (producer):
+Sending webhooks (producer). The target URL came from a client, so before every delivery it must be
+`https:` and resolve only to public addresses — not private, loopback, link-local or CGNAT ranges.
+`redirect: 'error'` stops a public URL from bouncing the request to an internal one, and a non-2xx
+response throws so the retry schedule below picks it up:
 
 ```typescript
-async function sendWebhook(url: string, event: WebhookEvent) {
+import { lookup } from 'node:dns/promises'
+import { BlockList } from 'node:net'
+
+const blockedRanges = new BlockList()
+blockedRanges.addSubnet('0.0.0.0', 8)
+blockedRanges.addSubnet('10.0.0.0', 8)
+blockedRanges.addSubnet('100.64.0.0', 10)
+blockedRanges.addSubnet('127.0.0.0', 8)
+blockedRanges.addSubnet('169.254.0.0', 16)
+blockedRanges.addSubnet('172.16.0.0', 12)
+blockedRanges.addSubnet('192.168.0.0', 16)
+blockedRanges.addAddress('::', 'ipv6')
+blockedRanges.addAddress('::1', 'ipv6')
+blockedRanges.addSubnet('fc00::', 7, 'ipv6')
+blockedRanges.addSubnet('fe80::', 10, 'ipv6')
+
+async function assertPublicHttpsUrl(raw: string): Promise<URL> {
+  const url = new URL(raw)
+  if (url.protocol !== 'https:') throw new Error('Webhook URL must use https')
+  const addresses = await lookup(url.hostname, { all: true })
+  for (const { address, family } of addresses) {
+    if (blockedRanges.check(address, family === 6 ? 'ipv6' : 'ipv4')) {
+      throw new Error('Webhook URL resolves to a non-public address')
+    }
+  }
+  return url
+}
+
+async function sendWebhook(rawUrl: string, event: WebhookEvent) {
+  const url = await assertPublicHttpsUrl(rawUrl)
   const timestamp = Math.floor(Date.now() / 1000).toString()
   const payload = JSON.stringify(event)
   const signature = crypto
@@ -249,8 +288,9 @@ async function sendWebhook(url: string, event: WebhookEvent) {
     .update(`${timestamp}.${payload}`)
     .digest('hex')
   
-  await fetch(url, {
+  const res = await fetch(url, {
     method: 'POST',
+    redirect: 'error',
     headers: {
       'Content-Type': 'application/json',
       'X-Webhook-Signature': `sha256=${signature}`,
@@ -258,8 +298,14 @@ async function sendWebhook(url: string, event: WebhookEvent) {
     },
     body: payload,
   })
+  if (!res.ok) throw new Error(`Webhook delivery failed with status ${res.status}`)
 }
 ```
+
+The check resolves the hostname once and `fetch` resolves it again, so a DNS-rebinding target can
+still switch addresses in between. Where that matters, connect to the address the check approved
+through a custom HTTP agent or dispatcher, or send deliveries through an egress proxy that
+enforces the same ranges.
 
 Receiving webhooks (consumer) — first verify the timestamp to prevent replay attacks (5-minute
 window), then verify the signature:

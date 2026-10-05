@@ -11,7 +11,7 @@
 import { deepStrictEqual, ok, strictEqual } from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { after, describe, it } from 'node:test'
@@ -714,5 +714,210 @@ describe('installer CLI (end to end)', () => {
     strictEqual(res.status, 1)
     ok(res.stderr.includes('not valid JSON'), res.stderr)
     ok(existsSync(join(target, '.senior-dev-kit', 'manifest.json')), 'the record of added rules survives')
+  })
+
+  it('exits non-zero and records nothing for settings components it had to skip', () => {
+    const target = makeTarget()
+    writeFileSync(join(target, 'settings.json'), '{ not json', 'utf8')
+    const res = run(['--yes', '--only', 'rules,deny-rules,settings'], target)
+    strictEqual(res.status, 1, res.stdout)
+    ok(res.stderr.includes('Not installed: deny-rules, settings'), res.stderr)
+    ok(!res.stdout.includes('\nInstalled to'), res.stdout)
+    ok(existsSync(join(target, 'rules', '000-security.md')), 'the components that could install did')
+    ok(!existsSync(join(target, 'scripts')), 'the settings hook files are not copied')
+    const manifest = JSON.parse(readFileSync(join(target, '.senior-dev-kit', 'manifest.json'), 'utf8'))
+    deepStrictEqual(manifest.components, ['rules'])
+    ok(!manifest.files.some(f => f.path.startsWith('scripts/')))
+    strictEqual(readFileSync(join(target, 'settings.json'), 'utf8'), '{ not json')
+
+    const onlySettings = run(['--yes', '--only', 'deny-rules'], target)
+    strictEqual(onlySettings.status, 1, onlySettings.stdout)
+    ok(!onlySettings.stdout.includes('Already up to date'), onlySettings.stdout)
+
+    strictEqual(run(['--yes', '--only', 'deny-rules'], makeTarget()).status, 0)
+  })
+
+  it('--check fails while settings.json cannot be parsed', () => {
+    const target = makeTarget()
+    strictEqual(run(['--yes', '--only', 'deny-rules'], target).status, 0)
+    writeFileSync(join(target, 'settings.json'), '{ broken', 'utf8')
+    const res = run(['--check'], target)
+    strictEqual(res.status, 1, res.stdout)
+    ok(res.stderr.includes('not valid JSON'), res.stderr)
+  })
+
+  it('uninstall restores a CRLF, four-space settings.json byte for byte', () => {
+    const target = makeTarget()
+    const original = JSON.stringify({ model: 'opus', permissions: { allow: ['Bash(ls)'] } }, null, 4).replace(/\n/g, '\r\n') + '\r\n'
+    writeFileSync(join(target, 'settings.json'), original, 'utf8')
+    strictEqual(run(['--yes', '--only', 'deny-rules,settings'], target).status, 0)
+    const installed = readFileSync(join(target, 'settings.json'), 'utf8')
+    ok(!/[^\r]\n/.test(installed), 'line endings stay CRLF')
+    ok(installed.includes('\r\n    "model": "opus"'), 'indentation stays four spaces')
+
+    strictEqual(run(['--uninstall', '--yes'], target).status, 0)
+    strictEqual(readFileSync(join(target, 'settings.json'), 'utf8'), original)
+  })
+
+  it('uninstall prunes the empty deny list a legacy manifest cannot account for', () => {
+    const target = makeTarget()
+    const original = `${JSON.stringify({ model: 'opus' }, null, 2)}\n`
+    writeFileSync(join(target, 'settings.json'), original, 'utf8')
+    strictEqual(run(['--yes', '--only', 'deny-rules'], target).status, 0)
+    const manifestPath = join(target, '.senior-dev-kit', 'manifest.json')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    delete manifest.permissionsBefore
+    delete manifest.settingsBackup
+    delete manifest.settingsCreated
+    writeFileSync(manifestPath, JSON.stringify(manifest), 'utf8')
+
+    strictEqual(run(['--uninstall', '--yes'], target).status, 0)
+    strictEqual(readFileSync(join(target, 'settings.json'), 'utf8'), original)
+  })
+
+  it('uninstall keeps an empty deny list the user already had', () => {
+    const target = makeTarget()
+    const original = `${JSON.stringify({ permissions: { deny: [] }, model: 'opus' }, null, 2)}\n`
+    writeFileSync(join(target, 'settings.json'), original, 'utf8')
+    strictEqual(run(['--yes', '--only', 'deny-rules'], target).status, 0)
+    rmSync(join(target, '.senior-dev-kit', 'backups'), { recursive: true, force: true })
+    strictEqual(run(['--uninstall', '--yes'], target).status, 0)
+    strictEqual(readFileSync(join(target, 'settings.json'), 'utf8'), original)
+  })
+
+  it('writes absolute hook paths when --target is relative', () => {
+    const parent = makeTarget()
+    const res = spawnSync(process.execPath, [INSTALLER, '--target', 'relative-home', '--yes', '--only', 'settings'], {
+      cwd: parent,
+      encoding: 'utf8',
+    })
+    strictEqual(res.status, 0, res.stderr)
+    const settings = JSON.parse(readFileSync(join(parent, 'relative-home', 'settings.json'), 'utf8'))
+    const command = settings.hooks.PreToolUse[0].hooks[0].command
+    ok(command.includes(parent.replace(/\\/g, '/')), command)
+  })
+
+  it('refuses to install, uninstall or check over a corrupt manifest', () => {
+    const target = makeTarget()
+    strictEqual(run(['--yes', '--only', 'rules,deny-rules'], target).status, 0)
+    const manifestPath = join(target, '.senior-dev-kit', 'manifest.json')
+    writeFileSync(manifestPath, '{ truncated', 'utf8')
+    for (const args of [['--yes'], ['--uninstall', '--yes'], ['--check']]) {
+      const res = run(args, target)
+      strictEqual(res.status, 1, `${args.join(' ')}: ${res.stdout}`)
+      ok(res.stderr.includes('not a valid install manifest'), res.stderr)
+    }
+    strictEqual(readFileSync(manifestPath, 'utf8'), '{ truncated')
+    ok(existsSync(join(target, 'rules', '000-security.md')))
+    ok(!readdirSync(join(target, '.senior-dev-kit')).some(name => name.endsWith('.tmp')), 'no temp manifest left behind')
+  })
+
+  it('upgrade: puts back the file of yours that a retired kit file had displaced', () => {
+    const target = makeTarget()
+    strictEqual(run(['--yes', '--only', 'rules'], target).status, 0)
+    const manifestPath = join(target, '.senior-dev-kit', 'manifest.json')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    const backupRel = '.senior-dev-kit/backups/2020-01-01T00-00-00-000/rules/999-mine.md'
+    mkdirSync(dirname(join(target, backupRel)), { recursive: true })
+    writeFileSync(join(target, backupRel), 'MY ORIGINAL\n', 'utf8')
+    writeFileSync(join(target, 'rules', '999-mine.md'), 'retired kit version\n', 'utf8')
+    manifest.files.push({ path: 'rules/999-mine.md', sha: createHash('sha256').update('retired kit version\n').digest('hex') })
+    manifest.restores = [{ path: 'rules/999-mine.md', backup: backupRel }]
+    writeFileSync(manifestPath, JSON.stringify(manifest), 'utf8')
+
+    const res = run(['--yes', '--only', 'rules'], target)
+    strictEqual(res.status, 0, res.stderr)
+    strictEqual(readFileSync(join(target, 'rules', '999-mine.md'), 'utf8'), 'MY ORIGINAL\n')
+    const after = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    deepStrictEqual(after.restores, [])
+    ok(!after.files.some(f => f.path === 'rules/999-mine.md'))
+  })
+
+  it('leaves the plugin-only kit-setup skill out of a copy install', () => {
+    const target = makeTarget()
+    strictEqual(run(['--yes', '--only', 'skills'], target).status, 0)
+    ok(existsSync(join(target, 'skills', 'bug-fix', 'SKILL.md')))
+    ok(!existsSync(join(target, 'skills', 'kit-setup')), 'kit-setup only works as a plugin skill')
+    strictEqual(run(['--check'], target).status, 0)
+  })
+
+  it('replaces ${CLAUDE_PLUGIN_ROOT} with the install directory and still reports no drift', () => {
+    const target = makeTarget()
+    strictEqual(run(['--yes', '--only', 'agents,skills,commands'], target).status, 0)
+    const token = '${CLAUDE_PLUGIN_ROOT}'
+    const carriers = []
+    for (const dir of ['agents', 'skills', 'commands']) {
+      for (const entry of readdirSync(join(REPO_ROOT, dir), { recursive: true })) {
+        const rel = `${dir}/${String(entry).replace(/\\/g, '/')}`
+        if (!rel.endsWith('.md') || rel.startsWith('skills/kit-setup/')) continue
+        if (readFileSync(join(REPO_ROOT, rel), 'utf8').includes(token)) carriers.push(rel)
+      }
+    }
+    ok(carriers.length > 0, 'at least one shipped Markdown file uses the plugin root variable')
+    for (const rel of carriers) {
+      const installed = readFileSync(join(target, rel), 'utf8')
+      ok(!installed.includes(token), `${rel} still holds the unsubstituted variable`)
+      ok(installed.includes(target.replace(/\\/g, '/')), `${rel} does not name the install directory`)
+    }
+    const check = run(['--check'], target)
+    strictEqual(check.status, 0, check.stderr)
+    ok(run(['--yes', '--only', 'agents,skills,commands'], target).stdout.includes('Already up to date'))
+  })
+
+  it('rejects --only with no component list', () => {
+    const target = makeTarget()
+    strictEqual(run(['--only='], target).status, 2)
+    strictEqual(run(['--only'], target).status, 2)
+    ok(!existsSync(join(target, 'rules')))
+  })
+})
+
+describe('parseArgs --only', () => {
+  it('refuses an --only with no component list instead of ignoring it', () => {
+    deepStrictEqual(parseArgs(['--only']).unknown, ['--only (missing component list)'])
+    deepStrictEqual(parseArgs(['--only=']).unknown, ['--only= (missing component list)'])
+    deepStrictEqual(parseArgs(['--only', ',']).unknown, ['--only (missing component list)'])
+    const swallowed = parseArgs(['--only', '--yes'])
+    strictEqual(swallowed.components, null)
+    strictEqual(swallowed.yes, true)
+  })
+})
+
+describe('require-agent-model hook under a forced subagent model', () => {
+  it('stays silent when CLAUDE_CODE_SUBAGENT_MODEL_FORCE is set, since no call could name a model', () => {
+    const payload = { tool_input: { subagent_type: 'Explore', prompt: 'x' } }
+    strictEqual(decideAgentModel(payload, { CLAUDE_CODE_SUBAGENT_MODEL_FORCE: '1' }), null)
+    strictEqual(decideAgentModel(payload, { CLAUDE_CODE_SUBAGENT_MODEL_FORCE: 'sonnet' }), null)
+    ok(decideAgentModel(payload, {}), 'unset still denies')
+    ok(decideAgentModel(payload, { CLAUDE_CODE_SUBAGENT_MODEL_FORCE: '0' }), 'an explicit off still denies')
+  })
+})
+
+describe('entry scripts behind a linked directory', () => {
+  const env = { ...process.env }
+  delete env.CLAUDE_CODE_SUBAGENT_MODEL_FORCE
+
+  const throughLink = (realDir, script, input) => {
+    const parent = mkdtempSync(join(tmpdir(), 'sdk-link-'))
+    const link = join(parent, 'linked')
+    symlinkSync(realDir, link, 'junction')
+    try {
+      return spawnSync(process.execPath, [join(link, script)], { input, encoding: 'utf8', env })
+    } finally {
+      unlinkSync(link)
+      rmSync(parent, { recursive: true, force: true })
+    }
+  }
+
+  it('the model hook still runs when reached through a symlink or junction', () => {
+    const res = throughLink(join(REPO_ROOT, 'scripts', 'hooks'), 'require-agent-model.mjs', JSON.stringify({ tool_input: { subagent_type: 'Explore' } }))
+    strictEqual(res.status, 0, res.stderr)
+    ok(res.stdout.includes('"permissionDecision":"deny"'), res.stdout)
+  })
+
+  it('the status line still renders when reached through a symlink or junction', () => {
+    const res = throughLink(join(REPO_ROOT, 'scripts'), 'statusline.mjs', JSON.stringify({ model: { id: 'claude-opus-5' } }))
+    strictEqual(res.status, 0, res.stderr)
+    ok(res.stdout.includes('Opus'), res.stdout)
   })
 })

@@ -2,14 +2,13 @@
 name: api-design
 description: Use for designing REST/GraphQL API contracts before implementing, and for planning breaking-change version transitions (v1→v2, deprecations). No code edits.
 allowed-tools: Read, Grep, Glob, Bash
-disallowed-tools: Edit, Write, NotebookEdit
 when_to_use: Use automatically before any new API endpoint, when API shape is unclear, or when a change breaks existing clients (removed/renamed field, new required field, error-format/auth change).
 argument-hint: "[endpoint or resource to design or version]"
 ---
 
 # api-design
 
-Design the API contract. No implementation — wait for confirmation before coding.
+Design the API contract. No code edits, no implementation — wait for confirmation before coding.
 
 1. Read 1-2 existing endpoints. Extract URL pattern, response envelope, error shape, auth mechanism, status codes — match ALL in the new design.
 2. Changing an EXISTING endpoint → grep for callers first. Non-breaking → propose a backwards-compatible alternative. Breaking → version transition below.
@@ -18,7 +17,7 @@ Design the API contract. No implementation — wait for confirmation before codi
 
 Breaking = removed/renamed field, required field added, type/status-code/error-format/auth changed, endpoint removed. Non-breaking (no versioning): new optional field/param, new endpoint.
 Plan: current `/api/v[N]` → new `/api/v[N+1]`, both live in parallel — never remove old behavior on deploy. Old version gets `Deprecation` + `Sunset` + `Link` headers; sunset ≥6 months after v[N+1] ships. Write `docs/api-migration-vN-to-vN+1.md`, update OpenAPI spec, regenerate types.
-Deep reference: `agent_docs/api-versioning-guide.md` — parallel routing code, deprecation headers, migration guide template, OpenAPI dual-version strategy.
+Deep reference: `${CLAUDE_PLUGIN_ROOT}/agent_docs/api-versioning-guide.md` — parallel routing code, deprecation headers, migration guide template, OpenAPI dual-version strategy.
 
 ## Output
 

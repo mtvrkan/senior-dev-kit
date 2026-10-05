@@ -20,12 +20,20 @@
 Schema changes go through `db-guard` review, and never as a side effect of unrelated work
 (`rules/500-database.md`). Prefer additive. Destructive changes need explicit approval.
 
-Every migration session sets these before the DDL, so it never queues behind a long-running
-query — `lock_timeout` makes it fail fast instead of blocking every later query:
+Every lock-taking DDL statement runs with these set first, so it never queues behind a
+long-running query — `lock_timeout` makes it fail fast instead of blocking every later query:
 
 ```sql
 SET lock_timeout = '3s';
 SET statement_timeout = '60s';
+```
+
+The 60-second cap is for the DDL that takes a strong lock and should finish instantly. A long
+scan that holds only a weak lock — `VALIDATE CONSTRAINT`, `CREATE INDEX CONCURRENTLY`, a batched
+backfill — would be cancelled by it partway through on a large table, so lift it before those:
+
+```sql
+SET statement_timeout = 0;
 ```
 
 An `ALTER TABLE` that waits for `ACCESS EXCLUSIVE` also blocks every query that arrives *behind*
@@ -48,13 +56,16 @@ Then, after the backfill:
 ```sql
 ALTER TABLE users ADD CONSTRAINT users_status_nn
   CHECK (status IS NOT NULL) NOT VALID;
+SET statement_timeout = 0;
 ALTER TABLE users VALIDATE CONSTRAINT users_status_nn;
+SET statement_timeout = '60s';
 ALTER TABLE users ALTER COLUMN status SET NOT NULL;
 ```
 
 Indexes on a live table:
 
 ```sql
+SET statement_timeout = 0;
 CREATE INDEX CONCURRENTLY idx_users_org ON users (org_id);
 ```
 

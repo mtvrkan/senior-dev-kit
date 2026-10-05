@@ -26,7 +26,24 @@ Step 3 — Backfill: batch-update existing rows in chunks, looping until 0 rows 
 
 Step 4 — Add constraint + switch reads: make NOT NULL / add FK / add UNIQUE, then deploy code
   that READS the new column only (it still writes both).
-  Deploy: the constraint is safe now that every row has a value; the read switch is a code deploy.
+  Deploy: every row has a value now, but the plain forms still scan or build the whole table
+  under a lock that blocks writes. On PostgreSQL use the non-blocking forms:
+
+  NOT NULL (PG 12+ skips the scan once a validated CHECK proves it):
+    ALTER TABLE t ADD CONSTRAINT t_new_col_nn CHECK (new_col IS NOT NULL) NOT VALID;
+    ALTER TABLE t VALIDATE CONSTRAINT t_new_col_nn;
+    ALTER TABLE t ALTER COLUMN new_col SET NOT NULL;
+
+  FK:
+    ALTER TABLE t ADD CONSTRAINT t_new_col_fk FOREIGN KEY (new_col) REFERENCES p (id) NOT VALID;
+    ALTER TABLE t VALIDATE CONSTRAINT t_new_col_fk;
+
+  UNIQUE (CONCURRENTLY cannot run inside a transaction block):
+    CREATE UNIQUE INDEX CONCURRENTLY t_new_col_key ON t (new_col);
+    ALTER TABLE t ADD CONSTRAINT t_new_col_key UNIQUE USING INDEX t_new_col_key;
+
+  VALIDATE holds only SHARE UPDATE EXCLUSIVE, so writes continue while it scans. The read
+  switch is a code deploy.
 
 Step 5 — Contract: deploy code that stops writing the old column, and only after every instance
   of older code is gone, drop the old column in a separate migration.
