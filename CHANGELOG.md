@@ -218,7 +218,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 - `npm audit` is clean again. `markdownlint-cli2` pulled in `braces`, which has no fixed
   release, through its file globbing; `npm run markdown-lint` now calls the same `markdownlint`
   engine through a small script that finds the same 146 files, and `brace-expansion` moved to
-  5.0.12. [2026-10-05]
+  5.0.12. The script's test imported `markdownlint` and crashed in CI, whose unit-test job runs
+  without `npm ci`; file discovery now lives in a dependency-free module, and a test fails if
+  anything the unit suite reaches imports a package at runtime. [2026-10-05]
 
 ## [1.1.0] — 2026-08-14
 

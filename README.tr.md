@@ -138,11 +138,11 @@ türetilir. Tek komut:
 npm run check
 ```
 
-Şu an: 467/467 test geçiyor (72 suites). `routing-eval` yönlendirme tablosunu 34 gerçekçi isteği
+Şu an: 468/468 test geçiyor (73 suites). `routing-eval` yönlendirme tablosunu 34 gerçekçi isteği
 ile sabitler, `check-consistency` bu dosyadaki elle yazılmış her sayıyı yeniden türetir,
 `check-plugin` ise plugin manifestlerinin diskteki bileşenlerle hâlâ eşleştiğini doğrular.
 
-**Bunun kanıtladığı ve kanıtlamadığı şey.** Açık olalım: bu 467 test *iç tutarlılık* testidir.
+**Bunun kanıtladığı ve kanıtlamadığı şey.** Açık olalım: bu 468 test *iç tutarlılık* testidir.
 Dokümantasyonun diskteki dosyalarla eşleştiğini kanıtlar — hiçbir sayının bayat, hiçbir yolun ölü,
 hiçbir kuralın bir yerde iddia edilip başka yerde eksik olmadığını. **Kitin modelin çıktısını
 iyileştirip iyileştirmediğini ölçmezler.** CI'da yeşil geçen hiçbir şey bunu ölçmüyor.
