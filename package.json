@@ -34,7 +34,7 @@
     "siteOrigin": "https://senior.mtvrkan.com"
   },
   "scripts": {
-    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/deny-cost.test.ts scripts/run-checks.test.ts scripts/behavior-eval.test.ts scripts/rule-globs.test.ts scripts/templates.test.ts scripts/example-comments.test.ts scripts/install.test.mjs scripts/session-context.test.mjs",
+    "test": "node --experimental-strip-types --test scripts/validate-skills.test.ts scripts/deny-cost.test.ts scripts/run-checks.test.ts scripts/behavior-eval.test.ts scripts/rule-globs.test.ts scripts/templates.test.ts scripts/example-comments.test.ts scripts/markdown-lint.test.ts scripts/install.test.mjs scripts/session-context.test.mjs",
     "setup": "node scripts/install.mjs",
     "validate": "node --experimental-strip-types scripts/validate-skills.ts",
     "link-check": "node --experimental-strip-types scripts/check-links.ts",
@@ -50,7 +50,7 @@
     "deny-cost": "node --experimental-strip-types scripts/deny-cost.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint scripts/",
-    "markdown-lint": "markdownlint-cli2 \"**/*.md\" \"!node_modules\" \"!site\" --config .markdownlint.json",
+    "markdown-lint": "node --experimental-strip-types scripts/markdown-lint.ts",
     "audit": "npm audit --audit-level=moderate",
     "check-release": "node --experimental-strip-types scripts/check-release.ts",
     "check": "node --experimental-strip-types scripts/run-checks.ts",
@@ -60,7 +60,7 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.13.3",
     "eslint": "^10.6.0",
-    "markdownlint-cli2": "^0.23.1",
+    "markdownlint": "^0.41.1",
     "typescript": "^5.8.0",
     "typescript-eslint": "^8.62.1"
   }

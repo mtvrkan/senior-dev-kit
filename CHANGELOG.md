@@ -215,6 +215,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
   literally. It now ends in `:**`, verified live to block that push and nothing else, and
   `npm run validate` rejects any permission rule that mixes `*` with a trailing `:*`.
   [2026-10-05]
+- `npm audit` is clean again. `markdownlint-cli2` pulled in `braces`, which has no fixed
+  release, through its file globbing; `npm run markdown-lint` now calls the same `markdownlint`
+  engine through a small script that finds the same 146 files, and `brace-expansion` moved to
+  5.0.12. [2026-10-05]
 
 ## [1.1.0] — 2026-08-14
 
