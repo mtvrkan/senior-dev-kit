@@ -164,7 +164,7 @@ into context every session, so it has to earn that); or any prompt that plain de
 correctly and `ROUTING.md` breaks — checked separately, since an aggregate would let breakage
 cancel against improvement.
 
-Four of the prompts expect `none` — handle it directly, delegate to nobody. They exist because
+Ten of the prompts expect `none` — handle it directly, delegate to nobody. They exist because
 without them the suite could not fail the way a routing document actually fails. Every prompt
 used to expect *some* agent, which means a `ROUTING.md` that delegated absolutely everything
 would have scored 100%: the eval could see the wrong agent and the missing one, and was blind to
@@ -172,16 +172,18 @@ the unnecessary one. That is the expensive failure — a subagent is a fresh con
 re-reads the project to change one word — and it is the failure a document arguing for
 delegation is most likely to cause.
 
-**The measured result, 2026-08-14:** control 25/31 (81%), treatment 31/31 (100%) — all six routes
-the descriptions get wrong, fixed, and none that they get right, broken. Adding the negative cases
+**The measured result, 2026-10-05:** control 28/34 (82%), treatment 33/34 (97%) — five of the six
+routes the descriptions get wrong, fixed, and none that they get right, broken. Adding the negative cases
 is what widened the gap: plain agent descriptions have nothing to say about when *not* to delegate,
 so `src/pages/About.tsx'te 'Kurumsal' başlığını 'Hakkımızda' yap` goes to `ui-fixer` on the strength
 of the word "copy", while the treatment arm reaches `ROUTING.md`'s Step 3.5 and answers `none`.
 The other routes it moves are the ones where a sentence's noun has to outrank its verb in both
 directions (`fix CSS in the login form` → `security-guard`, not `ui-fixer`; but tests *for* payment
-code → `senior-engineer`, not the guard). The treatment arm has scored 100% in every recorded run
-and the control arm is the part that samples, which is why the bar is error reduction rather than
-points of lift. Those integers live in `eval/golden-prompts.json`, and `check-consistency` fails if
+code → `senior-engineer`, not the guard). The one miss is `fix the padding on the pricing cards,
+they look cramped on mobile`: one component's spacing is Tier 1, so Step 3.5 keeps it in the main
+loop, yet both arms sent it to `ui-fixer` this run after the treatment arm had answered `none` 3 of
+3 times the run before. Prompts on the Tier 1/2 line sample, and the control arm samples most,
+which is why the bar is error reduction rather than points of lift. Those integers live in `eval/golden-prompts.json`, and `check-consistency` fails if
 this paragraph states a score that file does not — or if the recorded run stops describing the
 suite on disk, which is how a previous number went stale: it was measured before a prompt was
 added, and the re-run that caught up found two routes the updated table had broken. One run on one

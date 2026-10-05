@@ -164,22 +164,25 @@ düzeltirse (her oturumda context'e yükleniyor, bunu hak etmek zorunda); ya da 
 doğru yönlendirdiği bir prompt'u `ROUTING.md` bozarsa — bu ayrı kontrol edilir, aksi hâlde bozulma
 iyileşmeyle sadeleşip görünmez olurdu.
 
-Prompt'ların dördü `none` bekliyor — kimseye devretme, doğrudan hallet. Bunlar olmadan süit, bir
+Prompt'ların onu `none` bekliyor — kimseye devretme, doğrudan hallet. Bunlar olmadan süit, bir
 yönlendirme dokümanının gerçekte bozulduğu şekilde bozulamıyordu: eskiden her prompt *bir* ajan
 beklediği için, her şeyi devreden bir `ROUTING.md` de 100% alırdı. Eval yanlış ajanı ve eksik
 devri görebiliyor, gereksiz devri göremiyordu. Pahalı olan o — bir subagent, tek kelimeyi
 değiştirmek için projeyi sıfırdan okuyan yeni bir context penceresi — ve devretmeyi savunan bir
 dokümanın en olası hatası da o.
 
-**Ölçülen sonuç, 2026-08-14:** kontrol 25/31 (%81), tedavi 31/31 (%100) — açıklamaların yanlış
-yönlendirdiği altı rotanın hepsi düzeltildi, doğru yönlendirdiklerinden hiçbiri bozulmadı. Arayı
+**Ölçülen sonuç, 2026-10-05:** kontrol 28/34 (%82), tedavi 33/34 (%97) — açıklamaların yanlış
+yönlendirdiği altı rotanın beşi düzeltildi, doğru yönlendirdiklerinden hiçbiri bozulmadı. Arayı
 açan şey negatif vakalar oldu: düz ajan açıklamalarının "ne zaman devretme" hakkında söyleyecek
 hiçbir şeyi yok, o yüzden `src/pages/About.tsx'te 'Kurumsal' başlığını 'Hakkımızda' yap` yalnızca
 "metin" kelimesine bakıp `ui-fixer`'a gidiyor; tedavi kolu ise `ROUTING.md`'nin Adım 3.5'ine ulaşıp
 `none` diyor. Taşıdığı diğer rotalar, cümledeki ismin fiile iki yönde de üstün gelmesi gereken
 durumlar (`login formundaki CSS'i düzelt` → `ui-fixer` değil `security-guard`; ama ödeme kodu
-*için* test → guard değil `senior-engineer`). Tedavi kolu kayıtlı her koşuda kusursuz, örneklenen
-taraf kontrol kolu — baraj bu yüzden puan değil, hata düzeltme oranı. Bu tam sayılar
+*için* test → guard değil `senior-engineer`). Tek kaçan, `fix the padding on the pricing cards,
+they look cramped on mobile`: tek bileşenin boşluğu Tier 1, Adım 3.5 onu ana döngüde tutar; ama bu
+koşuda iki kol da `ui-fixer` dedi, oysa bir önceki koşuda tedavi kolu 3 denemenin 3'ünde `none`
+demişti. Tier 1/2 sınırındaki prompt'lar örnekleniyor, en çok örneklenen de kontrol kolu — baraj bu
+yüzden puan değil, hata düzeltme oranı. Bu tam sayılar
 `eval/golden-prompts.json` içinde duruyor ve `check-consistency`, bu paragraf o dosyada olmayan bir
 skor iddia ederse — ya da kayıtlı koşu diskteki süiti tarif etmeyi bırakırsa — kapıyı kırmızıya
 çeviriyor. Önceki sayı tam böyle bayatlamıştı: bir prompt eklenmeden önce ölçülmüştü ve arayı
