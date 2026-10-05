@@ -391,7 +391,7 @@
       "Bash(*git branch -D main)",
       "Bash(*git branch -D master)",
       "Bash(*git push * --delete *)",
-      "Bash(*git push origin :*)",
+      "Bash(*git push origin :**)",
       "Bash(*git reflog expire *)",
       "Bash(*chmod 777 *)",
       "Bash(*chmod -R 777 *)",
