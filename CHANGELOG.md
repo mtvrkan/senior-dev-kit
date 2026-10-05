@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-10-05
+
 ### Added
 
 - Installer `settings` component: sets `attribution` so commits and PRs carry no Claude trailer

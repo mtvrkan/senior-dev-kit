@@ -1,6 +1,6 @@
 {
   "name": "senior-dev-kit",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Agents, skills, rules and guardrails that make Claude Code behave like a senior engineering team. Installed as a Claude Code plugin or into ~/.claude.",
   "type": "module",
   "private": true,
