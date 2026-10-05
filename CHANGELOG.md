@@ -208,6 +208,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
   the page had ever claimed a name for the site itself, so the domain was being guessed from.
   [2026-08-14]
 
+### Security
+
+- The deny rule meant to stop `git push origin :branch` (deleting a remote branch) never fired:
+  a rule ending in `:*` is read as the legacy prefix form, so its leading `*` was matched
+  literally. It now ends in `:**`, verified live to block that push and nothing else, and
+  `npm run validate` rejects any permission rule that mixes `*` with a trailing `:*`.
+  [2026-10-05]
+
 ## [1.1.0] — 2026-08-14
 
 Everything in this release is one shape: a check that watched a proxy instead of the thing, and

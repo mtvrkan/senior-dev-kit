@@ -14,6 +14,7 @@ import { findBrokenLinks, extractAnchors, extractLinks, slugifyHeading, isChecka
 import { extractRoutedAgent, significantWords, NO_AGENT } from './routing-eval.ts'
 import { globToRegExp as bashGlobToRegExp, pathGlobToRegExp } from './deny-cost.ts'
 import { validateAgentFrontmatter, VALID_AGENT_COLORS } from './lib/validate-agents.ts'
+import { findDeadPrefixRules } from './lib/validate-common.ts'
 
 // Temp dirs are tracked and force-removed after the suite — the rmSync at the
 // end of a test never runs when an assertion throws, which would leak the dir.
@@ -3627,5 +3628,20 @@ describe('agent color and Skill tool validation', () => {
 
   test('accepts Skill in an agent tool list', () => {
     assert.equal(agentFixture('cyan', 'Read, Skill'), 0)
+  })
+})
+
+describe('permission rules that mix * with the legacy :* suffix', () => {
+  test('flags a rule whose leading * is never expanded', () => {
+    assert.deepEqual(findDeadPrefixRules(['Bash(*git push origin :*)']), ['Bash(*git push origin :*)'])
+  })
+
+  test('accepts the :** wildcard form and a plain legacy prefix', () => {
+    assert.deepEqual(findDeadPrefixRules(['Bash(*git push origin :**)', 'Bash(npm run test:*)', 'Bash(*rm -rf *)']), [])
+  })
+
+  test('the shipped settings template carries no dead rule', () => {
+    const settings = JSON.parse(readFileSync(join(REPO_ROOT, 'settings-template.json'), 'utf8'))
+    assert.deepEqual(findDeadPrefixRules(settings.permissions.deny), [])
   })
 })

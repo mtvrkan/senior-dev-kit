@@ -74,3 +74,14 @@ export function validateToolList(rel: string, source: string, value: string, cou
 export function missingRequiredFields(fm: Record<string, string>, fields: readonly string[]): string[] {
   return fields.filter(field => !fm[field] || fm[field].trim() === '')
 }
+
+// Claude Code reads a permission rule ending in `:*` as the legacy prefix form and matches
+// everything before it literally, so a `*` earlier in the rule is never expanded and the rule
+// never fires. `Bash(*git push origin :*)` shipped that way and blocked nothing; `:**` keeps
+// the wildcard and was verified live to deny `git push origin :branch` and nothing else.
+export function findDeadPrefixRules(rules: readonly string[]): string[] {
+  return rules.filter(rule => {
+    const inner = rule.match(/^[A-Za-z]+\((.*)\)$/s)?.[1]
+    return inner !== undefined && inner.endsWith(':*') && inner.slice(0, -2).includes('*')
+  })
+}

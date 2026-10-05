@@ -41,8 +41,9 @@
     },
     {
       "prompt": "make the submit button rounded and add a hover animation",
-      "expect": "ui-fixer",
-      "expectedSkill": "ui-change"
+      "expect": "none",
+      "expectedSkill": "ui-change",
+      "note": "Tier 1 by global-CLAUDE.md's TOKEN TIER table (one component, UI only), so ROUTING.md Step 3.5 keeps it in the main loop running ui-change; Step 4 sends CSS/button work to ui-fixer only at Tier 2. Expected ui-fixer until 2026-10-05, which asked for the delegation the protocol's own DON'T DELEGATE line forbids; the treatment arm answered none 3 of 3 times and was the one following the rule."
     },
     {
       "prompt": "modal çok çirkin duruyor, daha modern bir tasarım yap",
@@ -51,7 +52,8 @@
     },
     {
       "prompt": "fix the padding on the pricing cards, they look cramped on mobile",
-      "expect": "ui-fixer"
+      "expect": "none",
+      "note": "Tier 1 by global-CLAUDE.md's TOKEN TIER table (one component's responsive spacing), so Step 3.5 stops it in the main loop. Expected ui-fixer until 2026-10-05; changed for the same reason as the submit-button prompt above."
     },
     {
       "prompt": "add a user profile settings page with avatar upload",

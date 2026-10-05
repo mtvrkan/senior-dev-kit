@@ -20,6 +20,7 @@ import { validateCommands } from './lib/validate-commands.ts'
 import { validateRoutingCoverage, validateGlobalClaudeRouting, validateRoutingDanglingReferences } from './lib/validate-routing.ts'
 import { validateRules } from './lib/validate-rules.ts'
 import { validateEscalationTargets } from './lib/validate-escalations.ts'
+import { findDeadPrefixRules } from './lib/validate-common.ts'
 import {
   walkAndValidateSkills,
   crossReferenceAgentSkills,
@@ -104,8 +105,14 @@ errors += globalRouting.errors
 if (existsSync(SETTINGS_FILE)) {
   console.log('\nValidating settings-template.json...\n')
   try {
-    JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'))
+    const settings = JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'))
     console.log('  ✓ settings-template.json parses')
+    const permissions = settings.permissions ?? {}
+    const rules = ['allow', 'ask', 'deny'].flatMap(key => (Array.isArray(permissions[key]) ? permissions[key] : []))
+    for (const rule of findDeadPrefixRules(rules)) {
+      console.error(`  ✗ settings-template.json — ${rule} mixes * with the trailing :* prefix form, so Claude Code matches it literally and it never fires (end it with :** instead)`)
+      errors++
+    }
   } catch (e) {
     const err = e as Error
     console.error(`  ✗ settings-template.json — failed to parse: ${err.message}`)
