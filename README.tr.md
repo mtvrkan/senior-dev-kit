@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Claude Code'u hevesli bir junior yerine kıdemli bir mühendislik takımı gibi davrandıran
-konfigürasyon kiti: **8 agent, 28 skill, 12 rule, 7 komut, 28 preset**.
+konfigürasyon kiti: **8 agent, 30 skill, 12 rule, 7 komut, 28 preset**.
 
 🇬🇧 [English README](README.md) — kanonik sürüm; bu dosya onun çevirisidir.
 
@@ -22,7 +22,7 @@ Bu kit, kıdemli bir takım arkadaşında olan ama modelde olmayan üç şeyi ek
   her iş önce salt-okunur bir *guard* ajanına gider. Guard bir plan yazar ve durur. Siz
   onaylamadan tek satır kod yazılmaz.
 - **Her iş tipi için bir prosedür.** "Şu bug'ı düzelt", "sayfa ekle", "bu migration'ı incele" —
-  her birinin doğaçlama yerine izlenen yazılı bir disiplini var. Toplam 28 tane.
+  her birinin doğaçlama yerine izlenen yazılı bir disiplini var. Toplam 30 tane.
 - **Context bütçesi.** Her turda yalnızca üç dosya yükleniyor (500 satır üst sınır, script'le
   denetleniyor). Geri kalan her şey — 12 rule dosyası, 18 referans doküman — eşleşen bir dosya
   okununca veya bir skill gerçekten ihtiyaç duyunca lazy yükleniyor.
@@ -93,13 +93,13 @@ yazabileceğiniz komutlar — [`docs/usage.md`](docs/usage.md) içinde.
 | | Sayı | Notlar |
 | --- | --- | --- |
 | Agent | 8 | 4'ü salt-okunur guard (db, security, devops, performance) |
-| Skill | 28 | Çoğu iş tipine göre otomatik tetiklenir; birkaçı yalnızca slash komutuyla |
+| Skill | 30 | Çoğu iş tipine göre otomatik tetiklenir; birkaçı yalnızca slash komutuyla |
 | Rule | 12 | `000`/`001` her oturumda yüklenir; kalan 10'u `paths:` glob eşleşmesiyle |
 | Komut | 7 | `/agents-guide`, `/skills-guide`, `/seo-check`, `/design-check`, `/arch-check`, `/a11y-check`, `/context-audit` |
 | Preset | 28 | web: nextjs-saas, react-vite, nuxt, sveltekit, astro, angular · backend: node-express, nestjs, fastapi, django, laravel, rails, spring-boot, dotnet, go-api, rust-axum · mobile: flutter, react-native, swiftui · orm: prisma, drizzle · db: postgres, mongodb, supabase · infra: docker, kubernetes, terraform · generic: fallback |
 | agent_docs | 18 | Talep üzerine okunan derin referans sayfaları |
 
-Kısaca: 8 agent, 28 skill, 12 rule, 7 komut, 28 preset.
+Kısaca: 8 agent, 30 skill, 12 rule, 7 komut, 28 preset.
 
 Ayrıca bir guardrail katmanı: `settings-template.json` içinde birkaç yüz deny kuralı — secret dosya
 okumalarını, yıkıcı shell komutlarını ve onaysız uzak paket çalıştırıcılarını engeller. Kapsam ve
@@ -138,7 +138,7 @@ türetilir. Tek komut:
 npm run check
 ```
 
-Şu an: 468/468 test geçiyor (73 suites). `routing-eval` yönlendirme tablosunu 34 gerçekçi isteği
+Şu an: 478/478 test geçiyor (74 suites). `routing-eval` yönlendirme tablosunu 37 gerçekçi isteği
 ile sabitler, `check-consistency` bu dosyadaki elle yazılmış her sayıyı yeniden türetir,
 `check-plugin` ise plugin manifestlerinin diskteki bileşenlerle hâlâ eşleştiğini doğrular.
 
@@ -171,17 +171,16 @@ devri görebiliyor, gereksiz devri göremiyordu. Pahalı olan o — bir subagent
 değiştirmek için projeyi sıfırdan okuyan yeni bir context penceresi — ve devretmeyi savunan bir
 dokümanın en olası hatası da o.
 
-**Ölçülen sonuç, 2026-10-05:** kontrol 28/34 (%82), tedavi 33/34 (%97) — açıklamaların yanlış
-yönlendirdiği altı rotanın beşi düzeltildi, doğru yönlendirdiklerinden hiçbiri bozulmadı. Arayı
+**Ölçülen sonuç, 2026-10-28:** kontrol 31/37 (%84), tedavi 37/37 (%100) — açıklamaların yanlış
+yönlendirdiği altı rotanın altısı da düzeltildi, doğru yönlendirdiklerinden hiçbiri bozulmadı. Arayı
 açan şey negatif vakalar oldu: düz ajan açıklamalarının "ne zaman devretme" hakkında söyleyecek
 hiçbir şeyi yok, o yüzden `src/pages/About.tsx'te 'Kurumsal' başlığını 'Hakkımızda' yap` yalnızca
 "metin" kelimesine bakıp `ui-fixer`'a gidiyor; tedavi kolu ise `ROUTING.md`'nin Adım 3.5'ine ulaşıp
 `none` diyor. Taşıdığı diğer rotalar, cümledeki ismin fiile iki yönde de üstün gelmesi gereken
 durumlar (`login formundaki CSS'i düzelt` → `ui-fixer` değil `security-guard`; ama ödeme kodu
-*için* test → guard değil `senior-engineer`). Tek kaçan, `fix the padding on the pricing cards,
-they look cramped on mobile`: tek bileşenin boşluğu Tier 1, Adım 3.5 onu ana döngüde tutar; ama bu
-koşuda iki kol da `ui-fixer` dedi, oysa bir önceki koşuda tedavi kolu 3 denemenin 3'ünde `none`
-demişti. Tier 1/2 sınırındaki prompt'lar örnekleniyor, en çok örneklenen de kontrol kolu — baraj bu
+*için* test → guard değil `senior-engineer`). 2026-10-05 koşusunun tek kaçanı olan `fix the padding on
+the pricing cards, they look cramped on mobile` bu kez `none` dedi: tek bileşenin boşluğu Tier 1,
+Adım 3.5 onu ana döngüde tutar. Tier 1/2 sınırındaki prompt'lar örnekleniyor, en çok örneklenen de kontrol kolu — baraj bu
 yüzden puan değil, hata düzeltme oranı. Bu tam sayılar
 `eval/golden-prompts.json` içinde duruyor ve `check-consistency`, bu paragraf o dosyada olmayan bir
 skor iddia ederse — ya da kayıtlı koşu diskteki süiti tarif etmeyi bırakırsa — kapıyı kırmızıya
@@ -204,7 +203,7 @@ RUN_BEHAVIOR_EVAL=1 npm run behavior-eval
 $env:RUN_BEHAVIOR_EVAL=1; npm run behavior-eval
 ```
 
-**Ölçülen sonuç, 2026-10-05:** kontrol 20/23 (%87), tedavi 22/23 (%96) — kurallar temel modelin üç
+**Ölçülen sonuç, 2026-10-28:** kontrol 20/23 (%87), tedavi 22/23 (%96) — kurallar temel modelin üç
 hatasından ikisini düzeltiyor (içeriğin şekli iskelet isterken spinner, tarayıcıya giden dosyalarda
 bölüm yorumları) ve hiçbir şeyi bozmuyor. İki kol da commit-trailer prompt'unu kaçırıyor: ifadesi
 ("varsayılan olarak ekle") kullanıcının istemesi demek, NO AI ATTRIBUTION da buna açıkça izin

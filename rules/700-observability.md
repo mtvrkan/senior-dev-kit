@@ -1,11 +1,16 @@
 ---
 description: "Logging, metrics, tracing — every service and handler change"
 paths:
-  - "**/*.{ts,tsx,js,jsx,mjs,py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}"
+  - "**/*.{service,controller,handler,processor,worker,job,consumer,middleware,interceptor,gateway,resolver}.{ts,js,mjs}"
+  - "**/{services,handlers,controllers,jobs,workers,consumers,middleware,routes,routers}/**"
+  - "**/app/api/**"
+  - "**/pages/api/**"
+  - "**/*{logger,logging,metrics,telemetry,tracing,instrumentation,health}*"
+  - "**/*.{py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}"
 ---
 
-`900-performance.md` co-loads on the same files: 700 governs what to log, 900 the latency and
-bundle budgets. Apply both.
+700 governs what to log; `900-performance.md` holds the latency and bundle budgets and loads for
+services, queries and UI files. Apply both where both are loaded.
 
 ## LOGGING RULES — zero console.log in production
 

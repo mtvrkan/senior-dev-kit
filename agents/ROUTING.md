@@ -195,6 +195,7 @@ two copies can't drift). Stack trace present → bug-hunter, no clarification ne
 | New page that also needs backend (upload, API, DB) | senior-engineer (not ui-fixer) | ui-fixer is UI-only — anything requiring server/state work starts at senior-engineer instead of escalating mid-task |
 | First page/screen of a project — no `DESIGN-SPEC.md` and nothing to match | design-lead (not ui-fixer) | Choosing a design direction is a decision made *with the user*; ui-fixer runs at low effort with a match-what-exists rule, so routing it there silently ships the default look. Once the spec exists, construction goes back to ui-fixer |
 | "Make this modal / page nicer, more modern, more impressive" — ONE existing surface | ui-fixer (not design-lead) | Restyling something that already exists is an edit against its neighbours, whatever words the request uses. With a `DESIGN-SPEC.md` the direction is already decided and re-opening it is the drift the spec prevents; without one, the surrounding pages *are* the spec. design-lead enters only when there is nothing to match or the whole project is being re-decided |
+| "Show me options / how would it look" before anything is built | main loop running `design-options` (not design-lead, not ui-fixer) | The user picks from rendered previews; with a `DESIGN-SPEC.md` the options stay inside its direction. design-lead is reached only when there is no spec and nothing to match, and then uses `design-options` to show its three directions |
 | Refactor with no behavior change | senior-engineer (not bug-hunter) | Nothing is broken — bug-hunter needs an error/regression signal; behavior-preserving restructuring is normal engineering |
 | Write tests for auth/payment/DB code | senior-engineer with `test-writer` (not the guard) | Tests exercise existing behavior without changing the guarded surface — escalate to the guard only if the tests expose a vulnerability |
 | System-wide redesign that spans a guarded area (e.g. the whole checkout flow) | `feature-plan` in plan mode (not the guard) | Architecture-scale scope wins the entry point; the matching guards then review their slices of the plan before implementation (see "Multiple guard signals") |
@@ -231,8 +232,8 @@ says "no code edits" in its body instead.
 Most guard-style agents are bound 1:1 (or 1:few) to a same-purpose skill — the agent is *who*
 handles the request (persona, tools, escalation), the skill is *how* (the procedure it
 follows). Skills with no agent row below never run inside a kit agent: `docs-update`,
-`feature-plan` (native plan mode), `from-scratch`, `incident-response`, `systematic-debug` and
-`dep-upgrade` run inline in the main loop, and `code-review` forks an isolated read-only
+`feature-plan` (native plan mode), `from-scratch`, `incident-response`, `systematic-debug`,
+`dep-upgrade`, `design-options` and `session-handoff` run inline in the main loop, and `code-review` forks an isolated read-only
 subagent that the turn waits for (`background: false`). `api-design` and `project-memory` run in
 the main loop, or inside `senior-engineer` when it calls them through its Skill tool. Flow skills
 that DO have a row (`bug-fix`, `db-change`, `ui-change`, `new-page`, `new-screen`, …) are
@@ -280,6 +281,9 @@ reference (the frontmatter bindings are the enforced source of truth).
 | add / create / build / implement / ekle / oluştur | senior-engineer |
 | refactor / restructure / split / modularize / sadeleştir / böl | senior-engineer |
 | design / look / visual / tasarla / görsel | design-lead — but a single existing component is ui-fixer (Step 4) |
+| show options / how would it look / seçenek göster / örnek sun / beğenmedim baştan | main loop, running the `design-options` skill — rendered options before any code |
+| screenshot + "still broken" / taşıyor / hala aynı / mobilde bozuk | ui-fixer, running `ui-change` (confirm target, verify every viewport) |
+| wrap up / where were we / not al / oturumu kapatıyorum / nerede kalmıştık | main loop, running the `session-handoff` skill |
 | architecture / system design / plan / mimari | main loop, running the `feature-plan` skill in plan mode; senior-engineer implements |
 | auth / login / token / session / JWT / güvenlik | security-guard |
 | secret / API key / credential / gizli anahtar | security-guard |

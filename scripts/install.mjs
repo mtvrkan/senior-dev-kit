@@ -194,13 +194,20 @@ function planSettings(target, selected, manifest, current) {
 
   let denyAdded = []
   let denyRemoved = []
+  let askAdded = []
+  let askRemoved = []
   const kitDeny = template.permissions?.deny ?? []
+  const kitAsk = template.permissions?.ask ?? []
   if (wantsDeny) {
     const stale = removeStaleDenyRules(settings, manifest?.denyAdded, kitDeny)
     const merged = mergeDenyRules(stale.settings, kitDeny)
-    settings = merged.settings
+    const staleAsk = removeStaleDenyRules(merged.settings, manifest?.askAdded, kitAsk, 'ask')
+    const mergedAsk = mergeDenyRules(staleAsk.settings, kitAsk, 'ask')
+    settings = mergedAsk.settings
     denyAdded = merged.added
     denyRemoved = stale.removed
+    askAdded = mergedAsk.added
+    askRemoved = staleAsk.removed
   }
 
   const desiredLeaves = []
@@ -233,6 +240,7 @@ function planSettings(target, selected, manifest, current) {
     settings,
     changed: !deepEqual(settings, baseline) && !(current.raw === null && deepEqual(settings, {})),
     deny: wantsDeny ? { added: denyAdded, removed: denyRemoved, total: kitDeny.length } : null,
+    ask: wantsDeny ? { added: askAdded, removed: askRemoved, total: kitAsk.length } : null,
     leaves: { added: leavesAdded, removed: unmergedLeaves.removed, conflicts: mergedLeaves.conflicts },
     hooks: { added: mergedHooks.added, removed: unmergedHooks.removed, blocked: mergedHooks.blocked },
   }
@@ -362,8 +370,15 @@ function describePlan(plan, target) {
     if (s.deny) {
       lines.push(
         `Deny rules: add ${s.deny.added.length} of ${s.deny.total} to settings.json ` +
-          `(${s.deny.total - s.deny.added.length} already present; your allow/ask rules untouched)` +
+          `(${s.deny.total - s.deny.added.length} already present; your allow rules untouched)` +
           (s.deny.removed.length > 0 ? `; remove ${s.deny.removed.length} the kit no longer ships` : '')
+      )
+    }
+    if (s.ask && (s.ask.total > 0 || s.ask.removed.length > 0)) {
+      lines.push(
+        `Ask rules: add ${s.ask.added.length} of ${s.ask.total} to settings.json ` +
+          `(${s.ask.total - s.ask.added.length} already present)` +
+          (s.ask.removed.length > 0 ? `; remove ${s.ask.removed.length} the kit no longer ships` : '')
       )
     }
     for (const leaf of s.leaves.added) lines.push(`Setting: set ${leaf.path.join('.')} = ${JSON.stringify(leaf.value)}`)
@@ -472,7 +487,9 @@ function loadManifest(target) {
 const readManifest = target => loadManifest(target).manifest
 
 const ownsSettings = manifest =>
-  Boolean(manifest?.denyAdded?.length || manifest?.settingsLeaves?.length || manifest?.hookGroups?.length)
+  Boolean(
+    manifest?.denyAdded?.length || manifest?.askAdded?.length || manifest?.settingsLeaves?.length || manifest?.hookGroups?.length,
+  )
 
 function writeManifest(target, result, selected) {
   const version = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8')).version
@@ -487,6 +504,8 @@ function writeManifest(target, result, selected) {
   const s = result.settings
   const denyRemoved = new Set(s?.deny?.removed ?? [])
   const denyAdded = [...new Set([...(previous?.denyAdded ?? []).filter(rule => !denyRemoved.has(rule)), ...(s?.deny?.added ?? [])])]
+  const askRemoved = new Set(s?.ask?.removed ?? [])
+  const askAdded = [...new Set([...(previous?.askAdded ?? []).filter(rule => !askRemoved.has(rule)), ...(s?.ask?.added ?? [])])]
   const settingsLeavesOwned = [
     ...(previous?.settingsLeaves ?? []).filter(o => !(s?.leaves.removed ?? []).some(r => sameLeaf(o, r))),
     ...(s?.leaves.added ?? []),
@@ -511,6 +530,7 @@ function writeManifest(target, result, selected) {
     restores: [...restores.values()].sort((a, b) => a.path.localeCompare(b.path)),
     protocolBlock: result.protocolInstalled || Boolean(previous?.protocolBlock),
     denyAdded,
+    askAdded,
     settingsLeaves: settingsLeavesOwned,
     hookGroups: hookGroupsOwned,
     settingsCreated: result.settingsCreated || Boolean(previous?.settingsCreated),
@@ -565,11 +585,12 @@ function planUninstall(target) {
     if (current.error) return { error: `${current.path} is not valid JSON — fix it first, otherwise the kit's settings entries could never be removed` }
     if (current.raw !== null) {
       const deny = unmergeDenyRules(current.parsed, manifest.denyAdded ?? [])
-      const leaves = unmergeSettingsLeaves(deny.settings, manifest.settingsLeaves ?? [])
+      const ask = unmergeDenyRules(deny.settings, manifest.askAdded ?? [], 'ask')
+      const leaves = unmergeSettingsLeaves(ask.settings, manifest.settingsLeaves ?? [])
       const hooks = unmergeHookGroups(leaves.settings, manifest.hookGroups ?? [])
       let next = hooks.settings
       if (manifest.permissionsBefore) next = tidyPermissions(next, manifest.permissionsBefore)
-      else if (manifest.denyAdded?.length || manifest.settingsCreated) next = tidyPermissions(next)
+      else if (manifest.denyAdded?.length || manifest.askAdded?.length || manifest.settingsCreated) next = tidyPermissions(next)
       const original = originalSettingsBytes(target, manifest)
       const text = original && deepEqual(next, original.parsed) ? original.raw : formatJson(next, detectJsonStyle(current.raw))
       settings = {
@@ -579,6 +600,7 @@ function planUninstall(target) {
         deleteFile: Boolean(manifest.settingsCreated) && isEmptySkeleton(next),
         changed: !deepEqual(next, current.parsed),
         denyRemoved: deny.removed,
+        askRemoved: ask.removed,
         leavesRemoved: leaves.removed,
         hooksRemoved: hooks.removed,
       }
@@ -665,6 +687,8 @@ function reportDrift(target) {
   const s = plan.settings && !plan.settings.error ? plan.settings : null
   const denyMissing = s?.deny ? s.deny.added.length : 0
   const denyStale = s?.deny ? s.deny.removed.length : 0
+  const askMissing = s?.ask ? s.ask.added.length : 0
+  const askStale = s?.ask ? s.ask.removed.length : 0
   const settingsDrift = s ? s.leaves.added.length + s.leaves.removed.length + s.hooks.added.length + s.hooks.removed.length : 0
 
   if (
@@ -674,6 +698,8 @@ function reportDrift(target) {
     !settingsBroken &&
     denyMissing === 0 &&
     denyStale === 0 &&
+    askMissing === 0 &&
+    askStale === 0 &&
     settingsDrift === 0
   ) {
     console.log(`✓ ${target} matches this checkout (${plan.files.length} files, components: ${selected.join(', ')}).`)
@@ -688,6 +714,8 @@ function reportDrift(target) {
   if (settingsBroken) console.error(`    broken   ${plan.settings.error} is not valid JSON — the kit's deny rules and settings cannot be verified`)
   if (denyMissing > 0) console.error(`    missing  ${denyMissing} deny rule(s) in settings.json`)
   if (denyStale > 0) console.error(`    retired  ${denyStale} deny rule(s) still in settings.json`)
+  if (askMissing > 0) console.error(`    missing  ${askMissing} ask rule(s) in settings.json`)
+  if (askStale > 0) console.error(`    retired  ${askStale} ask rule(s) still in settings.json`)
   if (settingsDrift > 0) console.error(`    stale    ${settingsDrift} kit setting/hook entr(y/ies) in settings.json`)
   console.error('\n  Fix: node scripts/install.mjs --yes')
   process.exitCode = 1
@@ -755,6 +783,7 @@ async function main() {
     }
     if (plan.claudeMd.removed) console.log('  remove the kit protocol block from CLAUDE.md (your content stays)')
     if (plan.settings?.denyRemoved.length) console.log(`  remove ${plan.settings.denyRemoved.length} deny rule(s) this installer added`)
+    if (plan.settings?.askRemoved.length) console.log(`  remove ${plan.settings.askRemoved.length} ask rule(s) this installer added`)
     for (const leaf of plan.settings?.leavesRemoved ?? []) console.log(`  remove setting ${leaf.path.join('.')} this installer set`)
     for (const hook of plan.settings?.hooksRemoved ?? []) console.log(`  remove ${hook.event} ${hook.group.matcher} hook this installer added`)
     if (plan.settings?.deleteFile) console.log('  delete settings.json (the installer created it and nothing of yours is in it)')

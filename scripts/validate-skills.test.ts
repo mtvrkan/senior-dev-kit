@@ -3636,8 +3636,12 @@ describe('permission rules that mix * with the legacy :* suffix', () => {
     assert.deepEqual(findDeadPrefixRules(['Bash(*git push origin :*)']), ['Bash(*git push origin :*)'])
   })
 
-  test('accepts the :** wildcard form and a plain legacy prefix', () => {
-    assert.deepEqual(findDeadPrefixRules(['Bash(*git push origin :**)', 'Bash(npm run test:*)', 'Bash(*rm -rf *)']), [])
+  test('flags a :* that is not at the end, which Claude Code warns about every session', () => {
+    assert.deepEqual(findDeadPrefixRules(['Bash(*git push origin :**)']), ['Bash(*git push origin :**)'])
+  })
+
+  test('accepts a plain legacy prefix and an ordinary wildcard rule', () => {
+    assert.deepEqual(findDeadPrefixRules(['Bash(npm run test:*)', 'Bash(*rm -rf *)']), [])
   })
 
   test('the shipped settings template carries no dead rule', () => {

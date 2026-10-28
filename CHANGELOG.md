@@ -6,6 +6,48 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 
 ## [Unreleased]
 
+### Added
+
+- `design-options` skill: 2–4 rendered options (HTML at three widths, or a real mobile render)
+  and the user's pick before any UI code; two rejected rounds turn into questions. [2026-10-28]
+- `session-handoff` skill: close a session with done/open/decisions/traps saved to the project's
+  handoff file (default `.claude/HANDOFF.md`), and reopen from it. [2026-10-28]
+- Deny rules for database data-loss commands (`prisma migrate reset`, `--accept-data-loss`,
+  `docker compose down -v`, `docker volume rm/prune`, `dropdb`, `DROP DATABASE/SCHEMA`) in Bash and
+  PowerShell, and ask rules for `git push` and `gh pr create`; the installer now merges, checks and
+  uninstalls `permissions.ask` the same way it handles deny rules. [2026-10-28]
+- Always-loaded rules: SCOPE (literal requests, checklists, count "all", never invent values),
+  PLAIN LANGUAGE (explain terms, numbered decisions with lettered options), one dev server at a
+  time, and UI changes verified on a rendered screenshot rather than lint alone. [2026-10-28]
+
+### Changed
+
+- Commits happen only when the user asks, like pushes; the CHANGELOG never records person names
+  or data corrections. [2026-10-28]
+- `ui-change` confirms the target first, fixes every instance of a reused component, never hides
+  information to fix a layout, and verifies at five widths, every theme and locale, and WebKit.
+  [2026-10-28]
+- `700-observability` and `900-performance` load for JS/TS by layer (services, handlers, jobs,
+  API routes, UI files) instead of on every script file; other languages keep their extension
+  globs. `200-api` matches `app/api`, `pages/api`, `src/api` and a root `api/` only. [2026-10-28]
+- `security-guard` and `senior-engineer` get more turns (25 and 60) so long reviews and
+  implementations stop mid-task less often. [2026-10-28]
+- The routing suite grows to 37 prompts with cases for `design-options`, `session-handoff` and a
+  repeated layout complaint; ROUTING.md says when "show me options" goes to `design-options`
+  rather than design-lead or ui-fixer. [2026-10-28]
+
+### Removed
+
+- The `Bash(*git push origin :**)` deny rule: Claude Code printed a "`:*` that is not at the end"
+  warning for it at every session start. A colon-refspec branch delete now stops at the
+  `git push` ask rule instead, and `validate` fails on any rule with `:*` short of its end.
+  [2026-10-28]
+
+### Security
+
+- `katex` (pulled in by markdownlint) is pinned to 0.18.11 through `overrides`, closing the
+  prototype-pollution advisory; `npm audit` reports 0 vulnerabilities. [2026-10-28]
+
 ## [1.2.0] — 2026-10-05
 
 ### Added

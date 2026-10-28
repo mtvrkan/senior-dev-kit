@@ -91,7 +91,7 @@ Use for auth, authorization, payment, billing, input validation, secrets, inject
 - **Tools:** `Read`, `Grep`, `Glob`, `Bash`
 - **Model / effort:** opus · high
 - **Permission mode:** `plan` — plans first instead of acting. Claude Code strips `permissionMode` from plugin-shipped agents, so this holds for `~/.claude` installs; the tool grant above is what holds in both
-- **Turn budget:** 10
+- **Turn budget:** 25
 - **Definition:** [`agents/security-guard.md`](../agents/security-guard.md)
 
 ### `senior-engineer`
@@ -101,7 +101,7 @@ Use for scoped medium feature implementation or safe refactors requiring multipl
 - **Tools:** `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`, `Agent`, `Skill`
 - **Model / effort:** sonnet · medium
 - **Permission mode:** `default`
-- **Turn budget:** 20
+- **Turn budget:** 60
 - **Definition:** [`agents/senior-engineer.md`](../agents/senior-engineer.md)
 
 ### `ui-fixer`
@@ -131,6 +131,7 @@ their own when the request matches their shape — you never type their name.
 | `codebase-overview` | Use when starting on an unfamiliar codebase, when no overview exists yet, or after structural change since the last one was written. | `senior-engineer` |
 | `db-change` | Use automatically when schema, models, queries, indexes, constraints, or data shape change — or when modeling entities for a new feature. | main loop |
 | `dep-upgrade` | Use automatically when the user asks to upgrade, bump or migrate a dependency to a new major, or when security-scan reports an outdated major that must move. | main loop |
+| `design-options` | Use automatically when the user asks for options or how something would look, or rejects a design and wants it again. | main loop |
 | `docs-update` | Use automatically for documentation-only changes. | main loop |
 | `feature-build` | Use automatically once risk is low/medium and scope is clear — no plan phase needed. | main loop |
 | `feature-plan` | Use automatically before any code when scope is large, unclear, or risky. | main loop |
@@ -145,6 +146,7 @@ their own when the request matches their shape — you never type their name.
 | `release-gate` | Use automatically for pre-release safety review, or invoke via /release-gate right before deploy. Do not deploy. | `devops-guard` |
 | `security-review` | Use automatically whenever a change touches any security-sensitive area in the description's list. | `security-guard` |
 | `security-scan` | Auto-trigger on a dependency add/update, before a release, or on explicit request. | `security-guard` |
+| `session-handoff` | Use automatically on "note what we did and what is left", "I'm closing the session", "anything left unfinished?", "where were we", "bring it back up", or after an accidental close. | main loop |
 | `systematic-debug` | Use automatically when bug-fix cannot name a suspect file from the evidence, or after one fix attempt did not hold. | main loop |
 | `test-writer` | Use automatically when behavior changes, or manually when the user asks for tests — including adding coverage to existing untested/legacy code with no behavior change. | `senior-engineer` |
 | `threat-model` | Use automatically when feature-plan or security-guard plans a new flow that takes user input, moves money, grants access or exposes data. | `security-guard` |
@@ -176,14 +178,14 @@ pays for the REST-API rules.
 | [`001-conventions.md`](../rules/001-conventions.md) | **every session** — no `paths:` field | Core development conventions — architecture patterns, holistic consistency, modern tech preferences. No paths field: loads unconditionally every session. |
 | [`100-web.md`](../rules/100-web.md) | `**/*.{tsx,jsx,vue,svelte,astro,html,css,scss}` · `**/*.blade.php` · `**/*.erb` · `**/*.component.ts` | Web UI rules — design tokens, 8px grid, skeleton loading, motion, SEO, WCAG 2.2, Tailwind v4. Auto-loads for React/Vue/Svelte/Astro/Angular/Blade/ERB/plain HTML. |
 | [`1000-i18n.md`](../rules/1000-i18n.md) | `**/locales/**` · `**/i18n/**` · `**/lang/**` · `**/messages/**/*.{json,po,xlf,xliff,arb,yaml,yml}` · `**/translations/**` · `**/*.{arb,po,pot,ftl,xliff,xlf,resx}` · `**/strings.xml` · `**/*.strings` · `**/*.xcstrings` · `**/*i18n.config.*` · `**/next-intl.config.*` | Internationalization and localization — message catalogs, ICU plurals, Intl formatting, RTL, text expansion, locale routing. Auto-loads for locale/message files in every framework the kit ships a preset for. |
-| [`200-api.md`](../rules/200-api.md) | `**/api/**` · `**/routes/**` · `**/controllers/**` · `**/handler/**` · `**/handlers/**` · `**/endpoints/**` · `**/*.controller.*` · `**/*.routes.*` · `**/Controllers/**` · `**/*Controller.{java,kt,cs,php}` · `**/*Resource.java` · `**/*Endpoint.{java,kt,cs}` · `**/routers/**` · `**/{views,viewsets,urls}.py` | API design rules — REST conventions, OpenAPI 3.2, error format, auth, rate limiting, versioning. Auto-loads for route/controller/handler/endpoint files. |
+| [`200-api.md`](../rules/200-api.md) | `**/app/api/**` · `**/pages/api/**` · `**/src/api/**` · `api/**` · `**/routes/**` · `**/controllers/**` · `**/handler/**` · `**/handlers/**` · `**/endpoints/**` · `**/*.controller.*` · `**/*.routes.*` · `**/Controllers/**` · `**/*Controller.{java,kt,cs,php}` · `**/*Resource.java` · `**/*Endpoint.{java,kt,cs}` · `**/routers/**` · `**/{views,viewsets,urls}.py` | API design rules — REST conventions, OpenAPI 3.2, error format, auth, rate limiting, versioning. Auto-loads for route/controller/handler/endpoint files. |
 | [`300-testing.md`](../rules/300-testing.md) | `**/*.test.*` · `**/*.spec.*` · `**/test/**` · `**/__tests__/**` · `**/tests/**` · `**/*_test.*` · `**/*_spec.*` · `**/test_*.py` · `**/*Test.{java,kt,cs,swift}` · `**/*Tests.{java,kt,cs,swift}` · `**/*Spec.{java,kt,groovy}` · `**/tests.py` · `**/conftest.py` | Testing rules — pyramid ratios, mock policy, naming conventions, stability, coverage. Auto-loads for test/spec files. |
 | [`400-mobile.md`](../rules/400-mobile.md) | `**/*.{swift,kt}` · `**/lib/**/*.dart` · `**/test/**/*.dart` · `**/android/**` · `**/ios/**` · `**/*.native.{ts,tsx,js,jsx}` · `app.config.{js,ts}` · `**/apps/*/app.config.{js,ts}` · `**/packages/*/app.config.{js,ts}` · `**/metro.config.{js,cjs}` | Mobile rules — iOS Swift, Android Kotlin/Compose, Flutter/Dart, React Native. Auto-loads for mobile source files. |
 | [`500-database.md`](../rules/500-database.md) | `**/migrations/**` · `**/*.prisma` · `**/schema.*` · `**/models/**` · `**/knexfile.*` · `**/drizzle.config.*` · `**/*migration*` · `**/{Models,Entities,entities}/**` · `**/*.entity.*` · `**/*DbContext.cs` · `**/db/{migration,changelog}/**` · `**/db/migrate/**` · `**/Migrations/**` · `**/alembic/versions/**` · `**/drizzle/**/*.sql` · `**/db/schema/**` · `**/models.py` | Database rules — schema safety, migration protocol, N+1 prevention, RLS, zero-downtime patterns. Auto-loads for migration/schema/model files. |
 | [`600-devops.md`](../rules/600-devops.md) | `**/Dockerfile*` · `**/.github/**` · `**/*.tf` · `**/*.tofu` · `**/docker-compose*` · `**/compose.{yaml,yml}` · `**/compose.*.{yaml,yml}` · `**/Containerfile*` · `**/kubernetes/**` · `**/*.k8s.*` · `**/helm/**` · `**/k8s/**` · `**/charts/*/templates/**` · `**/charts/*/{Chart,values}*.{yaml,yml}` · `**/manifests/**/*.{yaml,yml}` · `**/deploy/**/*.{yaml,yml}` · `**/kustomization.{yaml,yml}` · `**/*.tfvars` · `**/.gitlab-ci.yml` · `**/Jenkinsfile*` · `**/.circleci/**` · `**/azure-pipelines*.{yaml,yml}` · `**/bitbucket-pipelines.yml` · `**/.dockerignore` · `**/railway.toml` · `**/fly.toml` · `**/.pre-commit-config.yaml` | DevOps rules — Docker security, GitHub Actions SHA pinning, OIDC, SBOM, IaC safety. Auto-loads for Dockerfile/CI/IaC files. |
-| [`700-observability.md`](../rules/700-observability.md) | `**/*.{ts,tsx,js,jsx,mjs,py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}` | Logging, metrics, tracing — every service and handler change |
+| [`700-observability.md`](../rules/700-observability.md) | `**/*.{service,controller,handler,processor,worker,job,consumer,middleware,interceptor,gateway,resolver}.{ts,js,mjs}` · `**/{services,handlers,controllers,jobs,workers,consumers,middleware,routes,routers}/**` · `**/app/api/**` · `**/pages/api/**` · `**/*{logger,logging,metrics,telemetry,tracing,instrumentation,health}*` · `**/*.{py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}` | Logging, metrics, tracing — every service and handler change |
 | [`800-llm-safety.md`](../rules/800-llm-safety.md) | `**/ai/**` · `**/llm/**` · `**/openai/**` · `**/anthropic/**` · `**/claude/**` · `**/agents/**/*.{ts,tsx,js,jsx,py,go}` · `**/*{openai,anthropic}*.{ts,tsx,js,jsx,py,go}` · `**/{llm,prompt,prompts}.{ts,js,py,go}` · `**/{llm,prompt,prompts}[._-]*.{ts,js,py,go}` | LLM/AI integration safety — prompt injection, output trust, cost controls |
-| [`900-performance.md`](../rules/900-performance.md) | `**/*.{ts,tsx,js,jsx,mjs,py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp,css,scss,vue,svelte,astro,html,erb}` | Performance budgets — CWV, bundle size, query latency, render |
+| [`900-performance.md`](../rules/900-performance.md) | `**/*.{tsx,jsx,vue,svelte,astro,html,erb,css,scss}` · `**/*.{service,repository,repo,processor,worker,resolver,controller,handler}.{ts,js,mjs}` · `**/{services,repositories,queries,jobs,workers}/**` · `**/{next,vite,webpack}.config.*` · `**/*.{py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}` | Performance budgets — CWV, bundle size, query latency, render |
 
 ---
 

@@ -77,11 +77,16 @@ export function missingRequiredFields(fm: Record<string, string>, fields: readon
 
 // Claude Code reads a permission rule ending in `:*` as the legacy prefix form and matches
 // everything before it literally, so a `*` earlier in the rule is never expanded and the rule
-// never fires. `Bash(*git push origin :*)` shipped that way and blocked nothing; `:**` keeps
-// the wildcard and was verified live to deny `git push origin :branch` and nothing else.
+// never fires. `Bash(*git push origin :*)` shipped that way and blocked nothing. The `:**` form
+// that replaced it did fire, but Claude Code then printed a "`:*` that is not at the end" warning
+// for it at every session start, in every project. So any `:*` short of the very end is flagged
+// too; a plain legacy prefix such as `Bash(npm run test:*)` stays valid.
 export function findDeadPrefixRules(rules: readonly string[]): string[] {
   return rules.filter(rule => {
     const inner = rule.match(/^[A-Za-z]+\((.*)\)$/s)?.[1]
-    return inner !== undefined && inner.endsWith(':*') && inner.slice(0, -2).includes('*')
+    if (inner === undefined) return false
+    const deadPrefix = inner.endsWith(':*') && inner.slice(0, -2).includes('*')
+    const midRuleColonStar = /:\*(?!$)/.test(inner)
+    return deadPrefix || midRuleColonStar
   })
 }

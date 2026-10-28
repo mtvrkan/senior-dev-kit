@@ -134,14 +134,14 @@ export function removeManagedBlock(existing) {
  * @param {string[]} kitDenyRules `permissions.deny` from `settings-template.json`.
  * @returns {{ settings: Record<string, unknown>, added: string[] }}
  */
-export function mergeDenyRules(existing, kitDenyRules) {
+export function mergeDenyRules(existing, kitDenyRules, key = 'deny') {
   const settings = existing && typeof existing === 'object' ? structuredClone(existing) : {}
   const permissions =
     settings.permissions && typeof settings.permissions === 'object' ? { ...settings.permissions } : {}
-  const currentDeny = Array.isArray(permissions.deny) ? permissions.deny : []
+  const currentDeny = Array.isArray(permissions[key]) ? permissions[key] : []
   const seen = new Set(currentDeny)
   const added = kitDenyRules.filter(rule => !seen.has(rule))
-  permissions.deny = [...currentDeny, ...added]
+  permissions[key] = [...currentDeny, ...added]
   settings.permissions = permissions
   return { settings, added }
 }
@@ -158,23 +158,23 @@ export function mergeDenyRules(existing, kitDenyRules) {
  * @param {string[]} addedRules Rules recorded in the install manifest.
  * @returns {{ settings: Record<string, unknown>, removed: string[] }}
  */
-export function unmergeDenyRules(existing, addedRules) {
+export function unmergeDenyRules(existing, addedRules, key = 'deny') {
   const settings = existing && typeof existing === 'object' ? structuredClone(existing) : {}
   const permissions =
     settings.permissions && typeof settings.permissions === 'object' ? { ...settings.permissions } : {}
-  const currentDeny = Array.isArray(permissions.deny) ? permissions.deny : []
+  const currentDeny = Array.isArray(permissions[key]) ? permissions[key] : []
   const toRemove = new Set(addedRules)
   const removed = currentDeny.filter(rule => toRemove.has(rule))
   if (removed.length === 0) return { settings, removed }
-  permissions.deny = currentDeny.filter(rule => !toRemove.has(rule))
+  permissions[key] = currentDeny.filter(rule => !toRemove.has(rule))
   settings.permissions = permissions
   return { settings, removed }
 }
 
-export function removeStaleDenyRules(existing, previouslyAdded, kitDenyRules) {
+export function removeStaleDenyRules(existing, previouslyAdded, kitDenyRules, key = 'deny') {
   const current = new Set(kitDenyRules)
   const stale = (previouslyAdded ?? []).filter(rule => !current.has(rule))
-  const { settings, removed } = unmergeDenyRules(existing, stale)
+  const { settings, removed } = unmergeDenyRules(existing, stale, key)
   return { settings, removed, stale }
 }
 
@@ -305,13 +305,19 @@ export function isEmptySkeleton(settings) {
 
 export function permissionsShape(settings) {
   const permissions = isPlainObject(settings) ? settings.permissions : undefined
-  return { permissions: isPlainObject(permissions), deny: isPlainObject(permissions) && Array.isArray(permissions.deny) }
+  return {
+    permissions: isPlainObject(permissions),
+    deny: isPlainObject(permissions) && Array.isArray(permissions.deny),
+    ask: isPlainObject(permissions) && Array.isArray(permissions.ask),
+  }
 }
 
-export function tidyPermissions(settings, existedBefore = { permissions: false, deny: false }) {
+export function tidyPermissions(settings, existedBefore = { permissions: false, deny: false, ask: false }) {
   if (!isPlainObject(settings?.permissions)) return settings
   const permissions = { ...settings.permissions }
-  if (!existedBefore.deny && Array.isArray(permissions.deny) && permissions.deny.length === 0) delete permissions.deny
+  for (const key of ['deny', 'ask']) {
+    if (!existedBefore[key] && Array.isArray(permissions[key]) && permissions[key].length === 0) delete permissions[key]
+  }
   const next = { ...settings, permissions }
   if (!existedBefore.permissions && Object.keys(permissions).length === 0) delete next.permissions
   return next

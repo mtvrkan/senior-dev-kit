@@ -47,7 +47,7 @@ re-derived per page, and it is never left implicit.
    Then discard any direction that contradicts a hard constraint — a dense data tool cannot take
    an airy editorial direction without losing the information density it exists for.
 2. **Offer three that are far apart** — one question, three options, each named with a one-line
-   consequence. Never offer three neighbours (Soft Product / Glass / Expressive are all "friendly
+   consequence and shown rendered, not described (the `design-options` skill builds the preview). Never offer three neighbours (Soft Product / Glass / Expressive are all "friendly
    and rounded"; that is one option, not three). When the brief already points somewhere none of
    the eight goes, one of the three offered is the bespoke direction below. The user owns their
    brand; this is the one design decision worth a round-trip.

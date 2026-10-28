@@ -6,7 +6,7 @@ model: opus
 permissionMode: plan
 effort: high
 color: red
-maxTurns: 10
+maxTurns: 25
 skills:
   - security-review
   - security-scan

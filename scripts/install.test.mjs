@@ -35,6 +35,7 @@ import {
   resolveComponents,
   settingsLeaves,
   spliceManagedBlock,
+  tidyPermissions,
   unmergeDenyRules,
   unmergeHookGroups,
   unmergeSettingsLeaves,
@@ -188,6 +189,29 @@ describe('mergeDenyRules', () => {
     const second = mergeDenyRules(first, ['x'])
     deepStrictEqual(second.settings.permissions.deny, ['x'])
     deepStrictEqual(second.added, [])
+  })
+})
+
+describe('mergeDenyRules with the ask key', () => {
+  it('adds kit ask rules beside the user\'s own and leaves deny alone', () => {
+    const existing = { permissions: { ask: ['Bash(npm publish*)'], deny: ['mine'] } }
+    const { settings, added } = mergeDenyRules(existing, ['Bash(*git push*)', 'Bash(npm publish*)'], 'ask')
+    deepStrictEqual(settings.permissions.ask, ['Bash(npm publish*)', 'Bash(*git push*)'])
+    deepStrictEqual(settings.permissions.deny, ['mine'])
+    deepStrictEqual(added, ['Bash(*git push*)'])
+  })
+
+  it('unmerges only the ask rules the manifest recorded', () => {
+    const existing = { permissions: { ask: ['mine', 'kit'], deny: ['kit'] } }
+    const { settings, removed } = unmergeDenyRules(existing, ['kit'], 'ask')
+    deepStrictEqual(settings.permissions.ask, ['mine'])
+    deepStrictEqual(settings.permissions.deny, ['kit'])
+    deepStrictEqual(removed, ['kit'])
+  })
+
+  it('drops an ask list the install created once it is empty', () => {
+    const tidy = tidyPermissions({ permissions: { ask: [], deny: ['x'] } }, { permissions: true, deny: true, ask: false })
+    deepStrictEqual(tidy.permissions, { deny: ['x'] })
   })
 })
 

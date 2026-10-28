@@ -110,7 +110,7 @@ if (existsSync(SETTINGS_FILE)) {
     const permissions = settings.permissions ?? {}
     const rules = ['allow', 'ask', 'deny'].flatMap(key => (Array.isArray(permissions[key]) ? permissions[key] : []))
     for (const rule of findDeadPrefixRules(rules)) {
-      console.error(`  ✗ settings-template.json — ${rule} mixes * with the trailing :* prefix form, so Claude Code matches it literally and it never fires (end it with :** instead)`)
+      console.error(`  ✗ settings-template.json — ${rule} mixes * with the :* prefix form — Claude Code either matches it literally so it never fires, or warns about it at every session start`)
       errors++
     }
   } catch (e) {

@@ -1,11 +1,15 @@
 ---
 description: "Performance budgets — CWV, bundle size, query latency, render"
 paths:
-  - "**/*.{ts,tsx,js,jsx,mjs,py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp,css,scss,vue,svelte,astro,html,erb}"
+  - "**/*.{tsx,jsx,vue,svelte,astro,html,erb,css,scss}"
+  - "**/*.{service,repository,repo,processor,worker,resolver,controller,handler}.{ts,js,mjs}"
+  - "**/{services,repositories,queries,jobs,workers}/**"
+  - "**/{next,vite,webpack}.config.*"
+  - "**/*.{py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}"
 ---
 
-`700-observability.md` co-loads on the same code files: 700 governs what to log, 900 the latency
-and bundle budgets. Apply both.
+900 holds the latency and bundle budgets; `700-observability.md` governs what to log and loads for
+services, handlers and jobs. Apply both where both are loaded.
 
 ## PERFORMANCE BUDGETS — hard limits
 

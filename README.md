@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A Claude Code configuration kit that makes the assistant behave like a senior engineering team
-instead of an eager junior: **8 agents, 28 skills, 12 rules, 7 commands, 28 presets**.
+instead of an eager junior: **8 agents, 30 skills, 12 rules, 7 commands, 28 presets**.
 
 🇹🇷 [Türkçe README](README.tr.md)
 
@@ -22,7 +22,7 @@ This kit adds the three things a senior teammate has and a fresh model does not:
   secrets is routed to a read-only *guard agent* first. The guard writes a plan and stops. No
   code is written until you approve it.
 - **A procedure per task shape.** "Fix this bug," "add a page," "review this migration" each
-  have a written discipline the model follows instead of improvising. 28 of them.
+  have a written discipline the model follows instead of improvising. 30 of them.
 - **A context budget.** Only three files load on every turn (capped at 500 lines, enforced by a
   script). Everything else — 12 rule files, 18 reference docs — loads lazily when a matching
   file is read or a skill actually needs it.
@@ -93,13 +93,13 @@ what you can type — is [`docs/usage.md`](docs/usage.md).
 | | Count | Notes |
 | --- | --- | --- |
 | Agent | 8 | 4 are read-only guards (db, security, devops, performance) |
-| Skill | 28 | Most auto-trigger on task shape; a few are slash-command only |
+| Skill | 30 | Most auto-trigger on task shape; a few are slash-command only |
 | Rule | 12 | `000`/`001` load every session; the other 10 load on a `paths:` glob match |
 | Command | 7 | `/agents-guide`, `/skills-guide`, `/seo-check`, `/design-check`, `/arch-check`, `/a11y-check`, `/context-audit` |
 | Preset | 28 | web: nextjs-saas, react-vite, nuxt, sveltekit, astro, angular · backend: node-express, nestjs, fastapi, django, laravel, rails, spring-boot, dotnet, go-api, rust-axum · mobile: flutter, react-native, swiftui · orm: prisma, drizzle · db: postgres, mongodb, supabase · infra: docker, kubernetes, terraform · generic: fallback |
 | agent_docs | 18 | Deep reference pages, read on demand |
 
-In short: 8 agents, 28 skills, 12 rules, 7 commands, 28 presets.
+In short: 8 agents, 30 skills, 12 rules, 7 commands, 28 presets.
 
 Plus a guardrail layer: several hundred deny rules in `settings-template.json` that block reads of secret
 files, destructive shell commands, and zero-prompt remote package runners. Coverage and its
@@ -138,7 +138,7 @@ from disk by the test suite. One command:
 npm run check
 ```
 
-Currently: 468/468 tests passing (73 suites). `routing-eval` pins 34 realistic requests against
+Currently: 478/478 tests passing (74 suites). `routing-eval` pins 37 realistic requests against
 the routing table, `check-consistency` re-derives every hand-written number in this file, and
 `check-plugin` verifies the plugin manifests still match the components on disk.
 
@@ -172,18 +172,17 @@ the unnecessary one. That is the expensive failure — a subagent is a fresh con
 re-reads the project to change one word — and it is the failure a document arguing for
 delegation is most likely to cause.
 
-**The measured result, 2026-10-05:** control 28/34 (82%), treatment 33/34 (97%) — five of the six
+**The measured result, 2026-10-28:** control 31/37 (84%), treatment 37/37 (100%) — all six
 routes the descriptions get wrong, fixed, and none that they get right, broken. Adding the negative cases
 is what widened the gap: plain agent descriptions have nothing to say about when *not* to delegate,
 so `src/pages/About.tsx'te 'Kurumsal' başlığını 'Hakkımızda' yap` goes to `ui-fixer` on the strength
 of the word "copy", while the treatment arm reaches `ROUTING.md`'s Step 3.5 and answers `none`.
 The other routes it moves are the ones where a sentence's noun has to outrank its verb in both
 directions (`fix CSS in the login form` → `security-guard`, not `ui-fixer`; but tests *for* payment
-code → `senior-engineer`, not the guard). The one miss is `fix the padding on the pricing cards,
-they look cramped on mobile`: one component's spacing is Tier 1, so Step 3.5 keeps it in the main
-loop, yet both arms sent it to `ui-fixer` this run after the treatment arm had answered `none` 3 of
-3 times the run before. Prompts on the Tier 1/2 line sample, and the control arm samples most,
-which is why the bar is error reduction rather than points of lift. Those integers live in `eval/golden-prompts.json`, and `check-consistency` fails if
+code → `senior-engineer`, not the guard). `fix the padding on the pricing cards, they look cramped on
+mobile`, the one miss of the 2026-10-05 run, routed `none` this time: one component's spacing is
+Tier 1 and Step 3.5 keeps it in the main loop. Prompts on the Tier 1/2 line sample, and the control
+arm samples most, which is why the bar is error reduction rather than points of lift. Those integers live in `eval/golden-prompts.json`, and `check-consistency` fails if
 this paragraph states a score that file does not — or if the recorded run stops describing the
 suite on disk, which is how a previous number went stale: it was measured before a prompt was
 added, and the re-run that caught up found two routes the updated table had broken. One run on one
@@ -205,7 +204,7 @@ RUN_BEHAVIOR_EVAL=1 npm run behavior-eval
 $env:RUN_BEHAVIOR_EVAL=1; npm run behavior-eval
 ```
 
-**The measured result, 2026-10-05:** control 20/23 (87%), treatment 22/23 (96%) — the rules fix two
+**The measured result, 2026-10-28:** control 20/23 (87%), treatment 22/23 (96%) — the rules fix two
 of the base model's three errors (a spinner where the content shape calls for a skeleton, section
 comments in browser-served files) and break nothing. Both arms miss the commit-trailer prompt: its
 wording ("add it by default") has the user asking, which NO AI ATTRIBUTION explicitly allows, so it

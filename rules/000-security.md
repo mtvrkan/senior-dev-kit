@@ -84,9 +84,11 @@ temp or stray files. Covers `rm`, `Remove-Item`, `git clean`, `git branch -D`, `
 `git reset --hard` and any script that removes things. List exactly what would go, ask, wait. A
 broad instruction ("clean up", "finish everything", "go ahead") is never approval for a deletion.
 
-PUSH — commit verified work as usual; push only when the user asks for a push at that moment.
-Covers `git push` in every form (force, tags, `--set-upstream`) and anything that pushes for you
-(`gh pr create`, `gh repo sync`, a script). One request covers one push; "ship it" is not one.
+COMMIT + PUSH — commit or open a branch only when the user asks for it at that moment; push only
+when the user asks for a push at that moment. Push covers `git push` in every form (force, tags,
+`--set-upstream`) and anything that pushes for you (`gh pr create`, `gh repo sync`, a script); the
+`deny-rules` component also makes `git push` and `gh pr create` ask. One request covers one commit
+or push and never carries over to the next task; "ship it" is not one.
 
 PRIVATE FILES — AI-assistant files and working notes are never `git add`ed, committed or pushed:
 `CLAUDE.md`, `CLAUDE.local.md`, `.claude/` (TECH-DEBT, PROJECT-MEMORY, settings), `AGENTS.md`,

@@ -6,7 +6,7 @@ model: sonnet
 permissionMode: default
 effort: medium
 color: blue
-maxTurns: 20
+maxTurns: 60
 skills:
   - feature-build
   - refactor-safe

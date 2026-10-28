@@ -39,6 +39,14 @@ const CASES: Array<[string, string, boolean]> = [
   ['900-performance.md', 'src/main.rs', true],
   ['900-performance.md', 'styles/app.scss', true],
   ['900-performance.md', 'README.md', false],
+  // A plain JS/TS utility is not a service: 700/900 load for the layers that log and that sit on
+  // the hot path, not for every script file a session opens.
+  ['700-observability.md', 'src/utils/format-date.ts', false],
+  ['700-observability.md', 'src/orders/orders.service.ts', true],
+  ['700-observability.md', 'src/app/api/orders/route.ts', true],
+  ['900-performance.md', 'src/utils/format-date.ts', false],
+  ['900-performance.md', 'src/components/OrderTable.tsx', true],
+  ['900-performance.md', 'src/repositories/orders.ts', true],
 
   // JVM/.NET/Swift name tests by PascalCase suffix, not a `.test.` infix.
   ['300-testing.md', 'src/test/java/UserServiceTest.java', true],

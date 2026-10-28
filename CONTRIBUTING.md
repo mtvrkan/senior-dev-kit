@@ -124,10 +124,13 @@ Move a claim or a pin and the gate names the ledger entry to update.
 Rule scope decisions. A rule body is injected into the model on every matching file, so the
 reasoning behind a glob lives here instead of in the rule. Do not re-flag these:
 
-- `700-observability` and `900-performance` use bare-extension globs on purpose. Directory scoping
-  (`**/api/**`, `**/services/**`) would skip repo-root sources, Go `cmd`/`internal` and .NET
-  layouts. 900 also covers `.css`/`.scss`, `.vue/.svelte/.astro/.html/.erb`, which 700's logging
-  rules do not need, so the two globs are deliberately not identical.
+- `700-observability` and `900-performance` use bare-extension globs for every language except
+  JS/TS on purpose. Directory scoping (`**/api/**`, `**/services/**`) would skip repo-root sources,
+  Go `cmd`/`internal` and .NET layouts. JS/TS is the exception because it is where most sessions
+  run and where most files are neither a service nor a hot path: there both rules load by layer
+  (`*.service.ts`, `services/`, `app/api/`, `jobs/`) and 900 also by UI extension, so a plain
+  utility or config file pays for neither. 900 covers `.css`/`.scss`, `.vue/.svelte/.astro/.html/.erb`,
+  which 700's logging rules do not need, so the two globs are deliberately not identical.
 - `400-mobile`'s `**/*.{swift,kt}` also fires for server-side Kotlin (Ktor, Spring). Narrowing to
   `**/android/**` would skip every Android module outside a directory of that name, which is the
   worse failure. `.kts` is deliberately excluded: it means `build.gradle.kts`, which every JVM

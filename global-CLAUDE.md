@@ -90,9 +90,8 @@ Tier 1+: run once per session (skip missing, never guess):
    Edge runtime (wrangler.toml, `export const runtime = 'edge'`): no Node built-ins, no fs, no
    long-lived connections — a Node-only dep in an edge route fails at deploy, not at lint
 4. ORM/migrations: *.prisma/drizzle.config.*/knexfile.*/alembic.ini/supabase/config.toml/schema.rb/
-   Data/*DbContext.cs, or mongoose/typeorm in the manifest, or a dir named migrations/ (Django,
-   Laravel, EF) migrate/ (Rails db/migrate) migration/ (Flyway db/migration) changelog/
-   (Liquibase) → DB+ORM
+   Data/*DbContext.cs, mongoose/typeorm in the manifest, or a migrations/ (Django, Laravel, EF),
+   migrate/ (Rails), migration/ (Flyway) or changelog/ (Liquibase) dir → DB+ORM
 5. Architecture: turbo.json/nx.json/pnpm-workspace.yaml → MONOREPO: detect per package, not repo-wide
    else src/ or app/ 1-level → layered(controllers/services/repos) or vertical-slice(features/)
 6. 1 test file → TEST_CMD, framework | 1 file per layer → CONVENTIONS
@@ -115,6 +114,11 @@ AndroidManifest.xml|Info.plist (mobile) | RLS policies (Supabase) | Security rul
 
 UNDERSTAND BEFORE CHANGING — convention discovery per 001-conventions.md (always loaded).
 Smallest safe diff. No refactoring while fixing bugs. No features while fixing bugs.
+
+SCOPE — apply a request literally, only to what it names ("shrink the footer" shrinks nothing else),
+adding no element or effect of your own. Several items → a checklist, each re-checked before done.
+"All" → count the scope and state the number. Never invent values, addresses, e-mails or tools:
+read the source or ask, mark a placeholder as one. Reads like another repo or topic → ask first.
 
 SKILL CHECK — before starting any implementation task, check installed skills for a match
 (bug-fix, feature-build, new-page, db-change, …); if one matches, follow it — don't improvise.
@@ -143,15 +147,15 @@ CONTEXT DISCIPLINE:
 
 - The model cannot see its own token count or run /compact — after long read chains or several
   Agent() calls, say: "Session is getting large — consider /compact or a fresh session."
-- /compact summarizes and CONTINUES; /clear WIPES. Task unfinished + context full → /compact.
-  Before /clear: persist durable facts to memory/*.md + MEMORY.md so the next session reloads them
-  (project-scoped facts specifically → `project-memory` skill, `.claude/PROJECT-MEMORY.md`).
+- /compact summarizes and CONTINUES; /clear WIPES. Unfinished + full context → /compact; unrelated
+  task → fresh session. Before /clear or a planned close: durable facts → memory/*.md + MEMORY.md,
+  project facts → `project-memory`, open work and the next step → `session-handoff`.
 - Subagents start blank: ONE topic per call, pass known context (TEST_CMD, paths), and ask for a
   conclusion, not a transcript. N parallel subagents cost ~N× tokens.
-- Fresh session for unrelated tasks; never continue an old one out of convenience.
 - Scratchpad stays small: browser automation (headless Chrome, CDP, Playwright, Puppeteer) reuses
   ONE profile per session at `<scratchpad>/chrome-profile`, never a fresh `--user-data-dir` per
-  run; dependency installs, caches and build output go in the project, not the scratchpad.
+  run; dependency installs, caches and build output go in the project, not the scratchpad. One dev
+  server, simulator or emulator at a time; stop every process you started before reporting done.
 
 DOC FRUGALITY — this file, the project's CLAUDE.md and rules without `paths:` are paid by every
 session. A line there earns its place only if it changes behaviour and cannot be derived from code
@@ -183,9 +187,10 @@ This overrides the harness's default commit instruction; the kit's `settings` co
 `attribution` in settings.json.
 
 CHANGELOG — after any Tier 1+ code/config edit, append to the project's root `CHANGELOG.md`
-(Keep a Changelog; create it with a `# Changelog` header if missing) under `## [Unreleased]` →
+(Keep a Changelog; create with a `# Changelog` header if missing) under `## [Unreleased]` →
 `### Added|Changed|Fixed|Removed|Security`: one plain-language line ending `[YYYY-MM-DD]`, same-day
-entries grouped. Version headings only when the user cuts a release. Never log secrets or PII.
+entries grouped. Version headings only on a release. Never log secrets, PII, person names or data
+corrections (an edited record is data, not a code change).
 
 ---
 
@@ -205,6 +210,9 @@ Tier 3+:   PLAN: goal ≤8 words
            CONTRACT: METHOD /path · {req} → {res}  ← API changes only
            --- ∙ change | TEST: ✓ N | VERIFY: ✓ | RISK: T3·agent
 
+PLAIN LANGUAGE — symbols never replace an explanation; follow a requested format literally ("4
+sentences" = 4); say when unsure. User decisions → numbered questions, lettered options, one marked.
+
 ---
 
 ## AUTO-TEST + VERIFICATION
@@ -214,7 +222,8 @@ OFF: pure CSS/styling | config/env | docs | type-only changes (no logic)
 
 TARGETED TEST ONLY — never full suite for 1-file change.
 No test file → create minimal spec same turn: happy path + edge + error (3 tests); a bug fix adds 1 regression test.
-VERIFY BY CHANGE TYPE: behavior→test | new file→lint+test | new route→build | CSS→lint | type→type-check
+VERIFY BY CHANGE TYPE: behavior→test | new file→lint+test | new route→build | type→type-check |
+UI→lint + render and inspect your own screenshot | same complaint twice → change method, not repeat.
 
 DEP-DRIFT: [pkg] v[current] → v[latest] — [reason] (audit commands: `agent_docs/dep-check-guide.md`)
 
