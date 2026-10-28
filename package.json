@@ -60,7 +60,7 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.13.3",
     "eslint": "^10.6.0",
-    "markdownlint": "^0.41.1",
+    "markdownlint": "^0.42.0",
     "typescript": "^5.8.0",
     "typescript-eslint": "^8.62.1"
   },
