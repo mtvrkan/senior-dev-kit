@@ -6,6 +6,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-10-28
+
 ### Added
 
 - `design-options` skill: 2–4 rendered options (HTML at three widths, or a real mobile render)
