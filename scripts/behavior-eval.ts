@@ -34,7 +34,7 @@
 // a README. Every prompt is a decision with a defensible right answer, so the answer space is a
 // token set and scoring is exact.
 import { readFileSync, readdirSync, existsSync, realpathSync } from 'fs'
-import { join } from 'path'
+import { join } from './lib/kit-root.ts'
 import { execFileSync } from 'child_process'
 import { fileURLToPath } from 'url'
 import { evalContextDigest } from './lib/eval-context.ts'

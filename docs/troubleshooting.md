@@ -22,15 +22,15 @@ precedence, not a bug.
 
 ## Everything appears twice
 
-You installed the plugin *and* ran a full `node scripts/install.mjs`. Both copies load, so every
+You installed the plugin *and* ran a full `node claude/scripts/install.mjs`. Both copies load, so every
 agent, skill and command is duplicated and the protocol is charged to your context twice per
 turn.
 
 Fix: remove the `~/.claude` copy and keep the plugin.
 
 ```bash
-node scripts/install.mjs --uninstall
-node scripts/install.mjs --only rules,deny-rules,settings
+node claude/scripts/install.mjs --uninstall
+node claude/scripts/install.mjs --only rules,deny-rules,settings
 ```
 
 The first line removes everything the installer wrote; the second puts back only the part the
@@ -56,7 +56,7 @@ and the agent's own read-only instruction — and produce a plan instead of an e
 Approving the plan ("looks good", "proceed") hands it to an implementer.
 
 If a request is being routed to a guard that shouldn't own it, the tie-break rules are in
-[`../agents/ROUTING.md`](../agents/ROUTING.md) — the common surprise is that a guarded noun beats
+[`../agents/ROUTING.md`](../claude/agents/ROUTING.md) — the common surprise is that a guarded noun beats
 the task verb, so "fix the CSS in the login form" is treated as auth work.
 
 ---
@@ -127,7 +127,7 @@ Open an issue with the output of `/kit-doctor` and, if the problem is install-sh
 of:
 
 ```bash
-node scripts/install.mjs --dry-run
+node claude/scripts/install.mjs --dry-run
 ```
 
 Neither prints secrets — the dry run lists paths and counts only.

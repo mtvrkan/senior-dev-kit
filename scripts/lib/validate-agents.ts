@@ -5,7 +5,7 @@
 // when skill validation needs them.
 
 import { readFileSync, readdirSync, existsSync } from 'fs'
-import { join } from 'path'
+import { join } from './kit-root.ts'
 import { parseFrontmatter, findDuplicateFrontmatterKeys, getBodyAfterFrontmatter } from './frontmatter.ts'
 import { checkModelId, checkEffort, validateToolList, missingRequiredFields, type Counts } from './validate-common.ts'
 import { TRIGGER_TEXT_BUDGET_CHARS } from './counts.ts'

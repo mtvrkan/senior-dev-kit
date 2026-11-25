@@ -6,7 +6,7 @@
 // make that rule never load and still pass `npm run check`.
 
 import { readFileSync, readdirSync, existsSync } from 'fs'
-import { join } from 'path'
+import { join } from './kit-root.ts'
 import { parseFrontmatter, findDuplicateFrontmatterKeys, getFrontmatterList, stripBom } from './frontmatter.ts'
 
 const ALWAYS_LOADED_RULE_NAMES = new Set(['000-security', '001-conventions'])

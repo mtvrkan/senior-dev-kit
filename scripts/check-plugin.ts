@@ -15,10 +15,11 @@
  * Usage: node --experimental-strip-types scripts/check-plugin.ts
  */
 import { existsSync, readFileSync, readdirSync } from 'fs'
-import { dirname, join } from 'path'
+import { dirname } from 'path'
+import { join } from './lib/kit-root.ts'
 import { fileURLToPath } from 'url'
 import { parseFrontmatter } from './lib/frontmatter.ts'
-import { PROTOCOL_PART_LIMIT, SESSION_CONTEXT_LIMIT, requiredSessionParts } from './lib/install-core.mjs'
+import { PROTOCOL_PART_LIMIT, SESSION_CONTEXT_LIMIT, requiredSessionParts } from '../claude/scripts/lib/install-core.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = process.env.PLUGIN_ROOT ?? join(__dirname, '..')
@@ -304,7 +305,7 @@ if (marketplace) {
       // The marketplace entry name — not plugin.json's — is what keys
       // `enabledPlugins` and what users type. Keeping them identical is the
       // only way `/plugin install <name>@<marketplace>` matches the docs.
-      if (plugin?.name && entry.source === './' && entry.name !== plugin.name) {
+      if (plugin?.name && (entry.source === './' || entry.source === './claude') && entry.name !== plugin.name) {
         errors.push(
           `marketplace entry "${entry.name}" points at the marketplace root but plugin.json is named ` +
             `"${plugin.name}" — the marketplace name wins at install time, so the two must match`

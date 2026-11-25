@@ -1,0 +1,172 @@
+700 governs what to log; `900-performance.md` holds the latency and bundle budgets and loads for
+services, queries and UI files. Apply both where both are loaded.
+
+## LOGGING RULES — zero console.log in production
+
+| Level | When to use |
+| --- | --- |
+| `ERROR` | Unexpected crash, unhandled exception, data loss |
+| `WARN` | Degraded state, retry, fallback activated, rate limit hit |
+| `INFO` | Key state transition: user created, order placed, job completed |
+| `DEBUG` | Never in prod without feature flag |
+
+**Structured JSON always:**
+
+WRONG:
+
+```typescript
+console.log("user created:", user)
+console.error("Error:", err)
+```
+
+RIGHT:
+
+```typescript
+logger.info({ userId: user.id, action: "user.created", plan: user.plan })
+logger.error({ err: err.message, stack: err.stack, action: "order.place.failed", orderId })
+```
+
+**Correlation ID on every line:**
+
+Express middleware. Validate the inbound header before trusting it: it is caller-controlled and
+lands on every log line and metric label — unbounded, it is log injection and cardinality blowup at
+once.
+
+```typescript
+app.use((req, res, next) => {
+  const inbound = req.headers['x-correlation-id']
+  req.correlationId = /^[\w-]{1,64}$/.test(inbound ?? '') ? inbound : crypto.randomUUID()
+  res.setHeader('x-correlation-id', req.correlationId)
+  next()
+})
+```
+
+Every log call includes `{ correlationId: req.correlationId }`.
+
+**Never log:**
+
+- Passwords · tokens · API keys · session IDs · full credit card numbers
+- PII (email, phone, SSN, DOB) — log `userId` or an opaque ID instead
+- Full request body when it contains sensitive fields → redact first
+- `Authorization` header · `Cookie` header
+
+## METRICS — required on every service/handler
+
+When adding or changing a service or background job, add these:
+
+| Metric | Type | Labels |
+| --- | --- | --- |
+| Request count | Counter | method, route, status |
+| Request duration | Histogram | method, route |
+| Error count | Counter | method, route, error_type |
+| Active jobs | Gauge | queue, worker |
+| Queue depth | Gauge | queue |
+| External call duration | Histogram | service, endpoint |
+
+`route` is the route template (`/users/:id`), never the raw path: every distinct ID in a raw path
+becomes its own time series — the same cardinality blowup as an unvalidated correlation ID.
+
+Node.js (`prom-client`):
+
+```typescript
+const httpRequestDuration = new Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'HTTP request duration',
+  labelNames: ['method', 'route', 'status'],
+  buckets: [0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 5],
+})
+```
+
+Python (`prometheus_client`):
+
+```python
+REQUEST_DURATION = Histogram('http_request_duration_seconds', 'HTTP request duration',
+  ['method', 'route', 'status'])
+```
+
+Go:
+
+```go
+requestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+  Name: "http_request_duration_seconds",
+  Buckets: prometheus.DefBuckets,
+}, []string{"method", "route", "status"})
+```
+
+**OBS flag — auto-trigger:**
+If a service/handler has no metrics instrumentation: `OBS: [service] no metrics — add request count + latency`
+
+## HEALTH ENDPOINTS — required for every HTTP service
+
+Minimum: liveness + readiness.
+
+```typescript
+GET /health          → 200 { status: "ok" }                    (liveness — is process alive?)
+GET /health/ready    → 200 { status: "ready", db: "ok" }       (readiness — can handle traffic?)
+GET /health/ready    → 503 { status: "degraded", db: "error" } (dependency down)
+```
+
+Readiness checks: DB ping, cache ping, critical external dep.
+
+## DISTRIBUTED TRACING
+
+When adding cross-service calls or async jobs:
+
+- Propagate W3C Trace Context (`traceparent`) on every HTTP call through the tracer's propagator —
+  never copy the inbound header onto the outgoing request. The outgoing call is a child span: same
+  trace-id, new span-id. OpenTelemetry's HTTP/fetch auto-instrumentation does this with no code;
+  the manual form is below
+- Pass `correlationId` in queue message payload (not just headers)
+- Log span start + end with duration for any call >50ms
+
+```typescript
+import { context, propagation, SpanKind, trace } from '@opentelemetry/api'
+
+const tracer = trace.getTracer('orders-service')
+
+const response = await tracer.startActiveSpan('GET /users', { kind: SpanKind.CLIENT }, async (span) => {
+  const headers: Record<string, string> = { 'x-correlation-id': req.correlationId }
+  propagation.inject(context.active(), headers)
+  try {
+    return await fetch(url, { headers })
+  } finally {
+    span.end()
+  }
+})
+```
+
+## ERROR TRACKING
+
+Every unhandled exception must reach an error tracker (Sentry, Datadog, etc.):
+
+- Include: user context (userId, not email) · request context (method, path, correlationId)
+- Group by: error type + first stack frame (not random stack depth)
+- Never: catch-and-swallow without logging (`catch (e) {}`)
+
+WRONG — silent swallow:
+
+```typescript
+try { await riskyOperation() } catch (e) {}
+```
+
+RIGHT — log + re-throw or handle:
+
+```typescript
+try { await riskyOperation() } catch (e) {
+  logger.error({ err: e.message, action: 'riskyOperation.failed', userId })
+  throw e
+}
+```
+
+Instead of re-throwing, handling means returning a fallback value and logging it at WARN.
+
+## ALERT THRESHOLDS (record the reasoning in the alert's own description/runbook, never in code comments)
+
+| Signal | Threshold | Urgency |
+| --- | --- | --- |
+| Error rate | >1% of requests | Page |
+| P99 latency | >2× baseline | Page |
+| P95 latency | >1.5× baseline | Warn |
+| Queue depth | >1000 messages stale >5min | Page |
+| Disk usage | >80% | Warn |
+| Memory | >90% for >5min | Page |

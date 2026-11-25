@@ -16,7 +16,7 @@ npm run check
 ```
 
 This runs, in order: `test` → `validate` → `link-check` → `consistency-check` → `docs-check` →
-`routing-eval` → `behavior-eval` → `check-plugin` → `check-install` → `typecheck` → `lint` → `markdown-lint` →
+`routing-eval` → `behavior-eval` → `check-plugin` → `check-codex` → `check-install` → `typecheck` → `lint` → `markdown-lint` →
 `audit`. Every step
 runs even if an earlier one fails, so you get the full report in one pass. A pull request is not
 ready until this is green. Only the last step needs the network.
@@ -35,6 +35,8 @@ Narrower commands while iterating:
 | `npm run site-check` | Same render, result discarded. Runs in the site workflow, not in `npm run check` |
 | `npm run gen-og` | Regenerates the social card — one per locale — and the raster icons on the `site-src` branch. Needs Chrome; outputs are committed there |
 | `npm run check-plugin` | Plugin and marketplace manifests match the components on disk |
+| `npm run gen-codex` | Regenerates the Codex plugin under `codex/` from the Claude Code sources |
+| `npm run check-codex` | Fails if `codex/` and those sources disagree |
 | `npm run deny-cost` | Replays your own Claude Code transcripts against the deny list |
 | `npm run check-release` | Network. Verifies the published install path resolves for a stranger — run before announcing a release, not in the gate |
 
@@ -62,13 +64,13 @@ because consistency check 28 runs inside that build.
 Most review feedback is automated. Before opening a PR, know that:
 
 - **Skill bodies are capped at 20 lines** and agent bodies at 150. Depth goes in
-  `agent_docs/`, which is read on demand rather than loaded every session.
+  `claude/agent_docs/`, which is read on demand rather than loaded every session.
 - **Every preset ships two files**: `CLAUDE.md` (full) and `compact.md` (7–15 lines). Both are
   required and are checked for drift against each other.
-- **The always-loaded files** — `global-CLAUDE.md`, `rules/000-security.md`,
-  `rules/001-conventions.md` — have a hard budget of 250 lines each and 500 combined. These
+- **The always-loaded files** — `claude/global-CLAUDE.md`, `claude/rules/000-security.md`,
+  `claude/rules/001-conventions.md` — have a hard budget of 250 lines each and 500 combined. These
   three cost every user context on every turn, in every project. Adding to them is the most
-  expensive edit in the repo; prefer a path-scoped rule or an `agent_docs/` page.
+  expensive edit in the repo; prefer a path-scoped rule or an `claude/agent_docs/` page.
 - **Trigger text has a budget too**, and it is the other half of the same bill: a skill's
   `description` + `when_to_use`, an agent's `description` and a command's frontmatter are all
   injected into every session before the user types. 360 chars each and 12000 combined across
@@ -80,9 +82,9 @@ Most review feedback is automated. Before opening a PR, know that:
 - **Numbers in prose are derived, not typed.** `scripts/check-consistency.ts` re-reads counts,
   budgets, and version strings from disk and fails if a document disagrees. If you change a
   count, do not hand-edit the prose — run the gate and let it tell you what drifted.
-- **So are commands.** Every `npm run <script>`, every `scripts/install.mjs` flag, and every
+- **So are commands.** Every `npm run <script>`, every `claude/scripts/install.mjs` flag, and every
   backticked slash command (`/<name>`) in this repo's own documents is resolved against `package.json`,
-  the installer's argument parser, and `skills/`+`commands/`. Rename one and the docs that still
+  the installer's argument parser, and `claude/skills/`+`claude/commands/`. Rename one and the docs that still
   name it fail the gate.
 - **The installer's Node floor lives in one place** — `package.json`'s
   `seniorDevKit.installerNodeFloor`, currently 18, deliberately lower than `engines.node` (24,
@@ -93,18 +95,18 @@ Most review feedback is automated. Before opening a PR, know that:
 
 | Adding a… | Do this |
 | --- | --- |
-| Skill | Create `skills/<name>/SKILL.md`, copy an existing skill's frontmatter shape, bind it to an agent's `skills:` list if an agent should follow it |
-| Agent | Create `agents/<name>.md`, add a row to `agents/ROUTING.md`, add a golden prompt to `eval/golden-prompts.json` |
-| Rule | Create `rules/<NNN>-<topic>.md` with a `paths:` glob list, add it to `global-CLAUDE.md`'s RULES REFERENCE topics list, and add a prompt in `eval/behavior-prompts.json` naming it as context |
+| Skill | Create `claude/skills/<name>/SKILL.md`, copy an existing skill's frontmatter shape, bind it to an agent's `skills:` list if an agent should follow it |
+| Agent | Create `claude/agents/<name>.md`, add a row to `claude/agents/ROUTING.md`, add a golden prompt to `eval/golden-prompts.json` |
+| Rule | Create `claude/rules/<NNN>-<topic>.md` with a `paths:` glob list, add it to `claude/global-CLAUDE.md`'s RULES REFERENCE topics list, and add a prompt in `eval/behavior-prompts.json` naming it as context |
 | Preset | Copy the structure of an existing preset in the same category — both `CLAUDE.md` and `compact.md` |
-| Deny rule | Edit `settings-template.json`, mirror it into `.claude/settings.json`, and run `npm run deny-cost` to measure the friction it adds |
+| Deny rule | Edit `claude/settings-template.json`, mirror it into `.claude/settings.json`, and run `npm run deny-cost` to measure the friction it adds |
 
 Which stacks get a preset, and which are deliberately left out, is decided in
-`presets/README.md`. Read it before proposing one.
+`claude/presets/README.md`. Read it before proposing one.
 
 ## Shipped markdown carries no comments
 
-Everything under `rules/`, `presets/`, `agent_docs/`, `agents/`, `skills/` and `commands/` is
+Everything under `claude/rules/`, `claude/presets/`, `claude/agent_docs/`, `claude/agents/`, `claude/skills/` and `claude/commands/` is
 loaded into someone's session, and code examples there are copied verbatim. So neither HTML
 comments nor comments inside fenced examples are allowed: `npm run check` fails on both. The only
 exception is the `// SAFETY:` note a Rust `unsafe` block requires. Explain an example in the prose
@@ -146,10 +148,10 @@ reasoning behind a glob lives here instead of in the rule. Do not re-flag these:
 
 Accepted overlaps. Do not re-flag these as duplication:
 
-- `agents/security-guard.md`'s authentication checklist restates part of `rules/200-api.md`. The
+- `claude/agents/security-guard.md`'s authentication checklist restates part of `claude/rules/200-api.md`. The
   rule serves main-session API edits. The checklist serves guard sessions, where 200-api may never
   auto-load, because `middleware.ts` and similar files don't match its globs.
-- `agents/devops-guard.md` restates constraints from `rules/600-devops.md`. The rule only
+- `claude/agents/devops-guard.md` restates constraints from `claude/rules/600-devops.md`. The rule only
   auto-loads when a Dockerfile, CI or IaC file is read, and the guard's plan-only sessions may never
   open one.
 
@@ -180,7 +182,7 @@ disclosure process.
 ## Scope
 
 Reasonable contributions: bug fixes in the validators, corrections to rule content, new stack
-presets you actually use, better trigger phrases in `agents/ROUTING.md`, translations.
+presets you actually use, better trigger phrases in `claude/agents/ROUTING.md`, translations.
 
 Out of scope: broadening the kit into a general prompt library, adding paid-service
 dependencies, or adding components with no validator coverage.

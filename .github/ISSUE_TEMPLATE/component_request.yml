@@ -7,7 +7,7 @@ body:
     attributes:
       value: >-
         Presets are added when someone actually starts a project on that stack,
-        not speculatively — see `presets/README.md`. The same bias applies to
+        not speculatively — see `claude/presets/README.md`. The same bias applies to
         agents and skills: a component nobody triggers is a component that
         drifts.
 
@@ -40,7 +40,7 @@ body:
       label: Why does an existing component not cover this?
       description: >-
         Name the closest existing agent or skill and say what it gets wrong.
-        See `agents/ROUTING.md` for the full decision tree.
+        See `claude/agents/ROUTING.md` for the full decision tree.
     validations:
       required: true
 
@@ -50,6 +50,6 @@ body:
       label: Context budget
       options:
         - label: >-
-            This does not require adding lines to `global-CLAUDE.md`,
-            `rules/000-security.md`, or `rules/001-conventions.md` (the
+            This does not require adding lines to `claude/global-CLAUDE.md`,
+            `claude/rules/000-security.md`, or `claude/rules/001-conventions.md` (the
             always-loaded files, capped at 500 lines combined).

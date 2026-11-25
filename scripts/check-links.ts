@@ -7,7 +7,8 @@
  * Usage: node --experimental-strip-types scripts/check-links.ts
  */
 import { readFileSync, readdirSync } from 'fs'
-import { join, dirname, relative } from 'path'
+import { dirname, relative } from 'path'
+import { join } from './lib/kit-root.ts'
 import { fileURLToPath } from 'url'
 import { findBrokenLinks } from './lib/links.ts'
 

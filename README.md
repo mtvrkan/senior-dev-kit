@@ -56,8 +56,8 @@ no dependencies. The `--dry-run` line shows exactly what would change; the last 
 ```bash
 git clone https://github.com/mtvrkan/senior-dev-kit.git
 cd senior-dev-kit
-node scripts/install.mjs --dry-run
-node scripts/install.mjs
+node claude/scripts/install.mjs --dry-run
+node claude/scripts/install.mjs
 ```
 
 Nothing you already had is destroyed: your `~/.claude/CLAUDE.md` gets the protocol inside
@@ -66,6 +66,20 @@ up first. **Don't do both** — [`docs/install.md`](docs/install.md) covers that
 per-project installs, and uninstalling.
 
 ---
+
+## Codex
+
+The same kit ships as a Codex plugin, generated from these sources into [`codex/`](codex/README.md):
+
+```bash
+codex plugin marketplace add mtvrkan/senior-dev-kit
+codex plugin add senior-dev-kit@senior-dev-kit
+```
+
+Two one-time steps follow in a new Codex session — trusting the plugin's hooks, and installing the
+custom agents, command rules and protocol block a Codex plugin cannot carry. Both, plus what maps
+to what and what does not carry over, are in [`codex/README.md`](codex/README.md). Skills and
+former slash commands are invoked as `$name` there.
 
 ## Usage
 
@@ -80,7 +94,7 @@ Nothing to remember after install. You describe the task; routing is automatic:
 ```
 
 The full decision tree, including the tie-breaks between competing signals, is
-[`agents/ROUTING.md`](agents/ROUTING.md). From inside a session, `/agents-guide` and
+[`agents/ROUTING.md`](claude/agents/ROUTING.md). From inside a session, `/agents-guide` and
 `/skills-guide` list what is installed, and `/kit-doctor` diagnoses a broken install.
 
 What actually changes about a working day — blast-radius tiers, why the guards can be trusted,
@@ -138,7 +152,7 @@ from disk by the test suite. One command:
 npm run check
 ```
 
-Currently: 478/478 tests passing (74 suites). `routing-eval` pins 37 realistic requests against
+Currently: 486/486 tests passing (77 suites). `routing-eval` pins 37 realistic requests against
 the routing table, `check-consistency` re-derives every hand-written number in this file, and
 `check-plugin` verifies the plugin manifests still match the components on disk.
 
@@ -254,7 +268,7 @@ deciding whether to adopt this kit, weigh it accordingly.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — the gate, the budgets, how to add a component
 - [`CHANGELOG.md`](CHANGELOG.md) — what changed and when
 - [`CLAUDE.md`](CLAUDE.md) — conventions for working on the kit itself
-- [`presets/README.md`](presets/README.md) — preset structure and stack composition
+- [`presets/README.md`](claude/presets/README.md) — preset structure and stack composition
 - [`PROJECT-BOOTSTRAP.md`](PROJECT-BOOTSTRAP.md) — a separate, standalone template: hand it to Claude
   Code in an empty repo and it generates a project-specific `.claude/` setup with its own lean agent
   roster. It installs none of this kit and this kit does not install it; the two coexist if you want

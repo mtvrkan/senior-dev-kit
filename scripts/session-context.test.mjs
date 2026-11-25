@@ -15,9 +15,9 @@ import { dirname, join } from 'node:path'
 import { after, describe, it } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { BLOCK_BEGIN, SESSION_CONTEXT_LIMIT, requiredSessionParts, splitProtocol } from './lib/install-core.mjs'
+import { BLOCK_BEGIN, SESSION_CONTEXT_LIMIT, requiredSessionParts, splitProtocol } from '../claude/scripts/lib/install-core.mjs'
 
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', 'claude')
 const HOOK = join(REPO_ROOT, 'scripts', 'session-context.mjs')
 
 const dirs = []

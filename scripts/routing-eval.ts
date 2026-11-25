@@ -36,7 +36,7 @@
 //   hand-typed one went stale the first time a prompt was added, twice.
 //   Run: RUN_ROUTING_EVAL=1 npm run routing-eval
 import { readFileSync, readdirSync, existsSync, realpathSync } from 'fs'
-import { join } from 'path'
+import { join } from './lib/kit-root.ts'
 import { execFileSync } from 'child_process'
 import { fileURLToPath } from 'url'
 import { parseFrontmatter } from './lib/frontmatter.ts'

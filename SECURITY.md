@@ -19,11 +19,11 @@ claims is blocked counts as a vulnerability. Anything this document already list
 
 This kit consists of Markdown configuration files and Node.js validation scripts. Installation
 copies files into `~/.claude/` or a project's `.claude/`, either through
-`scripts/install.mjs` or through the Claude Code plugin (see `README.md`). The main attack
+`claude/scripts/install.mjs` or through the Claude Code plugin (see `README.md`). The main attack
 surfaces are:
 
-- **`settings-template.json` deny rules** — rules that are too permissive could allow unintended tool calls inside Claude Code. No hook in this kit guards a protected path — protected-path handling (auth/payment/DB migration/CI/IaC/secrets) is prompt discipline (`global-CLAUDE.md` HARD STOPS + guard-agent routing) backed by the Read-tool deny rules, the `Edit(...)` denies on credential material, and the narrow Bash/PowerShell read-verb denies described below. Bash/PowerShell *writes* into any protected path, and reads via verbs outside the enumerated list, are still not deterministically blocked.
-- **`global-CLAUDE.md` / agent definitions** — prompt injection via malicious content in routed tasks
+- **`claude/settings-template.json` deny rules** — rules that are too permissive could allow unintended tool calls inside Claude Code. No hook in this kit guards a protected path — protected-path handling (auth/payment/DB migration/CI/IaC/secrets) is prompt discipline (`claude/global-CLAUDE.md` HARD STOPS + guard-agent routing) backed by the Read-tool deny rules, the `Edit(...)` denies on credential material, and the narrow Bash/PowerShell read-verb denies described below. Bash/PowerShell *writes* into any protected path, and reads via verbs outside the enumerated list, are still not deterministically blocked.
+- **`claude/global-CLAUDE.md` / agent definitions** — prompt injection via malicious content in routed tasks
 - **Code this kit executes on your machine.** Four scripts run outside the model's control, and
   all are plain, dependency-free JavaScript so they can be read end to end before you trust them.
   The hooks run unsandboxed, at the same trust level as any other Claude Code hook, and none of
@@ -31,10 +31,10 @@ surfaces are:
 
   | Script | Trigger | Registered by |
   | --- | --- | --- |
-  | `scripts/install.mjs` | only when you invoke it; writes only to the target settings directory | nothing — you run it |
-  | `scripts/session-context.mjs` | `SessionStart` hook, every session: reads the protocol and a few settings files, writes JSON to stdout | the **plugin** install only; a copy install puts the protocol in `CLAUDE.md` instead |
-  | `scripts/hooks/require-agent-model.mjs` | `PreToolUse` hook on every `Agent`/`Task` call: reads the call from stdin and denies it when a built-in subagent type omits `model` | the **plugin** install, or the copy install's default `settings` component (skipped when the plugin is enabled) |
-  | `scripts/statusline.mjs` | Claude Code's status line, on every refresh: reads the session JSON from stdin and runs `git rev-parse` for the branch name | the copy install's `statusline` component only — opt-in, never part of the default set |
+  | `claude/scripts/install.mjs` | only when you invoke it; writes only to the target settings directory | nothing — you run it |
+  | `claude/scripts/session-context.mjs` | `SessionStart` hook, every session: reads the protocol and a few settings files, writes JSON to stdout | the **plugin** install only; a copy install puts the protocol in `CLAUDE.md` instead |
+  | `claude/scripts/hooks/require-agent-model.mjs` | `PreToolUse` hook on every `Agent`/`Task` call: reads the call from stdin and denies it when a built-in subagent type omits `model` | the **plugin** install, or the copy install's default `settings` component (skipped when the plugin is enabled) |
+  | `claude/scripts/statusline.mjs` | Claude Code's status line, on every refresh: reads the session JSON from stdin and runs `git rev-parse` for the branch name | the copy install's `statusline` component only — opt-in, never part of the default set |
 
   The `PreToolUse` hook only ever denies an `Agent`/`Task` call; nothing in this kit intercepts
   any other tool call.
@@ -48,17 +48,17 @@ Out of scope:
 
 The kit enforces several defence-in-depth measures:
 
-1. **475 Read/Edit/Bash/PowerShell deny rules** in `settings-template.json`. Current coverage, by category:
+1. **475 Read/Edit/Bash/PowerShell deny rules** in `claude/settings-template.json`. Current coverage, by category:
    - **Destructive commands:** `rm -rf`/`rm -fr` (glued, split, and long-flag forms: `-r -f`, `--recursive --force`, bare `-R`), `find -delete` on root paths, disk destruction (`dd of=/dev/…`, `mkfs`, `shred`), `chmod` 777/000 (short and long flag forms), `sudo`-prefixed variants of every command above.
    - **Windows recursive delete:** `Remove-Item -Recurse -Force` in both flag orders (`-Recurse -Force` / `-Force -Recurse`) and both argument positions (path between the flags or after them) — namespaced to `PowerShell(...)`, not `Bash(...)`, since none of its aliases (`rd`/`rmdir`/`del`/`ri`/`erase`) are Git-Bash commands. PowerShell parameter abbreviations (`-rec -fo`, bare `-r`) are **not** enumerated — same accepted non-coverage class as the alias canonicalization question in the Assumption note below.
    - **Git data-loss:** `git push --force`, `branch -D main/master`, `push --delete`, `reflog expire`. The colon-refspec delete (`git push origin :branch`) is not denied: every pattern that reaches it puts `:*` mid-rule, which Claude Code warns about at every session start. It still stops at the `git push` ask rule below.
    - **Database data-loss:** `prisma migrate reset`, `prisma db push --force-reset`, `--accept-data-loss`, `docker compose down -v` (both spellings), `docker volume rm`/`prune`, `docker system prune --volumes`, `dropdb`, `DROP DATABASE`/`DROP SCHEMA` (upper and lower case) — in both the `Bash(...)` and `PowerShell(...)` namespaces. A project-level `allow` such as `npx prisma *` cannot reopen them, because deny wins. A destructive command hidden inside a package script (`pnpm db:reset`) is not covered.
-   - **Ask, not deny:** `git push` and `gh pr create` (Bash and PowerShell) sit in `permissions.ask`, so every push stops for confirmation — the harness half of `rules/000-security.md` § ASK FIRST. The forced and deleting push forms above stay denied.
+   - **Ask, not deny:** `git push` and `gh pr create` (Bash and PowerShell) sit in `permissions.ask`, so every push stops for confirmation — the harness half of `claude/rules/000-security.md` § ASK FIRST. The forced and deleting push forms above stay denied.
    - **Download-pipe-execute:** `curl`/`wget` piped to `bash`/`sh`/`zsh`/`python`/`node`/`perl` — both downloaders matched on the pipe target alone (`*curl * | bash`, `*wget * | bash`, …), not on the downloader's flag form, so every flag order (`-qO-`, `-O- url`, flag-before/after-URL) is covered by construction rather than enumeration (round-29 fix: wget's rules were previously flag-specific, which silently missed `wget -O- url | bash` and the wget→`perl` pipe). Plus `bash <(curl …)`/`bash <(wget …)` process substitution and inline-interpreter wrappers (`eval`, `sh -c`, `bash -c`, `zsh -c`).
    - **Path-prefix immunity:** every rule above carries a leading `*` (`Bash(*curl … | bash)`, `Bash(*rm -rf *)`, etc.) rather than anchoring to the bare verb — this closes the class of bypass where a path-qualified (`/usr/bin/curl`), `sudo`-prefixed, or chained (`cd x && rm -rf /`) invocation would otherwise skip a literal-start match. Deliberately broad (`*curl` also matches `mycurl`) — an accepted over-block/under-block tradeoff, not re-litigated per rule.
    - **Supply chain:** `pip`/`pip3 --break-system-packages`, zero-prompt remote-package runners (`npx --yes`/`npx -y`, `npm exec -y`/`npm exec --yes`, `npm x -y`/`npm x --yes`, `bunx`, `pnpm dlx`, `yarn dlx`) across every package manager this kit's BOOT SEQUENCE detects.
-   - **Secret-file reads:** project-relative and home-directory credential stores — `.env`, `*.pem`, `*.key`, `id_rsa*`, `id_ed25519*`, `id_ecdsa*`, `id_dsa*`, `*serviceaccount*.json`/`*serviceAccount*.json`, `*firebase-adminsdk*.json`, `secrets/`, `config/credentials.json`, `config/secrets.json`, `*.p12`, `*.pfx`, `.secrets.baseline*`, all common lockfiles (`*.lock`, `package-lock.json`, `pnpm-lock.yaml`, `bun.lockb`/`bun.lock`, `Package.resolved`, `packages.lock.json`, `*.terraform.lock.hcl`), shell history, `.npmrc`/`.netrc`/`.ssh/**`/`.yarnrc(.yml)`/`.git-credentials`/`.pypirc`, and home-dir stores for AWS/kube/Docker/gh/pgpass/vault/Gradle/Maven/gcloud/Azure/GnuPG/Terraform/podman. Also **infrastructure state**: `*.tfstate`/`*.tfstate.backup` (Terraform state holds every provider-returned password in plaintext — a credential file, not an artifact) and project-local `kubeconfig`/`*.kubeconfig`. `*.tfvars` is deliberately readable: it is an input file that legitimately carries non-secret configuration, and `rules/600-devops.md` loads for it. Every `Read(...)` secret pattern has a matching `Bash(*base64 ...)` companion (the one read verb the Read-tool interception doesn't cover) and explicit `PowerShell(*Get-Content ...)`/`*gc`/`*cat`/`*type` companions, all path-prefix-immune per above.
-   - **Credential edits (round 45):** `rules/000-security.md`'s PROTECTED FILES heading has always said "never read, **modify**, or reference", and for four audit rounds only the read half had a backstop — 61 `Read(...)` rules and nothing on the write side. The rule file now splits the list in two, and the credential half (`*.pem`, `*.key`, `*.p12`/`*.pfx`, `id_rsa*`/`id_ed25519*`/`id_ecdsa*`/`id_dsa*`, `.ssh/`, `secrets/`, `config/credentials.json`, `config/secrets.json`, service-account and firebase-adminsdk JSON, `*.tfstate`/`*.tfstate.backup`, `kubeconfig`/`*.kubeconfig`, plus the home-directory stores for SSH/AWS/kube/gcloud/Azure/GnuPG/Docker/podman/vault/Terraform/gh/`.netrc`/`.pgpass`/`.git-credentials`) carries an `Edit(...)` deny as well. Check 22 asserts both halves from the rule file's own two blocks, so a pattern moved between blocks moves its enforcement with it. `.env`, `.secrets.baseline*`, lockfiles and build output are deliberately **not** edit-denied: adding a variable to `.env` or regenerating a lockfile is real work, and the risk in those files is reading a secret out, which the `Read` denies already cover.
+   - **Secret-file reads:** project-relative and home-directory credential stores — `.env`, `*.pem`, `*.key`, `id_rsa*`, `id_ed25519*`, `id_ecdsa*`, `id_dsa*`, `*serviceaccount*.json`/`*serviceAccount*.json`, `*firebase-adminsdk*.json`, `secrets/`, `config/credentials.json`, `config/secrets.json`, `*.p12`, `*.pfx`, `.secrets.baseline*`, all common lockfiles (`*.lock`, `package-lock.json`, `pnpm-lock.yaml`, `bun.lockb`/`bun.lock`, `Package.resolved`, `packages.lock.json`, `*.terraform.lock.hcl`), shell history, `.npmrc`/`.netrc`/`.ssh/**`/`.yarnrc(.yml)`/`.git-credentials`/`.pypirc`, and home-dir stores for AWS/kube/Docker/gh/pgpass/vault/Gradle/Maven/gcloud/Azure/GnuPG/Terraform/podman. Also **infrastructure state**: `*.tfstate`/`*.tfstate.backup` (Terraform state holds every provider-returned password in plaintext — a credential file, not an artifact) and project-local `kubeconfig`/`*.kubeconfig`. `*.tfvars` is deliberately readable: it is an input file that legitimately carries non-secret configuration, and `claude/rules/600-devops.md` loads for it. Every `Read(...)` secret pattern has a matching `Bash(*base64 ...)` companion (the one read verb the Read-tool interception doesn't cover) and explicit `PowerShell(*Get-Content ...)`/`*gc`/`*cat`/`*type` companions, all path-prefix-immune per above.
+   - **Credential edits (round 45):** `claude/rules/000-security.md`'s PROTECTED FILES heading has always said "never read, **modify**, or reference", and for four audit rounds only the read half had a backstop — 61 `Read(...)` rules and nothing on the write side. The rule file now splits the list in two, and the credential half (`*.pem`, `*.key`, `*.p12`/`*.pfx`, `id_rsa*`/`id_ed25519*`/`id_ecdsa*`/`id_dsa*`, `.ssh/`, `secrets/`, `config/credentials.json`, `config/secrets.json`, service-account and firebase-adminsdk JSON, `*.tfstate`/`*.tfstate.backup`, `kubeconfig`/`*.kubeconfig`, plus the home-directory stores for SSH/AWS/kube/gcloud/Azure/GnuPG/Docker/podman/vault/Terraform/gh/`.netrc`/`.pgpass`/`.git-credentials`) carries an `Edit(...)` deny as well. Check 22 asserts both halves from the rule file's own two blocks, so a pattern moved between blocks moves its enforcement with it. `.env`, `.secrets.baseline*`, lockfiles and build output are deliberately **not** edit-denied: adding a variable to `.env` or regenerating a lockfile is real work, and the risk in those files is reading a secret out, which the `Read` denies already cover.
 
      **`Edit(...)` only — measured, not assumed.** The first version of this shipped `Write(...)` rules beside the `Edit(...)` ones, on the reasonable theory that two tools need two namespaces the way `Bash(...)` and `PowerShell(...)` do. Claude Code answered on the next session start, once per rule: *"`Write(~/.pgpass)` is not matched by file permission checks — only `Edit(path)` rules are. Use `Edit(~/.pgpass)` instead (Edit rules cover all file-editing tools)."* All 33 were inert **and** printed a warning banner every session, so they are gone and check 22 fails the gate if one returns. This belongs to the same class as the Assumption note below — someone else's matcher, not this repo's code — but it is the best-evidenced claim in that class, because it came as an explicit upstream diagnostic rather than an inference from a single observation.
    - **Not covered:** non-enumerated read verbs (`less`/`more`/`awk`/`dd`/`xxd`/`od`/`strings`, inline-interpreter reads like `python -c "open(...).read()"`), verb-free reads (PowerShell `[System.IO.File]::ReadAllText(...)`/`::ReadAllBytes(...)`, Bash `$(<secret.pem)` / `while read l; do …; done < .env` redirection), and **shell** writes into protected paths (`echo x > id_rsa`, `Set-Content`) — the `Edit(...)` rules above are file-tool rules and do not constrain what a Bash or PowerShell command writes. Verified directly in this repo's own session that a `python -c` read of a `.pem`-matching file executes with no permission prompt. See the Scope note below.
@@ -67,7 +67,7 @@ The kit enforces several defence-in-depth measures:
 
    Full round-by-round history of how this list reached its current shape: **[Audit history](#audit-history)** below.
 
-   **Scope note:** deny rules are prefix/glob matchers on the command string — defence-in-depth, not a sandbox. They stop the destructive patterns an assistant would plausibly emit; they cannot enumerate every shell-equivalent form. The guard agents and `global-CLAUDE.md` hard stops are the layers above them.
+   **Scope note:** deny rules are prefix/glob matchers on the command string — defence-in-depth, not a sandbox. They stop the destructive patterns an assistant would plausibly emit; they cannot enumerate every shell-equivalent form. The guard agents and `claude/global-CLAUDE.md` hard stops are the layers above them.
 
    **Case-sensitivity note:** deny-glob matching was verified empirically to be case-**in**sensitive on Windows (confirmed via differential headless sessions with `--safe-mode` isolation) — `Read(./**/.env)` also blocks `.ENV`/`.Env`. This was not re-verified on Linux; if you rely on this list on a case-sensitive filesystem, confirm the behavior for your platform before trusting it against alternate-case bypass attempts.
 
@@ -109,7 +109,7 @@ The kit enforces several defence-in-depth measures:
    guard's write-prevention is as strong as the deny rules in item 1, not stronger.
 3. **OWASP 2025 passive scan** — every code change is silently scanned for injection, IDOR, mass assignment, ReDoS, SSRF, and supply chain issues.
 4. **SHA-pinned GitHub Actions** — all Actions in this repo are pinned to a full commit SHA, not mutable version tags.
-5. **Secret file protection** — `global-CLAUDE.md` hard-stops any read of `.env`, `*.pem`, `*.key`, SSH keys, and service account files.
+5. **Secret file protection** — `claude/global-CLAUDE.md` hard-stops any read of `.env`, `*.pem`, `*.key`, SSH keys, and service account files.
 
 ## Audit history
 
@@ -118,10 +118,10 @@ what those rounds found is more useful to a reader than a ledger of individual r
 
 **What you can and cannot verify here.** This repository was published at v1.0.0 with a squashed
 history: the pre-1.0.0 development history is not in it, and `git log` starts at the v1.0.0 commit. So the round
-numbers cited throughout this file and in the `round-N` comments in `rules/`, `agents/` and
+numbers cited throughout this file and in the `round-N` comments in `claude/rules/`, `claude/agents/` and
 `CLAUDE.md` are **internal shorthand for the maintainer, not citations you can follow** — `git log`
 will not resolve them, and no claim in this document should be believed on the strength of a round
-number. What *is* verifiable is in the repo you already have: `settings-template.json` is the list
+number. What *is* verifiable is in the repo you already have: `claude/settings-template.json` is the list
 that runs, `scripts/deny-cost.test.ts` and `scripts/lib/*` are the tests that constrain it, and
 `npm run deny-cost` measures it against your own transcripts. Read those; treat the prose below as
 a summary of intent that the tests, not the history, are responsible for keeping true.
@@ -148,9 +148,9 @@ file. That is precisely why this section is now a summary of shapes: the ledger 
 it described, and the file is the thing that runs.
 
 For the provenance of a specific rule, the authority is **the shipped file and the tests that derive
-from it**, not this prose and not git. Concretely: `settings-template.json` is the rule set;
+from it**, not this prose and not git. Concretely: `claude/settings-template.json` is the rule set;
 `scripts/deny-cost.test.ts` derives each secret pattern's `base64`/`Get-Content` companion rules
 *from* its `Read(...)` rule, so the asymmetry shape above cannot silently reopen; and
-`scripts/check-consistency.ts` binds the list to `rules/000-security.md`'s PROTECTED FILES section
+`scripts/check-consistency.ts` binds the list to `claude/rules/000-security.md`'s PROTECTED FILES section
 and to `.gitignore` in both directions. If a rule's reason is not evident from those three, it is
 undocumented — say so and re-derive it, rather than reaching for a history this repo does not carry.

@@ -1,0 +1,12 @@
+- `.astro` components render to HTML and ship ZERO JS — every `client:*` directive is a deliberate exception you must be able to justify
+- Directive order of preference: none → `client:visible` (below fold) → `client:idle` → `client:load` (above fold, interactive on first paint) → `client:only` (loses SSR + SEO, last resort)
+- Reflexive `client:load` on a section is how an Astro site ends up shipping a React app
+- The component script (between `---`) runs server-side only — secrets are safe there, NEVER in a framework component
+- Rendering mode is explicit: `output: 'static'` default, `prerender = false` per dynamic page · `server:defer` islands for personalized fragments beat making the whole route dynamic
+- `Astro.request`/`Astro.cookies` on a prerendered page silently return build-time values
+- Content collections with a Zod schema, not raw `import.meta.glob` — malformed frontmatter fails the BUILD instead of rendering `undefined`
+- Islands do NOT share state: two hydrated islands are two app instances, a React context in one is invisible to the other → nanostores, URL state, or hoist into one island
+- Images via `astro:assets` `<Image />` with explicit dimensions (CLS < 0.1) · canonical + OG + `<title>` on every page · `@astrojs/sitemap`
+- A page shipping >~30 KB JS means an island is doing too much — look for a `client:load` that should be `client:visible`
+- Verify: `astro check` (types + content-schema errors) · `astro build` (SSR/adapter failures dev hides) · `astro preview`
+- Anti: `set:html` with user content (XSS) · converting `.astro` → React for one button (extract an island instead)

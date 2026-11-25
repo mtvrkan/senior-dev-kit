@@ -1,7 +1,8 @@
 // Validates preset directories containing CLAUDE.md files.
 // A "preset" is any leaf directory under presets/ that contains CLAUDE.md.
 import { readFileSync, readdirSync, existsSync } from 'fs'
-import { join, relative, dirname } from 'path'
+import { relative, dirname } from 'path'
+import { join } from './kit-root.ts'
 
 const MIN_LENGTH = 50
 

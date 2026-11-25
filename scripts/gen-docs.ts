@@ -14,7 +14,8 @@
 //   node --experimental-strip-types scripts/gen-docs.ts            # write
 //   node --experimental-strip-types scripts/gen-docs.ts --check    # verify, exit 1 on drift
 import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync } from 'fs'
-import { join, dirname } from 'path'
+import { dirname } from 'path'
+import { join } from './lib/kit-root.ts'
 import { fileURLToPath } from 'url'
 import { parseFrontmatter, getFrontmatterList } from './lib/frontmatter.ts'
 
@@ -88,7 +89,7 @@ function agentsSection(): string {
         `- **Model / effort:** ${fm.model ?? '—'} · ${fm.effort ?? '—'}\n` +
         `- **Permission mode:** \`${fm.permissionMode ?? 'default'}\`${fm.permissionMode === 'plan' ? PLAN_MODE_CAVEAT : ''}\n` +
         `- **Turn budget:** ${fm.maxTurns ?? '—'}\n` +
-        `- **Definition:** [\`agents/${file}\`](../agents/${file})`
+        `- **Definition:** [\`claude/agents/${file}\`](../claude/agents/${file})`
     )
   }
   return (
@@ -99,7 +100,7 @@ function agentsSection(): string {
     `read-only investigation, which means their write-prevention is exactly as strong as the deny\n` +
     `rules in [\`SECURITY.md\`](../SECURITY.md) — strong, but not a sandbox.\n\n` +
     `| Agent | Model | Access | Bound skills |\n| --- | --- | --- | --- |\n${rows.join('\n')}\n\n` +
-    `Routing between them is decided by [\`agents/ROUTING.md\`](../agents/ROUTING.md).\n\n` +
+    `Routing between them is decided by [\`claude/agents/ROUTING.md\`](../claude/agents/ROUTING.md).\n\n` +
     `${detail.join('\n\n')}`
   )
 }
@@ -146,7 +147,7 @@ function rulesSection(): string {
       ? paths.map(p => `\`${p}\``).join(' · ')
       : '**every session** — no `paths:` field'
     const desc = (fm.description ?? '').replace(/^"|"$/g, '')
-    rows.push(`| [\`${file}\`](../rules/${file}) | ${cell(when)} | ${cell(desc)} |`)
+    rows.push(`| [\`${file}\`](../claude/rules/${file}) | ${cell(when)} | ${cell(desc)} |`)
   }
   return (
     `## Rules\n\n` +

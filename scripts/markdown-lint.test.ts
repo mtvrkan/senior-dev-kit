@@ -1,7 +1,8 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'fs'
-import { join, relative } from 'path'
+import { relative } from 'path'
+import { join } from './lib/kit-root.ts'
 import { tmpdir } from 'os'
 import { findMarkdownFiles, formatIssue } from './lib/markdown-files.ts'
 

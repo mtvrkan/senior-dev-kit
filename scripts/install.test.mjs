@@ -39,11 +39,11 @@ import {
   unmergeDenyRules,
   unmergeHookGroups,
   unmergeSettingsLeaves,
-} from './lib/install-core.mjs'
-import { decide as decideAgentModel } from './hooks/require-agent-model.mjs'
-import { render as renderStatusLine } from './statusline.mjs'
+} from '../claude/scripts/lib/install-core.mjs'
+import { decide as decideAgentModel } from '../claude/scripts/hooks/require-agent-model.mjs'
+import { render as renderStatusLine } from '../claude/scripts/statusline.mjs'
 
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', 'claude')
 const INSTALLER = join(REPO_ROOT, 'scripts', 'install.mjs')
 
 describe('spliceManagedBlock', () => {

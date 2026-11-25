@@ -1,5 +1,5 @@
 import { readdirSync } from 'fs'
-import { join } from 'path'
+import { join } from './kit-root.ts'
 import type { LintError } from 'markdownlint'
 
 // Kept free of runtime imports from node_modules: the unit-test job in repo-ci.yml runs without

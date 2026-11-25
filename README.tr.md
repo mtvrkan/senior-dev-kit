@@ -56,8 +56,8 @@ bağımlılık yok. `--dry-run` satırı tam olarak neyin değişeceğini göste
 ```bash
 git clone https://github.com/mtvrkan/senior-dev-kit.git
 cd senior-dev-kit
-node scripts/install.mjs --dry-run
-node scripts/install.mjs
+node claude/scripts/install.mjs --dry-run
+node claude/scripts/install.mjs
 ```
 
 Mevcut hiçbir şeyiniz yok edilmez: `~/.claude/CLAUDE.md` protokolü işaretler arasında alır,
@@ -66,6 +66,20 @@ Mevcut hiçbir şeyiniz yok edilmez: `~/.claude/CLAUDE.md` protokolü işaretler
 [`docs/install.md`](docs/install.md).
 
 ---
+
+## Codex
+
+Aynı kit, bu kaynaklardan [`codex/`](codex/README.md) klasörüne üretilen bir Codex plugini olarak da gelir:
+
+```bash
+codex plugin marketplace add mtvrkan/senior-dev-kit
+codex plugin add senior-dev-kit@senior-dev-kit
+```
+
+Yeni bir Codex oturumunda bir kereye mahsus iki adım kalır — pluginin hook'larına güvenmek ve bir
+Codex plugininin taşıyamadığı özel ajanları, komut kurallarını ve protokol bloğunu kurmak. İkisi de,
+neyin neye karşılık geldiği ve neyin taşınmadığıyla birlikte [`codex/README.md`](codex/README.md)
+içindedir. Skiller ve eski slash komutları orada `$ad` ile çağrılır.
 
 ## Kullanım
 
@@ -80,7 +94,7 @@ Kurulumdan sonra akılda tutulacak bir şey yok. İşi anlatırsınız, yönlend
 ```
 
 Çakışan sinyaller arasındaki önceliklendirme dahil tam karar ağacı:
-[`agents/ROUTING.md`](agents/ROUTING.md). Oturum içinden `/agents-guide` ve `/skills-guide` kurulu
+[`agents/ROUTING.md`](claude/agents/ROUTING.md). Oturum içinden `/agents-guide` ve `/skills-guide` kurulu
 olanları listeler, `/kit-doctor` bozuk kurulumu teşhis eder.
 
 Bir iş gününde fiilen ne değişiyor — etki alanı seviyeleri, guard'lara neden güvenilebileceği,
@@ -138,7 +152,7 @@ türetilir. Tek komut:
 npm run check
 ```
 
-Şu an: 478/478 test geçiyor (74 suites). `routing-eval` yönlendirme tablosunu 37 gerçekçi isteği
+Şu an: 486/486 test geçiyor (77 suites). `routing-eval` yönlendirme tablosunu 37 gerçekçi isteği
 ile sabitler, `check-consistency` bu dosyadaki elle yazılmış her sayıyı yeniden türetir,
 `check-plugin` ise plugin manifestlerinin diskteki bileşenlerle hâlâ eşleştiğini doğrular.
 
@@ -254,7 +268,7 @@ kiti benimseyip benimsememeye karar veriyorsan buna göre tart.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — doğrulama kapısı, bütçeler, yeni bileşen ekleme
 - [`CHANGELOG.md`](CHANGELOG.md) — ne, ne zaman değişti
 - [`CLAUDE.md`](CLAUDE.md) — kitin kendisi üzerinde çalışırken geçerli kurallar
-- [`presets/README.md`](presets/README.md) — preset yapısı ve stack birleştirme
+- [`presets/README.md`](claude/presets/README.md) — preset yapısı ve stack birleştirme
 - [`PROJECT-BOOTSTRAP.md`](PROJECT-BOOTSTRAP.md) — bağımsız, ayrı bir şablon: boş bir repoda Claude
   Code'a verirsin, projeye özel bir `.claude/` kurulumunu kendi yalın ajan kadrosuyla üretir. Bu kiti
   kurmaz, bu kit de onu kurmaz; ikisi birlikte kullanılabilir. Kapının "yazılan komut gerçekten var

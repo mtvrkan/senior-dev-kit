@@ -5,7 +5,8 @@
 // READMEs and rule descriptions make, pinned against Node's own glob matcher.
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { matchesGlob, join } from 'node:path'
+import { matchesGlob } from 'path'
+import { join } from './lib/kit-root.ts'
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 

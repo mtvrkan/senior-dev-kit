@@ -2,7 +2,7 @@
 // (round-17 audit).
 
 import { readFileSync, readdirSync, existsSync } from 'fs'
-import { join } from 'path'
+import { join } from './kit-root.ts'
 import { parseFrontmatter, findDuplicateFrontmatterKeys } from './frontmatter.ts'
 import { missingRequiredFields, type Counts } from './validate-common.ts'
 import { TRIGGER_TEXT_BUDGET_CHARS } from './counts.ts'

@@ -1,0 +1,39 @@
+{
+  "name": "senior-dev-kit",
+  "version": "1.3.0",
+  "description": "Guard agents, auto-triggered skills and path-scoped rules that make Codex behave like a senior engineering team.",
+  "author": {
+    "name": "Mehmet Türkan",
+    "url": "https://github.com/mtvrkan"
+  },
+  "homepage": "https://github.com/mtvrkan/senior-dev-kit#readme",
+  "repository": "https://github.com/mtvrkan/senior-dev-kit",
+  "license": "MIT",
+  "keywords": [
+    "agents",
+    "skills",
+    "code-review",
+    "security",
+    "database",
+    "devops",
+    "performance"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Senior Dev Kit",
+    "shortDescription": "A senior engineering team for Codex",
+    "longDescription": "Guard agents, auto-triggered skills and path-scoped rules that make Codex behave like a senior engineering team.",
+    "developerName": "Mehmet Türkan",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/mtvrkan/senior-dev-kit#readme",
+    "defaultPrompt": [
+      "Run $kit-setup to finish installing Senior Dev Kit",
+      "Use $codebase-overview to map this project"
+    ]
+  }
+}

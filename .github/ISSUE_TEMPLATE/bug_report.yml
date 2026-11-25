@@ -15,7 +15,7 @@ body:
       label: How is the kit installed?
       options:
         - Claude Code plugin (/plugin install)
-        - scripts/install.mjs into ~/.claude
+        - claude/scripts/install.mjs into ~/.claude
         - Manual copy into ~/.claude
         - Per-project preset only
         - Not installed — working on the repo itself

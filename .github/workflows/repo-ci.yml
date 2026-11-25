@@ -194,14 +194,14 @@ jobs:
         run: |
           set -euo pipefail
           target="${RUNNER_TEMP}/kit-target"
-          node scripts/install.mjs --target "$target" --dry-run
-          node scripts/install.mjs --target "$target" --yes
+          node claude/scripts/install.mjs --target "$target" --dry-run
+          node claude/scripts/install.mjs --target "$target" --yes
           test -f "$target/rules/000-security.md"
           test -f "$target/agents/security-guard.md"
           test -f "$target/skills/bug-fix/SKILL.md"
           grep -q "BEGIN senior-dev-kit" "$target/CLAUDE.md"
           grep -q '"deny"' "$target/settings.json"
-          node scripts/install.mjs --target "$target" --uninstall --yes
+          node claude/scripts/install.mjs --target "$target" --uninstall --yes
           test ! -f "$target/rules/000-security.md"
           test ! -f "$target/agents/security-guard.md"
 
@@ -211,8 +211,8 @@ jobs:
         run: |
           set -euo pipefail
           target="${RUNNER_TEMP}/kit-idempotent"
-          node scripts/install.mjs --target "$target" --yes
-          node scripts/install.mjs --target "$target" --yes | tee second-run.txt
+          node claude/scripts/install.mjs --target "$target" --yes
+          node claude/scripts/install.mjs --target "$target" --yes | tee second-run.txt
           grep -q "Already up to date" second-run.txt
 
   dep-audit:

@@ -6,7 +6,8 @@
 // agent/routing/command validation (see scripts/validate-skills.ts for why).
 
 import { readFileSync, readdirSync, existsSync } from 'fs'
-import { join, relative, dirname } from 'path'
+import { relative, dirname } from 'path'
+import { join } from './kit-root.ts'
 import { parseFrontmatter, findDuplicateFrontmatterKeys, getBodyAfterFrontmatter, stripBom } from './frontmatter.ts'
 import { checkModelId, checkEffort, validateToolList, missingRequiredFields, type Counts } from './validate-common.ts'
 import { TRIGGER_TEXT_BUDGET_CHARS } from './counts.ts'
