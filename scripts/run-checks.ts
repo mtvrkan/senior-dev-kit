@@ -13,7 +13,7 @@ import { realpathSync } from 'fs'
 // the gate at all because the dep-audit CI job was red for three transitive
 // advisories with nothing local reporting it — a CI job with no local
 // counterpart is a check you find out about after pushing.
-export const CHECK_STEPS = ['test', 'validate', 'link-check', 'consistency-check', 'docs-check', 'routing-eval', 'behavior-eval', 'check-plugin', 'check-install', 'typecheck', 'lint', 'markdown-lint', 'audit']
+export const CHECK_STEPS = ['test', 'validate', 'link-check', 'consistency-check', 'docs-check', 'routing-eval', 'behavior-eval', 'check-plugin', 'check-codex', 'check-install', 'typecheck', 'lint', 'markdown-lint', 'audit']
 
 // A step whose green tick means less than it looks like says so in the summary. `routing-eval`
 // runs its static checks unconditionally but skips live routing scoring unless the `claude` CLI

@@ -8,7 +8,7 @@
 // answer to the same question — and the moment the two disagreed, the README would be
 // guarded and the public site would quietly be wrong. One derivation, many readers.
 import { readFileSync, readdirSync, existsSync } from 'fs'
-import { join } from 'path'
+import { join } from './kit-root.ts'
 import { findPresetDirs } from './presets.ts'
 import { parseFrontmatter } from './frontmatter.ts'
 

@@ -32,7 +32,7 @@ rules in [`SECURITY.md`](../SECURITY.md) — strong, but not a sandbox.
 | `senior-engineer` | sonnet | read + write | `feature-build`, `refactor-safe`, `test-writer` |
 | `ui-fixer` | sonnet | read + write | `ui-change`, `new-page`, `new-screen` |
 
-Routing between them is decided by [`agents/ROUTING.md`](../agents/ROUTING.md).
+Routing between them is decided by [`claude/agents/ROUTING.md`](../claude/agents/ROUTING.md).
 
 ### `bug-hunter`
 
@@ -42,7 +42,7 @@ Use for localized bugs, runtime errors, failing tests, console errors, regressio
 - **Model / effort:** sonnet · high
 - **Permission mode:** `default`
 - **Turn budget:** 12
-- **Definition:** [`agents/bug-hunter.md`](../agents/bug-hunter.md)
+- **Definition:** [`claude/agents/bug-hunter.md`](../claude/agents/bug-hunter.md)
 
 ### `db-guard`
 
@@ -52,7 +52,7 @@ Use for database schema changes, data modeling, ORM queries, indexes, constraint
 - **Model / effort:** opus · high
 - **Permission mode:** `plan` — plans first instead of acting. Claude Code strips `permissionMode` from plugin-shipped agents, so this holds for `~/.claude` installs; the tool grant above is what holds in both
 - **Turn budget:** 10
-- **Definition:** [`agents/db-guard.md`](../agents/db-guard.md)
+- **Definition:** [`claude/agents/db-guard.md`](../claude/agents/db-guard.md)
 
 ### `design-lead`
 
@@ -62,7 +62,7 @@ Use when a project's visual design has to be decided rather than matched — a f
 - **Model / effort:** opus · high
 - **Permission mode:** `default`
 - **Turn budget:** 10
-- **Definition:** [`agents/design-lead.md`](../agents/design-lead.md)
+- **Definition:** [`claude/agents/design-lead.md`](../claude/agents/design-lead.md)
 
 ### `devops-guard`
 
@@ -72,7 +72,7 @@ CI/CD, Docker, Terraform, Kubernetes, and infrastructure change guardian — pla
 - **Model / effort:** opus · high
 - **Permission mode:** `plan` — plans first instead of acting. Claude Code strips `permissionMode` from plugin-shipped agents, so this holds for `~/.claude` installs; the tool grant above is what holds in both
 - **Turn budget:** 8
-- **Definition:** [`agents/devops-guard.md`](../agents/devops-guard.md)
+- **Definition:** [`claude/agents/devops-guard.md`](../claude/agents/devops-guard.md)
 
 ### `performance-guard`
 
@@ -82,7 +82,7 @@ Use for slow queries, N+1, bundle size, caching, render loops, memory leaks, lat
 - **Model / effort:** sonnet · high
 - **Permission mode:** `plan` — plans first instead of acting. Claude Code strips `permissionMode` from plugin-shipped agents, so this holds for `~/.claude` installs; the tool grant above is what holds in both
 - **Turn budget:** 10
-- **Definition:** [`agents/performance-guard.md`](../agents/performance-guard.md)
+- **Definition:** [`claude/agents/performance-guard.md`](../claude/agents/performance-guard.md)
 
 ### `security-guard`
 
@@ -92,7 +92,7 @@ Use for auth, authorization, payment, billing, input validation, secrets, inject
 - **Model / effort:** opus · high
 - **Permission mode:** `plan` — plans first instead of acting. Claude Code strips `permissionMode` from plugin-shipped agents, so this holds for `~/.claude` installs; the tool grant above is what holds in both
 - **Turn budget:** 25
-- **Definition:** [`agents/security-guard.md`](../agents/security-guard.md)
+- **Definition:** [`claude/agents/security-guard.md`](../claude/agents/security-guard.md)
 
 ### `senior-engineer`
 
@@ -102,7 +102,7 @@ Use for scoped medium feature implementation or safe refactors requiring multipl
 - **Model / effort:** sonnet · medium
 - **Permission mode:** `default`
 - **Turn budget:** 60
-- **Definition:** [`agents/senior-engineer.md`](../agents/senior-engineer.md)
+- **Definition:** [`claude/agents/senior-engineer.md`](../claude/agents/senior-engineer.md)
 
 ### `ui-fixer`
 
@@ -112,7 +112,7 @@ Use for low-risk frontend-only UI changes — modals, buttons, layout, responsiv
 - **Model / effort:** sonnet · low
 - **Permission mode:** `default`
 - **Turn budget:** 12
-- **Definition:** [`agents/ui-fixer.md`](../agents/ui-fixer.md)
+- **Definition:** [`claude/agents/ui-fixer.md`](../claude/agents/ui-fixer.md)
 
 ---
 
@@ -174,18 +174,18 @@ pays for the REST-API rules.
 
 | Rule | Loads when | Governs |
 | --- | --- | --- |
-| [`000-security.md`](../rules/000-security.md) | **every session** — no `paths:` field | Core security rules — passive scan on every change, OWASP 2025, supply chain, protected files, ask-first deletions/pushes/private files. No paths field: loads unconditionally every session. |
-| [`001-conventions.md`](../rules/001-conventions.md) | **every session** — no `paths:` field | Core development conventions — architecture patterns, holistic consistency, modern tech preferences. No paths field: loads unconditionally every session. |
-| [`100-web.md`](../rules/100-web.md) | `**/*.{tsx,jsx,vue,svelte,astro,html,css,scss}` · `**/*.blade.php` · `**/*.erb` · `**/*.component.ts` | Web UI rules — design tokens, 8px grid, skeleton loading, motion, SEO, WCAG 2.2, Tailwind v4. Auto-loads for React/Vue/Svelte/Astro/Angular/Blade/ERB/plain HTML. |
-| [`1000-i18n.md`](../rules/1000-i18n.md) | `**/locales/**` · `**/i18n/**` · `**/lang/**` · `**/messages/**/*.{json,po,xlf,xliff,arb,yaml,yml}` · `**/translations/**` · `**/*.{arb,po,pot,ftl,xliff,xlf,resx}` · `**/strings.xml` · `**/*.strings` · `**/*.xcstrings` · `**/*i18n.config.*` · `**/next-intl.config.*` | Internationalization and localization — message catalogs, ICU plurals, Intl formatting, RTL, text expansion, locale routing. Auto-loads for locale/message files in every framework the kit ships a preset for. |
-| [`200-api.md`](../rules/200-api.md) | `**/app/api/**` · `**/pages/api/**` · `**/src/api/**` · `api/**` · `**/routes/**` · `**/controllers/**` · `**/handler/**` · `**/handlers/**` · `**/endpoints/**` · `**/*.controller.*` · `**/*.routes.*` · `**/Controllers/**` · `**/*Controller.{java,kt,cs,php}` · `**/*Resource.java` · `**/*Endpoint.{java,kt,cs}` · `**/routers/**` · `**/{views,viewsets,urls}.py` | API design rules — REST conventions, OpenAPI 3.2, error format, auth, rate limiting, versioning. Auto-loads for route/controller/handler/endpoint files. |
-| [`300-testing.md`](../rules/300-testing.md) | `**/*.test.*` · `**/*.spec.*` · `**/test/**` · `**/__tests__/**` · `**/tests/**` · `**/*_test.*` · `**/*_spec.*` · `**/test_*.py` · `**/*Test.{java,kt,cs,swift}` · `**/*Tests.{java,kt,cs,swift}` · `**/*Spec.{java,kt,groovy}` · `**/tests.py` · `**/conftest.py` | Testing rules — pyramid ratios, mock policy, naming conventions, stability, coverage. Auto-loads for test/spec files. |
-| [`400-mobile.md`](../rules/400-mobile.md) | `**/*.{swift,kt}` · `**/lib/**/*.dart` · `**/test/**/*.dart` · `**/android/**` · `**/ios/**` · `**/*.native.{ts,tsx,js,jsx}` · `app.config.{js,ts}` · `**/apps/*/app.config.{js,ts}` · `**/packages/*/app.config.{js,ts}` · `**/metro.config.{js,cjs}` | Mobile rules — iOS Swift, Android Kotlin/Compose, Flutter/Dart, React Native. Auto-loads for mobile source files. |
-| [`500-database.md`](../rules/500-database.md) | `**/migrations/**` · `**/*.prisma` · `**/schema.*` · `**/models/**` · `**/knexfile.*` · `**/drizzle.config.*` · `**/*migration*` · `**/{Models,Entities,entities}/**` · `**/*.entity.*` · `**/*DbContext.cs` · `**/db/{migration,changelog}/**` · `**/db/migrate/**` · `**/Migrations/**` · `**/alembic/versions/**` · `**/drizzle/**/*.sql` · `**/db/schema/**` · `**/models.py` | Database rules — schema safety, migration protocol, N+1 prevention, RLS, zero-downtime patterns. Auto-loads for migration/schema/model files. |
-| [`600-devops.md`](../rules/600-devops.md) | `**/Dockerfile*` · `**/.github/**` · `**/*.tf` · `**/*.tofu` · `**/docker-compose*` · `**/compose.{yaml,yml}` · `**/compose.*.{yaml,yml}` · `**/Containerfile*` · `**/kubernetes/**` · `**/*.k8s.*` · `**/helm/**` · `**/k8s/**` · `**/charts/*/templates/**` · `**/charts/*/{Chart,values}*.{yaml,yml}` · `**/manifests/**/*.{yaml,yml}` · `**/deploy/**/*.{yaml,yml}` · `**/kustomization.{yaml,yml}` · `**/*.tfvars` · `**/.gitlab-ci.yml` · `**/Jenkinsfile*` · `**/.circleci/**` · `**/azure-pipelines*.{yaml,yml}` · `**/bitbucket-pipelines.yml` · `**/.dockerignore` · `**/railway.toml` · `**/fly.toml` · `**/.pre-commit-config.yaml` | DevOps rules — Docker security, GitHub Actions SHA pinning, OIDC, SBOM, IaC safety. Auto-loads for Dockerfile/CI/IaC files. |
-| [`700-observability.md`](../rules/700-observability.md) | `**/*.{service,controller,handler,processor,worker,job,consumer,middleware,interceptor,gateway,resolver}.{ts,js,mjs}` · `**/{services,handlers,controllers,jobs,workers,consumers,middleware,routes,routers}/**` · `**/app/api/**` · `**/pages/api/**` · `**/*{logger,logging,metrics,telemetry,tracing,instrumentation,health}*` · `**/*.{py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}` | Logging, metrics, tracing — every service and handler change |
-| [`800-llm-safety.md`](../rules/800-llm-safety.md) | `**/ai/**` · `**/llm/**` · `**/openai/**` · `**/anthropic/**` · `**/claude/**` · `**/agents/**/*.{ts,tsx,js,jsx,py,go}` · `**/*{openai,anthropic}*.{ts,tsx,js,jsx,py,go}` · `**/{llm,prompt,prompts}.{ts,js,py,go}` · `**/{llm,prompt,prompts}[._-]*.{ts,js,py,go}` | LLM/AI integration safety — prompt injection, output trust, cost controls |
-| [`900-performance.md`](../rules/900-performance.md) | `**/*.{tsx,jsx,vue,svelte,astro,html,erb,css,scss}` · `**/*.{service,repository,repo,processor,worker,resolver,controller,handler}.{ts,js,mjs}` · `**/{services,repositories,queries,jobs,workers}/**` · `**/{next,vite,webpack}.config.*` · `**/*.{py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}` | Performance budgets — CWV, bundle size, query latency, render |
+| [`000-security.md`](../claude/rules/000-security.md) | **every session** — no `paths:` field | Core security rules — passive scan on every change, OWASP 2025, supply chain, protected files, ask-first deletions/pushes/private files. No paths field: loads unconditionally every session. |
+| [`001-conventions.md`](../claude/rules/001-conventions.md) | **every session** — no `paths:` field | Core development conventions — architecture patterns, holistic consistency, modern tech preferences. No paths field: loads unconditionally every session. |
+| [`100-web.md`](../claude/rules/100-web.md) | `**/*.{tsx,jsx,vue,svelte,astro,html,css,scss}` · `**/*.blade.php` · `**/*.erb` · `**/*.component.ts` | Web UI rules — design tokens, 8px grid, skeleton loading, motion, SEO, WCAG 2.2, Tailwind v4. Auto-loads for React/Vue/Svelte/Astro/Angular/Blade/ERB/plain HTML. |
+| [`1000-i18n.md`](../claude/rules/1000-i18n.md) | `**/locales/**` · `**/i18n/**` · `**/lang/**` · `**/messages/**/*.{json,po,xlf,xliff,arb,yaml,yml}` · `**/translations/**` · `**/*.{arb,po,pot,ftl,xliff,xlf,resx}` · `**/strings.xml` · `**/*.strings` · `**/*.xcstrings` · `**/*i18n.config.*` · `**/next-intl.config.*` | Internationalization and localization — message catalogs, ICU plurals, Intl formatting, RTL, text expansion, locale routing. Auto-loads for locale/message files in every framework the kit ships a preset for. |
+| [`200-api.md`](../claude/rules/200-api.md) | `**/app/api/**` · `**/pages/api/**` · `**/src/api/**` · `api/**` · `**/routes/**` · `**/controllers/**` · `**/handler/**` · `**/handlers/**` · `**/endpoints/**` · `**/*.controller.*` · `**/*.routes.*` · `**/Controllers/**` · `**/*Controller.{java,kt,cs,php}` · `**/*Resource.java` · `**/*Endpoint.{java,kt,cs}` · `**/routers/**` · `**/{views,viewsets,urls}.py` | API design rules — REST conventions, OpenAPI 3.2, error format, auth, rate limiting, versioning. Auto-loads for route/controller/handler/endpoint files. |
+| [`300-testing.md`](../claude/rules/300-testing.md) | `**/*.test.*` · `**/*.spec.*` · `**/test/**` · `**/__tests__/**` · `**/tests/**` · `**/*_test.*` · `**/*_spec.*` · `**/test_*.py` · `**/*Test.{java,kt,cs,swift}` · `**/*Tests.{java,kt,cs,swift}` · `**/*Spec.{java,kt,groovy}` · `**/tests.py` · `**/conftest.py` | Testing rules — pyramid ratios, mock policy, naming conventions, stability, coverage. Auto-loads for test/spec files. |
+| [`400-mobile.md`](../claude/rules/400-mobile.md) | `**/*.{swift,kt}` · `**/lib/**/*.dart` · `**/test/**/*.dart` · `**/android/**` · `**/ios/**` · `**/*.native.{ts,tsx,js,jsx}` · `app.config.{js,ts}` · `**/apps/*/app.config.{js,ts}` · `**/packages/*/app.config.{js,ts}` · `**/metro.config.{js,cjs}` | Mobile rules — iOS Swift, Android Kotlin/Compose, Flutter/Dart, React Native. Auto-loads for mobile source files. |
+| [`500-database.md`](../claude/rules/500-database.md) | `**/migrations/**` · `**/*.prisma` · `**/schema.*` · `**/models/**` · `**/knexfile.*` · `**/drizzle.config.*` · `**/*migration*` · `**/{Models,Entities,entities}/**` · `**/*.entity.*` · `**/*DbContext.cs` · `**/db/{migration,changelog}/**` · `**/db/migrate/**` · `**/Migrations/**` · `**/alembic/versions/**` · `**/drizzle/**/*.sql` · `**/db/schema/**` · `**/models.py` | Database rules — schema safety, migration protocol, N+1 prevention, RLS, zero-downtime patterns. Auto-loads for migration/schema/model files. |
+| [`600-devops.md`](../claude/rules/600-devops.md) | `**/Dockerfile*` · `**/.github/**` · `**/*.tf` · `**/*.tofu` · `**/docker-compose*` · `**/compose.{yaml,yml}` · `**/compose.*.{yaml,yml}` · `**/Containerfile*` · `**/kubernetes/**` · `**/*.k8s.*` · `**/helm/**` · `**/k8s/**` · `**/charts/*/templates/**` · `**/charts/*/{Chart,values}*.{yaml,yml}` · `**/manifests/**/*.{yaml,yml}` · `**/deploy/**/*.{yaml,yml}` · `**/kustomization.{yaml,yml}` · `**/*.tfvars` · `**/.gitlab-ci.yml` · `**/Jenkinsfile*` · `**/.circleci/**` · `**/azure-pipelines*.{yaml,yml}` · `**/bitbucket-pipelines.yml` · `**/.dockerignore` · `**/railway.toml` · `**/fly.toml` · `**/.pre-commit-config.yaml` | DevOps rules — Docker security, GitHub Actions SHA pinning, OIDC, SBOM, IaC safety. Auto-loads for Dockerfile/CI/IaC files. |
+| [`700-observability.md`](../claude/rules/700-observability.md) | `**/*.{service,controller,handler,processor,worker,job,consumer,middleware,interceptor,gateway,resolver}.{ts,js,mjs}` · `**/{services,handlers,controllers,jobs,workers,consumers,middleware,routes,routers}/**` · `**/app/api/**` · `**/pages/api/**` · `**/*{logger,logging,metrics,telemetry,tracing,instrumentation,health}*` · `**/*.{py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}` | Logging, metrics, tracing — every service and handler change |
+| [`800-llm-safety.md`](../claude/rules/800-llm-safety.md) | `**/ai/**` · `**/llm/**` · `**/openai/**` · `**/anthropic/**` · `**/claude/**` · `**/agents/**/*.{ts,tsx,js,jsx,py,go}` · `**/*{openai,anthropic}*.{ts,tsx,js,jsx,py,go}` · `**/{llm,prompt,prompts}.{ts,js,py,go}` · `**/{llm,prompt,prompts}[._-]*.{ts,js,py,go}` | LLM/AI integration safety — prompt injection, output trust, cost controls |
+| [`900-performance.md`](../claude/rules/900-performance.md) | `**/*.{tsx,jsx,vue,svelte,astro,html,erb,css,scss}` · `**/*.{service,repository,repo,processor,worker,resolver,controller,handler}.{ts,js,mjs}` · `**/{services,repositories,queries,jobs,workers}/**` · `**/{next,vite,webpack}.config.*` · `**/*.{py,go,java,kt,kts,cs,rb,php,dart,swift,rs,c,cc,cpp,cxx,h,hpp}` | Performance budgets — CWV, bundle size, query latency, render |
 
 ---
 

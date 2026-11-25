@@ -4,7 +4,11 @@ This is a **publicly distributed** Claude Code config kit (MIT, installable as a
 see README.md and CONTRIBUTING.md). Every change ships to strangers: assume no shared context,
 no ability to ask the maintainer, and a machine that is not this one.
 
-`global-CLAUDE.md` and `presets/*/CLAUDE.md` are templates installed *into* `~/.claude/` or a
+The repo ships two plugins: the Claude Code one under `claude/` (the source of truth) and the
+Codex one under `codex/` (generated from it). Kit paths written inside the files under `claude/`
+are relative to that directory.
+
+`claude/global-CLAUDE.md` and `claude/presets/*/CLAUDE.md` are templates installed *into* `~/.claude/` or a
 project's `.claude/` — don't confuse them with this file, which is scoped to editing the kit
 itself.
 
@@ -14,7 +18,7 @@ itself.
 - Validate frontmatter/routing: `npm run validate`
 - Full gate (run before considering any change done): `npm run check`
   — runs test, validate, link-check, consistency-check, docs-check, routing-eval,
-  behavior-eval, check-plugin, check-install, typecheck, lint, markdown-lint, audit
+  behavior-eval, check-plugin, check-codex, check-install, typecheck, lint, markdown-lint, audit
   — `routing-eval` and `behavior-eval` are the only two steps that measure model behavior rather
   than file contents, and both score live only under their env flag (`RUN_ROUTING_EVAL=1`,
   `RUN_BEHAVIOR_EVAL=1`; in PowerShell set `$env:NAME=1` first — there is no inline prefix form)
@@ -23,7 +27,7 @@ itself.
   against itself, which is how a green gate once coexisted with a day-old install running the
   content the work had just replaced. It skips loudly where there is no copy install.
 - Type-check only: `npm run typecheck` | Lint only: `npm run lint`
-- Installer dry run: `node scripts/install.mjs --dry-run`
+- Installer dry run: `node claude/scripts/install.mjs --dry-run`
 - Landing page: **not on this branch.** The page source lives on the `site-src` branch and the
   rendered output on `gh-pages`; a clone of the kit carries neither, because nobody
   installing a Claude Code configuration kit needs a website. `site/` is git-ignored here
@@ -49,27 +53,27 @@ the change) and fixing failures — don't report success on unverified changes.
 
 - Every preset ships `CLAUDE.md` (full) + `compact.md` (7-15 line summary, enforced by
   `scripts/lib/presets.ts`); keep both in sync.
-- Rule files under `rules/` use `paths:` frontmatter (YAML list of globs — Claude Code's
+- Rule files under `claude/rules/` use `paths:` frontmatter (YAML list of globs — Claude Code's
   native key; NOT Cursor's `globs:`) for lazy path-scoped loading. The two files without a
   `paths:` field (000, 001) load unconditionally every session (see
-  `global-CLAUDE.md` RULES REFERENCE).
+  `claude/global-CLAUDE.md` RULES REFERENCE).
 - Presets cover the mainstream languages, frameworks and data layers rather than only stacks
   this maintainer ships on — the selection criteria and the deliberate omissions (C/C++ has no
-  dominant framework convention to encode) live in `presets/README.md`, which is the single
+  dominant framework convention to encode) live in `claude/presets/README.md`, which is the single
   source of truth for that policy. A new preset must be *accurate*, not merely plausible: the
   risk is staleness, not breadth. When adding or removing one, update the name lists in
-  `README.md`, `README.tr.md` and `presets/README.md` — `scripts/check-consistency.ts` derives
+  `README.md`, `README.tr.md` and `claude/presets/README.md` — `scripts/check-consistency.ts` derives
   both the count and the names from disk and fails on drift.
 - `README.md` (English) is canonical; `README.tr.md` is its translation. Change one and the
   other drifts — `scripts/check-consistency.ts` compares the count claims in both, but not the
   prose. Update both in the same commit.
 - Anything installable has two delivery paths and both must keep working: the plugin
   (`.claude-plugin/`, resolves bundled docs via `${CLAUDE_PLUGIN_ROOT}`) and
-  `scripts/install.mjs` (copies into `~/.claude/`). A path reference that only resolves under
+  `claude/scripts/install.mjs` (copies into `~/.claude/`). A path reference that only resolves under
   one of them is a bug — `npm run check-plugin` catches the common shapes.
 - **Accepted tradeoff (round-18 audit, do not re-flag):** `scripts/**/*.ts` has no automated
   line-budget guard, unlike agent bodies (150 lines), skill bodies (20 lines), and the
-  always-loaded files — `global-CLAUDE.md` + `rules/000-security.md` + `rules/001-conventions.md`,
+  always-loaded files — `claude/global-CLAUDE.md` + `claude/rules/000-security.md` + `claude/rules/001-conventions.md`,
   every session, everywhere this kit is installed (250 lines/file, 500 combined, enforced by
   `scripts/check-consistency.ts` check 3) — those cap context-window cost paid every session; script files
   are code, not per-session context tax, so the kit's own `>300 lines` god-file convention applies
@@ -81,8 +85,12 @@ the change) and fixing failures — don't report success on unverified changes.
 - `scripts/` is the one place global-CLAUDE.md's no-comments CODE STYLE yields (RULE PRECEDENCE:
   project beats the global protocol): every check keeps the comment naming the drift it catches,
   and a new check gets one. Everything the kit ships as markdown follows CODE STYLE.
+- `codex/` and `.agents/plugins/marketplace.json` are the Codex plugin, **generated** by
+  `scripts/gen-codex.mjs` from the Claude Code sources — never edit them by hand. Change the source,
+  or the Codex-only wording in `scripts/codex/overrides/` and runtime in `scripts/codex/runtime/`,
+  then `npm run gen-codex`; `check-codex` fails the gate on drift.
 
 ## Context budget
 
 The maintainer runs a 1M window; never assume one for other contributors or in the shipped
-`global-CLAUDE.md`/preset templates.
+`claude/global-CLAUDE.md`/preset templates.

@@ -6,6 +6,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this p
 
 ## [Unreleased]
 
+### Added
+
+- Codex plugin under `codex/`, generated from the Claude Code sources by `npm run gen-codex`:
+  37 skills (the slash commands become `$name` skills), custom agents as TOML, SessionStart and
+  PreToolUse hooks for the protocol, the always-loaded rules, the path-scoped rules and the deny
+  list, prefix rules for `git push` / `gh pr create` and destructive commands, and its own
+  installer for what a Codex plugin cannot carry. `check-codex` joins the gate. [2026-11-25]
+
+### Changed
+
+- **Breaking:** the Claude Code plugin moved from the repository root into `claude/`
+  (agents, skills, commands, rules, agent_docs, presets, hooks, `global-CLAUDE.md`,
+  `settings-template.json`, the installer and hook scripts). The marketplace entry now points at
+  `./claude`; a copy install runs `node claude/scripts/install.mjs`. [2026-11-25]
+
 ## [1.3.0] — 2026-10-28
 
 ### Added

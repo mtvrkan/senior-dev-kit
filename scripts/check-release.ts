@@ -20,7 +20,8 @@
  * Usage: node --experimental-strip-types scripts/check-release.ts
  */
 import { existsSync, readFileSync } from 'fs'
-import { dirname, join } from 'path'
+import { dirname } from 'path'
+import { join } from './lib/kit-root.ts'
 import { fileURLToPath } from 'url'
 
 const ROOT = process.env.RELEASE_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), '..')

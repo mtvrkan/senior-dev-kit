@@ -1,0 +1,10 @@
+- The anon key is PUBLIC by design — RLS is the only access control. A table without `enable row level security`, or a policy of `using (true)`, is a public API
+- `using` filters existing rows (select/update/delete); `with check` validates the incoming row (insert/update) — an insert policy without `with check` lets a user write someone else's row
+- Write `(select auth.uid())`, not `auth.uid()` — evaluated once per query instead of once per row
+- The service-role key BYPASSES RLS: server routes / edge functions / workers only, never a client bundle, never `NEXT_PUBLIC_*`
+- Audit, don't assume: `select tablename, rowsecurity from pg_tables where schemaname='public'` — every `false` is publicly readable
+- Migrations live in `supabase/migrations/` and are checked in · never edit schema in the dashboard when migrations exist · schema change = Tier 3 · regenerate types after every change or the client lies
+- Auth: `getUser()` validates the JWT server-side, `getSession()` reads unverified local storage — never authorize on `getSession()` · ownership from `auth.uid()`, never a client-supplied `user_id`
+- Every call returns `{ data, error }` — checking only `data` swallows failures · select named columns, not `*`, and always `.range()` paginate
+- Edge functions are Deno: web APIs and `Deno.env.get()`, no Node built-ins · realtime channels leak if not cleaned up on unmount · storage bucket policies are separate from table RLS
+- Verify: `supabase db reset` (replays migrations, catches ordering breaks) · `supabase db lint` · `supabase gen types typescript --local`

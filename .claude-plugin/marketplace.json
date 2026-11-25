@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "senior-dev-kit",
-      "source": "./",
+      "source": "./claude",
       "displayName": "Senior Dev Kit",
       "description": "Guard agents, auto-triggered skills and path-scoped rules that make Claude Code behave like a senior engineering team.",
       "version": "1.3.0",

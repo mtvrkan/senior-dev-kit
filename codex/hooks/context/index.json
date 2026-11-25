@@ -1,0 +1,22 @@
+[
+  {
+    "kind": "protocol",
+    "file": "protocol-1.md"
+  },
+  {
+    "kind": "protocol",
+    "file": "protocol-2.md"
+  },
+  {
+    "kind": "protocol",
+    "file": "protocol-3.md"
+  },
+  {
+    "kind": "rule",
+    "file": "000-security-1.md"
+  },
+  {
+    "kind": "rule",
+    "file": "001-conventions-1.md"
+  }
+]

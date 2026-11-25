@@ -1,0 +1,146 @@
+{
+  "global-CLAUDE.md": [
+    {
+      "find": "# Global Claude Senior Protocol",
+      "replace": "# Global Senior Protocol for Codex"
+    },
+    {
+      "find": "each agent's frontmatter states its scope and\nmodel tier.",
+      "replace": "each agent's description states its scope."
+    },
+    {
+      "find": "Agent() calls, say:",
+      "replace": "subagent calls, say:"
+    },
+    {
+      "find": "durable facts → memory/*.md + MEMORY.md,\n  project facts",
+      "replace": "durable and\n  project facts"
+    },
+    {
+      "from": "NO AI ATTRIBUTION",
+      "to": "`attribution` in settings.json.",
+      "replace": "NO AI ATTRIBUTION — never add a `Co-Authored-By:` trailer naming an AI (Codex, OpenAI, Claude, …) to a\ncommit, nor a \"Generated with …\" line to a PR body, unless the user asks for it in that session."
+    }
+  ],
+  "agents/senior-engineer.md": [
+    {
+      "find": "through the Skill tool only",
+      "replace": "as skills only"
+    },
+    {
+      "find": "When spawning an Agent/Explore call",
+      "replace": "When spawning a subagent"
+    },
+    {
+      "find": "and name `model` on every call (haiku for lookup, sonnet for mechanical work against a written contract, opus for judgement)",
+      "replace": "and state the tier on every call (lookup, mechanical work against a written contract, or judgement)"
+    }
+  ],
+  "agents/design-lead.md": [
+    {
+      "find": "three opus-tier agents",
+      "replace": "three top-tier agents"
+    },
+    {
+      "find": "this agent costs opus",
+      "replace": "this agent costs the top tier"
+    }
+  ],
+  "agents/ROUTING.md": [
+    {
+      "find": "Agent(subagent_type: \"Explore\", model: \"haiku\") — read-only, skips the AGENTS.md hierarchy,",
+      "replace": "the built-in `explorer` subagent, lookup tier — read-only,"
+    },
+    {
+      "find": "(sonnet, ",
+      "replace": "("
+    },
+    {
+      "find": "(opus, ",
+      "replace": "("
+    },
+    {
+      "find": "(`agents/<name>.md`) is a persona: it owns a tool grant, a model tier, a turn\nbudget,",
+      "replace": "(`~/.codex/agents/<name>.toml`) is a persona: it owns a sandbox mode, a reasoning effort,"
+    },
+    {
+      "from": "`allowed-tools:` only pre-approves tools;",
+      "to": "in its body instead.",
+      "replace": "A skill that must never edit says so in its body\n(\"Read-only\" or \"no code edits\")."
+    },
+    {
+      "find": " (`background: false`)",
+      "replace": ""
+    },
+    {
+      "find": "calls them through its Skill tool",
+      "replace": "invokes them as skills"
+    },
+    {
+      "from": "Four skills set `disable-model-invocation: true`",
+      "to": "type the slash command:",
+      "replace": "Four skills ship `agents/openai.yaml` with `allow_implicit_invocation: false`. That tells Codex\nnever to auto-trigger them, no matter how well a request matches their description, so they\nrun only when **you** type the `$skill` name:"
+    }
+  ],
+  "agent_docs/delegation-policy.md": [
+    {
+      "find": "`Agent(subagent_type: \"Explore\", model: \"haiku\")`",
+      "replace": "the built-in read-only `explorer` subagent, lookup tier"
+    },
+    {
+      "find": "`Agent(subagent_type: \"<kit agent>\")`, kit-defined model",
+      "replace": "a kit custom agent (`~/.codex/agents/<name>.toml`), kit-defined reasoning effort"
+    },
+    {
+      "from": "`Explore` is the scout vehicle",
+      "to": "Pure lookup does not.",
+      "replace": "`explorer` is the scout vehicle because it is read-only and returns only its final report. A custom\nagent's `description` sits in every session's index whether used or not, and its instructions load\non every spawn. Pay that only for agents that genuinely need the kit's rules (the guards). Pure\nlookup does not."
+    },
+    {
+      "from": "- Model resolution order:",
+      "to": "Pass `model` per call instead.",
+      "replace": "- Model resolution: a kit agent runs at the `model_reasoning_effort` in its TOML; a built-in agent\n  inherits the main model and effort unless `agents.default_subagent_model` /\n  `agents.default_subagent_reasoning_effort` are set in `~/.codex/config.toml`."
+    },
+    {
+      "find": "Use Grep/Glob first; Read only the ranges you need.",
+      "replace": "Use `rg` first; read only the ranges you need."
+    },
+    {
+      "find": "`/context` shows what fills the window; `/usage` shows cache hit ratio.",
+      "replace": "`/status` shows what fills the window."
+    }
+  ],
+  "agent_docs/design-system.md": [
+    {
+      "find": "→ Claude can read",
+      "replace": "→ Codex can read"
+    }
+  ],
+  "presets/README.md": [
+    {
+      "find": "hands\nClaude confidently",
+      "replace": "hands\nCodex confidently"
+    }
+  ],
+  "rules/000-security.md": [
+    {
+      "find": "`AGENTS.md`, `CLAUDE.local.md`, `.claude/` (TECH-DEBT, PROJECT-MEMORY, settings), `AGENTS.md`,",
+      "replace": "`CLAUDE.md`, `CLAUDE.local.md`, `.claude/` (TECH-DEBT, PROJECT-MEMORY, settings), `AGENTS.md`,"
+    },
+    {
+      "find": "so both halves are enforced (`Read(...)` + `Edit(...)` deny rules):",
+      "replace": "so both halves are enforced (the read and edit deny lists in the kit's PreToolUse hook):"
+    },
+    {
+      "find": "(not installed to ~/.codex)",
+      "replace": "(not part of the plugin)"
+    }
+  ],
+  "commands/context-audit.md": [
+    {
+      "from": "Always loaded in full at session start:",
+      "to": "Report the total, and the three largest sections inside the largest file.",
+      "replace": "Always loaded in full at session start: the kit's protocol (the marked block in `~/.codex/AGENTS.md`\nafter `$kit-setup`; otherwise `KIT_ROOT/protocol.md`, injected by the plugin's SessionStart hook),\nthe always-on rules `KIT_ROOT/rules/000-security.md` and `001-conventions.md` (same hook), and every\n`AGENTS.md` from the project root down to the working directory. Everything under `agent_docs/`,\nthe path-scoped rules and skill bodies load on demand — they are not part of the fixed cost.\n\n```bash\nfor f in ~/.codex/AGENTS.md \"KIT_ROOT/protocol.md\" \"KIT_ROOT/rules/000-security.md\" \"KIT_ROOT/rules/001-conventions.md\" ./AGENTS.md; do\n  [ -f \"$f\" ] || continue\n  printf \"%-40s lines=%-5s ~tokens=%s\\n\" \"$f\" \"$(grep -c '' \"$f\")\" \"$(( $(wc -c < \"$f\") / 4 ))\"\ndone\n```\n\nCount the protocol once (the hook skips it when the AGENTS.md block is present). Report the total,\nand the three largest sections inside the largest file."
+    }
+  ]
+}

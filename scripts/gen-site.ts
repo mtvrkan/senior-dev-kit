@@ -26,7 +26,8 @@
  * Usage: node --experimental-strip-types scripts/gen-site.ts [--check]
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
-import { join, dirname, basename } from 'path'
+import { dirname, basename } from 'path'
+import { join } from './lib/kit-root.ts'
 import { fileURLToPath } from 'url'
 import {
   componentCounts,

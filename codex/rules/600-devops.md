@@ -1,0 +1,248 @@
+## HARD RULE — all CI/CD/IaC changes escalate
+
+ANY change to Dockerfile, GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure Pipelines, Bitbucket
+Pipelines, Terraform, K8s manifests, Helm charts →
+`ESCALATE TO: devops-guard — infrastructure/CI change detected`
+
+devops-guard runs the checklist below and approves before implementation.
+
+**Everything below this line is what devops-guard applies *after* the user approves its plan.**
+The Dockerfile pattern, the Actions snippets, the Terraform and K8s checklists — none of them is a
+way to satisfy an infrastructure request without escalating first. Until the guard has returned a
+plan and the user has said yes, the escalation line **is** the turn's output — no Dockerfile, no
+workflow YAML, no "here is roughly what it would look like".
+
+## DOCKERFILE SECURITY CHECKLIST
+
+Pattern — multi-stage, non-root, pinned, health-checked:
+
+```dockerfile
+FROM node:24-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:24-alpine AS runner
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+COPY --from=builder /app/dist ./dist
+USER appuser
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+EXPOSE 3000
+CMD ["node", "dist/server.js"]
+```
+
+Why each line is there (Dockerfile has no trailing comments — a `#` after an instruction is part of
+its arguments, and after a `\` it breaks the continuation):
+
+- Both `FROM` lines name a specific version tag, never `:latest`.
+- Builder `npm ci` installs ALL deps — build tools (tsc/vite/webpack) live in devDependencies.
+- The `runner` stage is the multi-stage split: build tools and devDependencies stay behind.
+- `npm ci --omit=dev` — production deps only in the final image (`--omit=dev`, not the deprecated
+  `--only=production`).
+- `adduser` + `USER appuser` — the process runs as non-root.
+- `HEALTHCHECK` — the orchestrator can tell a hung process from a live one.
+
+Checklist:
+
+- [ ] Specific version tag (not `:latest`) — or image digest
+- [ ] Multi-stage build (builder + minimal final)
+- [ ] Non-root user (`adduser` or `USER` directive)
+- [ ] `HEALTHCHECK` instruction present
+- [ ] Secrets NOT in any layer (build args, ENV, COPY) — use runtime secrets
+- [ ] `.dockerignore` excludes: `node_modules` `.next` `dist` `.git` `*.env` `*.log`
+- [ ] No unnecessary packages in final image (distroless or alpine preferred)
+- [ ] `apt-get clean && rm -rf /var/lib/apt/lists/*` after apt-get install
+
+Platform-specific base images:
+
+- Node/Bun: `node:24-alpine` or `oven/bun:1-alpine`
+- Python: `python:3.14-slim`
+- Go: `gcr.io/distroless/static-debian12` (final stage, zero shell)
+- Java: `eclipse-temurin:21-jre-alpine` (21 and 25 are both LTS — match the project's toolchain)
+- .NET: `mcr.microsoft.com/dotnet/aspnet:10.0-alpine` for ASP.NET Core (`dotnet/runtime` lacks the ASP.NET Core shared framework — console/worker apps only)
+
+## GITHUB ACTIONS SECURITY
+
+### Action pinning (opt-in org policy since Aug 2025 — not a global default, always pin regardless)
+
+ALWAYS pin to full commit SHA — never mutable version tags:
+
+WRONG — exploitable if the tag is hijacked:
+
+```yaml
+uses: actions/checkout@v4
+```
+
+RIGHT — immutable SHA (this one is `v4.2.2`):
+
+```yaml
+uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+```
+
+Reference incident: tj-actions/changed-files (2025) — mutable tag modified to exfiltrate secrets.
+
+### OIDC for cloud auth (MANDATORY for AWS/GCP/Azure)
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+steps:
+  - uses: aws-actions/configure-aws-credentials@[SHA]
+    with:
+      role-to-assume: arn:aws:iam::123456789012:role/GitHubActions
+      aws-region: us-east-1
+```
+
+No long-lived `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` needed.
+Never: long-lived cloud credentials in GitHub Secrets for cloud deployments.
+
+### Branch protection + deploy gates
+
+Production deploy: require manual approval — set a required reviewer for the environment in
+GitHub Environment settings:
+
+```yaml
+environment:
+  name: production
+```
+
+Never: auto-deploy to prod on push to main without approval.
+
+### Secret handling in Actions
+
+NEVER: `echo ${{ secrets.SECRET }}` (leaks in logs)
+NEVER: `${{ github.event.pull_request.head.sha }}` with `pull_request_target` (RCE risk)
+ALWAYS: use `${{ secrets.NAME }}` only in `env:` or `with:` blocks
+
+### Caching by language
+
+One step each, in order: Node (npm), Python (pip), Go, Rust, Flutter.
+
+```yaml
+- uses: actions/setup-node@[SHA]
+  with: { node-version: '24', cache: 'npm' }
+
+- uses: actions/setup-python@[SHA]
+  with: { python-version: '3.14', cache: 'pip' }
+
+- uses: actions/setup-go@[SHA]
+  with: { go-version: '1.26', cache: true }
+
+- uses: Swatinem/rust-cache@[SHA]
+
+- uses: subosito/flutter-action@[SHA]
+  with: { channel: 'stable', cache: true }
+```
+
+## PRE-COMMIT HOOKS — BUDGET: <10 SECONDS TOTAL
+
+Fast (use as pre-commit): gitleaks (~0.5s) · detect-secrets (~1-2s) · hadolint (~0.2s) · bandit (~1-3s)
+Slow (CI only, never pre-commit): Semgrep full ruleset (~30-60s) · CodeQL (minutes) · Trivy image
+
+Recommended stack for .pre-commit-config.yaml:
+
+- gitleaks/gitleaks (secret scan of staged changes only — `gitleaks git --staged`, which the upstream hook already runs; the full-history scan belongs in CI)
+- Yelp/detect-secrets (baseline-managed)
+- hadolint/hadolint (Dockerfile lint, if present)
+- PyCQA/bandit (Python security, if Python project)
+- pre-commit-hooks: detect-private-key · no-commit-to-branch(main,master) · check-merge-conflict
+
+## IaC SECURITY (Terraform/K8s)
+
+Tools: Checkov (Terraform + K8s + ARM) — preferred, pin to a specific released version (e.g. `checkov==3.3.x`), never `latest`.
+Trivy `--scanners config` for K8s — pin the container tag to a specific release (e.g. `aquasec/trivy:0.73.x`), not `:latest`.
+tfsec is deprecated (merged into Trivy). Terrascan is archived — do not add either to a new pipeline.
+
+CI: scan before plan, with the Action pinned to a full SHA per the rule above. The Action is a
+Docker action whose image tag is fixed in its own `action.yml` (`checkov:3.3.20` at the time of
+review), so the SHA pin also pins Checkov — it has no `version` input.
+
+```yaml
+- name: Run Checkov
+  uses: bridgecrewio/checkov-action@[SHA]
+  with: { directory: '.', soft_fail: false }
+```
+
+Terraform checklist:
+
+- [ ] State stored in remote backend (S3/GCS/Terraform Cloud) — never local
+- [ ] State file NOT committed to git
+- [ ] `terraform plan` reviewed before `terraform apply`
+- [ ] Sensitive outputs marked `sensitive = true`
+- [ ] IAM: least privilege — no `*:*` wildcards
+- [ ] No hardcoded credentials in `.tf` files (use variables + secrets)
+
+Kubernetes checklist:
+
+- [ ] Pod SecurityContext: `runAsNonRoot: true`
+- [ ] Resource requests (`requests.cpu` + `requests.memory`) on every container — without them the
+      scheduler guesses and the pod is first to be evicted
+- [ ] `limits.memory` on every container. A CPU limit throttles rather than kills, so it is a
+      deliberate choice, not a checklist item — never set it equal to the request
+- [ ] No `privileged: true` containers
+- [ ] Network policies defined (deny-all default + explicit allow)
+- [ ] Secrets from K8s Secrets or external secret manager (not ConfigMap)
+
+## SBOM GENERATION
+
+Generate SBOM on every release:
+
+CycloneDX (for vulnerability tracking) + SPDX (for license compliance):
+
+```bash
+syft dir:. -o cyclonedx-json > sbom.cdx.json
+syft dir:. -o spdx-json > sbom.spdx.json
+```
+
+Vulnerability scan on the SBOM:
+
+```bash
+grype sbom:sbom.cdx.json
+```
+
+Container image SBOM:
+
+```bash
+syft oven/bun:1-alpine -o cyclonedx-json > base-image-sbom.cdx.json
+```
+
+Upload SBOM as GitHub Actions artifact. Attach to release.
+
+## CONTAINER SCANNING
+
+```yaml
+- name: Scan image with Trivy
+  uses: aquasecurity/trivy-action@[SHA]
+  with:
+    image-ref: ${{ env.IMAGE_TAG }}
+    format: sarif
+    output: trivy-results.sarif
+    severity: CRITICAL,HIGH
+    exit-code: '1'
+
+- name: Upload results
+  uses: github/codeql-action/upload-sarif@[SHA]
+  with: { sarif_file: trivy-results.sarif }
+```
+
+`exit-code: '1'` fails the job on any CRITICAL/HIGH finding.
+
+## ROLLBACK STRATEGY
+
+Every prod deploy plan must include:
+
+- How to detect failure (health check, error rate)
+- How to rollback (previous image tag; for Terraform, revert the config commit and re-apply — state
+  moves forward only, there is no rollback command; DB rollback plan)
+- Time to rollback (<5 min for stateless, defined timeline for stateful)
+- Who approves rollback decision
+
+Database rollback: zero-downtime migrations must be reversible. If not reversible, backup required before deploy.

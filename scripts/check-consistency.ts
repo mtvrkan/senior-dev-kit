@@ -13,7 +13,8 @@
  * Usage: node --experimental-strip-types scripts/check-consistency.ts
  */
 import { readFileSync, readdirSync, existsSync } from 'fs'
-import { join, dirname } from 'path'
+import { dirname } from 'path'
+import { join } from './lib/kit-root.ts'
 import { fileURLToPath } from 'url'
 import { execSync, execFileSync } from 'child_process'
 import { createHash } from 'crypto'
@@ -29,7 +30,7 @@ import {
   triggerText,
   lineCount as countLines,
 } from './lib/counts.ts'
-import { parseArgs, resolveComponents, COMPONENTS } from './lib/install-core.mjs'
+import { parseArgs, resolveComponents, COMPONENTS } from '../claude/scripts/lib/install-core.mjs'
 import { CHECK_STEPS } from './run-checks.ts'
 import { AB_SUITE_FILES, evalContextDigest } from './lib/eval-context.ts'
 import { loadLedger, monthsSince, LEDGER_PATH } from './lib/doc-ledger.ts'
@@ -738,7 +739,9 @@ if (existsSync(join(ROOT, 'scripts', 'run-checks.ts')) && existsSync(join(ROOT, 
   // lives on the `site-src` branch so that installing the kit does not also download a
   // website. It runs in `.github/workflows/site.yml`, which checks out both branches —
   // and so does check 28 below, which is why that check reports when it scanned nothing.
-  const EXCLUDED_FROM_GATE = ['check', 'deny-cost', 'setup', 'check-release', 'gen-docs', 'gen-site', 'gen-og', 'site-check']
+  // 'gen-codex' writes codex/ and .agents/plugins/marketplace.json — a generator like
+  // 'gen-docs'; its read-only half, 'check-codex', is the step the gate runs.
+  const EXCLUDED_FROM_GATE = ['check', 'deny-cost', 'setup', 'check-release', 'gen-docs', 'gen-site', 'gen-og', 'site-check', 'gen-codex']
   const pkgScripts = Object.keys(JSON.parse(read('package.json')).scripts ?? {})
   const missingFromPkg = CHECK_STEPS.filter(step => !pkgScripts.includes(step))
   if (missingFromPkg.length > 0) {
@@ -1325,8 +1328,8 @@ if (existsSync(join(ROOT, 'skills/kit-doctor/SKILL.md'))) {
   const settingsStep = read('skills/kit-doctor/SKILL.md').match(/^3\. SETTINGS:[^\n]*/m)
   if (settingsStep && /[≥>]=?\s*\d+|\d+\s+rules/.test(settingsStep[0])) {
     errors.push(
-      `kit-doctor's SETTINGS step hardcodes a deny-rule count — it must read the number from SECURITY.md, ` +
-        `which check 6 pins to settings-template.json; a literal here is a second copy that goes stale`
+      `kit-doctor's SETTINGS step hardcodes a deny-rule count — it must read the number from settings-template.json ` +
+        `at run time; a literal here is a second copy that goes stale`
     )
   }
 }

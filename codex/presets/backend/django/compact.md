@@ -1,0 +1,10 @@
+- Apps are vertical slices `apps/<domain>/{models,serializers,views,services,urls}.py` · views thin: serializer validates → service acts → serializer renders
+- Authorization is `get_queryset()` scoped to the requesting user — `permission_classes` alone does not stop an id-based IDOR
+- Tier 3: `settings.py`, `urls.py`, `SECRET_KEY`, `ALLOWED_HOSTS`, auth backends, middleware · `DEBUG = False` in prod · secrets from env, split settings over `if DEBUG:`
+- ORM: `select_related` (FK) / `prefetch_related` (M2M) for N+1 · `.count()` not `len(qs)` · `.exists()` not `if qs:` · `bulk_create`/`bulk_update`, never `save()` in a loop
+- `select_for_update()` inside `transaction.atomic()` for read-modify-write · raw SQL only with `%s` params, never f-strings
+- Migrations are Tier 3: review `sqlmigrate`, expand → backfill → contract across deploys for non-null adds, renames and drops
+- Serializers: explicit `fields = [...]` allowlist — NEVER `"__all__"` (leaks every new column) · validation in `validate_<field>`, not the view
+- Anything >200ms → Celery/Django-Q, idempotent, takes ids not model instances
+- Verify: `python manage.py test apps.x.tests.TestY` · `ruff check .` · `mypy apps/` · `manage.py check --deploy` · `makemigrations --check --dry-run`
+- Anti: `fields = "__all__"` · unscoped queryset · logic in `save()` or signals (hidden control flow) · `ALLOWED_HOSTS = ["*"]` · inline slow work

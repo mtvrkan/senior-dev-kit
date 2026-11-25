@@ -1,0 +1,10 @@
+- Layers: `@RestController` → `@Service` → `@Repository` · constructor injection with `final` fields, NEVER field `@Autowired`
+- DTOs at the boundary — a JPA entity is never a request or response body (leaks columns, lazy-loads during serialization)
+- Validation: Bean Validation on a `record` DTO (`@NotBlank`, `@Email`, `@Size`) · `@Valid` on the parameter is what triggers it
+- Security is Tier 3 (`SecurityConfig`, JWT, `@PreAuthorize`): plan first · role check ≠ ownership check — verify the owner in the service or it's an IDOR · BCrypt/Argon2 only
+- JPA: fetch join for N+1 · `@Transactional` on the service method (not repository, not controller, never self-invoked) · named parameters, never concatenated JPQL
+- Errors: one `@RestControllerAdvice` returning `ProblemDetail` (RFC 9457) · `include-stacktrace=never` · no raw exception text to clients
+- Logging: parameterized SLF4J `log.info("user.created userId={}", id)` · never tokens, passwords, bodies or `Authorization`
+- Kotlin: `data class` DTOs, `val` by default, coroutines on WebFlux, no `!!` to silence nullability
+- Verify: `./gradlew test --tests "*Test"` or `./mvnw test -Dtest=Class#method` · `ktlintCheck`/`spotless:check` · `./gradlew build`
+- Anti: entity returned from controller · `@Transactional` misplaced · role-only auth · `catch (Exception e) {}` · `ddl-auto=update` in prod (use Flyway/Liquibase)

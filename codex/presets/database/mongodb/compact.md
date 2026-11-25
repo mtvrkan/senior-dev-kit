@@ -1,0 +1,9 @@
+- "Schemaless" means the schema moved into your code: Mongoose `strict: 'throw'` or `$jsonSchema` on the collection — without one a typo silently creates a field on half the documents
+- Old documents keep their old shape forever — a field change IS a migration (backfill script + read-path fallback, Tier 3)
+- Query injection is the signature MongoDB bug: `{email: req.body.email}` with body `{"$ne": null}` matches every user → cast (`String(...)`) or schema-validate first · never build `$where`/`$expr` from input
+- Indexes: `.explain('executionStats')` and treat `COLLSCAN` as a defect · compound indexes are used LEFT TO RIGHT · unique index for anything unique (app-level checks race)
+- Embed what is read together and bounded; reference what is written independently or grows — an unbounded array hits the 16 MB document cap
+- `.lean()` on read-only queries (skips hydration — usually the biggest list-endpoint win) · explicit `.select(...)` projection or you leak fields the API never meant to expose
+- Atomic operators (`$inc`/`$set`/`$push`), never read-modify-write · one document is atomic, anything across documents needs `session.withTransaction` · `updateMany` is NOT atomic across documents
+- Aggregation: `$match` first so an index applies, then `$project`, then `$group` · `$lookup` on an unindexed foreign field is aggregation-flavoured N+1 · `allowDiskUse` is a symptom, not a fix
+- Verify: `npx jest [file]` with mongodb-memory-server · `npx tsc --noEmit` · assert expected indexes exist in the target env

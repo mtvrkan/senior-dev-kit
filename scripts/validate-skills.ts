@@ -12,7 +12,8 @@
 // Exit code: 0 = pass, 1 = validation errors found
 
 import { readFileSync, existsSync, readdirSync } from 'fs'
-import { join, dirname } from 'path'
+import { dirname } from 'path'
+import { join } from './lib/kit-root.ts'
 import { fileURLToPath } from 'url'
 import { validatePresetClaudeMd, findPresetDirs, checkCompactMd, checkCompactToolDrift } from './lib/presets.ts'
 import { getAgentNames, getAgentToolsMap, validateAgentFrontmatter } from './lib/validate-agents.ts'

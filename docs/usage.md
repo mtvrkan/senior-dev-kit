@@ -27,7 +27,7 @@ else**. "Fix the CSS in the login form" is security-guard territory, not a CSS t
 change touches the auth surface. But a request that only *mentions* a guarded area without
 changing it — writing tests against it, documenting it — routes by task type as normal.
 
-The full tree, with the tie-breaks, is [`../agents/ROUTING.md`](../agents/ROUTING.md).
+The full tree, with the tie-breaks, is [`../agents/ROUTING.md`](../claude/agents/ROUTING.md).
 
 ## Blast radius: the tier system
 

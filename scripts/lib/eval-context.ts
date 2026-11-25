@@ -21,7 +21,7 @@
 // every file it names as context.
 import { createHash } from 'crypto'
 import { readFileSync, readdirSync } from 'fs'
-import { join } from 'path'
+import { join } from './kit-root.ts'
 import { parseFrontmatter, stripBom } from './frontmatter.ts'
 
 export interface EvalInputPart {

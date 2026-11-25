@@ -67,8 +67,8 @@ prints every file it would touch and writes nothing; the last line is the same r
 ```bash
 git clone https://github.com/mtvrkan/senior-dev-kit.git
 cd senior-dev-kit
-node scripts/install.mjs --dry-run
-node scripts/install.mjs
+node claude/scripts/install.mjs --dry-run
+node claude/scripts/install.mjs
 ```
 
 The dry run is not decoration — read it. It prints the target directory, the file count, and how
@@ -112,7 +112,7 @@ as `${CLAUDE_PLUGIN_ROOT}`, and `/kit-doctor` prints its absolute path if you'd 
 file yourself.
 
 For a project spanning several stacks, concatenate the relevant `compact.md` files instead of
-picking one full `CLAUDE.md` — see [`../presets/README.md`](../presets/README.md) for which
+picking one full `CLAUDE.md` — see [`../presets/README.md`](../claude/presets/README.md) for which
 combinations make sense.
 
 This gives you the house rules for that project with none of the agents, skills or deny rules.
@@ -133,7 +133,7 @@ part you still need is the part a plugin cannot deliver — the installer detect
 and defaults to exactly that:
 
 ```bash
-node scripts/install.mjs --only rules,deny-rules,settings
+node claude/scripts/install.mjs --only rules,deny-rules,settings
 ```
 
 which is exactly what `/kit-setup` runs for you.
@@ -143,7 +143,7 @@ which is exactly what `/kit-setup` runs for you.
 ## Uninstall
 
 ```bash
-node scripts/install.mjs --uninstall
+node claude/scripts/install.mjs --uninstall
 ```
 
 Removes the files the installer wrote, strips the marked protocol block out of
@@ -159,7 +159,7 @@ root (it sits under `~/.claude/plugins/`); run the installer from there:
 node "<plugin root>/scripts/install.mjs" --uninstall
 ```
 
-If the plugin is already gone, clone the repository and run `node scripts/install.mjs --uninstall`
+If the plugin is already gone, clone the repository and run `node claude/scripts/install.mjs --uninstall`
 from the clone instead. Then remove the plugin the way you added it, from inside Claude Code:
 
 ```text

@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
-import { join, relative, dirname } from 'path'
+import { relative, dirname } from 'path'
+import { join } from './lib/kit-root.ts'
 import { fileURLToPath } from 'url'
 import { lint } from 'markdownlint/sync'
 import type { Configuration } from 'markdownlint'

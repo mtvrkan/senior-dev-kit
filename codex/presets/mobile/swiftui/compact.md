@@ -1,0 +1,11 @@
+- `Features/<F>/{Views,ViewModel,Models}` + `Core/` · MVVM with `@Observable` (iOS 17+), one view model per screen, `struct` models
+- Views render state and send intents — NO networking, persistence or formatting inside `body`
+- Three required states per screen: skeleton loading, error with retry, empty
+- Swift 6 strict concurrency: `async`/`await` only · UI state mutation is `@MainActor`, never `DispatchQueue.main.async` · `.task { }` over `Task { }` so cancellation is wired
+- `async let` / `TaskGroup` for independent work; sequential `await` only on a real dependency
+- Repositories map transport errors to domain errors — a view never sees a `URLError` · `Codable` with explicit `CodingKeys`, decode failures become domain errors not crashes
+- Secrets: Keychain for tokens — `UserDefaults` is an unencrypted plist · no keys in source/`Info.plist`/`.xcconfig` · ATS on, no `NSAllowsArbitraryLoads` · universal-link params are untrusted
+- Lists: `List`/`LazyVStack`, never `ScrollView { VStack { ForEach } }` for long content · stable `Identifiable` ids (index ids break animations and state)
+- A11y is required: label every interactive element, support Dynamic Type, verify VoiceOver on the real flow
+- Verify: `xcodebuild test -only-testing:AppTests/XTests` · `swiftlint` · `xcodebuild build -scheme App`
+- Anti: force unwraps / `try!` on network or user input · `@State` outliving the view · retain cycles (`[weak self]`)

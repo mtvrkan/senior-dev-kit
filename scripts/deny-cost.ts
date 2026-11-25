@@ -17,7 +17,8 @@
  */
 
 import { readFileSync, readdirSync, existsSync, realpathSync } from 'fs'
-import { join, dirname } from 'path'
+import { dirname } from 'path'
+import { join } from './lib/kit-root.ts'
 import { homedir } from 'os'
 import { fileURLToPath } from 'url'
 

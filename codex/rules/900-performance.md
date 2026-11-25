@@ -1,0 +1,185 @@
+900 holds the latency and bundle budgets; `700-observability.md` governs what to log and loads for
+services, handlers and jobs. Apply both where both are loaded.
+
+## PERFORMANCE BUDGETS — hard limits
+
+Flag `PERF:` when a change likely violates these. Do not block — flag and continue.
+
+### Core Web Vitals (frontend changes)
+
+| Metric | Budget | Trigger |
+| --- | --- | --- |
+| LCP (Largest Contentful Paint) | < 2.5s | Above-fold content or image change |
+| CLS (Cumulative Layout Shift) | < 0.1 | Layout, image, font, or dynamic insertion change |
+| INP (Interaction to Next Paint) | < 200ms | Event handler, form, or state update change |
+| TBT (Total Blocking Time, lab proxy for INP) | < 200ms | Any JS blocking the main thread |
+
+`PERF: CLS risk — [image/component] above fold without explicit dimensions`
+`PERF: LCP risk — [image/component] above fold with deferred/lazy load`
+
+### Bundle size (frontend)
+
+| Scope | Budget |
+| --- | --- |
+| Initial JS bundle (gzip) | < 200 KB |
+| Per-route extra chunk | < 100 KB |
+| Single dependency added | < 30 KB gzip — if larger, justify or find alternative |
+| CSS bundle (gzip) | < 50 KB |
+
+Size of a package before adding it — npm built-in, no extra install. For its gzipped cost in a
+real bundle, see `https://bundlephobia.com/package/<package>`:
+
+```bash
+npm view <package>@<version> dist.unpackedSize
+```
+
+Analyze an existing bundle:
+
+```bash
+next experimental-analyze
+ANALYZE=true next build --webpack
+$env:ANALYZE=1; next build --webpack
+npx vite-bundle-visualizer
+```
+
+Next.js 16 builds with Turbopack, which `@next/bundle-analyzer` (a webpack plugin) never sees: use
+`next experimental-analyze`, or build with `--webpack` and wrap `next.config` in
+`withBundleAnalyzer` (the `$env:` line is the PowerShell form — it has no inline env-var prefix).
+`vite-bundle-visualizer` is the Vite equivalent.
+
+`PERF: bundle risk — [package] adds [N]KB gzip to initial bundle`
+
+### API / backend latency
+
+| Endpoint type | Budget |
+| --- | --- |
+| GET (no DB) | < 50ms |
+| GET (with DB, simple) | < 200ms |
+| GET (with DB, joins) | < 500ms |
+| POST / PUT / PATCH | < 500ms |
+| File upload | < 2s |
+| Webhook / background job trigger | < 200ms (enqueue time) |
+| Background job completion | < 30s |
+
+`PERF: latency risk — [endpoint] — [reason: N+1, missing index, full-table scan]`
+
+### DB query budgets
+
+| Operation | Budget |
+| --- | --- |
+| Simple SELECT by PK/index | < 5ms |
+| JOINed SELECT, indexed | < 50ms |
+| Aggregation (COUNT, SUM) on large table | < 200ms |
+| Bulk INSERT / UPDATE (batched) | < 500ms per batch of 1000 |
+| Full-table scan (no WHERE index) | NEVER in hot paths |
+
+## N+1 DETECTION — auto-trigger on loop + DB pattern
+
+Flag when: a loop body contains a DB call, and the outer list size is unbounded. Canonical
+pattern, WRONG/RIGHT code example, and per-ORM fix live in `500-database.md`'s "N+1 QUERY
+PREVENTION" section (loads for any migration/schema/model file) — this rule only adds the
+latency-budget framing above.
+
+`PERF: N+1 risk — [file:line] — [N] items × 1 DB call = N queries → batch or eager load`
+
+## RENDER BUDGET (React / Vue / Flutter)
+
+| Signal | Action |
+| --- | --- |
+| Component re-renders >2× per user interaction | Needs `memo` / `useMemo` / `useCallback` |
+| Derived value recomputed in render body | Move to `useMemo` / `computed` |
+| List > 50 items (web/Flutter; RN > 20 — see `400-mobile.md`) without virtualization | Use `FlashList` (RN) / `List` from react-window v2 or `@tanstack/react-virtual` (web) / `ListView.builder` (Flutter) |
+| `useEffect` with no deps or wrong deps | Causes infinite render loop |
+
+WRONG — expensive computation in render, the sort is recalculated on every render:
+
+```typescript
+function Component({ items }) {
+  const sorted = items.sort((a, b) => b.score - a.score)
+  return <List data={sorted} />
+}
+```
+
+RIGHT — memoized:
+
+```typescript
+function Component({ items }) {
+  const sorted = useMemo(() => [...items].sort((a, b) => b.score - a.score), [items])
+  return <List data={sorted} />
+}
+```
+
+## LOAD PERFORMANCE (images + fonts)
+
+CLS prevention — mandatory on every `<img>`.
+
+ALWAYS — explicit width + height:
+
+```html
+<img src="..." width="800" height="600" alt="..." />
+```
+
+Or an aspect-ratio box:
+
+```html
+<div style="aspect-ratio: 4/3"><img src="..." /></div>
+```
+
+Font: `font-display: swap` (acceptable flash) or `optional` (no flash, may not load).
+Never: `font-display: block` for body text (invisible text = bad UX + CLS).
+
+```css
+@font-face {
+  src: url('/fonts/Inter.woff2') format('woff2');
+  font-display: swap;
+}
+```
+
+`optional` is the other acceptable value in place of `swap`.
+
+## MEMORY / RESOURCE LEAKS
+
+Signal: event listener or interval added without cleanup.
+
+WRONG — leak, the cleanup function is missing:
+
+```typescript
+useEffect(() => {
+  window.addEventListener('resize', handler)
+}, [])
+```
+
+RIGHT — the returned function is the cleanup:
+
+```typescript
+useEffect(() => {
+  window.addEventListener('resize', handler)
+  return () => window.removeEventListener('resize', handler)
+}, [])
+```
+
+Same pattern for: WebSocket connections, `setInterval`, `setTimeout` chains, Subscription observables, stream readers.
+
+`PERF: leak risk — [file:line] — [resource] added but cleanup function missing in [useEffect/onDestroy/deinit]`
+
+## CONCURRENCY
+
+Serial awaits that could be parallel:
+
+WRONG — sequential, total time = A + B + C:
+
+```typescript
+const a = await fetchA()
+const b = await fetchB()
+const c = await fetchC()
+```
+
+RIGHT — parallel, total time = max(A, B, C):
+
+```typescript
+const [a, b, c] = await Promise.all([fetchA(), fetchB(), fetchC()])
+```
+
+Guard: only use `Promise.all` when A, B, C are independent (no shared write target).
+
+`PERF: serial await — [file:line] — [N] independent fetches could be Promise.all()`

@@ -9,7 +9,8 @@
 // roots must name a live agent (agents/*.md), a live skill (skills/*/), or a
 // bracketed format placeholder like `[agent]`.
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs'
-import { join, relative, basename } from 'path'
+import { relative, basename } from 'path'
+import { join } from './kit-root.ts'
 
 export interface EscalationCheckResult {
   errors: number

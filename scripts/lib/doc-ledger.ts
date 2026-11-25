@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join } from './kit-root.ts'
 
 export interface DatedClaim {
   file: string

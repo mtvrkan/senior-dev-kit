@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { join } from './lib/kit-root.ts'
 import { fileURLToPath } from 'node:url'
 import { extractChoice, type BehaviorPrompt } from './behavior-eval.ts'
 import { AB_SUITE_FILES, digestEvalInputs, evalContextDigest, evalTreatmentInputs } from './lib/eval-context.ts'
